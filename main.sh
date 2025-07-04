@@ -287,7 +287,7 @@ fi
 
 # Baixar novo script
 status_info "Baixando o Instalador Encha da fonte oficial..."
-if curl -fsSL --retry 3 --connect-timeout 10 https://raw.githubusercontent.com/Octavioleite/teste/main/script.sh -o SetupEnchaAI; then
+if curl -fsSL --retry 3 --connect-timeout 10 https://raw.githubusercontent.com/Encha-Ai/Instalador-Encha/main/secondary.sh -o SetupEnchaAI; then
     chmod +x SetupEnchaAI
     status_ok "Instalador Encha baixado com sucesso"
     
