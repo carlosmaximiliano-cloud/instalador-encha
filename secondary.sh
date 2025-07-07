@@ -531,7 +531,7 @@ criar_banco_postgres_da_stack() {
 
             if [ $? -eq 0 ]; then
                 ## echo ""
-                read -p $'\e[33mO banco de dados '"$1"' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                read -p $'\e[33mO banco de dados '"$1"$' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
                 if [ "$resposta" == "Y" ] || [ "$resposta" == "y" ]; then
                     # Apagar o banco de dados
                     docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1(force);" > /dev/null 2>&1
@@ -719,7 +719,7 @@ ferramenta_traefik_e_portainer() {
     echo ""
 
     echo -e "Passo \e[33m6/6\e[0m"
-    echo -ne "\e[36mDigite um endereço de email válido (ex: atendimento@encha.ai): \e[0m" && read -r email_ssl
+    echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
     echo ""
 
 
@@ -1761,7 +1761,7 @@ while true; do
 
     ## Passo 2 - Email SMTP
     echo -e "\e[97m📧 Passo$amarelo 2/6 - Email do Administrador\e[0m"
-    echo -en "\e[33m📥 Digite o email que será usado para SMTP (ex: atendimento@encha.ai): \e[0m" && read -r email_admin_chatwoot
+    echo -en "\e[33m📥 Digite o email que será usado para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_admin_chatwoot
     echo ""
 
     ## Extrai domínio do SMTP
@@ -1770,7 +1770,7 @@ while true; do
     ## Passo 3 - Usuário SMTP
     echo -e "\e[97m👤 Passo$amarelo 3/6 - Usuário SMTP\e[0m"
     echo -e "$amareloℹ️  Caso não tenha um usuário específico, use o próprio email acima.\e[0m"
-    echo -en "\e[33m🧑‍💼 Digite o usuário do SMTP (ex: encha.ai ou atendimento@encha.ai): \e[0m" && read -r user_smtp_chatwoot
+    echo -en "\e[33m🧑‍💼 Digite o usuário do SMTP (ex: encha.ai ou instalador@encha.ai): \e[0m" && read -r user_smtp_chatwoot
     echo ""
 
     ## Passo 4 - Senha do SMTP
@@ -2402,13 +2402,13 @@ while true; do
 
     ## Pergunta o Email SMTP
     echo -e "\e[97mPasso$amarelo 3/7\e[0m"
-    echo -en "\e[33m📧 Informe o Email para SMTP (ex: atendimento@encha.ai): \e[0m" && read -r email_smtp_n8n
+    echo -en "\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_n8n
     echo ""
 
     ## Pergunta o usuário do Email SMTP
     echo -e "\e[97mPasso$amarelo 4/7\e[0m"
     echo -e "$amarelo➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
-    echo -en "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou atendimento@encha.ai): \e[0m" && read -r usuario_smtp_n8n
+    echo -en "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_smtp_n8n
     echo ""
 
     ## Pergunta a senha do SMTP
