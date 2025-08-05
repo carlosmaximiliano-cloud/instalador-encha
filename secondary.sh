@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 #FERRAMENTAS VISUAIS
@@ -79,20 +80,43 @@ centralizar "╚═╝  ╚═══╝ ╚════╝ ╚═╝  ╚══�
       echo ""
 }
 
-msg_chatwoot(){
+msg_n8n_formacao_encha(){
   clear
       echo -e "${roxo}"
-centralizar " ██████╗██╗  ██╗ █████╗ ████████╗██╗    ██╗ ██████╗  ██████╗ ████████╗"
-centralizar "██╔════╝██║  ██║██╔══██╗╚══██╔══╝██║    ██║██╔═══██╗██╔═══██╗╚══██╔══╝"
-centralizar "██║     ███████║███████║   ██║   ██║ █╗ ██║██║   ██║██║   ██║   ██║"  
-centralizar "██║     ██╔══██║██╔══██║   ██║   ██║███╗██║██║   ██║██║   ██║   ██║"   
-centralizar "╚██████╗██║  ██║██║  ██║   ██║   ╚███╔███╔╝╚██████╔╝╚██████╔╝   ██║"   
-centralizar " ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝  ╚═════╝  ╚═════╝    ╚═╝"   
+centralizar "███╗   ██╗ █████╗ ███╗   ██╗"                                         
+centralizar "████╗  ██║██╔══██╗████╗  ██║"                                         
+centralizar "██╔██╗ ██║╚█████╔╝██╔██╗ ██║"                                         
+centralizar "██║╚██╗██║██╔══██╗██║╚██╗██║"                                         
+centralizar "██║ ╚████║╚█████╔╝██║ ╚████║"                                         
+centralizar "╚═╝  ╚═══╝ ╚════╝ ╚═╝  ╚═══╝"                                                                      
+centralizar "███████╗ ██████╗ ██████╗ ███╗   ███╗ █████╗  ██████╗ █████╗  ██████╗" 
+centralizar "██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝██╔══██╗██╔═══██╗"
+centralizar "█████╗  ██║   ██║██████╔╝██╔████╔██║███████║██║     ███████║██║   ██║"
+centralizar "██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔══██║██║     ██╔══██║██║   ██║"
+centralizar "██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██║  ██║╚██████╗██║  ██║╚██████╔╝"
+centralizar "╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ "                                                                    
+centralizar "███████╗███╗   ██╗ ██████╗██╗  ██╗ █████╗"                            
+centralizar "██╔════╝████╗  ██║██╔════╝██║  ██║██╔══██╗"                           
+centralizar "█████╗  ██╔██╗ ██║██║     ███████║███████║"                          
+centralizar "██╔══╝  ██║╚██╗██║██║     ██╔══██║██╔══██║"                           
+centralizar "███████╗██║ ╚████║╚██████╗██║  ██║██║  ██║"                           
+centralizar "╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝"                           
       echo -e "${reset}"
       echo ""
 }
 
-
+msg_chatwoot(){
+  clear
+      echo -e "${roxo}"
+centralizar "██████╗ ██╗  ██╗ █████╗ ████████╗██╗    ██╗ ██████╗  ██████╗ ████████╗"
+centralizar "██╔════╝██║  ██║██╔══██╗╚══██╔══╝██║    ██║██╔═══██╗██╔═══██╗╚══██╔══╝"
+centralizar "██║     ███████║███████║   ██║   ██║ █╗ ██║██║   ██║██║   ██║   ██║"  
+centralizar "██║     ██╔══██║██╔══██║   ██║   ██║███╗██║██║   ██║██║   ██║   ██║"   
+centralizar "╚██████╗██║  ██║██║  ██║   ██║   ╚███╔███╔╝╚██████╔╝╚██████╔╝   ██║"   
+centralizar "╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝  ╚═════╝  ╚═════╝    ╚═╝"   
+      echo -e "${reset}"
+      echo ""
+}
 
 msg_resumo_informacoes(){
   clear
@@ -195,38 +219,57 @@ validar_senha() {
 
 wait_stack() {
     echo "Espere alguns instantes. Mas atenção: se demorar mais de 5 minutos, é melhor cancelar e tentar de novo."
-    declare -A services_status
+    declare -A services_status=()
 
-    # Inicializa o status de todos os serviços como "pendente"
+    # Inicializa status como "pendente"
     for service in "$@"; do
         services_status["$service"]="pendente"
     done
 
-    while true; do
-        all_active=true
+    local max_attempts=10
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        local all_active=true
 
         for service in "${!services_status[@]}"; do
-            if docker service ls --filter "name=$service" | grep -q "1/1"; then
-                if [ "${services_status["$service"]}" != "ativo" ]; then
-                    echo -e "🟢 Status: \e[32m$service\e[0m online com sucesso."
-                    services_status["$service"]="ativo"
-                fi
-            else
-                if [ "${services_status["$service"]}" != "pendente" ]; then
+            replicas=$(docker service ls --filter "name=$service" --format "{{.Replicas}}")
+            echo -e "\e[35m🛠️  Serviço:\e[0m \e[36m$service\e[0m — Réplicas detectadas: \e[33m$replicas\e[0m"
+
+            if [[ $replicas == */* ]]; then
+                running=${replicas%%/*}
+                total=${replicas##*/}
+
+                echo -e "\e[36m📊 Status do Serviço:\e[0m running = \e[33m$running\e[0m, total = \e[32m$total\e[0m"
+
+                if [ "$running" == "$total" ]; then
+                    if [ "${services_status["$service"]}" != "ativo" ]; then
+                        echo -e "\e[32m🟢\e[0m Serviço \e[32m$service\e[0m está com todas as réplicas ativas ($replicas)."
+                        services_status["$service"]="ativo"
+                    fi
+                else
+                    all_active=false
                     services_status["$service"]="pendente"
                 fi
+            else
                 all_active=false
+                services_status["$service"]="pendente"
             fi
         done
-
         if $all_active; then
-            sleep 1
-            break
+            echo "✅ Todos os serviços estão ativos."
+            return 0
         fi
+
+        echo -e "\e[36m⏳ Aguardando serviços...\e[0m (tentativa \e[33m$attempt/$max_attempts\e[0m)"
+        attempt=$((attempt + 1))
         sleep 30
-        echo ""
     done
+
+    echo -e "\e[31m🛑 Timeout:\e[0m Serviços não responderam a tempo."
+    return 1
 }
+
 
 wait_30_sec(){
     sleep 30
@@ -510,12 +553,32 @@ verificar_container_postgres() {
     fi
 }
 
+verificar_container_postgres_formacao_encha() {
+    if docker ps -q --filter "name=postgres_formacao_encha" | grep -q .; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 pegar_senha_postgres() {
     while :; do
         if [ -f /root/postgres.yaml ]; then
             senha_postgres=$(grep "POSTGRES_PASSWORD" /root/postgres.yaml | awk -F '=' '{print $2}')
             break
         else
+            sleep 5
+        fi
+    done
+}
+pegar_senha_postgres_formacao_encha(){
+    while :; do
+        if [ -f /root/postgres_formacao_encha.yaml ]; then
+            senha_postgres=$(grep "POSTGRES_PASSWORD" /root/postgres_formacao_encha.yaml | awk -F '=' '{print $2}')
+            echo -e "to aqui 2"
+            break
+        else
+            echo -e "erro pegar senha do postgres formacao encha"
             sleep 5
         fi
     done
@@ -567,6 +630,47 @@ criar_banco_postgres_da_stack() {
     done
 }
 
+criar_banco_postgres_da_stack_formacao_encha() {
+    local dbname="$1"
+    while :; do
+        # Verifica se o container do Postgres está rodando
+        if docker ps -q --filter "name=^postgres_formacao_encha_postgres" | grep -q .; then
+            CONTAINER_ID=$(docker ps -q --filter "name=^postgres_formacao_encha_postgres")
+
+            # Verifica se o banco já existe
+            if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
+                read -p $'\e[33mO banco de dados '"$dbname"$' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                if [[ "$resposta" =~ ^[Yy]$ ]]; then
+                    echo "Apagando o banco de dados $dbname..."
+                    docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS \"$dbname\";" > /dev/null 2>&1
+                    echo "Criando o banco de dados $dbname..."
+                    docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
+                else
+                    echo "Mantendo o banco de dados existente."
+                fi
+                break
+            else
+                echo "Criando o banco de dados $dbname..."
+                docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
+
+                # Verifica se o banco foi criado com sucesso
+                if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
+                    echo "Banco de dados $dbname criado com sucesso."
+                    break
+                else
+                    echo "Erro ao criar o banco de dados. Tentando novamente..."
+                    sleep 2
+                fi
+            fi
+        else
+            echo "Aguardando container do Postgres iniciar..."
+            sleep 5
+        fi
+    done
+}
+
+
+
 pull() {
     for image in "$@"; do
         while true; do
@@ -607,7 +711,7 @@ criar_banco_pgvector_da_stack() {
 
             if [ $? -eq 0 ]; then
                 echo ""
-                read -p "[33mO banco de dados '"$1"' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: " resposta
+                read -p $'\e[33m⚠️  O banco de dados \e[1m'"$1"$'\e[0;33m já existe.\e[0m\n\e[33m❓ Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
                 if [ "$resposta" == "Y" ] || [ "$resposta" == "y" ]; then
                     # Apagar o banco de dados
                     docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1(force);" > /dev/null 2>&1
@@ -633,7 +737,7 @@ criar_banco_pgvector_da_stack() {
                     nada="nada"
                     break
                 else
-                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    echo -e "\e[31m Erro ao criar o banco de dados. Tentando novamente...\e[0m"
                     echo ""
 
                 fi
@@ -671,6 +775,92 @@ wait_for_pgvector() {
     done
 }
 
+liberar_chatwoot() {
+    clear
+    stack_name="chatwoot"
+    
+    if ! docker stack ls --format "{{.Name}}" | grep -q "^${stack_name}$"; then
+        echo -e "\e[1;31m❌ Erro: A stack do Chatwoot não está instalada.\e[0m"
+        echo -e "\e[1;33m⚠️  Por favor, instale a stack do Chatwoot antes de continuar.\e[0m"
+        sleep 5
+        return 1
+    fi       
+
+
+    echo -e "\e[1;36m🔓 Verificando liberação do Chatwoot...\e[0m"
+    sleep 2
+
+    local dados_vps="/root/dados_vps/dados_chatwoot"
+    local container_id
+    container_id=$(docker ps -q --filter "name=pgvector")
+
+    if [[ -z "$container_id" ]]; then
+        echo -e "\e[1;31m❌ Erro: container do Postgres (pgvector) não encontrado.\e[0m"
+        return 1
+    fi
+
+    if [ ! -f "$dados_vps" ]; then
+        echo -e "\e[31m[ERRO]\e[0m Arquivo de dados não encontrado em: $dados_vps"
+        return 1
+    fi
+
+    local url_chatwoot
+    url_chatwoot=$(grep "Dominio do Chatwoot:" "$dados_vps" | awk -F': ' '{print $2}')
+
+    # Loop até a entrada ser encontrada
+    while true; do
+        local row_count
+        row_count=$(docker exec -i "$container_id" psql -U postgres -d chatwoot -t -c \
+            "SELECT 1 FROM public.installation_configs WHERE name = 'INSTALLATION_IDENTIFIER' LIMIT 1;" | grep -c 1)
+
+        if [[ $row_count -eq 0 ]]; then
+            echo -e "\e[1;33m⚠️  A entrada ainda não foi encontrada. Siga os passos abaixo:\e[0m"
+
+            echo -e "\n\e[1;34m🌐 Acesse o painel do Chatwoot:\e[0m $url_chatwoot"
+
+            echo -e "\n\e[1;33mEtapa 1:\e[0m Crie uma conta no Chatwoot com e-mail e senha."
+            read -p $'\e[32m✅ Pressione ENTER depois de criar a conta...\e[0m'
+
+            echo -e "\n\e[1;33mEtapa 2:\e[0m Faça login com a conta criada."
+            read -p $'\e[32m✅ Pressione ENTER depois de fazer login...\e[0m'
+
+            echo -e "\n\e[1;33mEtapa 3:\e[0m Acesse o superadmin:"
+            echo -e "\e[1;34m   ➤ $url_chatwoot/super_admin\e[0m"
+            read -p $'\e[32m✅ Pressione ENTER depois de acessar o painel de superadmin...\e[0m'
+
+
+            echo -e "\e[1;36m🔄 Verificando novamente...\e[0m"
+            sleep 2
+            clear
+        else
+            break
+        fi
+    done
+
+    # Atualizações após confirmação da entrada
+    local uuid
+    uuid=$(uuidgen)
+
+    echo -e "\e[1;32m✅ Entrada encontrada. Aplicando atualizações...\e[0m"
+    docker exec -i "$container_id" psql -U postgres -d chatwoot -c "
+        UPDATE public.installation_configs 
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: enterprise\n\"' 
+        WHERE name = 'INSTALLATION_PRICING_PLAN';
+
+        UPDATE public.installation_configs 
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: 10000\n\"' 
+        WHERE name = 'INSTALLATION_PRICING_PLAN_QUANTITY';
+
+        UPDATE public.installation_configs 
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: $uuid\n\"' 
+        WHERE name = 'INSTALLATION_IDENTIFIER';"
+
+    clear
+    echo -e "\e[1;32m✅ Chatwoot liberado com sucesso!\e[0m"
+    read -p $'\e[1;33mPressione ENTER para continuar...\e[0m'
+}
+
+
 verificar_container_redis() {
     if docker ps -q --filter "name=redis_redis" | grep -q .; then
         return 0
@@ -678,6 +868,14 @@ verificar_container_redis() {
         return 1
     fi
 }
+verificar_container_redis_formacao_encha() {
+    if docker ps -q --filter "name=redis_formacao_encha" | grep -q .; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 
 ferramenta_traefik_e_portainer() {
 
@@ -1117,6 +1315,7 @@ wait_30_sec
 msg_resumo_informacoes
 
 ## Dados da Aplicação:
+
 echo -e "\e[32m🚀 [ PORTAINER INSTALADO COM SUCESSO ]\e[0m"
 echo ""
 
@@ -1229,6 +1428,103 @@ cd
 
 ## Espera 30 segundos
 wait_stack "postgres_postgres"
+
+echo ""
+}
+
+ferramenta_postgres_formacao_encha() {
+
+## Ativa a função dados para pegar os dados da vps
+dados
+
+
+## Gerando uma senha aleatória para o Postgres
+senha_postgres=$(openssl rand -hex 16)
+
+## Criando a stack postgres.yaml
+cat > postgres_formacao_encha.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  postgres_formacao_encha:
+    image: postgres:16 ## Versão do postgres
+    command: >
+      postgres
+      -c max_connections=500
+      -c shared_buffers=512MB
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    ## Descomente as linhas abaixo para uso externo
+    #ports:
+    #  - 5432:5432
+
+    environment:
+      ## Senha do postgres 
+      - POSTGRES_PASSWORD=$senha_postgres
+
+      ## Timezone
+      - TZ=America/Sao_Paulo
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  postgres_data:
+    external: true
+    name: postgres_formacao_encha
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+if [ $? -eq 0 ]; then
+    echo -e "1/10 - [\e[32mOK\e[0m] - Stack do Postgres criada com sucesso"
+else
+    echo -e "1/10 - [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
+    echo -e "\e[33mNão foi possível criar a stack do Postgres.\e[0m"
+fi
+STACK_NAME="postgres_formacao_encha"
+stack_editavel #> /dev/null 2>&1
+
+cd dados_vps
+
+cat > dados_postgres_formacao_encha <<EOL
+[ POSTGRES ]
+
+Dominio do postgres: postgres://postgres_formacao_encha:5432
+
+Usuario: postgres
+
+Senha: $senha_postgres
+EOL
+
+cd
+cd
+
+## Espera 30 segundos
+wait_stack "postgres_formacao_encha"
 
 echo ""
 }
@@ -1356,7 +1652,7 @@ services:
       
       ## 📱 Configuração do Cliente
       ## Pegue a versão em: https://web.whatsapp.com/sw.js
-      #- CONFIG_SESSION_PHONE_VERSION=2.3000.1023015479
+      #- CONFIG_SESSION_PHONE_VERSION=2.3000.1025062854
       - CONFIG_SESSION_PHONE_CLIENT=Encha
       - CONFIG_SESSION_PHONE_NAME=Chrome
       
@@ -1918,7 +2214,7 @@ services:
     
     environment:
       ## 🌐 Qualquer Url com # no final
-      #- CHATWOOT_HUB_URL=https://encha.ai#
+      - CHATWOOT_HUB_URL=https://encha.ai#
 
       ## 🏢 Nome da Empresa
       - INSTALLATION_NAME=$nome_empresa_chatwoot
@@ -2379,7 +2675,99 @@ wait_stack "redis_redis"
 echo ""
 }
 
+
+
+ferramenta_redis_formacao_encha() {
+
+## Ativa a função dados para pegar os dados da vps
+dados
+
+
+
+## Criando a stack do redis.yaml
+cat > redis_formacao_encha.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  redis_formacao_encha:
+    image: redis:latest  ## Versão do Redis
+    command: [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--port",
+        "6379"
+      ]
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    ## Descomente as linhas abaixo para uso externo
+    #ports:
+    #  - 6379:6379
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  redis_data:
+    external: true
+    name: redis_formacao_encha
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+if [ $? -eq 0 ]; then
+    echo "1/10 - [ OK ] - Criando Stack"
+else
+    echo "1/10 - [ OFF ] - Criando Stack"
+    echo "Não foi possivel criar a stack do Redis"
+fi
+STACK_NAME="redis_formacao_encha"
+stack_editavel 
+
+cd dados_vps
+
+cat > dados_redis_formacao_encha <<EOL
+[ REDIS ]
+
+Dominio do Redis: redis://redis_formacao_encha:6379
+
+Usuario: redis
+
+EOL
+
+cd
+cd
+
+## Espera 30 segundos
+wait_stack "redis_formacao_encha"
+
+echo ""
+}
+
+
 ferramenta_n8n() {
+
 
 msg_n8n
 
@@ -2881,6 +3269,683 @@ msg_retorno_menu
 
 }
 
+ferramenta_n8n_formacao_encha() {
+msg_n8n_formacao_encha
+
+dados
+
+while true; do
+
+    ## Pergunta o domínio do N8N
+    echo -e "\e[97mPasso$amarelo 1/4\e[0m"
+    echo -en "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
+    echo ""
+
+    ## Pergunta o domínio do Webhook
+    echo -e "\e[97mPasso$amarelo 2/4\e[0m"
+    echo -en "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
+    echo ""
+
+    while true; do
+      ## Pergunta a quantidade de Webhooks
+      echo -e "\e[97mPasso$amarelo 3/4\e[0m"
+      echo -en "\e[33m🔧 Insira a quantidade de Webhooks (máximo 5): \e[0m" && read -r webhooksQuantity
+      echo ""
+
+      echo -e "\e[97mPasso$amarelo 3/4\e[0m"
+      echo -en "\e[33m🔧 Insira a quantidade de Concorrências (mínimo: 10 - máximo 100): \e[0m" && read -r concurrencyQuantity
+      echo ""
+
+      if [[ "$webhooksQuantity" =~ ^[1-5]$ ]] && [[ "$concurrencyQuantity" =~ ^([1-9][0-9]|100)$ ]]; then
+          break
+      else
+          echo -e "\e[31m⚠️  Quantidade inválida. Por favor, informe Webhooks entre 1-5 e Concorrência entre 10-100.\e[0m"
+      fi
+    done
+
+
+    
+    
+        
+    ## Limpa o terminal
+    clear
+
+    echo ""
+    echo -e "\e[32m📋 [ RESUMO - CONFIGURAÇÃO N8N FORMAÇÃO ENCHA ]\e[0m"
+    echo ""
+
+    echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
+    echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
+    echo -e "\e[33m🔧 Quantidade de Webhooks:   \e[97m$webhooksQuantity\e[0m"
+    echo -e "\e[33m🔧 Quantidade de Concorrências: \e[97m$concurrencyQuantity\e[0m"
+    echo ""
+
+    read -p $'\e[33mAs respostas estão corretas?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
+        clear
+        break
+    else
+        msg_n8n_formacao_encha
+    fi
+done
+
+echo -e "\e[97m🚀 Iniciando a instalação do N8N da Formação Encha...\e[33m [Etapa 1 de 5]\e[0m"
+echo ""
+sleep 1
+
+
+echo -e "\e[97m📦 Verificando ou instalando o Postgres Formação Encha\e[33m [Etapa 2 de 5]\e[0m"
+echo ""
+sleep 1
+
+
+verificar_container_postgres_formacao_encha
+if [ $? -eq 0 ]; then
+    echo "✅ 1/3 - Postgres da Formação Encha já está instalado."
+    pegar_senha_postgres_formacao_encha > /dev/null 2>&1
+    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+    criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
+    echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+    echo ""
+else
+    ferramenta_postgres_formacao_encha
+    pegar_senha_postgres_formacao_encha > /dev/null 2>&1
+    criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
+fi
+
+echo -e "\e[97m📦 Verificando ou instalando o Redis da Formação Encha...\e[33m [Etapa 3 de 5]\e[0m"
+echo ""
+sleep 1
+verificar_container_redis_formacao_encha
+if [ $? -eq 0 ]; then
+    echo "✅ 1/1 - Redis já está instalado."
+    echo ""
+else
+    ferramenta_redis_formacao_encha
+fi
+
+echo -e "\e[97m⚙️ Instalando o N8N da Formação Encha...\e[33m [Etapa 4 de 5]\e[0m"
+echo ""
+sleep 1
+
+encryption_key=$(openssl rand -hex 16)
+
+
+cat > n8n_editor_formacao_encha.yaml <<EOL
+version: "3.7"
+# Definição dos Serviços
+services:
+  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+  # Definição do Serviço do Editor
+  n8n_editor_formacao_encha:
+    # imagem do docker
+    # se possível, não use a latest .. deixe uma versão fixa
+    # https://hub.docker.com/r/n8nio/n8n/tags
+    image: n8nio/n8n:latest
+    # Define o hotname do container
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # comando padrão para subir o servidor web do editor
+    command: start
+    # configura a rede do serviço
+    networks:
+      - $nome_rede_interna
+    # configura as variáveis de ambiente
+    environment:
+      #########################################################
+      #########################################################
+      # Configuração Gerais do N8N ############################
+      #########################################################
+      #########################################################
+      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
+      - N8N_ENCRYPTION_KEY=encryption_key
+      # Configura o ambiente de execução do N8N
+      - NODE_ENV=production
+      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
+      - N8N_PAYLOAD_SIZE_MAX=16
+      # Configura o nível de log do N8N
+      - N8N_LOG_LEVEL=info
+      # Configura o Timezone do N8N
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      # Configura a Permissão do Arquivo de Configuração
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Banco de Dados ########################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define o Tipo de Banco de Dados para Postgres
+      - DB_TYPE=postgresdb
+      # Configura o Nome do Banco de Dados
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      # Configura o Host do Banco de Dados
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      # Configura a Porta do Banco de Dados
+      - DB_POSTGRESDB_PORT=5432
+      # Configura o Usuário do Banco de Dados
+      - DB_POSTGRESDB_USER=postgres
+      # Configura a Senha do Banco de Dados
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      # Define o Schema para o Banco de Dados
+      - DB_POSTGRESDB_SCHEMA=public
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Endereço do N8N #######################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define a Porta http para o N8N (padrão: 5678)
+      - N8N_PORT=5678
+      # Configura o Host do Editor do N8N
+      - N8N_HOST=$url_editorn8n
+      # Configura o Endereço competo do Editor (tem que deixar / no final)
+      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
+      # Força o uso de SSL nas URL internas do N8N
+      - N8N_PROTOCOL=https
+      # Configura o Endereço do Webhook
+      # Pode ser subdomínio ou outro domínio
+      - WEBHOOK_URL=https://$url_webhookn8n/
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração da Modo de Execução do N8N (fila) ########
+      #########################################################
+      #########################################################
+      #########################################################
+      - EXECUTIONS_MODE=queue
+      # Configura o host do Redis
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      # Configura a porta do Redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      # Configura o indice do banco de dados do Redis
+      - QUEUE_BULL_REDIS_DB=2
+      # Configura a senha do Redis (caso você use senha no redis)
+      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
+      #########################################################
+      #########################################################
+      # Configuração da Manutenção e Limpeza do N8N ###########
+      #########################################################
+      #########################################################
+      # Configura a limpeza dos dados de execução
+      - EXECUTIONS_DATA_PRUNE=true
+      # Configura o tempo máximo de armazenamento dos dados de execução
+      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
+      #########################################################
+      #########################################################
+      # Configuração de Bibliotecas do N8N ####################
+      #########################################################
+      #########################################################
+      # Configura quais bibliotecas nativas podem ser importardas no node Code
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      # Configura as bibliotecas externas que serão utilizadas
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      # Habilita o uso de pacotes da comunidade
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      # Reinstalar os Community Nodes
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+      - N8N_RUNNERS_ENABLED=true
+    # Configura o Modo de Deploy da Aplicação
+    deploy:
+      # O editor será executado no modo de replicação
+      mode: replicated
+      # Vamos ter apenas uma instância do editor
+      replicas: 1
+      # Configura o local de execução
+      placement:
+        constraints:
+          # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
+          - node.role == manager
+          # - node.hostname == worker1
+          # - node.labels.app == http # nome do label: app, valor do label: http
+      # Limitação
+      resources:
+        # Definição dos Limites de Recursos deste Serviço
+        limits:
+          # Define a quantidade de CPU para o N8N para evitar travamento do Host
+          cpus: "1"
+          # Define a quantidade de RAM para o N8N para evitar travamento do Host
+          memory: 1024M
+      # Define os Labels do Serviço
+      labels:
+        # Configura o Roteamento do Traefik
+        - traefik.enable=true
+        # Define o enderço do Editor do N8N
+        - traefik.http.routers.n8n_editor_formacao_encha.rule=Host(\`$url_editorn8n\`)
+        # Redireciona o endereço para HTTPS
+        - traefik.http.routers.n8n_editor_formacao_encha.entrypoints=websecure
+        # Define o certificado SSL
+        - traefik.http.routers.n8n_editor_formacao_encha.tls.certresolver=letsencryptresolver
+        # Define o serviço do Editor
+        - traefik.http.routers.n8n_editor_formacao_encha.service=n8n_editor_formacao_encha
+        # Define a porta do serviço do Editor
+        - traefik.http.services.n8n_editor_formacao_encha.loadbalancer.server.port=5678
+        # Define o uso do Host Header
+        - traefik.http.services.n8n_editor_formacao_encha.loadbalancer.passHostHeader=true
+      # Configura o modo de atualização do serviço
+      update_config:
+        # Configura o paralelismo de atualização
+        parallelism: 1
+        # Configura o tempo de espera entre as atualizações
+        delay: 30s
+        # Configura a ação em caso de falha
+        order: start-first
+        # Configura a ação em caso de falha
+        failure_action: rollback
+networks:
+  $nome_rede_interna:
+    name: $nome_rede_interna
+    external: true
+EOL
+
+if [ $? -eq 0 ]; then
+    echo "1/10 - [ OK ] - Criando Stack Editor"
+else
+    echo "1/10 - [ OFF ] - Criando Stack Editor"
+    echo "Não foi possivel criar a stack do N8N Editor"
+fi
+
+STACK_NAME="n8n_editor_formacao_encha"
+stack_editavel 
+
+wait_services="n8n_editor_formacao_encha_n8n_editor_formacao_encha"
+wait_stack $wait_services
+
+cat > n8n_worker_formacao_encha.yaml <<EOL
+version: "3.7"
+# Definição dos Serviços
+services:
+  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+  # Definição do Serviço do Worker
+  n8n_worker_formacao_encha:
+    # imagem do docker
+    # se possível, não use a latest .. deixe uma versão fixa
+    # https://hub.docker.com/r/n8nio/n8n/tags
+    image: n8nio/n8n:latest
+    # Define o hotname do container
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # comando padrão para subir o servidor web
+    command: worker --concurrency=$concurrencyQuantity
+    # configura a rede do serviço
+    networks:
+      - $nome_rede_interna
+    # configura as variáveis de ambiente
+    environment:
+#########################################################
+      #########################################################
+      # Configuração Gerais do N8N ############################
+      #########################################################
+      #########################################################
+      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
+      - N8N_ENCRYPTION_KEY=encryption_key
+      # Configura o ambiente de execução do N8N
+      - NODE_ENV=production
+      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
+      - N8N_PAYLOAD_SIZE_MAX=16
+      # Configura o nível de log do N8N
+      - N8N_LOG_LEVEL=info
+      # Configura o Timezone do N8N
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      # Configura a Permissão do Arquivo de Configuração
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Banco de Dados ########################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define o Tipo de Banco de Dados para Postgres
+      - DB_TYPE=postgresdb
+      # Configura o Nome do Banco de Dados
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      # Configura o Host do Banco de Dados
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      # Configura a Porta do Banco de Dados
+      - DB_POSTGRESDB_PORT=5432
+      # Configura o Usuário do Banco de Dados
+      - DB_POSTGRESDB_USER=postgres
+      # Configura a Senha do Banco de Dados
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      # Define o Schema para o Banco de Dados
+      - DB_POSTGRESDB_SCHEMA=public
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Endereço do N8N #######################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define a Porta http para o N8N (padrão: 5678)
+      - N8N_PORT=5678
+      # Configura o Host do Editor do N8N
+      - N8N_HOST=$url_editorn8n
+      # Configura o Endereço competo do Editor (tem que deixar / no final)
+      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
+      # Força o uso de SSL nas URL internas do N8N
+      - N8N_PROTOCOL=https
+      # Configura o Endereço do Webhook
+      # Pode ser subdomínio ou outro domínio
+      - WEBHOOK_URL=https://$url_webhookn8n/
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração da Modo de Execução do N8N (fila) ########
+      #########################################################
+      #########################################################
+      #########################################################
+      - EXECUTIONS_MODE=queue
+      # Configura o host do Redis
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      # Configura a porta do Redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      # Configura o indice do banco de dados do Redis
+      - QUEUE_BULL_REDIS_DB=2
+      # Configura a senha do Redis (caso você use senha no redis)
+      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
+      #########################################################
+      #########################################################
+      # Configuração da Manutenção e Limpeza do N8N ###########
+      #########################################################
+      #########################################################
+      # Configura a limpeza dos dados de execução
+      - EXECUTIONS_DATA_PRUNE=true
+      # Configura o tempo máximo de armazenamento dos dados de execução
+      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
+      #########################################################
+      #########################################################
+      # Configuração de Bibliotecas do N8N ####################
+      #########################################################
+      #########################################################
+      # Configura quais bibliotecas nativas podem ser importardas no node Code
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      # Configura as bibliotecas externas que serão utilizadas
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      # Habilita o uso de pacotes da comunidade
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      # Reinstalar os Community Nodes
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+      - N8N_RUNNERS_ENABLED=true
+    # Configura o Modo de Deploy da Aplicação
+    deploy:
+      # O editor será executado no modo de replicação
+      mode: replicated
+      # Vamos ter apenas uma instância do editor
+      replicas: 1
+      # Configura o local de execução
+      placement:
+        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
+        constraints:
+          - node.role == manager
+          # - node.hostname == worker1
+          # - node.labels.app == webhooks # nome do label: app, valor do label: webhooks
+      resources:
+        # Definição dos Limites de Recursos deste Serviço
+        limits:
+          # Define a quantidade de CPU para o N8N para evitar travamento do Host
+          cpus: "1"
+          # Define a quantidade de RAM para o N8N para evitar travamento do Host
+          memory: 1024M
+      # Configura o modo de atualização do serviço
+      update_config:
+        # Configura o paralelismo de atualização
+        parallelism: 1
+        # Configura o tempo de espera entre as atualizações
+        delay: 30s
+        # Configura a ação em caso de falha
+        order: start-first
+        # Configura a ação em caso de falha
+        failure_action: rollback
+networks:
+  $nome_rede_interna:
+    name: $nome_rede_interna
+    external: true
+EOL
+if [ $? -eq 0 ]; then
+    echo "1/10 - [ OK ] - Criando Stack Worker"
+else
+    echo "1/10 - [ OFF ] - Criando Stack Worker"
+    echo "Não foi possivel criar a stack do N8N Worker"
+fi
+
+STACK_NAME="n8n_worker_formacao_encha"
+stack_editavel
+
+wait_services="n8n_worker_formacao_encha_n8n_worker_formacao_encha"
+wait_stack $wait_services
+
+cat > n8n_webhook_formacao_encha.yaml <<EOL
+version: "3.7"
+# Definição dos Serviços
+services:
+  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+  # Definição do Serviço do Worker
+  n8n_webhook_formacao_encha:
+    # imagem do docker
+    # se possível, não use a latest .. deixe uma versão fixa
+    # https://hub.docker.com/r/n8nio/n8n/tags
+    image: n8nio/n8n:latest
+    # Define o hotname do container
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # comando padrão para subir o servidor web
+    command: webhook
+    # configura a rede do serviço
+    networks:
+      - $nome_rede_interna
+    # configura as variáveis de ambiente
+    environment:
+ #########################################################
+      #########################################################
+      # Configuração Gerais do N8N ############################
+      #########################################################
+      #########################################################
+      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
+      - N8N_ENCRYPTION_KEY=$encryption_key
+      # Configura o ambiente de execução do N8N
+      - NODE_ENV=production
+      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
+      - N8N_PAYLOAD_SIZE_MAX=16
+      # Configura o nível de log do N8N
+      - N8N_LOG_LEVEL=info
+      # Configura o Timezone do N8N
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      # Configura a Permissão do Arquivo de Configuração
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Banco de Dados ########################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define o Tipo de Banco de Dados para Postgres
+      - DB_TYPE=postgresdb
+      # Configura o Nome do Banco de Dados
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      # Configura o Host do Banco de Dados
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      # Configura a Porta do Banco de Dados
+      - DB_POSTGRESDB_PORT=5432
+      # Configura o Usuário do Banco de Dados
+      - DB_POSTGRESDB_USER=postgres
+      # Configura a Senha do Banco de Dados
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      # Define o Schema para o Banco de Dados
+      - DB_POSTGRESDB_SCHEMA=public
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração do Endereço do N8N #######################
+      #########################################################
+      #########################################################
+      #########################################################
+      # Define a Porta http para o N8N (padrão: 5678)
+      - N8N_PORT=5678
+      # Configura o Host do Editor do N8N
+      - N8N_HOST=$url_editorn8n
+      # Configura o Endereço competo do Editor (tem que deixar / no final)
+      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
+      # Força o uso de SSL nas URL internas do N8N
+      - N8N_PROTOCOL=https
+      # Configura o Endereço do Webhook
+      # Pode ser subdomínio ou outro domínio
+      - WEBHOOK_URL=https://$url_webhookn8n/
+      #########################################################
+      #########################################################
+      #########################################################
+      # Configuração da Modo de Execução do N8N (fila) ########
+      #########################################################
+      #########################################################
+      #########################################################
+      - EXECUTIONS_MODE=queue
+      # Configura o host do Redis
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      # Configura a porta do Redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      # Configura o indice do banco de dados do Redis
+      - QUEUE_BULL_REDIS_DB=2
+      # Configura a senha do Redis (caso você use senha no redis)
+      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
+      #########################################################
+      #########################################################
+      # Configuração da Manutenção e Limpeza do N8N ###########
+      #########################################################
+      #########################################################
+      # Configura a limpeza dos dados de execução
+      - EXECUTIONS_DATA_PRUNE=true
+      # Configura o tempo máximo de armazenamento dos dados de execução
+      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
+      #########################################################
+      #########################################################
+      # Configuração de Bibliotecas do N8N ####################
+      #########################################################
+      #########################################################
+      # Configura quais bibliotecas nativas podem ser importardas no node Code
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      # Configura as bibliotecas externas que serão utilizadas
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      # Habilita o uso de pacotes da comunidade
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      # Reinstalar os Community Nodes
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+      - N8N_RUNNERS_ENABLED=true
+    # Configura o Modo de Deploy da Aplicação
+    deploy:
+      # O editor será executado no modo de replicação
+      mode: replicated
+      # Vamos ter apenas uma instância do editor
+      replicas: $webhooksQuantity
+      # Configura o local de execução
+      placement:
+        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
+        constraints:
+          - node.role == manager
+          # - node.hostname == worker1
+          # - node.labels.app == workers # nome do label: app, valor do label: workers
+      resources:
+        # Definição dos Limites de Recursos deste Serviço
+        limits:
+          # Define a quantidade de CPU para o N8N para evitar travamento do Host
+          cpus: "1"
+          # Define a quantidade de RAM para o N8N para evitar travamento do Host
+          memory: 1024M
+      # Define os Labels do Serviço
+      labels:
+        # Configura o Roteamento do Traefik
+        - traefik.enable=true
+        # Define o enderço do Webhook do N8N
+        - traefik.http.routers.n8n_webhook_formacao_encha.rule=Host(\`$url_webhookn8n\`)
+        # Redireciona o endereço para HTTPS
+        - traefik.http.routers.n8n_webhook_formacao_encha.entrypoints=websecure
+        # Define o certificado SSL
+        - traefik.http.routers.n8n_webhook_formacao_encha.tls.certresolver=letsencryptresolver
+        # Define o serviço do Webhook
+        - traefik.http.routers.n8n_webhook_formacao_encha.service=n8n_webhook_formacao_encha
+        # Define a porta do serviço do Webhook
+        - traefik.http.services.n8n_webhook_formacao_encha.loadbalancer.server.port=5678
+        # Define o uso do Host Header
+        - traefik.http.services.n8n_webhook_formacao_encha.loadbalancer.passHostHeader=true
+      # Configura o modo de atualização do serviço
+      update_config:
+        # Configura o paralelismo de atualização
+        parallelism: 1
+        # Configura o tempo de espera entre as atualizações
+        delay: 30s
+        # Configura a ação em caso de falha
+        order: start-first
+        # Configura a ação em caso de falha
+        failure_action: rollback
+networks:
+  $nome_rede_interna:
+    name: $nome_rede_interna
+    external: true
+EOL
+
+if [ $? -eq 0 ]; then
+    echo "1/10 - [ OK ] - Criando Stack Webhook"
+else
+    echo "1/10 - [ OFF ] - Criando Stack Webhook"
+    echo "Não foi possivel criar a stack do N8N Webhook"
+fi
+
+STACK_NAME="n8n_webhook_formacao_encha"
+stack_editavel
+
+
+
+pull n8nio/n8n:latest
+
+# Gera lista de serviços para o wait_stack
+wait_services="n8n_webhook_formacao_encha_n8n_webhook_formacao_encha"
+wait_stack $wait_services
+
+
+echo -e "\e[97m🎯 Tudo pronto! \e[33m[Etapa 5 de 5]\e[0m"
+
+cd dados_vps
+
+cat > dados_n8n_formacao_encha${1:+_$1} <<EOL
+[ N8N ]
+
+Dominio do N8N: https://$url_editorn8n
+
+Dominio do Webhook do N8N: https://$url_webhookn8n
+
+Email: Precisa criar no primeiro acesso do N8N
+
+Senha: Precisa criar no primeiro acesso do N8N
+
+EOL
+
+cd
+cd
+
+wait_30_sec
+
+msg_resumo_informacoes
+
+echo -e "\e[33m🌐 Domínio do Editor:     \e[97mhttps://$url_editorn8n\e[0m"
+echo -e "\e[33m🔗 Domínio do Webhook:    \e[97mhttps://$url_webhookn8n\e[0m"
+echo -e "\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m"
+echo -e "\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m"
+echo ""
+
+msg_retorno_menu
+
+}
+
+ferramenta_minio(){
+  clear
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -2910,14 +3975,15 @@ exibir_menu() {
         centralizar "📋 === MENU PRINCIPAL ==="
         echo -e "${reset}"
         echo ""
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer"
-        echo -e "${azul}02.${reset} Instalar Evolution API"
+        echo -e "${azul}01.${reset} Instalar Traefik + Portainer                            ${azul}08.${reset} Verificar status dos serviços"
+        echo -e "${azul}02.${reset} Instalar Evolution API                                  ${azul}09.${reset} Sair"
         echo -e "${azul}03.${reset} Instalar N8N"
         echo -e "${azul}04.${reset} Instalar Chatwoot"
-        echo -e "${azul}05.${reset} Verificar status dos serviços"
-        echo -e "${azul}06.${reset} Sair"
+        echo -e "${azul}05.${reset} Liberar Chatwoot"
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha"
+        echo -e "${azul}07.${reset} Minio - (Em breve)"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-6): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-9): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -2976,17 +4042,47 @@ exibir_menu() {
                     ## FIM TOKEN 
                 fi
                 ;;
+            
             05|5)
+                liberar_chatwoot
+                ;;
+            06|6)
+                verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
+
+                if verificar_docker_e_portainer_traefik; then
+                    ## INICIO TOKEN
+                    STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
+                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                        ferramenta_n8n_formacao_encha "$opcao2"
+                    else
+                        APP_ENCHA="ferramenta_n8n_formacao_encha"
+                        verificar_arquivo
+                    fi
+                    ## FIM TOKEN 
+                fi
+                ;;
+            07|7)
+                clear
+                echo -e "${vermelho}Essa ferramenta ainda não está disponível.${reset}"
+                echo -e "${amarelo}Em breve teremos novidades!${reset}"
+                echo ""
+                echo -e "${azul}Pressione ENTER para voltar ao menu principal.${reset}"
+                read -r
+                sleep 2
+                ;;    
+            08|8)
                 verificar_status_servicos
                 echo "Aperte ENTER para retornar ao menu de ferramentas"
                 read
                 sleep 2
-                ;;    
-            06|6)
-                echo -e "${verde}Saindo...${reset}"
-                clear
+                ;;
+            
+            09|9)
+                echo -e "${vermelho}Saindo do menu...${reset}"
+                sleep 1
                 exit 0
                 ;;
+            
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
