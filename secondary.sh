@@ -118,6 +118,58 @@ centralizar "╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚
       echo ""
 }
 
+msg_minio(){
+  clear
+      echo -e "${roxo}"
+centralizar "███╗   ███╗██╗███╗   ██╗██╗ ██████╗" 
+centralizar "████╗ ████║██║████╗  ██║██║██╔═══██╗"
+centralizar "██╔████╔██║██║██╔██╗ ██║██║██║   ██║"
+centralizar "██║╚██╔╝██║██║██║╚██╗██║██║██║   ██║"
+centralizar "██║ ╚═╝ ██║██║██║ ╚████║██║╚██████╔╝"
+centralizar "╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝ ╚═════╝" 
+      echo -e "${reset}"
+      echo ""
+}
+
+msg_typebot(){
+  clear
+      echo -e "${roxo}"
+centralizar "████████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ████████╗"
+centralizar "╚══██╔══╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔═══██╗╚══██╔══╝"
+centralizar "   ██║    ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║   ██║   ██║"   
+centralizar "   ██║     ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗██║   ██║   ██║"   
+centralizar "   ██║      ██║   ██║     ███████╗██████╔╝╚██████╔╝   ██║"   
+centralizar "   ╚═╝      ╚═╝   ╚═╝     ╚══════╝╚═════╝  ╚═════╝    ╚═╝"            
+      echo -e "${reset}"
+      echo ""
+}
+
+msg_directus(){
+  clear
+    echo -e "${roxo}"
+centralizar "██████╗ ██╗██████╗ ███████╗ ██████╗████████╗██╗   ██╗███████╗"
+centralizar "██╔══██╗██║██╔══██╗██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔════╝"
+centralizar "██║  ██║██║██████╔╝█████╗  ██║        ██║   ██║   ██║███████╗"
+centralizar "██║  ██║██║██╔══██╗██╔══╝  ██║        ██║   ██║   ██║╚════██║"
+centralizar "██████╔╝██║██║  ██║███████╗╚██████╗   ██║   ╚██████╔╝███████║"
+centralizar "╚═════╝ ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚══════╝"   
+      echo -e "${reset}"
+      echo ""
+}
+
+msg_odoo(){
+  clear
+    echo -e "${roxo}"
+centralizar " ██████╗ ██████╗  ██████╗  ██████╗" 
+centralizar "██╔═══██╗██╔══██╗██╔═══██╗██╔═══██╗"
+centralizar "██║   ██║██║  ██║██║   ██║██║   ██║"
+centralizar "██║   ██║██║  ██║██║   ██║██║   ██║"
+centralizar "╚██████╔╝██████╔╝╚██████╔╝╚██████╔╝"
+centralizar " ╚═════╝ ╚═════╝  ╚═════╝  ╚═════╝"
+    echo -e "${reset}"
+    echo ""  
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -149,24 +201,62 @@ centralizar "╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚�
 
 
 msg_retorno_menu(){
-  echo -e "\e[33mAVISO: GUARDE TODAS AS INFORMAÇÕES ACIMA NO SEU BLOCO DE NOTAS!\e[0m"
-  echo
-  echo -e "\e[36m📱 Nos siga no Instagram: \e[1m@encha_ai\e[0m \e[36mpara mais dicas, atualizações e novidades!\e[0m"
-  echo
-  echo "Aperte ENTER para retornar ao menu de ferramentas"
-  read
+echo -e "\e[33m⚠️ AVISO: GUARDE TODAS AS INFORMAÇÕES ACIMA NO SEU BLOCO DE NOTAS!\e[0m"
+echo ""
+echo -e "\e[36m📱 Nos acompanhe no Instagram: \e[1m@encha_ai\e[0m \e[36mpara mais dicas, atualizações e novidades!\e[0m"
+echo ""
+echo -e "\e[33m▶️ Aperte ENTER para voltar ao menu de ferramentas\e[0m"
+read
+sleep 2
 
-  sleep 2
 }
   
-  
-
+# ==================================================================================================
+# Este auto-instalador foi desenvolvido para auxiliar na instalação das principais aplicações
+# disponíveis no mercado open source. Os créditos originais de cada aplicação pertencem
+# aos respectivos desenvolvedores.
+#
+# Este script foi criado originalmente pela OrionDesign (contato@oriondesign.art.br | https://oriondesign.art.br/setup)
+# e posteriormente refatorado pela Encha AI (instalador@encha.ai | https://encha.ai), uma ferramenta
+# de IA para automação de tarefas e otimização de processos.
+#
+# Este Setup é licenciado sob a Licença MIT Modificada. Você pode usar, copiar, modificar,
+# integrar, publicar, distribuir e/ou vender cópias dos produtos finais, desde que mantenha
+# este aviso e declare, de forma visível, que OrionDesign é o autor original e que foi refatorado
+# pela Encha AI, incluindo os links para https://oriondesign.art.br/setup e https://encha.ai.
+# ==================================================================================================
+#
+# LICENÇA MIT MODIFICADA
+#
+# Copyright (c) 2025 OrionDesign (https://oriondesign.art.br/setup)
+# Refatorado por Encha AI (https://encha.ai)
+#
+# Permissão é concedida, gratuitamente, a qualquer pessoa que obtenha uma cópia deste software
+# e dos arquivos de documentação associados (o "Software"), para negociar o Software sem restrição,
+# incluindo, sem limitação, os direitos de usar, copiar, modificar, mesclar, publicar, distribuir,
+# sublicenciar e/ou vender cópias do Software, e permitir que pessoas a quem o Software é fornecido
+# o façam, sujeitas às seguintes condições:
+#
+# 1. O aviso de copyright acima e este aviso de permissão devem ser incluídos em todas as cópias ou
+#    partes substanciais do Software.
+# 2. É obrigatório declarar, de forma visível, que OrionDesign (contato@oriondesign.art.br) é o autor
+#    original e que foi refatorado pela Encha AI (contato@encha.ai), incluindo os links para
+#    https://oriondesign.art.br/setup e https://encha.ai em qualquer redistribuição, seja ela
+#    modificada ou não.
+#
+# O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU
+# IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM FIM
+# ESPECÍFICO E NÃO VIOLAÇÃO. EM NENHUM CASO OS AUTORES OU DETENTORES DE DIREITOS AUTORAIS SERÃO
+# RESPONSÁVEIS POR QUALQUER REIVINDICAÇÃO, DANO OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO CONTRATUAL,
+# DELITO OU DE OUTRA FORMA, DECORRENTE DE, OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS NEGOCIAÇÕES
+# NO SOFTWARE.
+# ==================================================================================================
 
 
 
 #TOOLS GERAIS
 
-validar_senha() { 
+validar_senha() {
     senha=$1
     tamanho_minimo=$2
     tem_erro=0
@@ -174,54 +264,56 @@ validar_senha() {
 
     # Verifica comprimento mínimo
     if [ ${#senha} -lt $tamanho_minimo ]; then
-        mensagem_erro+="\n- Por segurança, sua senha precisa ter no mínimo $tamanho_minimo caracteres."
+        mensagem_erro+="\n❌ Por segurança, sua senha precisa ter no mínimo $tamanho_minimo caracteres."
         tem_erro=1
     fi
 
     # Verifica letra maiúscula
     if ! [[ $senha =~ [A-Z] ]]; then
-        mensagem_erro+="\n- Falta pelo menos uma letra maiúscula"
+        mensagem_erro+="\n🔠 Falta pelo menos uma letra maiúscula."
         tem_erro=1
     fi
 
     # Verifica letra minúscula
     if ! [[ $senha =~ [a-z] ]]; then
-        mensagem_erro+="\n- Sua senha precisa de mais força — inclua ao menos uma letra maiúscula."
+        mensagem_erro+="\n🔡 Inclua ao menos uma letra minúscula."
         tem_erro=1
     fi
 
     # Verifica número
     if ! [[ $senha =~ [0-9] ]]; then
-        mensagem_erro+="\n- Quase lá! Inclua um número para validar sua senha."
+        mensagem_erro+="\n🔢 Quase lá! Inclua pelo menos um número."
         tem_erro=1
     fi
 
-    # Verifica caracteres especiais permitidos
+    # Verifica caracteres especiais permitidos (@ ou _)
     if ! [[ $senha =~ [@_] ]]; then
-        mensagem_erro+="\n- Para avançar, insira pelo menos um caractere especial (@ ou _)."
+        mensagem_erro+="\n🔣 Inclua pelo menos um caractere especial: @ ou _."
         tem_erro=1
     fi
 
-    # Verifica caracteres não permitidos
+    # Verifica se há caracteres inválidos
     if [[ $senha =~ [^A-Za-z0-9@_] ]]; then
-        mensagem_erro+="\n- Caracteres inválidos detectados. Utilize somente @ ou _."
+        mensagem_erro+="\n⚠️ Caracteres inválidos detectados. Use somente letras, números e @ ou _."
         tem_erro=1
     fi
 
-    # Se houver erro, mostra as mensagens
+    # Exibe erros, se houver
     if [ $tem_erro -eq 1 ]; then
-        echo -e "Sua senha não atende aos requisitos. Veja o que precisa ajustar: $mensagem_erro"
+        echo -e "\e[31mSua senha não atende aos requisitos. Veja o que precisa ajustar:$mensagem_erro\e[0m"
         return 1
     fi
 
     return 0
 }
 
+
+
 wait_stack() {
-    echo "Espere alguns instantes. Mas atenção: se demorar mais de 5 minutos, é melhor cancelar e tentar de novo."
+    echo -e "\e[33m⏳ Aguarde alguns instantes. Se demorar mais de 5 minutos, cancele e tente novamente.\e[0m"
     declare -A services_status=()
 
-    # Inicializa status como "pendente"
+    # Inicializa todos os serviços como pendentes
     for service in "$@"; do
         services_status["$service"]="pendente"
     done
@@ -234,17 +326,17 @@ wait_stack() {
 
         for service in "${!services_status[@]}"; do
             replicas=$(docker service ls --filter "name=$service" --format "{{.Replicas}}")
-            echo -e "\e[35m🛠️  Serviço:\e[0m \e[36m$service\e[0m — Réplicas detectadas: \e[33m$replicas\e[0m"
+            echo -e "\e[35m🛠️ Serviço:\e[0m \e[36m$service\e[0m — Réplicas detectadas: \e[33m$replicas\e[0m"
 
             if [[ $replicas == */* ]]; then
                 running=${replicas%%/*}
                 total=${replicas##*/}
 
-                echo -e "\e[36m📊 Status do Serviço:\e[0m running = \e[33m$running\e[0m, total = \e[32m$total\e[0m"
+                echo -e "\e[36m📊 Status do Serviço:\e[0m em execução = \e[33m$running\e[0m de \e[32m$total\e[0m"
 
                 if [ "$running" == "$total" ]; then
                     if [ "${services_status["$service"]}" != "ativo" ]; then
-                        echo -e "\e[32m🟢\e[0m Serviço \e[32m$service\e[0m está com todas as réplicas ativas ($replicas)."
+                        echo -e "\e[32m🟢 Serviço \e[32m$service\e[0m está ativo com todas as réplicas ($replicas)."
                         services_status["$service"]="ativo"
                     fi
                 else
@@ -256,24 +348,28 @@ wait_stack() {
                 services_status["$service"]="pendente"
             fi
         done
+
         if $all_active; then
-            echo "✅ Todos os serviços estão ativos."
+            echo -e "\e[32m✅ Todos os serviços estão ativos.\e[0m"
             return 0
         fi
 
-        echo -e "\e[36m⏳ Aguardando serviços...\e[0m (tentativa \e[33m$attempt/$max_attempts\e[0m)"
+        echo -e "\e[36m⏳ Aguardando os serviços... (tentativa \e[33m$attempt/$max_attempts\e[36m)\e[0m"
         attempt=$((attempt + 1))
         sleep 30
     done
 
-    echo -e "\e[31m🛑 Timeout:\e[0m Serviços não responderam a tempo."
+    echo -e "\e[31m🛑 Tempo esgotado: serviços não responderam a tempo.\e[0m"
     return 1
 }
 
 
-wait_30_sec(){
+
+wait_30_sec() {
+    echo -e "\e[36m⏳ Aguardando 30 segundos...\e[0m"
     sleep 30
 }
+
 
 dados() {
     local dados_vps="/root/dados_vps/dados_vps"
@@ -295,60 +391,69 @@ verificar_stack() {
 
     if docker stack ls --format "{{.Name}}" | grep -q "^${nome_stack}$"; then
         echo -e "A stack '\e[33m${nome_stack}\e[0m' já está instalada."
-        echo -e "Se quiser refazer a instalação, remova a stack \e[33m${nome_stack}\e[0m do seu Portainer e tente novamente."
+        echo -e "Para refazer a instalação, remova a stack \e[33m${nome_stack}\e[0m no Portainer e tente novamente."
         echo -e ""
-        echo -e "Retornando ao menu principal em 10 segundos..."
+        echo -e "Você será redirecionado ao menu principal em 10 segundos..."
         sleep 10
-
-        clear 
-
+        clear
         return 0
     else
         return 1
     fi
 }
 
+
 verificar_docker_e_portainer_traefik() {
-    ## Verifica se o Docker está instalado
+    # Verifica se o Docker está instalado
     if ! command -v docker &> /dev/null; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m Você ainda não instalou o componente \e[32m[1] Traefik e Portainer\e[0m."
-        echo -e "É obrigatório instalar essa opção antes de continuar com esta aplicação."
+        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
+        echo -e "Para continuar, é necessário instalar esse componente primeiro."
         echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
         echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
         sleep 5
-        
         return 1
     fi
 
-    ## Verifica se o Portainer está instalado
-    if ! docker ps -a --format "{{.Names}}" | grep -q "portainer"; then
+    # Verifica se o Portainer está em execução
+    if ! docker ps --format "{{.Names}}" | grep -q "portainer"; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m Você ainda não instalou o componente \e[32m[1] Traefik e Portainer\e[0m."
-        echo -e "É obrigatório instalar essa opção antes de continuar com esta aplicação."
+        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
+        echo -e "Para continuar, é necessário instalar esse componente primeiro."
         echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
         echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
         sleep 5
-
-
         return 1
     fi
 
-    ## Verificar se o Traefik está instalado
-    if ! docker ps -a --format "{{.Names}}" | grep -q "traefik"; then
+    # Verifica se o Traefik está em execução
+    if ! docker ps --format "{{.Names}}" | grep -q "traefik"; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m Você ainda não instalou o componente \e[32m[1] Traefik e Portainer\e[0m."
-        echo -e "É obrigatório instalar essa opção antes de continuar com esta aplicação."
+        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
+        echo -e "Para continuar, é necessário instalar esse componente primeiro."
         echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
         echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
         sleep 5
-
-
         return 1
     fi
 
     return 0
 }
+
+
+verificar_minio() {
+    if ! docker ps --format "{{.Names}}" | grep -q "minio"; then
+        clear
+        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[7] MinIO\e[0m ainda não está instalado."
+        echo -e "Para continuar, é necessário instalar essa opção primeiro."
+        echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
+        echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+        sleep 5
+        return 1
+    fi
+    return 0
+}
+
 
 verificar_arquivo() {
     sudo apt install jq -y > /dev/null 2>&1
@@ -584,47 +689,146 @@ pegar_senha_postgres_formacao_encha(){
     done
 }
 
+pegar_senha_minio(){
+      user_minio=$(grep -i "MINIO_ROOT_USER" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    senha_minio=$(grep -i "MINIO_ROOT_PASSWORD" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//')
+    url_minio=$(grep -i "MINIO_BROWSER_REDIRECT_URL" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//' | sed 's|https://||')
+    url_s3=$(grep -i "MINIO_SERVER_URL" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//' | sed 's|https://||')
+}
+
+criar_bucket.minio(){
+S3_ENDPOINT="http://minio:9000"
+ADMIN_USER="$user_minio"
+ADMIN_PASS="$senha_minio"
+BUCKET="$1"
+
+POLICY_NAME="publicread-$BUCKET"
+POLICY_FILE="public-read-$BUCKET.json"
+S3_ACCESS_KEY=$(openssl rand -base64 12 | tr -dc A-Z0-9 | head -c16)
+S3_SECRET_KEY=$(openssl rand -base64 32 | tr -dc A-Za-z0-9 | head -c32)
+
+MINIO_CONTAINER=$(docker ps --filter "name=minio" -q | head -n1)
+if [ -z "$MINIO_CONTAINER" ]; then
+  echo -e "\e[31m❌ Container do MinIO não encontrado!\e[0m"
+  exit 1
+fi
+
+MC_CMD="docker exec -i $MINIO_CONTAINER mc"
+
+echo -e "\e[33m🔗 Conectando ao MinIO como admin...\e[0m"
+$MC_CMD alias set admin "$S3_ENDPOINT" "$ADMIN_USER" "$ADMIN_PASS" || { echo -e "\e[31m❌ Erro ao criar alias 'admin'\e[0m"; exit 1; }
+
+echo -e "\e[36m📦 Verificando se o bucket '\e[97m$BUCKET\e[36m' existe...\e[0m"
+if $MC_CMD ls admin/"$BUCKET" >/dev/null 2>&1; then
+  echo -e "\e[33m⚠️  Bucket '\e[97m$BUCKET\e[33m' já existe, continuando...\e[0m"
+else
+  echo -e "\e[32m✅ Criando bucket '\e[97m$BUCKET\e[32m'...\e[0m"
+  $MC_CMD mb admin/"$BUCKET" || echo -e "\e[33m⚠️  Falha ao criar bucket, mas prosseguindo...\e[0m"
+fi
+
+echo -e "\e[34m📜 Criando política pública para o bucket...\e[0m"
+docker exec -i "$MINIO_CONTAINER" bash -c "cat > /tmp/$POLICY_FILE <<EOF
+{
+  \"Version\": \"2012-10-17\",
+  \"Statement\": [
+    {
+      \"Effect\": \"Allow\",
+      \"Principal\": \"*\",
+      \"Action\": [
+        \"s3:GetBucketLocation\",
+        \"s3:ListBucket\"
+      ],
+      \"Resource\": [
+        \"arn:aws:s3:::$BUCKET\"
+      ]
+    },
+    {
+      \"Effect\": \"Allow\",
+      \"Principal\": \"*\",
+      \"Action\": [
+        \"s3:GetObject\",
+        \"s3:PutObject\",
+        \"s3:DeleteObject\"
+      ],
+      \"Resource\": [
+        \"arn:aws:s3:::$BUCKET/*\"
+      ]
+    }
+  ]
+}
+EOF" || { echo -e "\e[31m❌ Erro ao criar o arquivo de política no container\e[0m"; exit 1; }
+
+echo -e "\e[34m🔐 Criando política '\e[97m$POLICY_NAME\e[34m'...\e[0m"
+$MC_CMD admin policy create admin "$POLICY_NAME" /tmp/"$POLICY_FILE" || { echo -e "\e[31m❌ Erro ao criar política\e[0m"; exit 1; }
+
+echo -e "\e[34m👤 Criando usuário de acesso S3...\e[0m"
+$MC_CMD admin user add admin "$S3_ACCESS_KEY" "$S3_SECRET_KEY" || { echo -e "\e[31m❌ Erro ao criar usuário\e[0m"; exit 1; }
+
+echo -e "\e[34m🔗 Atribuindo política ao usuário...\e[0m"
+$MC_CMD admin policy attach admin "$POLICY_NAME" --user "$S3_ACCESS_KEY" || { echo -e "\e[31m❌ Erro ao associar política ao usuário\e[0m"; exit 1; }
+
+echo -e "\e[33m🌍 Aplicando política pública ao bucket...\e[0m"
+$MC_CMD anonymous set-json /tmp/"$POLICY_FILE" admin/"$BUCKET" || { echo -e "\e[31m❌ Erro ao aplicar política pública\e[0m"; exit 1; }
+
+echo -e "\e[32m✅ Criando alias 'myminio' com chaves de acesso...\e[0m"
+$MC_CMD alias set myminio "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+
+echo -e "\e[36m📂 Listando arquivos do bucket para testar conexão...\e[0m"
+$MC_CMD ls myminio/"$BUCKET" || echo -e "\e[33m⚠️  Falha ao listar bucket, mas a configuração pode estar correta.\e[0m"
+
+echo ""
+echo -e "\e[32m✅🪣 Bucket '$BUCKET' configurado com sucesso no MinIO!\e[0m"
+echo -e "\e[33m🔑 Access Key:\e[97m $S3_ACCESS_KEY\e[0m"
+echo -e "\e[33m🔐 Secret Key:\e[97m $S3_SECRET_KEY\e[0m"
+echo ""
+
+}
+
 criar_banco_postgres_da_stack() {
     while :; do
         if docker ps -q --filter "name=^postgres_postgres" | grep -q .; then
             CONTAINER_ID=$(docker ps -q --filter "name=^postgres_postgres")
 
-            # Verificar se o banco de dados já existe
+            # Verifica se o banco de dados já existe
             docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
-
             if [ $? -eq 0 ]; then
-                ## echo ""
-                read -p $'\e[33mO banco de dados '"$1"$' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
-                if [ "$resposta" == "Y" ] || [ "$resposta" == "y" ]; then
-                    # Apagar o banco de dados
-                    docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1(force);" > /dev/null 2>&1
+                echo ""
+                read -p $'\e[33mO banco de dados \e[97m'"$1"$'\e[33m já existe.\e[0m Deseja apagar e criar um novo? \e[32m(Y/N)\e[0m: ' resposta
+                if [[ "$resposta" =~ ^[Yy]$ ]]; then
+                    # Apaga o banco de dados (sem o force, pois o comando padrão não usa)
+                    docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1;" > /dev/null 2>&1
                     if [ $? -eq 0 ]; then
-                    echo "" ## Sucesso
+                        echo -e "\e[32mBanco de dados $1 apagado com sucesso.\e[0m"
                     else
-                        echo "" ## Erro
+                        echo -e "\e[31mErro ao apagar o banco de dados $1.\e[0m"
                     fi
-                    # Criar o banco de dados novamente
+                    # Cria o banco novamente
                     docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE $1;" > /dev/null 2>&1
+                    if [ $? -eq 0 ]; then
+                        echo -e "\e[32mBanco de dados $1 criado com sucesso.\e[0m"
+                    else
+                        echo -e "\e[31mErro ao criar o banco de dados $1.\e[0m"
+                    fi
                 else
-                    echo ""
+                    echo -e "\e[33mOperação cancelada. Mantendo o banco existente.\e[0m"
                 fi
                 break
             else
-                # Criar o banco de dados
+                # Cria o banco de dados
                 docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE $1;" > /dev/null 2>&1
-                
-                # Verificar novamente se o banco de dados foi criado com sucesso
-                docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
 
+                # Verifica se foi criado com sucesso
+                docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
                 if [ $? -eq 0 ]; then
-                    nada="nada"
+                    echo -e "\e[32mBanco de dados $1 criado com sucesso.\e[0m"
                     break
                 else
-                    echo "Erro ao criar o banco de dados. Tentando novamente..."
+                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
                     echo ""
                 fi
             fi
         else
+            echo -e "\e[33mAguardando o container do Postgres iniciar...\e[0m"
             sleep 5
         fi
     done
@@ -639,35 +843,36 @@ criar_banco_postgres_da_stack_formacao_encha() {
 
             # Verifica se o banco já existe
             if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                read -p $'\e[33mO banco de dados '"$dbname"$' já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                read -p $'\e[33mO banco de dados \e[97m'"$dbname"$'\e[33m já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
                 if [[ "$resposta" =~ ^[Yy]$ ]]; then
-                    echo "Apagando o banco de dados $dbname..."
+                    echo -e "\e[33mApagando o banco de dados \e[97m$dbname\e[33m...\e[0m"
                     docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS \"$dbname\";" > /dev/null 2>&1
-                    echo "Criando o banco de dados $dbname..."
+                    echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
                     docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
                 else
-                    echo "Mantendo o banco de dados existente."
+                    echo -e "\e[33mMantendo o banco de dados existente.\e[0m"
                 fi
                 break
             else
-                echo "Criando o banco de dados $dbname..."
+                echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
                 docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
 
                 # Verifica se o banco foi criado com sucesso
                 if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                    echo "Banco de dados $dbname criado com sucesso."
+                    echo -e "\e[32mBanco de dados \e[97m$dbname\e[32m criado com sucesso.\e[0m"
                     break
                 else
-                    echo "Erro ao criar o banco de dados. Tentando novamente..."
+                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
                     sleep 2
                 fi
             fi
         else
-            echo "Aguardando container do Postgres iniciar..."
+            echo -e "\e[33mAguardando container do Postgres iniciar...\e[0m"
             sleep 5
         fi
     done
 }
+
 
 
 
@@ -702,51 +907,44 @@ verificar_container_pgvector() {
 }
 
 criar_banco_pgvector_da_stack() {
+    local dbname="$1"
     while :; do
+        # Verifica se o container do PGVector está rodando
         if docker ps -q --filter "name=^pgvector_pgvector" | grep -q .; then
             CONTAINER_PGVECTOR_ID=$(docker ps -q --filter "name=^pgvector_pgvector")
 
-            # Verificar se o banco de dados já existe
-            docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
-
-            if [ $? -eq 0 ]; then
-                echo ""
-                read -p $'\e[33m⚠️  O banco de dados \e[1m'"$1"$'\e[0;33m já existe.\e[0m\n\e[33m❓ Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
-                if [ "$resposta" == "Y" ] || [ "$resposta" == "y" ]; then
-                    # Apagar o banco de dados
-                    docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1(force);" > /dev/null 2>&1
-                    if [ $? -eq 0 ]; then
-                    echo "" ## Sucesso
-                    else
-                        echo "" ## Erro
-                    fi
-                    # Criar o banco de dados novamente
-                    docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE $1;" > /dev/null 2>&1
+            # Verifica se o banco já existe
+            if docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
+                read -p $'\e[33m⚠️  O banco de dados \e[97m'"$dbname"$'\e[33m já existe.\e[0m\n\e[33m❓ Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                if [[ "$resposta" =~ ^[Yy]$ ]]; then
+                    echo -e "\e[33mApagando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "DROP DATABASE IF EXISTS \"$dbname\";" > /dev/null 2>&1
+                    echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
                 else
-                    echo ""
+                    echo -e "\e[33mMantendo o banco de dados existente.\e[0m"
                 fi
                 break
             else
-                # Criar o banco de dados
-                docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE $1;" > /dev/null 2>&1
-                
-                # Verificar novamente se o banco de dados foi criado com sucesso
-                docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
+                echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
 
-                if [ $? -eq 0 ]; then
-                    nada="nada"
+                # Verifica se o banco foi criado com sucesso
+                if docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
+                    echo -e "\e[32m✅ Banco de dados \e[97m$dbname\e[32m criado com sucesso.\e[0m"
                     break
                 else
-                    echo -e "\e[31m Erro ao criar o banco de dados. Tentando novamente...\e[0m"
-                    echo ""
-
+                    echo -e "\e[31m❌ Erro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    sleep 2
                 fi
             fi
         else
+            echo -e "\e[33mAguardando container do PGVector iniciar...\e[0m"
             sleep 5
         fi
     done
 }
+
 
 pegar_senha_pgvector() {
     while :; do
@@ -880,65 +1078,66 @@ verificar_container_redis_formacao_encha() {
 ferramenta_traefik_e_portainer() {
 
   msg_traefik_portainer
-  while true; do
+while true; do
 
-    echo -e "Passo \e[33m1/6\e[0m"
+    echo -e "Passo \e[33m1/6\e[0m 📡"
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
 
-
-    echo -e "\e[97mPasso$amarelo 2/6\e[0m"
-    echo -en "\e[33mDigite um usuario para o Portainer (ex: admin): \e[0m" && read -r user_portainer
+    echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
+    echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
     echo ""
 
     while true; do
-    echo -e "Passo \e[33m3/6\e[0m"
-    echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-    echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
-    echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
-    echo ""
+        echo -e "Passo \e[33m3/6\e[0m 🔐"
+        echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+        echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
+        echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
+        echo ""
 
-
-      if validar_senha "$pass_portainer" 12; then
-          break
-      fi
-      echo ""
+        if validar_senha "$pass_portainer" 12; then
+            break
+        fi
+        echo ""
     done
 
-    echo -e "Passo \e[33m4/6\e[0m"
+    echo -e "Passo \e[33m4/6\e[0m 🖥️"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
     echo -ne "\e[36mEscolha um nome para o seu servidor (ex: Encha): \e[0m" && read -r nome_servidor
     echo ""
 
-
-    echo -e "Passo \e[33m5/6\e[0m"
+    echo -e "Passo \e[33m5/6\e[0m 🌐"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
     echo -ne "\e[36mDigite um nome para sua rede interna (ex: EnchaNet): \e[0m" && read -r nome_rede_interna
     echo ""
 
-    echo -e "Passo \e[33m6/6\e[0m"
+    echo -e "Passo \e[33m6/6\e[0m 📧"
     echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
     echo ""
 
-
     clear
+    msg_traefik_portainer
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m🔗 Link do Portainer:\e[97m $url_portainer\e[0m\n"
+    echo -e "\e[33m👤 Usuário do Portainer:\e[97m $user_portainer\e[0m\n"
+    echo -e "\e[33m🔒 Senha do Portainer:\e[97m $pass_portainer\e[0m\n"
+    echo -e "\e[33m🖥️ Nome do Servidor:\e[97m $nome_servidor\e[0m\n"
+    echo -e "\e[33m🌐 Rede interna:\e[97m $nome_rede_interna\e[0m\n"
+    echo -e "\e[33m📧 Email:\e[97m $email_ssl\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
 
-    echo -e "\e[33mLink do Portainer:\e[97m $url_portainer\e[0m\n"
-    echo -e "\e[33mUsuário do Portainer:\e[97m $user_portainer\e[0m\n"
-    echo -e "\e[33mSenha do Portainer:\e[97m $pass_portainer\e[0m\n"
-    echo -e "\e[33mNome do Servidor:\e[97m $nome_servidor\e[0m\n"
-    echo -e "\e[33mRede interna:\e[97m $nome_rede_interna\e[0m\n"
-    echo -e "\e[33mEmail:\e[97m $email_ssl\e[0m\n"
-
-
-    read -p $'\e[33mAs respostas estão corretas?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
         clear
         break
     else
         msg_traefik_portainer
     fi
-  done
+done
+
 
   echo -e "⚙️ \e[97mIniciando a instalação do Traefik \e[33m[1/9]\e[0m\n"
   sleep 1
@@ -965,7 +1164,8 @@ EOL
   cd ~ || exit 1
 
   ## Atualizando e configurando VPS
-  echo -e "\e[97m• ATUALIZANDO E CONFIGURANDO A VPS \e[33m[2/9]\e[0m\n"
+  echo -e "Passo \e[33m2/9\e[0m ⚙️"
+  echo -e "\e[33m--> Atualizando e configurando a VPS...\e[0m\n"
   sleep 1
 
   sudo apt-get update -y > /dev/null 2>&1 && echo -e "1/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "1/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
@@ -1012,10 +1212,10 @@ EOL
   while [ $attempt -le $max_attempts ]; do
       sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
       if [ $? -eq 0 ]; then
-          echo -e "3/3 - [\e[32mOK\e[0m] - Swarm iniciado com sucesso"
+          echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm iniciado com sucesso"
           break
       else
-          echo -e "3/3 - [\e[31mFALHOU\e[0m] - Falha ao iniciar o Swarm"
+          echo -e "Passo \e[33m3/3\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao iniciar o Swarm"
           echo -e "\e[33mOps! Não foi possível iniciar o Swarm. Tentativa \e[36m$attempt\e[33m de \e[36m$max_attempts\e[33m...\e[0m"
           attempt=$((attempt + 1))
           sleep 5
@@ -1023,9 +1223,9 @@ EOL
   done
 
   if [ $attempt -gt $max_attempts ]; then
-      echo -e "\e[31mNão foi possível iniciar o Swarm após \e[33m$max_attempts\e[31m tentativas...\e[0m"
-      echo -e "\e[33mRecomendo formatar a VPS e tentar novamente.\e[0m"
-      echo -e "\e[33mLembre-se: o primeiro requisito é usar uma VPS vazia.\e[0m"
+      echo -e "❌ \e[31mNão foi possível iniciar o Swarm após \e[33m$max_attempts\e[31m tentativas...\e[0m"
+      echo -e "⚠️ \e[33mRecomendo formatar a VPS e tentar novamente.\e[0m"
+      echo -e "ℹ️ \e[33mLembre-se: o primeiro requisito é usar uma VPS vazia.\e[0m"
       sleep 10
       exit 1
   fi
@@ -1039,9 +1239,9 @@ EOL
 
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-      echo -e "1/1 - [\e[32mOK\e[0m] - Rede interna configurada com sucesso"
+      echo -e "Passo \e[33m1/1\e[0m ✅ - Rede interna configurada com sucesso"
   else
-      echo -e "1/1 - [\e[31mFALHOU\e[0m] - Falha ao configurar a rede interna"
+      echo -e "Passo \e[33m1/1\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao configurar a rede interna"
   fi
   echo ""
 
@@ -1122,20 +1322,22 @@ networks:
     name: $nome_rede_interna
 EOL
 
-    if [ $? -eq 0 ]; then
-        echo -e "1/2 - [\e[32mOK\e[0m] - Stack criada com sucesso"
-    else
-        echo -e "1/2 - [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Traefik"
-        echo -e "\e[33mOps, não foi possível criar a stack do Traefik.\e[0m"
-    fi
+  if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
+  else
+    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Traefik"
+    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Traefik.\e[0m"
+  fi
+
 
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo -e "2/2 - [\e[32mOK\e[0m] - Stack deployada com sucesso"
-    else
-        echo -e "2/2 - [\e[31mFALHOU\e[0m] - Falha ao realizar o deploy da stack"
-        echo -e "\e[33mOps, não foi possível subir o Traefik.\e[0m"
-    fi
+  if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
+  else
+    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao realizar o deploy da stack"
+    echo -e "⚠️ \e[33mOps, não foi possível subir o Traefik.\e[0m"
+  fi
+
 
   echo ""
 
@@ -1204,19 +1406,21 @@ networks:
 EOL
 
   if [ $? -eq 0 ]; then
-      echo -e "1/2 - [\e[32mOK\e[0m] - Stack criada com sucesso"
+    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
   else
-      echo -e "1/2 - [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Portainer"
-      echo -e "\e[33mOps, não foi possível criar a stack do Portainer.\e[0m"
+    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Portainer"
+    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Portainer.\e[0m"
   fi
+
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-      echo -e "2/2 - [\e[32mOK\e[0m] - Stack deployada com sucesso"
+    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
   else
-      echo -e "2/2 - [\e[31mFALHOU\e[0m] - Falha ao fazer o deploy da stack"
-      echo -e "\e[33mOps, não foi possível subir a stack do Portainer.\e[0m"
+    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao fazer o deploy da stack"
+    echo -e "⚠️ \e[33mOps, não foi possível subir a stack do Portainer.\e[0m"
   fi
+
 
   echo ""
 
@@ -1251,9 +1455,9 @@ for i in $(seq 1 $MAX_RETRIES); do
     echo -e "⏳ Tentando criar conta no Portainer \e[33m$i/4\e[0m..."
     # Se for a última tentativa, exibe mensagem de erro final
     if [ $i -eq $MAX_RETRIES ]; then
-      echo -e "1/2 - [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador após \e[33m$MAX_RETRIES\e[0m tentativas."
-      echo -e "Erro retornado: \e[31m$RESPONSE\e[0m"
-      echo -e "\e[33mApós a conclusão da instalação, por favor, crie uma conta acessando o link do seu Portainer.\e[0m"
+      echo -e "❌ [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador após \e[33m$MAX_RETRIES\e[0m tentativas."
+      echo -e "⚠️ Erro retornado: \e[31m$RESPONSE\e[0m"
+      echo -e "ℹ️ \e[33mApós a conclusão da instalação, por favor, crie uma conta acessando o link do seu Portainer.\e[0m"
       CONTA_CRIADA=false
       sleep 10
     fi
@@ -1271,9 +1475,9 @@ if [ "$CONTA_CRIADA" = true ]; then
   
   # Verifica se o token foi gerado com sucesso
   if [ -n "$token" ] && [ "$token" != "null" ]; then
-    echo -e "2/2 - [\e[32mOK\e[0m] - Primeiro token gerado com sucesso"
+    echo -e "Passo \e[33m2/2\e[0m ✅ - Primeiro token gerado com sucesso"
   else
-    echo -e "2/2 - [\e[31mFALHOU\e[0m] - Falha ao gerar o token"
+    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao gerar o token"
     exit 1
   fi
 fi
@@ -1316,19 +1520,19 @@ msg_resumo_informacoes
 
 ## Dados da Aplicação:
 
-echo -e "\e[32m🚀 [ PORTAINER INSTALADO COM SUCESSO ]\e[0m"
-echo ""
+echo -e "🚀 \e[32m[ PORTAINER INSTALADO COM SUCESSO ]\e[0m\n"
 
-echo -e "\e[97mDomínio do Portainer:\e[33m https://$url_portainer\e[0m\n"
+echo -e "\e[33m🔗 Domínio do Portainer:\e[97m https://$url_portainer\e[0m\n"
 
 if [ "$CONTA_CRIADA" = true ]; then
-  echo -e "\e[97mUsuário:\e[33m $user_portainer\e[0m\n"
-  echo -e "\e[97mSenha:\e[33m $pass_portainer\e[0m\n"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_portainer\e[0m\n"
+  echo -e "\e[33m🔒 Senha:\e[97m $pass_portainer\e[0m\n"
 else
-  echo -e "\e[97mUsuário:\e[31m Precisa criar dentro do Portainer\e[0m\n"
-  echo -e "\e[97mSenha:\e[31m Precisa criar dentro do Portainer\e[0m\n"
-  echo -e "\e[97mObservação:\e[33m Você tem menos de 5 minutos para criar uma conta no Portainer."
+  echo -e "\e[33m👤 Usuário:\e[31m Precisa criar dentro do Portainer\e[0m\n"
+  echo -e "\e[33m🔒 Senha:\e[31m Precisa criar dentro do Portainer\e[0m\n"
+  echo -e "\e[33m⚠️ Observação:\e[97m Você tem menos de 5 minutos para criar uma conta no Portainer.\e[0m"
 fi
+echo -e "\e[33m🖥️ Nome do Servidor:\e[97m $nome_servidor\e[0m\n"
 
 msg_retorno_menu
 
@@ -1403,10 +1607,10 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "1/10 - [\e[32mOK\e[0m] - Stack do Postgres criada com sucesso"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres criada com sucesso"
 else
-    echo -e "1/10 - [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
-    echo -e "\e[33mNão foi possível criar a stack do Postgres.\e[0m"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres.\e[0m"
 fi
 STACK_NAME="postgres"
 stack_editavel #> /dev/null 2>&1
@@ -1500,10 +1704,10 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "1/10 - [\e[32mOK\e[0m] - Stack do Postgres criada com sucesso"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres Formação Encha criada com sucesso"
 else
-    echo -e "1/10 - [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
-    echo -e "\e[33mNão foi possível criar a stack do Postgres.\e[0m"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres Formação Encha"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres Formação Encha.\e[0m"
 fi
 STACK_NAME="postgres_formacao_encha"
 stack_editavel #> /dev/null 2>&1
@@ -1544,8 +1748,8 @@ dados
 while true; do
 
     ##Pergunta o Dominio para aplicação
-    echo -e "\e[97mPasso\e[33m 1/1\e[0m"
-    echo -en "\e[33mDigite o domínio para a Evolution API (ex: evolution.encha.ai): \e[0m" && read -r url_evolution
+    echo -e "Passo \e[33m1/1\e[0m 🌐"
+    echo -ne "\e[36mDigite o domínio para a Evolution API (ex: evolution.encha.ai): \e[0m" && read -r url_evolution
     echo ""
 
     ## Limpa o terminal
@@ -1554,12 +1758,17 @@ while true; do
 
 
     ## Informação sobre URL
-    echo -e "\e[33mDomínio da Evolution API:\e[97m $url_evolution\e[0m"
+    msg_evolution_api
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m🌐 Domínio da Evolution API:\e[97m $url_evolution\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Pergunta se as respostas estão corretas
   
-    read -p $'\e[33mA resposta está correta?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
 
         clear
@@ -1876,14 +2085,15 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack da Evolution API"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
 fi
 STACK_NAME="evolution${1:+_$1}"
-stack_editavel # > /dev/null 2>&1
-#docker stack deploy --prune --resolve-image always -c evolution.yaml evolution > /dev/null 2>&1
+stack_editavel 
+
+
 
 
 sleep 10
@@ -2005,11 +2215,12 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do PgVector criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack do PgVector"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do PgVector"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do PgVector.\e[0m"
 fi
+
 STACK_NAME="pgvector"
 stack_editavel 
 
@@ -2098,10 +2309,10 @@ while true; do
     
     
     ## Informação sobre URL
+    msg_chatwoot
     echo ""
-    echo -e "\e[32m📋 Resumo da Configuração do Chatwoot\e[0m"
-    echo ""
-
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m🌐 Domínio do Chatwoot:      \e[97m$url_chatwoot\e[0m"
     echo -e "\e[33m🏢 Nome da Empresa:         \e[97m$nome_empresa_chatwoot\e[0m"
     echo -e "\e[33m📧 Email SMTP:              \e[97m$email_admin_chatwoot\e[0m"
@@ -2109,11 +2320,12 @@ while true; do
     echo -e "\e[33m🔑 Senha SMTP:              \e[97m$senha_email_chatwoot\e[0m"
     echo -e "\e[33m🖥️  Host SMTP:              \e[97m$smtp_email_chatwoot\e[0m"
     echo -e "\e[33m🔌 Porta SMTP:              \e[97m$porta_smtp_chatwoot\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
 
     ## Pergunta se as respostas estão corretas
-    read -p $'\e[33mAs respostas estão corretas?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
 
         ## Digitou Y para confirmar que as informações estão corretas
@@ -2163,11 +2375,11 @@ sleep 1
 ## Verifica container postgres e cria banco no postgres
 verificar_container_pgvector
 if [ $? -eq 0 ]; then
-    echo "✅ 1/3 - Postgres já instalado."
+    echo -e "Passo \e[32m1/3\e[0m ✅ - Postgres já instalado."
     pegar_senha_pgvector > /dev/null 2>&1
-    echo "🔐 2/3 - Senha do PgVector copiada com sucesso."
+    echo -e "Passo \e[32m2/3\e[0m 🔐 - Senha do PgVector copiada com sucesso."
     criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
-    echo "🛠️ 3/3 - Banco de dados 'chatwoot${1:+_$1}' criado com sucesso."
+    echo -e "Passo \e[32m3/3\e[0m 🛠️ - Banco de dados 'chatwoot${1:+_$1}' criado com sucesso."
     echo ""
 else
     ferramenta_pgvector
@@ -2175,15 +2387,12 @@ else
     criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
 fi
 
+
 ## Mensagem de Passo
 echo -e "\e[97m⚙️ Instalando o Chatwoot...\e[33m [Etapa 3 de 6]\e[0m"
 echo ""
 sleep 1
 
-## Neste passo vamos estar criando a Stack yaml do Chatwoot na pasta /root/
-## Isso possibilitará que o usuario consiga edita-lo posteriormente
-
-## Depois vamos instalar o Chatwoot e verificar se esta tudo certo.
 
 ## Criando key aleatória
 encryption_key=$(openssl rand -hex 16)
@@ -2647,11 +2856,12 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Redis criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack do Redis"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Redis.\e[0m"
 fi
+
 STACK_NAME="redis"
 stack_editavel 
 
@@ -2737,11 +2947,12 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Redis Formação Encha criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack do Redis"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis Formação Encha"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Redis Formação Encha.\e[0m"
 fi
+
 STACK_NAME="redis_formacao_encha"
 stack_editavel 
 
@@ -2826,11 +3037,10 @@ while true; do
     clear
     
   
-    
+    msg_n8n
     echo ""
-    echo -e "\e[32m📋 [ RESUMO - CONFIGURAÇÃO N8N ]\e[0m"
-    echo ""
-
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
     echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
     echo -e "\e[33m📧 Email SMTP:               \e[97m$email_smtp_n8n\e[0m"
@@ -2838,10 +3048,10 @@ while true; do
     echo -e "\e[33m🔑 Senha SMTP:               \e[97m$senha_smtp_n8n\e[0m"
     echo -e "\e[33m🖥️  Host SMTP:               \e[97m$host_smtp_n8n\e[0m"
     echo -e "\e[33m🔌 Porta SMTP:               \e[97m$porta_smtp_n8n\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-
     
-    read -p $'\e[33mAs respostas estão corretas?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
 
         ## Digitou Y para confirmar que as informações estão corretas
@@ -3211,11 +3421,12 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack do N8N"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
 fi
+
 STACK_NAME="n8n${1:+_$1}"
 stack_editavel 
 
@@ -3309,18 +3520,18 @@ while true; do
         
     ## Limpa o terminal
     clear
-
+    msg_n8n_formacao_encha
     echo ""
-    echo -e "\e[32m📋 [ RESUMO - CONFIGURAÇÃO N8N FORMAÇÃO ENCHA ]\e[0m"
-    echo ""
-
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
     echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
     echo -e "\e[33m🔧 Quantidade de Webhooks:   \e[97m$webhooksQuantity\e[0m"
     echo -e "\e[33m🔧 Quantidade de Concorrências: \e[97m$concurrencyQuantity\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-    read -p $'\e[33mAs respostas estão corretas?\e[0m \e[32m(Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
         clear
         break
@@ -3353,18 +3564,18 @@ else
     criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
 fi
 
-echo -e "\e[97m📦 Verificando ou instalando o Redis da Formação Encha...\e[33m [Etapa 3 de 5]\e[0m"
+echo -e "\e[97m📦 Verificando ou instalando o Redis Formação Encha...\e[33m [Etapa 3 de 5]\e[0m"
 echo ""
 sleep 1
 verificar_container_redis_formacao_encha
 if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - Redis já está instalado."
+    echo "✅ 1/1 - Redis Formação Encha já está instalado."
     echo ""
 else
     ferramenta_redis_formacao_encha
 fi
 
-echo -e "\e[97m⚙️ Instalando o N8N da Formação Encha...\e[33m [Etapa 4 de 5]\e[0m"
+echo -e "\e[97m⚙️ Instalando o N8N Formação Encha...\e[33m [Etapa 4 de 5]\e[0m"
 echo ""
 sleep 1
 
@@ -3542,11 +3753,12 @@ networks:
 EOL
 
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack Editor"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Editor criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack Editor"
-    echo "Não foi possivel criar a stack do N8N Editor"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Editor"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Editor.\e[0m"
 fi
+
 
 STACK_NAME="n8n_editor_formacao_encha"
 stack_editavel 
@@ -3707,11 +3919,12 @@ networks:
     external: true
 EOL
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack Worker"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Worker criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack Worker"
-    echo "Não foi possivel criar a stack do N8N Worker"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Worker"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Worker.\e[0m"
 fi
+
 
 STACK_NAME="n8n_worker_formacao_encha"
 stack_editavel
@@ -3889,11 +4102,12 @@ networks:
 EOL
 
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack Webhook"
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Webhook criada com sucesso"
 else
-    echo "1/10 - [ OFF ] - Criando Stack Webhook"
-    echo "Não foi possivel criar a stack do N8N Webhook"
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Webhook"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Webhook.\e[0m"
 fi
+
 
 STACK_NAME="n8n_webhook_formacao_encha"
 stack_editavel
@@ -3942,9 +4156,973 @@ msg_retorno_menu
 }
 
 ferramenta_minio(){
-  clear
+ 
+  msg_minio
+  
+  dados
+
+  
+
+while true; do
+
+    ## Passo 1 - Domínio do MinIO
+    echo -e "\e[97mPasso$amarelo 1/4\e[0m"
+    echo -en "\e[33m🌐 Informe o domínio para o MinIO (ex: minio.encha.ai): \e[0m" && read -r url_minio
+    echo ""
+
+    ## Passo 2 - Domínio do S3 do MinIO
+    echo -e "\e[97mPasso$amarelo 2/4\e[0m"
+    echo -en "\e[33m🔗 Informe o domínio para o S3 (ex: minioS3.encha.ai): \e[0m" && read -r url_s3
+    echo ""
+
+    ## Passo 3 - Usuário do MinIO
+    echo -e "\e[97mPasso$amarelo 3/4\e[0m"
+    echo -e "$amarelo➡️  Evite os caracteres especiais: \! # \$ e espaços"
+    echo -en "\e[33m👤 Informe um nome de usuário para o MinIO (ex: Encha || Admin): \e[0m" && read -r user_minio
+    echo ""
+
+
+    
+    echo -e "Passo \e[33m4/4\e[0m 🔐"
+    echo -e "\e[33m--> Mínimo 8 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+    echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
+    echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r senha_minio
+    echo ""
+
+
+
+
+
+    ## Limpa a tela para mostrar o resumo
+    clear
+
+    msg_minio
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m🌐 Domínio do MinIO:         \e[97m$url_minio\e[0m"
+    echo -e "\e[33m🔗 Domínio do S3:            \e[97m$url_s3\e[0m"
+    echo -e "\e[33m👤 Usuário MinIO:            \e[97m$user_minio\e[0m"
+    echo -e "\e[33m🔑 Senha MinIO:              \e[97m$senha_minio\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    ## Pergunta confirmação
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
+        clear
+        break
+    else
+        msg_minio
+    fi
+  done
+  echo -e "\e[97m🎯 Iniciando a instalação do MinIO... \e[33m[Etapa 1 de 5]\e[0m"
+  echo ""
+  sleep 3 
+
+cat > minio${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  minio${1:+_$1}:
+    image: quay.io/minio/minio:latest ## Versão do Minio
+    command: server /data --console-address ":9001"
+
+    volumes:
+      - minio${1:+_$1}_data:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados de acesso
+      - MINIO_ROOT_USER=$user_minio
+      - MINIO_ROOT_PASSWORD=$senha_minio 
+
+      ## Url do minio
+      - MINIO_BROWSER_REDIRECT_URL=https://$url_minio ## Url do minio
+      - MINIO_SERVER_URL=https://$url_s3 ## Url do s3 | Comente esta linha caso tiver erro ao fazer login
+
+      ## Região
+      - MINIO_REGION_NAME=eu-south
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.minio_public${1:+_$1}.rule=Host(\`$url_s3\`) ## Url do s3
+        - traefik.http.routers.minio_public${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.minio_public${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.minio_public${1:+_$1}.loadbalancer.server.port=9000
+        - traefik.http.services.minio_public${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.minio_public${1:+_$1}.service=minio_public${1:+_$1}
+        - traefik.http.routers.minio_console${1:+_$1}.rule=Host(\`$url_minio\`) ## Url do minio
+        - traefik.http.routers.minio_console${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.minio_console${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.minio_console${1:+_$1}.loadbalancer.server.port=9001
+        - traefik.http.services.minio_console${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.minio_console${1:+_$1}.service=minio_console${1:+_$1}
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  minio${1:+_$1}_data:
+    external: true
+    name: minio${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Minio criada com sucesso"
+else
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Minio"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Minio.\e[0m"
+fi
+
+STACK_NAME="minio${1:+_$1}"
+stack_editavel 
+
+echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+
+pull quay.io/minio/minio:latest
+wait_stack minio${1:+_$1}_minio${1:+_$1}
+
+cd dados_vps
+cat > dados_minio${1:+_$1} <<EOL
+[ MinIO ]
+
+Dominio do MinIO: https://$url_minio
+
+Dominio do S3: https://$url_s3
+
+Usuário: $user_minio
+
+Senha: $senha_minio
+
+EOL
+
+cd
+
+cd
+
+wait_30_sec
+
+msg_resumo_informacoes
+
+echo -e "\e[32m🪣 [ MINIO INSTALADO COM SUCESSO ]\e[0m"
+echo ""
+
+echo -e "\e[33m🌐 Domínio do MinIO:       \e[97mhttps://$url_minio\e[0m"
+echo -e "\e[33m🔗 Domínio do S3:          \e[97mhttps://$url_s3\e[0m"
+echo -e "\e[33m👤 Usuário de Acesso:      \e[97m$user_minio\e[0m"
+echo -e "\e[33m🔑 Senha de Acesso:        \e[97m$senha_minio\e[0m"
+echo ""
+
+
+msg_retorno_menu
+
 }
 
+ferramenta_typebot(){
+  
+  msg_typebot
+
+  dados
+
+while true; do
+
+    ## Passo 1 - Domínio Builder
+    echo -e "\e[97mPasso$amarelo 1/7\e[0m"
+    echo -en "\e[33m🌐 Digite o domínio para o Typebot Builder (ex: type.encha.ai): \e[0m" && read -r url_typebot
+    echo ""
+
+    ## Passo 2 - Domínio Viewer
+    echo -e "\e[97mPasso$amarelo 2/7\e[0m"
+    echo -en "\e[33m🔎 Digite o domínio para o Typebot Viewer (ex: viewer.encha.ai): \e[0m" && read -r url_viewer
+    echo ""
+
+    ## Passo 3 - Email SMTP
+    echo -e "\e[97mPasso$amarelo 3/7\e[0m"
+    echo -en "\e[33m📧 Digite o email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_typebot
+    echo ""
+
+    ## Passo 4 - Usuário SMTP
+    echo -e "\e[97mPasso$amarelo 4/7\e[0m"
+    echo -e "$amarelo➡️  Caso não tenha um usuário separado, use o próprio email abaixo"
+    echo -en "\e[33m👤 Digite o usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_email_typebot
+    echo ""
+
+    ## Passo 5 - Senha SMTP
+    echo -e "\e[97mPasso$amarelo 5/7\e[0m"
+    echo -e "$amarelo➡️  Sem caracteres especiais: \! # \$ | Se estiver usando Gmail, utilize senha de app"
+    echo -en "\e[33m🔑 Digite a senha SMTP do email (ex: @Senha123_): \e[0m" && read -r senha_email_typebot
+    echo ""
+
+    ## Passo 6 - Host SMTP
+    echo -e "\e[97mPasso$amarelo 6/7\e[0m"
+    echo -en "\e[33m🏠 Digite o host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_typebot
+    echo ""
+
+    ## Passo 7 - Porta SMTP
+    echo -e "\e[97mPasso$amarelo 7/7\e[0m"
+    echo -en "\e[33m🔌 Digite a porta SMTP do email (ex: 465): \e[0m" && read -r porta_smtp_typebot
+    echo ""
+
+    ## Define secure SMTP com base na porta
+    if [ "$porta_smtp_typebot" -eq 465 ]; then
+        smtp_secure_typebot=true
+    else
+        smtp_secure_typebot=false
+    fi
+
+    ## Limpa o terminal
+    clear
+
+    ## Nome da aplicação (se for função externa)
+    nome_typebot
+
+    ## Mensagem "conferindo informações"
+    conferindo_as_info
+
+    ## Exibe resumo
+    msg_typebot
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m🌐 Domínio do Builder:         \e[97mhttps://$url_typebot\e[0m"
+    echo -e "\e[33m🔎 Domínio do Viewer:          \e[97mhttps://$url_viewer\e[0m"
+    echo -e "\e[33m📧 Email SMTP:                 \e[97m$email_typebot\e[0m"
+    echo -e "\e[33m👤 Usuário SMTP:               \e[97m$usuario_email_typebot\e[0m"
+    echo -e "\e[33m🔑 Senha SMTP:                 \e[97m$senha_email_typebot\e[0m"
+    echo -e "\e[33m🏠 Host SMTP:                  \e[97m$smtp_email_typebot\e[0m"
+    echo -e "\e[33m🔌 Porta SMTP:                 \e[97m$porta_smtp_typebot\e[0m"
+    echo -e "\e[33m🔐 Secure SMTP:                \e[97m$smtp_secure_typebot\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    ## Confirmação
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
+        clear
+        break
+    else
+        msg_typebot
+    fi
+done
+
+echo -e "\e[97m🎯 Iniciando a instalação do Typebot... \e[33m[Etapa 1 de 5]\e[0m"
+echo ""
+sleep 3
+
+echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+echo ""
+sleep 1
+
+## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
+verificar_container_postgres
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[32m1/3\e[0m ✅ - Postgres já está instalado."
+    pegar_senha_postgres > /dev/null 2>&1
+    echo -e "Passo \e[32m2/3\e[0m 🔐 - Senha do Postgres copiada com sucesso."
+    criar_banco_postgres_da_stack "typebot${1:+_$1}"
+    echo -e "Passo \e[32m3/3\e[0m 🛠️ - Banco de dados 'typebot${1:+_$1}' criado com sucesso."
+    echo ""
+else
+    ferramenta_postgres
+    pegar_senha_postgres > /dev/null 2>&1
+    criar_banco_postgres_da_stack "typebot${1:+_$1}"
+fi
+
+
+echo -e "\e[97m📦 • Criando bucket no MinIO \e[33m[3/5]\e[0m"
+echo ""
+sleep 1
+
+pegar_senha_minio
+criar_bucket.minio typebot${1:+-$1} > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[32m1/1\e[0m ✅ - Bucket 'typebot${1:+-$1}' criado com sucesso no MinIO."
+else
+    echo -e "Passo \e[31m1/1\e[0m ❌ - Erro ao criar o bucket 'typebot${1:+-$1}' no MinIO."
+fi
+
+echo -e "\e[32m🤖 [ INSTALANDO TYPEBOT ] \e[33m[4/5]\e[0m\n"
+sleep 1
+
+
+
+key_typebot=$(openssl rand -hex 16)
+
+
+cat > typebot${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  typebot${1:+_$1}_builder:
+    image: baptistearno/typebot-builder:latest ## Versão do Builder do Typebot
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/typebot${1:+_$1}
+
+      ## Encryption key
+      - ENCRYPTION_SECRET=$key_typebot
+      - AUTH_TRUST_HOST=https://$url_typebot
+
+      ## Plano Padrão (das novas contas)
+      - DEFAULT_WORKSPACE_PLAN=UNLIMITED
+
+      ## Urls do typebot
+      - NEXTAUTH_URL=https://$url_typebot ## URL Builder
+      - NEXT_PUBLIC_VIEWER_URL=https://$url_viewer ## URL Viewer
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3000
+
+      ## Desativer/ativar novos cadastros
+      - DISABLE_SIGNUP=false
+
+      ## Dados do SMTP
+      - ADMIN_EMAIL=$email_typebot ## Email SMTP
+      - NEXT_PUBLIC_SMTP_FROM='Suporte' <$email_typebot>
+      - SMTP_AUTH_DISABLED=false
+      - SMTP_USERNAME=$usuario_email_typebot
+      - SMTP_PASSWORD=$senha_email_typebot
+      - SMTP_HOST=$smtp_email_typebot
+      - SMTP_PORT=$porta_smtp_typebot
+      - SMTP_SECURE=$smtp_secure_typebot
+
+      ## Dados Google Cloud
+      #- GOOGLE_AUTH_CLIENT_ID=
+      #- GOOGLE_SHEETS_CLIENT_ID=
+      #- GOOGLE_AUTH_CLIENT_SECRET=
+      #- GOOGLE_SHEETS_CLIENT_SECRET=
+      #- NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY=
+
+      ## Dados do Minio/S3
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - S3_BUCKET=typebot${1:+-$1}
+      - S3_ENDPOINT=$url_s3
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - io.portainer.accesscontrol.users=admin
+        - traefik.enable=true
+        - traefik.http.routers.typebot${1:+_$1}_builder.rule=Host(\`$url_typebot\`) ## Url do Builder do Typebot
+        - traefik.http.routers.typebot${1:+_$1}_builder.entrypoints=websecure
+        - traefik.http.routers.typebot${1:+_$1}_builder.tls.certresolver=letsencryptresolver
+        - traefik.http.services.typebot${1:+_$1}_builder.loadbalancer.server.port=3000
+        - traefik.http.services.typebot${1:+_$1}_builder.loadbalancer.passHostHeader=true
+        - traefik.http.routers.typebot${1:+_$1}_builder.service=typebot${1:+_$1}_builder
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  typebot${1:+_$1}_viewer:
+    image: baptistearno/typebot-viewer:latest ## Versão do Viewer do Typebot
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/typebot${1:+_$1}
+
+      ## Encryption key
+      - ENCRYPTION_SECRET=$key_typebot
+      - AUTH_TRUST_HOST=https://$url_typebot
+
+      ## Plano Padrão (das novas contas)
+      - DEFAULT_WORKSPACE_PLAN=UNLIMITED
+
+      ## Urls do typebot
+      - NEXTAUTH_URL=https://$url_typebot ## URL Builder
+      - NEXT_PUBLIC_VIEWER_URL=https://$url_viewer ## URL Viewer
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3000
+
+      ## Desativer/ativar novos cadastros
+      - DISABLE_SIGNUP=false
+
+      ## Dados do SMTP
+      - ADMIN_EMAIL=$email_typebot ## Email SMTP
+      - NEXT_PUBLIC_SMTP_FROM='Suporte' <$email_typebot>
+      - SMTP_AUTH_DISABLED=false
+      - SMTP_USERNAME=$usuario_email_typebot
+      - SMTP_PASSWORD=$senha_email_typebot
+      - SMTP_HOST=$smtp_email_typebot
+      - SMTP_PORT=$porta_smtp_typebot
+      - SMTP_SECURE=$smtp_secure_typebot
+
+      ## Dados Google Cloud
+      #- GOOGLE_AUTH_CLIENT_ID=
+      #- GOOGLE_SHEETS_CLIENT_ID=
+      #- GOOGLE_AUTH_CLIENT_SECRET=
+      #- GOOGLE_SHEETS_CLIENT_SECRET=
+      #- NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY=
+
+      ## Dados do Minio/S3
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - S3_BUCKET=typebot${1:+-$1}
+      - S3_ENDPOINT=$url_s3
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - io.portainer.accesscontrol.users=admin
+        - traefik.enable=true
+        - traefik.http.routers.typebot${1:+_$1}_viewer.rule=Host(\`$url_viewer\`) ## Url do Viewer do Typebot
+        - traefik.http.routers.typebot${1:+_$1}_viewer.entrypoints=websecure
+        - traefik.http.routers.typebot${1:+_$1}_viewer.tls.certresolver=letsencryptresolver
+        - traefik.http.services.typebot${1:+_$1}_viewer.loadbalancer.server.port=3000
+        - traefik.http.services.typebot${1:+_$1}_viewer.loadbalancer.passHostHeader=true
+        - traefik.http.routers.typebot${1:+_$1}_viewer.service=typebot${1:+_$1}_viewer
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Typebot criada com sucesso"
+else
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Typebot"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Typebot.\e[0m"
+fi
+
+STACK_NAME="typebot${1:+_$1}"
+stack_editavel 
+
+echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+echo ""
+sleep 1
+
+pull baptistearno/typebot-builder:latest baptistearno/typebot-viewer:latest
+
+wait_stack typebot${1:+_$1}_typebot${1:+_$1}_builder typebot${1:+_$1}_typebot${1:+_$1}_viewer
+
+cd dados_vps
+cat > dados_typebot${1:+_$1} <<EOL
+[ Typebot ]
+
+Dominio do Builder: https://$url_typebot
+
+Dominio do Viewer: https://$url_viewer
+
+EOL
+
+cd
+cd
+
+wait_30_sec
+
+msg_resumo_informacoes
+echo -e "\e[32m🔹 [ TYPEBOT ]\e[0m"
+echo ""
+
+echo -e "\e[33m🌐 Domínio:\e[97m https://$url_typebot\e[0m"
+echo ""
+
+echo -e "\e[33m📧 E-mail:\e[97m Qualquer um (não precisa ser o mesmo da instalação)\e[0m"
+echo ""
+
+echo -e "\e[33m🔑 Acesso:\e[97m Sem senha — um link mágico será enviado pro seu e-mail.\e[0m"
+
+msg_retorno_menu
+
+}
+
+ferramenta_directus(){
+
+msg_directus
+
+dados
+
+while true; do
+    ## Passo 1
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/7\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Directus (ex: direto.encha.ai): \e[0m" && read -r url_directus
+
+    ## Passo 2
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/7\e[0m"
+    echo -en "📧 \e[33mDigite o Email de Admin (ex: instalador@encha.ai): \e[0m" && read -r email_directus
+
+    ## Passo 3
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/7\e[0m"
+    echo -e "🔒 \e[33m--> Sem caracteres especiais: \!#$"
+    echo -en "🔑 Digite a Senha para o Admin (ex: @Senha123_): \e[0m" && read -r senha_directus
+
+    ## Passo 4
+    echo -e "\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
+    echo -en "📨 \e[33mDigite o Email SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_directus
+
+    ## Passo 5
+    echo -e "\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
+    echo -e "🔑 \e[33m--> Sem caracteres especiais: \!#$ | Se usar Gmail, utilize a senha de app"
+    echo -en "📬 Digite a Senha SMTP (ex: @Senha123_): \e[0m" && read -r senha_smtp_directus
+
+    ## Passo 6
+    echo -e "\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
+    echo -en "🌐 \e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_directus
+
+    ## Passo 7
+    echo -e "\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
+    echo -en "🔌 \e[33mDigite a Porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_directus
+
+    ## Ajusta SSL
+    if [ "$porta_smtp_directus" -eq 465 ]; then
+        ssl_smtp_directus=true
+    else
+        ssl_smtp_directus=false
+    fi
+
+    ## Revisão das informações
+    clear
+    
+    msg_directus
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio do Directus:\e[97m $url_directus\e[0m"
+    echo -e "👤 \e[33mEmail de Admin:\e[97m $email_directus\e[0m"
+    echo -e "🔑 \e[33mSenha de Admin:\e[97m $senha_directus\e[0m"
+    echo -e "📨 \e[33mEmail SMTP:\e[97m $email_smtp_directus\e[0m"
+    echo -e "🔒 \e[33mSenha SMTP:\e[97m $senha_smtp_directus\e[0m"
+    echo -e "🌐 \e[33mHost SMTP:\e[97m $host_smtp_directus\e[0m"
+    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_directus\e[0m"
+    echo -e "🔐 \e[33mSSL Ativado:\e[97m $ssl_smtp_directus\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    ## Confirmação
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
+        clear
+        break
+    else
+        msg_directus
+    fi
+done
+
+
+echo -e "\e[97m🎯 Iniciando a instalação do Directus... \e[33m[Etapa 1 de 6]\e[0m"
+
+echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 6]\e[0m"
+echo ""
+sleep 1
+
+
+verificar_container_postgres
+if [ $? -eq 0 ]; then
+    echo "✅ 1/3 - Postgres já está instalado."
+    pegar_senha_postgres > /dev/null 2>&1
+    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+    criar_banco_postgres_da_stack "directus${1:+_$1}"
+    echo "🛠️  3/3 - Banco de dados 'directus${1:+_$1}' criado com sucesso."
+    echo ""
+else
+    ferramenta_postgres
+    pegar_senha_postgres > /dev/null 2>&1
+    criar_banco_postgres_da_stack "directus${1:+_$1}"
+fi
+
+echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 6]\e[0m"
+echo ""
+sleep 1
+
+## Verifica/instala o Redis
+verificar_container_redis
+if [ $? -eq 0 ]; then
+    echo "✅ 1/1 - Redis já está instalado."
+    echo ""
+else
+    ferramenta_redis
+fi
+
+
+echo -e "\e[97m📂 Criando bucket no MinIO \e[33m[4/6]\e[0m"
+echo ""
+sleep 1
+
+pegar_senha_minio
+criar_bucket.minio directus${1:+-$1} > /dev/null 2
+
+echo -e "\e[97m🚀 INSTALANDO DIRECTUS \e[33m[5/6]\e[0m"
+echo ""
+sleep 1
+
+key_directus=$(openssl rand -hex 16)
+key_directus2=$(openssl rand -hex 16)
+
+cat > directus${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  directus${1:+_$1}:
+    image: directus/directus:latest
+
+    volumes:
+      - directus${1:+_$1}_uploads:/directus/uploads
+      - directus${1:+_$1}_data:/directus/database
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados de acesso
+      - ADMIN_EMAIL=$email_directus
+      - ADMIN_PASSWORD=$senha_directus
+      - PUBLIC_URL=https://$url_directus
+
+      ## Dados SMTP
+      - EMAIL_SMTP_USER=$email_smtp_directus
+      - EMAIL_SMTP_PASSWORD=$senha_smtp_directus
+      - EMAIL_SMTP_HOST=$host_smtp_directus
+      - EMAIL_SMTP_PORT=$porta_smtp_directus
+      - EMAIL_SMTP_SECURE=$ssl_smtp_directus
+
+      ## Dados MinIO
+      - STORAGE_s3_KEY=$S3_ACCESS_KEY
+      - STORAGE_s3_SECRET=$S3_SECRET_KEY
+      - STORAGE_s3_BUCKET=directus${1:+-$1}
+      - STORAGE_s3_REGION=eu-south
+      - STORAGE_s3_ENDPOINT=$url_s3
+
+      ## Redis
+      - REDIS=redis://redis:6379/4
+
+      ## Secret Keys & Env
+      - KEY=$key_directus
+      - SECRET=$key_directus2
+      - APP_ENV=production
+
+      ## Dados Postgres
+      - DB_CLIENT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=directus${1:+_$1}
+      - DB_USER=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_CONNECTION_STRING=postgresql://postgres:$senha_postgres@postgres:5432/directus${1:+_$1}
+      - DB_PREFIX=drcts_
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.directus${1:+_$1}.rule=Host(\`$url_directus\`)
+        - traefik.http.services.directus${1:+_$1}.loadbalancer.server.port=8055
+        - traefik.http.routers.directus${1:+_$1}.service=directus${1:+_$1}
+        - traefik.http.routers.directus${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.directus${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.directus${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  directus${1:+_$1}_uploads:
+    external: true
+    name: directus${1:+_$1}_uploads
+  directus${1:+_$1}_data:
+    external: true
+    name: directus${1:+_$1}_data
+
+networks:
+  $nome_rede_interna:
+    external: true
+    attachable: true
+    name: $nome_rede_interna
+EOL
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Directus criada com sucesso"
+else
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Directus"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Directus.\e[0m"
+fi
+
+STACK_NAME="directus${1:+_$1}"
+stack_editavel
+
+echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 6 de 6]\e[0m"
+echo ""
+sleep 1
+
+pull directus/directus:latest
+
+wait_stack directus${1:+_$1}_directus${1:+_$1}
+
+cd dados_vps
+cat > dados_directus${1:+_$1} <<EOL
+[ Directus ]
+Dominio do Directus: https://$url_directus
+
+Usuário Admin: $email_directus
+
+Senha Admin: $senha_directus
+
+EOL
+
+cd
+cd
+
+wait_30_sec
+
+msg_resumo_informacoes
+echo -e "\e[32m🚀 [ DIRECTUS ]\e[0m"
+echo ""
+
+echo -e "\e[33m🌐 Domínio:\e[97m https://$url_directus\e[0m"
+echo ""
+
+echo -e "\e[33m👤 Usuário:\e[97m $email_directus\e[0m"
+echo ""
+
+echo -e "\e[33m🔑 Senha:\e[97m $senha_directus\e[0m"
+echo ""
+
+msg_retorno_menu
+}
+
+ferramenta_odoo(){
+  msg_odoo
+  
+  dados
+
+while true; do
+
+
+    echo -en "\e[33m🌐 Digite o domínio para o Odoo (ex: doo.encha.ai): \e[0m" && read -r url_odoo
+    echo ""
+
+
+    ## Informação do domínio
+    msg_odoo
+    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m📍 Domínio para o Odoo:\e[97m $url_odoo\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    ## Pergunta se as respostas estão corretas
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" == [Yy] ]]; then
+
+        ## Confirmou que está correto
+        clear
+        instalando_msg
+        break
+    else
+        ## Se respondeu não, mostra mensagem e volta para o loop
+        msg_odoo
+    fi
+done
+
+echo -e "\e[97m🎯 Iniciando a instalação do Odoo... \e[33m[Etapa 1 de 3]\e[0m"
+
+## Mensagem de Passo
+echo -e "\e[97m• INSTALANDO ODOO \e[33m[2/3]\e[0m"
+echo ""
+sleep 1
+
+## Criando senha do postgres
+senha_postgres_odoo=$(openssl rand -hex 16)
+
+## Criando a stack odoo.yaml
+cat > odoo${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  odoo${1:+_$1}_app:
+    image: odoo:18.0
+
+    volumes:
+      - odoo${1:+_$1}_app_data:/var/lib/odoo
+      - odoo${1:+_$1}_app_config:/etc/odoo
+      - odoo${1:+_$1}_app_addons:/mnt/extra-addons
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados postgres do Odoo
+      - HOST=odoo${1:+_$1}_db
+      - USER=odoo
+      - PASSWORD=$senha_postgres_odoo
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.odoo${1:+_$1}_app.rule=Host(\`$url_odoo\`)
+        - traefik.http.routers.odoo${1:+_$1}_app.entrypoints=websecure
+        - traefik.http.routers.odoo${1:+_$1}_app.tls=true
+        - traefik.http.routers.odoo${1:+_$1}_app.service=odoo${1:+_$1}_app
+        - traefik.http.routers.odoo${1:+_$1}_app.tls.certresolver=letsencryptresolver
+        - traefik.http.services.odoo${1:+_$1}_app.loadbalancer.server.port=8069
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  odoo${1:+_$1}_db:
+    image: postgres:15
+
+    volumes:
+      - odoo${1:+_$1}_db_data:/var/lib/postgresql/data/pgdata
+
+    networks:
+      - $nome_rede_interna
+    #ports:
+    #  - 5434:5432
+
+    environment:
+      ## Dados Postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=$senha_postgres_odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  odoo${1:+_$1}_app_data:
+    external: true
+    name: odoo${1:+_$1}_app_data
+  odoo${1:+_$1}_app_config:
+    external: true
+    name: odoo${1:+_$1}_app_config
+  odoo${1:+_$1}_app_addons:
+    external: true
+    name: odoo${1:+_$1}_app_addons
+  odoo${1:+_$1}_db_data:
+    external: true
+    name: odoo${1:+_$1}_db_data
+
+networks:
+  $nome_rede_interna:
+    external: true
+    attachable: true
+    name: $nome_rede_interna
+EOL
+if [ $? -eq 0 ]; then
+    echo -e "\e[32m1/10 - ✅ [OK] - Criando Stack\e[0m"
+else
+    echo -e "\e[31m1/10 - ❌ [OFF] - Criando Stack\e[0m"
+    echo -e "\e[31m⚠️ Não foi possível criar a stack do Odoo\e[0m"
+fi
+STACK_NAME="odoo${1:+_$1}"
+stack_editavel
+
+
+echo -e "Passo \e[33m3/3\e[0m 🔍 • VERIFICANDO SERVIÇO"
+echo ""
+sleep 1
+
+pull odoo:18.0 postgres:15
+
+wait_stack odoo${1:+_$1}_odoo${1:+_$1}_app odoo${1:+_$1}_odoo${1:+_$1}_db
+
+cd dados_vps
+cat > dados_odoo${1:+_$1} <<EOL
+[ Odoo ]
+
+Dominio do Odoo: https://$url_odoo
+
+Senha do Postgres Odoo: $senha_postgres_odoo
+
+EOL
+
+cd
+cd
+
+wait_30_sec
+
+msg_resumo_informacoes
+echo -e "\e[32m🟢 [ ODOO ]\e[0m"
+echo ""
+
+echo -e "\e[33m🌐 Dominio:\e[97m https://$url_odoo\e[0m"
+echo ""
+
+echo -e "\e[33m👤 Usuario:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+echo ""
+
+echo -e "\e[33m🔑 Senha:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+echo ""
+
+echo -e "\e[33m🗄️ Database Name:\e[97m odoo\e[0m"
+echo ""
+
+echo -e "\e[33m🔒 Database Password:\e[97m $senha_postgres_odoo\e[0m"
+
+echo ""
+msg_retorno_menu
+}
 
 verificar_status_servicos() {
     msg_status
@@ -3975,15 +5153,15 @@ exibir_menu() {
         centralizar "📋 === MENU PRINCIPAL ==="
         echo -e "${reset}"
         echo ""
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer                            ${azul}08.${reset} Verificar status dos serviços"
-        echo -e "${azul}02.${reset} Instalar Evolution API                                  ${azul}09.${reset} Sair"
-        echo -e "${azul}03.${reset} Instalar N8N"
-        echo -e "${azul}04.${reset} Instalar Chatwoot"
-        echo -e "${azul}05.${reset} Liberar Chatwoot"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha"
-        echo -e "${azul}07.${reset} Minio - (Em breve)"
+        echo -e "${azul}01.${reset} Instalar Traefik + Portainer                            ${azul}08.${reset} Instalar Typebot"
+        echo -e "${azul}02.${reset} Instalar Evolution API                                  ${azul}09.${reset} Instalar Directus"
+        echo -e "${azul}03.${reset} Instalar N8N                                            ${azul}10.${reset} Instalar Odoo "
+        echo -e "${azul}04.${reset} Instalar Chatwoot                                       ${azul}11.${reset} Verificar status dos serviços"
+        echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"s
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha                              "
+        echo -e "${azul}07.${reset} Instalar Minio"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-9): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-12): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -4044,7 +5222,9 @@ exibir_menu() {
                 ;;
             
             05|5)
-                liberar_chatwoot
+                if verificar_docker_e_portainer_traefik; then
+                    liberar_chatwoot
+                fi
                 ;;
             06|6)
                 verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
@@ -4062,27 +5242,74 @@ exibir_menu() {
                 fi
                 ;;
             07|7)
-                clear
-                echo -e "${vermelho}Essa ferramenta ainda não está disponível.${reset}"
-                echo -e "${amarelo}Em breve teremos novidades!${reset}"
-                echo ""
-                echo -e "${azul}Pressione ENTER para voltar ao menu principal.${reset}"
-                read -r
-                sleep 2
+                verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
+
+                if verificar_docker_e_portainer_traefik; then
+                    ## INICIO TOKEN
+                    STACK_NAME="minio${opcao2:+_$opcao2}"
+                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                        ferramenta_minio "$opcao2"
+                    else
+                        APP_ENCHA="ferramenta_minio"
+                        verificar_arquivo
+                    fi
+                    ## FIM TOKEN 
+                fi
                 ;;    
             08|8)
-                verificar_status_servicos
-                echo "Aperte ENTER para retornar ao menu de ferramentas"
-                read
-                sleep 2
+                verificar_stack "typebot${opcao2:+_$opcao2}" && continue || echo ""
+                 if verificar_docker_e_portainer_traefik && verificar_minio; then
+                    ## INICIO TOKEN
+                    STACK_NAME="typebot${opcao2:+_$opcao2}"
+                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                        ferramenta_typebot "$opcao2"
+                    else
+                        APP_ENCHA="ferramenta_typebot"
+                        verificar_arquivo
+                    fi
+                    ## FIM TOKEN 
+                fi
                 ;;
             
             09|9)
-                echo -e "${vermelho}Saindo do menu...${reset}"
+                verificar_stack "directus${opcao2:+_$opcao2}" && continue || echo ""
+                 if verificar_docker_e_portainer_traefik && verificar_minio; then
+                    ## INICIO TOKEN
+                    STACK_NAME="directus${opcao2:+_$opcao2}"
+                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                        ferramenta_directus "$opcao2"
+                    else
+                        APP_ENCHA="ferramenta_directus"
+                        verificar_arquivo
+                    fi
+                    ## FIM TOKEN 
+                fi        
+                ;;
+            
+            10)
+                verificar_stack "odoo${opcao2:+_$opcao2}" && continue || echo ""
+                 if verificar_docker_e_portainer_traefik; then
+                    ## INICIO TOKEN
+                    STACK_NAME="odoo${opcao2:+_$opcao2}"
+                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                        ferramenta_odoo "$opcao2"
+                    else
+                        APP_ENCHA="ferramenta_odoo"
+                        verificar_arquivo
+                    fi
+                fi
+                ;;
+            11)
+                verificar_status_servicos
+                echo "Aperte ENTER para retornar ao menu de ferramentas"
+                read
+                sleep 2                
+                ;;
+            12)
+                echo -e "${verde}Saindo do menu...${reset}"
                 sleep 1
                 exit 0
                 ;;
-            
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
