@@ -261,6 +261,19 @@ centralizar " ╚═════╝ ╚═╝        ╚═╝   ╚═╝╚═
   echo ""
 }
 
+msg_calcom(){
+  clear
+  echo -e "${roxo}"
+centralizar " ██████╗ █████╗ ██╗         ██████╗ ██████╗ ███╗   ███╗"
+centralizar "██╔════╝██╔══██╗██║        ██╔════╝██╔═══██╗████╗ ████║"
+centralizar "██║     ███████║██║        ██║     ██║   ██║██╔████╔██║"
+centralizar "██║     ██╔══██║██║        ██║     ██║   ██║██║╚██╔╝██║"
+centralizar "╚██████╗██║  ██║███████╗██╗╚██████╗╚██████╔╝██║ ╚═╝ ██║"
+centralizar " ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝"
+  echo -e "${reset}"
+  echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5660,6 +5673,104 @@ EOL
 
 }
 
+ferramenta_calcom(){
+  msg_calcom
+  dados
+
+  while true; do
+    ## Passo 1 - Domínio Builder
+    echo -e "\e[97mPasso$amarelo 1/7\e[0m"
+    echo -en "\e[33m🌐 Digite o domínio para o calcom (ex: type.encha.ai): \e[0m" && read -r url_typebot
+    echo ""
+
+    ## Passo 3 - Email SMTP
+    echo -e "\e[97mPasso$amarelo 3/7\e[0m"
+    echo -en "\e[33m📧 Digite o email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_typebot
+    echo ""
+
+    ## Passo 4 - Usuário SMTP
+    echo -e "\e[97mPasso$amarelo 4/7\e[0m"
+    echo -e "$amarelo➡️  Caso não tenha um usuário separado, use o próprio email abaixo"
+    echo -en "\e[33m👤 Digite o usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_email_typebot
+    echo ""
+
+    ## Passo 5 - Senha SMTP
+    echo -e "\e[97mPasso$amarelo 5/7\e[0m"
+    echo -e "$amarelo➡️  Sem caracteres especiais: \! # \$ | Se estiver usando Gmail, utilize senha de app"
+    echo -en "\e[33m🔑 Digite a senha SMTP do email (ex: @Senha123_): \e[0m" && read -r senha_email_typebot
+    echo ""
+
+    ## Passo 6 - Host SMTP
+    echo -e "\e[97mPasso$amarelo 6/7\e[0m"
+    echo -en "\e[33m🏠 Digite o host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_typebot
+    echo ""
+
+    ## Passo 7 - Porta SMTP
+    echo -e "\e[97mPasso$amarelo 7/7\e[0m"
+    echo -en "\e[33m🔌 Digite a porta SMTP do email (ex: 465): \e[0m" && read -r porta_smtp_typebot
+    echo ""
+
+    ## Define secure SMTP com base na porta
+    if [ "$porta_smtp_typebot" -eq 465 ]; then
+        smtp_secure_typebot=true
+    else
+        smtp_secure_typebot=false
+    fi
+
+    ## Limpa o terminal
+    clear
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Cal.com...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_pgvector_da_stack "calcom"
+
+  secret=$(openssl rand -hex 16)
+
+  cat > calcom.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  calcom:
+    image: calcom/cal.com:latest
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - NEXT_PUBLIC_WEBAPP_URL=https://${url_calcom}
+      - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/calcom
+      - NEXTAUTH_SECRET=${secret}
+      # Adicione as variáveis de SMTP aqui, se coletadas do usuário
+      # - EMAIL_FROM=${email_calcom}
+      # - EMAIL_SERVER_USER=${user_calcom}
+      # ... etc
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.calcom.rule=Host(\`${url_calcom}\`)"
+        - "traefik.http.services.calcom.loadbalancer.server.port=3000"
+        - "traefik.http.routers.calcom.entrypoints=websecure"
+        - "traefik.http.routers.calcom.tls.certresolver=letsencryptresolver"
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="calcom"
+  stack_editavel
+  wait_stack calcom_calcom
+
+  msg_resumo_informacoes
+  echo "✅ Cal.com instalado com sucesso!"
+  echo "Acesse em: https://${url_calcom}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5702,8 +5813,9 @@ exibir_menu() {
         echo -e "                                                                           ${azul}17.${reset} Instalar mongoDB"
         echo -e "                                                                           ${azul}18.${reset} Instalar rabbitMQ"
         echo -e "                                                                           ${azul}19.${reset} Instalar uptimeKuma"
+        echo -e "                                                                           ${azul}20.${reset} Instalar calcom"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-19): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -5892,6 +6004,12 @@ exibir_menu() {
               verificar_stack "uptimekuma" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_uptimekuma
+                fi
+                ;;
+            20)
+              verificar_stack "calcom" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_calcom
                 fi
                 ;;
             *)
