@@ -248,6 +248,19 @@ centralizar "╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚�
   echo ""
 }
 
+msg_uptimekuma(){
+  clear
+  echo -e "${roxo}"
+centralizar "██╗   ██╗██████╗ ████████╗██╗███╗   ███╗███████╗    ██╗  ██╗██╗   ██╗███╗   ███╗ █████╗"
+centralizar "██║   ██║██╔══██╗╚══██╔══╝██║████╗ ████║██╔════╝    ██║ ██╔╝██║   ██║████╗ ████║██╔══██╗"
+centralizar "██║   ██║██████╔╝   ██║   ██║██╔████╔██║█████╗      █████╔╝ ██║   ██║██╔████╔██║███████║"
+centralizar "██║   ██║██╔═══╝    ██║   ██║██║╚██╔╝██║██╔══╝      ██╔═██╗ ██║   ██║██║╚██╔╝██║██╔══██║"
+centralizar "╚██████╔╝██║        ██║   ██║██║ ╚═╝ ██║███████╗    ██║  ██╗╚██████╔╝██║ ╚═╝ ██║██║  ██║"
+centralizar " ╚═════╝ ╚═╝        ╚═╝   ╚═╝╚═╝     ╚═╝╚══════╝    ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝"
+  echo -e "${reset}"
+  echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5599,6 +5612,54 @@ EOL
 
 }
 
+ferramenta_uptimekuma(){
+  msg_uptimekuma
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Uptime Kuma (ex: status.encha.ai): \e[0m' url_uptimekuma
+  
+  echo -e "\e[97m🚀 Iniciando a instalação do Uptime Kuma...\e[0m"
+
+  cat > uptimekuma.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  uptimekuma:
+    image: louislam/uptime-kuma:latest
+    volumes:
+      - uptimekuma_data:/app/data
+    networks:
+      - ${nome_rede_interna}
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.uptimekuma.rule=Host(\`${url_uptimekuma}\`)"
+        - "traefik.http.services.uptimekuma.loadbalancer.server.port=3001"
+        - "traefik.http.routers.uptimekuma.entrypoints=websecure"
+        - "traefik.http.routers.uptimekuma.tls.certresolver=letsencryptresolver"
+volumes:
+  uptimekuma_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="uptimekuma"
+  stack_editavel
+  wait_stack uptimekuma_uptimekuma
+
+  msg_resumo_informacoes
+  echo "✅ Uptime Kuma instalado com sucesso!"
+  echo "Acesse em: https://${url_uptimekuma}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5640,8 +5701,9 @@ exibir_menu() {
         echo -e "                                                                           ${azul}16.${reset} Instalar baserow"
         echo -e "                                                                           ${azul}17.${reset} Instalar mongoDB"
         echo -e "                                                                           ${azul}18.${reset} Instalar rabbitMQ"
+        echo -e "                                                                           ${azul}19.${reset} Instalar uptimeKuma"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-18): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-19): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -5824,6 +5886,12 @@ exibir_menu() {
               verificar_stack "rabbitmq" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_rabbitmq
+                fi
+                ;;
+            19)
+              verificar_stack "uptimekuma" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_uptimekuma
                 fi
                 ;;
             *)
