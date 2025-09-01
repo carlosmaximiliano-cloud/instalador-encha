@@ -6533,35 +6533,38 @@ EOL
 }
 
 ferramenta_twentycrm() {
-  msg_twentycrm
-  dados
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o TwentyCRM (ex: 20.encha.ai): \e[0m" && read -r url_twentycrm
-
-    clear
     msg_twentycrm
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_twentycrm\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_twentycrm; fi
-  done
+    dados
 
-  echo -e "\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o TwentyCRM (ex: 20.encha.ai): \e[0m" && read -r url_twentycrm
+        echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+        echo -en "👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m" && read -r user_motor_woofed # Esta variável pode ser renomeada para _twentycrm, mas funciona
+        echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+        echo -en "🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m" && read -s -r pass_motor_woofed # Esta variável pode ser renomeada
+        echo ""
 
-  senha_postgres_twentycrm=$(openssl rand -hex 16)
+        clear
+        msg_twentycrm
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio TwentyCRM:\e[97m $url_twentycrm\e[0m"
+        echo -e "👤 \e[33mUsuário MOTOR:\e[97m $user_motor_woofed\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_twentycrm; fi
+    done
 
-  cat > twentycrm.yaml <<EOL
+    echo -e "\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
+    
+    senha_postgres_twentycrm=$(openssl rand -hex 16)
+    # >>> GERANDO A CHAVE SECRETA QUE FALTAVA <<<
+    Key_aleatoria_twentycrm_1=$(openssl rand -hex 16)
+
+    cat > twentycrm.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   twentycrm_server:
     image: twentycrm/twenty:latest
     volumes:
@@ -6575,6 +6578,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
       - STORAGE_TYPE=local
+      # >>> LINHA ADICIONADA ABAIXO <<<
+      - APP_SECRET=${Key_aleatoria_twentycrm_1}
     deploy:
       labels:
         - "traefik.enable=true"
@@ -6595,6 +6600,8 @@ services:
       - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
       - DISABLE_DB_MIGRATIONS=true
       - STORAGE_TYPE=local
+      # >>> LINHA ADICIONADA ABAIXO <<<
+      - APP_SECRET=${Key_aleatoria_twentycrm_1}
 
   twentycrm_db:
     image: twentycrm/twenty-postgres-spilo:latest
@@ -6619,26 +6626,26 @@ networks:
     external: true
 EOL
 
-  STACK_NAME="twentycrm"
-  stack_editavel
-  wait_stack twentycrm_twentycrm_server twentycrm_twentycrm_worker twentycrm_twentycrm_db
+    STACK_NAME="twentycrm"
+    stack_editavel
+    wait_stack twentycrm_twentycrm_server twentycrm_twentycrm_worker twentycrm_twentycrm_db
 
-  cd /root/dados_vps
-  cat > dados_twentycrm <<EOL
+    # >>> BLOCO DE CÓDIGO PARA SALVAR DADOS <<<
+    cd /root/dados_vps
+    cat > dados_twentycrm <<EOL
 [ TWENTYCRM ]
 
 Dominio: https://${url_twentycrm}
 Usuario: (criado no primeiro acesso)
 Senha: (criada no primeiro acesso)
 EOL
+    cd
 
-  cd
-  msg_resumo_informacoes
-  echo "✅ TwentyCRM instalado com sucesso!"
-  echo "Acesse em: https://${url_twentycrm}"
-  echo "Crie seu usuário no primeiro acesso."
-  msg_retorno_menu
-
+    msg_resumo_informacoes
+    echo "✅ TwentyCRM instalado com sucesso!"
+    echo "Acesse em: https://${url_twentycrm}"
+    echo "Crie seu usuário no primeiro acesso."
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
