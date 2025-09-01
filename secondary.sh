@@ -6663,24 +6663,19 @@ EOL
 }
 
 ferramenta_mattermost() {
-  msg_mattermost
-  dados
+    msg_mattermost
+    dados
 
-  read -p $'\e[33mDigite o domínio para o Mattermost (ex: chat.encha.ai): \e[0m' url_mattermost
+    read -p $'\e[33mDigite o domínio para o Mattermost (ex: chat.encha.ai): \e[0m' url_mattermost
+    
+    echo -e "\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "mattermost"
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
-  verificar_container_postgres || ferramenta_postgres
-  pegar_senha_postgres
-  criar_banco_postgres_da_stack "mattermost"
-
-  cat > mattermost.yaml <<EOL
+    cat > mattermost.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   mattermost:
     image: mattermost/mattermost-team-edition:latest
     volumes:
@@ -6702,37 +6697,44 @@ services:
         - "traefik.http.services.mattermost.loadbalancer.server.port=8065"
         - "traefik.http.routers.mattermost.entrypoints=websecure"
         - "traefik.http.routers.mattermost.tls.certresolver=letsencryptresolver"
+
+# >>> CORREÇÃO DE INDENTAÇÃO E SINTAXE ABAIXO <<<
 volumes:
   mattermost_data:
+    external: true
   mattermost_config:
+    external: true
   mattermost_logs:
+    external: true
   mattermost_plugins:
+    external: true
   mattermost_client_plugins:
+    external: true
+
 networks:
   ${nome_rede_interna}:
     external: true
 EOL
 
-  STACK_NAME="mattermost"
-  stack_editavel
-  wait_stack mattermost_mattermost
+    STACK_NAME="mattermost"
+    stack_editavel
+    wait_stack mattermost_mattermost
 
-  cd /root/dados_vps
-  cat > dados_mattermost <<EOL
+    cd /root/dados_vps
+    cat > dados_mattermost <<EOL
 [ MATTERMOST ]
 
 Dominio: https://${url_mattermost}
 Usuario: (criado no primeiro acesso)
 Senha: (criada no primeiro acesso)
 EOL
+    cd
 
-  cd
-  msg_resumo_informacoes
-  echo "✅ Mattermost instalado com sucesso!"
-  echo "Acesse em: https://${url_mattermost}"
-  echo "Crie seu usuário no primeiro acesso."
-  msg_retorno_menu
-
+    msg_resumo_informacoes
+    echo "✅ Mattermost instalado com sucesso!"
+    echo "Acesse em: https://${url_mattermost}"
+    echo "Crie seu usuário no primeiro acesso."
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
