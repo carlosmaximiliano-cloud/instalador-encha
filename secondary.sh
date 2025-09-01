@@ -183,6 +183,19 @@ centralizar "╚═╝      ╚═════╝     ╚═╝  ╚═╝╚═
     echo ""
 }
 
+msg_nocobase() {
+    clear
+    echo -e "${roxo}"
+centralizar "███╗   ██╗ ██████╗  ██████╗ ██████╗ ██████╗  █████╗ ███████╗███████╗"
+centralizar "████╗  ██║██╔═══██╗██╔════╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝"
+centralizar "██╔██╗ ██║██║   ██║██║     ██║   ██║██████╔╝███████║███████╗█████╗"
+centralizar "██║╚██╗██║██║   ██║██║     ██║   ██║██╔══██╗██╔══██║╚════██║██╔══╝"
+centralizar "██║ ╚████║╚██████╔╝╚██████╗╚██████╔╝██████╔╝██║  ██║███████║███████╗"
+centralizar "╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5159,12 +5172,12 @@ ferramenta_pgadmin() {
   echo -e "🔧 \e[97mInstalando o PgAdmin 4... \e[33m[1/2]\e[0m"
   cat > pgadmin.yaml << EOL
 version: "3.7"
+services:
 
 # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-services:
   pgadmin:
     image: dpage/pgadmin4:latest
     environment:
@@ -5205,6 +5218,85 @@ EOL
   msg_retorno_menu
 }
 
+ferramenta_nocobase() {
+  msg_nocobase
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o NocoBase (ex: nocobase.encha.ai): \e[0m" && read -r url_nocobase
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
+    echo -en "📧 \e[33mDigite um email para o NocoBase (ex: admin@encha.ai): \e[0m" && read -r mail_nocobase
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
+    echo -en "👤 \e[33mDigite um nome de usuário (ex: EnchaAdmin): \e[0m" && read -r user_nocobase
+    echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_nocobase
+    echo ""
+
+    clear
+    msg_resumo_informacoes
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_nocobase\e[0m"
+    echo -e "📧 \e[33mEmail:\e[97m $mail_nocobase\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_nocobase\e[0m"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nocobase; fi
+  done
+
+  msg_status
+  echo -e "\e[97m🚀 Iniciando a instalação do NocoBase...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "nocobase"
+
+  cat > nocobase.yml << EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  nocobase:
+    image: nocobase/nocobase:latest
+    volumes:
+      - nocobase_storage:/app/nocobase/storage
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - INIT_ROOT_EMAIL=${mail_nocobase}
+      - INIT_ROOT_PASSWORD=${pass_nocobase}
+      - INIT_ROOT_NICKNAME=${user_nocobase}
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=nocobase
+      - DB_USER=postgres
+      - DB_PASSWORD=${senha_postgres}
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nocobase.rule=Host(\`${url_nocobase}\`)"
+        - "traefik.http.services.nocobase.loadbalancer.server.port=80"
+        - "traefik.http.routers.nocobase.entrypoints=websecure"
+        - "traefik.http.routers.nocobase.tls.certresolver=letsencryptresolver"
+volumes:
+  nocobase_storage:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="nocobase"
+  stack_editavel
+  wait_stack nocobase_nocobase
+
+  msg_resumo_informacoes
+  echo "✅ NocoBase instalado com sucesso!"
+  echo "Acesse em: https://${url_nocobase}"
+  echo "Email: ${mail_nocobase}"
+  msg_retorno_menu
+
+}
 
 verificar_status_servicos() {
     msg_status
@@ -5235,16 +5327,16 @@ exibir_menu() {
         centralizar "📋 === MENU PRINCIPAL ==="
         echo -e "${reset}"
         echo ""
+
         echo -e "${azul}01.${reset} Instalar Traefik + Portainer                            ${azul}08.${reset} Instalar Typebot"
         echo -e "${azul}02.${reset} Instalar Evolution API                                  ${azul}09.${reset} Instalar Directus"
         echo -e "${azul}03.${reset} Instalar N8N                                            ${azul}10.${reset} Instalar Odoo "
         echo -e "${azul}04.${reset} Instalar Chatwoot                                       ${azul}11.${reset} Verificar status dos serviços"
-        echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"s
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha                              "
-        echo -e "${azul}07.${reset} Instalar Minio"
-        echo -e "                                                                           ${azul}13.${reset} Instalar pgAdmin"
+        echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha                             ${azul}13.${reset} Instalar pgAdmin"
+        echo -e "${azul}07.${reset} Instalar Minio                                          ${azul}14.${reset} Instalar nocobase"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-12): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-14): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -5394,10 +5486,17 @@ exibir_menu() {
                 exit 0
                 ;;
             13)
-              if verificar_docker_e_portainer_traefik; then
-                ferramenta_pgadmin
-              fi
-              ;;
+              verificar_stack "pgadmin" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_pgadmin
+                fi
+                ;;
+            14)
+              verificar_stack "nocobase" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_nocobase
+                fi
+                ;;
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
