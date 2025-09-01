@@ -7069,7 +7069,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${senha_postgres}
       - REDIS_HOST=redis_redis
-      # >>> CORREÇÃO: Variáveis redundantes removidas. Esta linha agora cuida de tudo. <<<
       - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
     deploy:
       labels:
@@ -7092,6 +7091,17 @@ EOL
     
     STACK_NAME="nextcloud"
     stack_editavel
+    wait_stack nextcloud_nextcloud
+
+    # >>> BLOCO DE CORREÇÃO DE PERMISSÕES ADICIONADO ABAIXO <<<
+    echo "Ajustando permissões do volume..."
+    # Espera um pouco para garantir que o Docker criou o diretório
+    sleep 5 
+    sudo chown -R 33:33 /var/lib/docker/volumes/nextcloud_data/_data
+    # Reinicia o serviço para aplicar as novas permissões
+    docker service update --force nextcloud_nextcloud > /dev/null 2>&1
+    echo "Aguardando reinicialização do serviço..."
+    sleep 15
     wait_stack nextcloud_nextcloud
 
     cd /root/dados_vps
