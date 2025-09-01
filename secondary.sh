@@ -6450,6 +6450,11 @@ services:
       - SMTP_PASSWORD=${senha_formbricks}
       - SIGNUP_DISABLED=0
     deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.formbricks.rule=Host(\`${url_formbricks}\`)"
@@ -6461,19 +6466,6 @@ volumes:
 networks:
   ${nome_rede_interna}:
     external: true
-EOL
-
-  STACK_NAME="formbricks"
-  stack_editavel
-  wait_stack formbricks_formbricks
-
-  cd /root/dados_vps
-  cat > dados_formbricks <<EOL
-[ FORMBRICKS ]
-
-Dominio: https://${url_formbricks}
-Usuario: (criado no primeiro acesso)
-Senha: (criada no primeiro acesso)
 EOL
 
   cd
@@ -6532,7 +6524,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
         echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
         echo -e "                                                                           ${azul}24.${reset} Instalar woofedcrm"
-        echo -e "                                                                           ${azul}24.${reset} Instalar formbricks"
+        echo -e "                                                                           ${azul}25.${reset} Instalar formbricks"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
