@@ -5379,6 +5379,18 @@ EOL
   stack_editavel
   wait_stack nocobase_nocobase
 
+  cd /root/dados_vps
+  cat > dados_nocobase <<EOL
+[ NOCOBASE ]
+
+Dominio: https://${url_nocobase}
+Email: ${mail_nocobase}
+Usuario: ${user_nocobase}
+Senha: ${pass_nocobase}
+EOL
+
+  cd
+
   msg_resumo_informacoes
   echo "✅ NocoBase instalado com sucesso!"
   echo "Acesse em: https://${url_nocobase}"
@@ -5435,6 +5447,18 @@ EOL
   stack_editavel
   wait_stack botpress_botpress
 
+  cd /root/dados_vps
+  cat > dados_botpress <<EOL
+
+[ BOTPRESS ]
+
+Dominio: https://${url_botpress}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+
   msg_resumo_informacoes
   echo "✅ Botpress instalado com sucesso!"
   echo "Acesse em: https://${url_botpress}"
@@ -5488,6 +5512,17 @@ EOL
   STACK_NAME="baserow"
   stack_editavel
   wait_stack baserow_baserow
+
+  cd /root/dados_vps
+  cat > dados_baerow <<EOL
+[ BASEROW ]
+
+Dominio: https://${url_baserow}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
 
   msg_resumo_informacoes
   echo "✅ Baserow instalado com sucesso!"
@@ -5554,6 +5589,19 @@ EOL
   wait_stack mongodb_mongodb
 
   read -r ip _ <<<"$(hostname -I)"
+
+  cd /root/dados_vps
+  cat > dados_mongodb <<EOL
+[ MONGODB ]
+
+Host: ${ip}
+Porta: 27017
+Usuario: ${user_mongo}
+Senha: ${pass_mongo}
+String de Conexão: mongodb://${user_mongo}:${pass_mongo}@${ip}:27017/?authSource=admin
+EOL
+
+  cd
 
   msg_resumo_informacoes
   echo "✅ MongoDB instalado com sucesso!"
@@ -5626,6 +5674,18 @@ EOL
   stack_editavel
   wait_stack rabbitmq_rabbitmq
 
+  cd /root/dados_vps
+  cat > dados_rabbitmq <<EOL
+[ RABBITMQ ]
+
+Dominio do Painel: https://${url_rabbitmq}
+Usuario: ${user_rabbitmq}
+Senha: ${pass_rabbitmq}
+URL de Conexão: amqp://${user_rabbitmq}:${pass_rabbitmq}@rabbitmq:5672
+EOL
+
+  cd
+
   msg_resumo_informacoes
   echo "✅ RabbitMQ instalado com sucesso!"
   echo "Acesse o painel em: https://${url_rabbitmq}"
@@ -5675,6 +5735,17 @@ EOL
   STACK_NAME="uptimekuma"
   stack_editavel
   wait_stack uptimekuma_uptimekuma
+
+  cd /root/dados_vps
+  cat > dados_uptimekuma <<EOL
+[ UPTIME KUMA ]
+
+Dominio: https://${url_uptimekuma}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
 
   msg_resumo_informacoes
   echo "✅ Uptime Kuma instalado com sucesso!"
@@ -5762,6 +5833,17 @@ EOL
     STACK_NAME="calcom"
     stack_editavel
     wait_stack calcom_calcom
+
+    cd /root/dados_vps
+    cat > dados_calcom <<EOL
+[ CAL.COM ]
+
+Dominio: https://${url_calcom}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+    cd
 
     msg_resumo_informacoes
     echo "✅ Cal.com instalado com sucesso!"
