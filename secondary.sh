@@ -235,6 +235,19 @@ centralizar "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚══�
   echo ""
 }
 
+msg_rabbitmq(){
+  clear
+  echo -e "${roxo}"
+centralizar "██████╗  █████╗ ██████╗ ██████╗ ██╗████████╗    ███╗   ███╗ ██████╗"
+centralizar "██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║╚══██╔══╝    ████╗ ████║██╔═══██╗"
+centralizar "██████╔╝███████║██████╔╝██████╔╝██║   ██║       ██╔████╔██║██║   ██║"
+centralizar "██╔══██╗██╔══██║██╔══██╗██╔══██╗██║   ██║       ██║╚██╔╝██║██║▄▄ ██║"
+centralizar "██║  ██║██║  ██║██████╔╝██████╔╝██║   ██║       ██║ ╚═╝ ██║╚██████╔╝"
+centralizar "╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═════╝ ╚═╝   ╚═╝       ╚═╝     ╚═╝ ╚══▀▀═╝"
+  echo -e "${reset}"
+  echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5514,6 +5527,78 @@ EOL
   msg_retorno_menu
 }
 
+ferramenta_rabbitmq(){
+  msg_rabbitmq
+  dados
+  
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o painel do RabbitMQ (ex: rabbit.encha.ai): \e[0m" && read -r url_rabbitmq
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    echo -en "👤 \e[33mDigite um nome de usuário (ex: encha_user): \e[0m" && read -r user_rabbitmq
+
+    pass_rabbitmq=$(openssl rand -hex 16)
+
+    clear
+    msg_rabbitmq
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_rabbitmq\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_rabbitmq\e[0m"
+    echo -e "🔑 \e[33mSenha Gerada:\e[97m $pass_rabbitmq\e[0m"
+    read -p $'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_rabbitmq; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do RabbitMQ...\e[0m"
+  key_cookie=$(openssl rand -hex 16)
+
+  cat > rabbitmq.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  rabbitmq:
+    image: rabbitmq:management
+    hostname: rabbitmq
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${user_rabbitmq}
+      RABBITMQ_DEFAULT_PASS: ${pass_rabbitmq}
+      RABBITMQ_ERLANG_COOKIE: ${key_cookie}
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.rabbitmq.rule=Host(\`${url_rabbitmq}\`)"
+        - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+        - "traefik.http.routers.rabbitmq.entrypoints=websecure"
+        - "traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver"
+volumes:
+  rabbitmq_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="rabbitmq"
+  stack_editavel
+  wait_stack rabbitmq_rabbitmq
+
+  msg_resumo_informacoes
+  echo "✅ RabbitMQ instalado com sucesso!"
+  echo "Acesse o painel em: https://${url_rabbitmq}"
+  echo "Usuário: ${user_rabbitmq}"
+  echo "Senha: ${pass_rabbitmq}"
+  echo "URL de conexão: amqp://${user_rabbitmq}:${pass_rabbitmq}@rabbitmq:5672"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5554,8 +5639,9 @@ exibir_menu() {
         echo -e "                                                                           ${azul}15.${reset} Instalar botpress"
         echo -e "                                                                           ${azul}16.${reset} Instalar baserow"
         echo -e "                                                                           ${azul}17.${reset} Instalar mongoDB"
+        echo -e "                                                                           ${azul}18.${reset} Instalar rabbitMQ"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-15): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-18): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -5732,6 +5818,12 @@ exibir_menu() {
               verificar_stack "mongodb" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_mongodb
+                fi
+                ;;
+            18)
+              verificar_stack "rabbitmq" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_rabbitmq
                 fi
                 ;;
             *)
