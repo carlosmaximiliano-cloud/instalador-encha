@@ -7129,13 +7129,12 @@ EOL
     msg_retorno_menu
 }
 
-
 ferramenta_strapi() {
     msg_strapi
     dados
 
     while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+        echo -e "\n📍 \e[97mPasso 1/1\e[0m"
         echo -en "🔗 \e[33mDigite o domínio para o Strapi (ex: cms.encha.ai): \e[0m" && read -r url_strapi
         
         clear
@@ -7150,7 +7149,7 @@ ferramenta_strapi() {
 
     echo -e "\e[97m🚀 Iniciando a instalação do Strapi v4...\e[0m"
     verificar_container_mysql || ferramenta_mysql
-    pegar_senha_mysql
+    pegar_senha_mysql_da_stack
     criar_banco_mysql_da_stack "strapi"
 
     # Strapi v4 requer várias chaves de segurança
@@ -7162,18 +7161,12 @@ ferramenta_strapi() {
     cat > strapi.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   strapi:
     image: strapi/strapi:latest
     volumes:
       - strapi_data:/opt/app
     networks:
       - ${nome_rede_interna}
-    # CORREÇÃO: Variáveis de ambiente atualizadas para o Strapi v4
     environment:
       - DATABASE_CLIENT=mysql
       - DATABASE_HOST=mysql
@@ -7220,7 +7213,6 @@ EOL
     echo "Acesse https://${url_strapi}/admin para criar sua conta de administrador."
     msg_retorno_menu
 }
-
 
 verificar_status_servicos() {
     msg_status
