@@ -7022,44 +7022,39 @@ EOL
 
 }
 
-ferramenta_nextcloud(){
-  msg_nextcloud
-  dados
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m" && read -r url_nextcloud
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -en "👤 \e[33mDigite um nome de usuário admin (ex: encha): \e[0m" && read -r user_nextcloud
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔑 \e[33mDigite a senha para o admin: \e[0m" && read -s -r pass_nextcloud
-    echo ""
-
-    clear
+ferramenta_nextcloud() {
     msg_nextcloud
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_nextcloud\e[0m"
-    echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
-  done
+    dados
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
-  verificar_container_postgres || ferramenta_postgres
-  pegar_senha_postgres
-  criar_banco_postgres_da_stack "nextcloud"
-  verificar_container_redis || ferramenta_redis
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m" && read -r url_nextcloud
+        echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+        echo -en "👤 \e[33mDigite um nome de usuário admin (ex: encha): \e[0m" && read -r user_nextcloud
+        echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+        echo -en "🔑 \e[33mDigite a senha para o admin: \e[0m" && read -s -r pass_nextcloud
+        echo ""
 
-  cat > nextcloud.yaml <<EOL
+        clear
+        msg_nextcloud
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio:\e[97m $url_nextcloud\e[0m"
+        echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
+    done
+
+    echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "nextcloud"
+    verificar_container_redis || ferramenta_redis
+
+    cat > nextcloud.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   nextcloud:
     image: nextcloud:latest
     volumes:
@@ -7067,16 +7062,24 @@ services:
     networks:
       - ${nome_rede_interna}
     environment:
+      # Credenciais do Admin
       - NEXTCLOUD_ADMIN_USER=${user_nextcloud}
       - NEXTCLOUD_ADMIN_PASSWORD=${pass_nextcloud}
+      
+      # Banco de Dados
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${senha_postgres}
-      - REDIS_HOST=redis_redis # Nome correto do serviço Redis na rede
-      - OVERWRITEPROTOCOL=https
-      - TRUSTED_PROXIES=0.0.0.0/0
+      
+      # Redis
+      - REDIS_HOST=redis_redis
+
+      # >>> CORREÇÃO APLICADA ABAIXO <<<
+      # Informa ao Nextcloud o domínio confiável desde o início
       - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
+
+      # Força o uso de HTTPS, necessário quando atrás de um reverse proxy como o Traefik
       - OVERWRITEPROTOCOL=https
     deploy:
       labels:
@@ -7086,7 +7089,7 @@ services:
         - "traefik.http.routers.nextcloud.entrypoints=websecure"
         - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
         - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=PLACEHOLDER_URL"
+        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://\${1}/remote.php/dav/"
         - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
 volumes:
   nextcloud_data:
@@ -7095,30 +7098,27 @@ networks:
     external: true
 EOL
 
-  sed -i 's|PLACEHOLDER_URL|https://$${1}/remote.php/dav/|g' nextcloud.yaml
+    # Os comandos 'sed' antigos foram removidos pois não são mais necessários
+    
+    STACK_NAME="nextcloud"
+    stack_editavel
+    wait_stack nextcloud_nextcloud
 
-  STACK_NAME="nextcloud"
-  stack_editavel
-  wait_stack nextcloud_nextcloud
-
-  cd /root/dados_vps
-  cat > dados_nextcloud <<EOL
+    cd /root/dados_vps
+    cat > dados_nextcloud <<EOL
 [ NEXTCLOUD ]
 
 Dominio: https://${url_nextcloud}
 Usuario Admin: ${user_nextcloud}
 Senha Admin: ${pass_nextcloud}
 EOL
+    cd
 
-  cd
-
-  msg_resumo_informacoes
-  msg_resumo_informacoes
-  echo "✅ Nextcloud instalado com sucesso!"
-  echo "Acesse em: https://${url_nextcloud}"
-  echo "Usuário: ${user_nextcloud}"
-  msg_retorno_menu
-        
+    msg_resumo_informacoes
+    echo "✅ Nextcloud instalado com sucesso!"
+    echo "Acesse em: https://${url_nextcloud}"
+    echo "Usuário: ${user_nextcloud}"
+    msg_retorno_menu
 }
 
 
