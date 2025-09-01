@@ -6419,6 +6419,7 @@ ferramenta_formbricks() {
   pegar_senha_pgvector
   criar_banco_pgvector_da_stack "formbricks"
 
+  senha_postgres_formbricks=$(openssl rand -hex 16)
   encryption_key_form=$(openssl rand -hex 32)
   next_key_form=$(openssl rand -hex 32)
 
@@ -6439,7 +6440,8 @@ services:
     environment:
       - WEBAPP_URL=https://${url_formbricks}
       - NEXTAUTH_URL=https://${url_formbricks}
-      - DATABASE_URL=postgresql://postgres:${senha_pgvector}@pgvector:5432/formbricks?schema=public
+      # CORREÇÃO: Apontando para o novo banco de dados dedicado 'formbricks_db'
+      - DATABASE_URL=postgresql://postgres:${senha_postgres_formbricks}@formbricks_db:5432/formbricks?schema=public
       - ENCRYPTION_KEY=${encryption_key_form}
       - NEXTAUTH_SECRET=${next_key_form}
       - MAIL_FROM=${email_formbricks}
@@ -6452,7 +6454,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
       labels:
@@ -6461,8 +6463,26 @@ services:
         - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
         - "traefik.http.routers.formbricks.entrypoints=websecure"
         - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
+
+  # >>> BANCO DE DADOS DEDICADO ADICIONADO ABAIXO <<<
+  formbricks_db:
+    image: postgres:15
+    volumes:
+      - formbricks_db_data:/var/lib/postgresql/data
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - POSTGRES_DB=formbricks
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${senha_postgres_formbricks}
+    deploy:
+      restart_policy:
+        condition: on-failure
+
 volumes:
   formbricks_data:
+  formbricks_db_data:
+
 networks:
   ${nome_rede_interna}:
     external: true
