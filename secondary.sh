@@ -6468,6 +6468,18 @@ networks:
     external: true
 EOL
 
+  STACK_NAME="formbricks"
+  stack_editavel
+  wait_stack formbricks_formbricks
+  cd /root/dados_vps
+  cat > dados_formbricks <<EOL
+[ FORMBRICKS ]
+
+Dominio: https://${url_formbricks}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
   cd
   msg_resumo_informacoes
   echo "✅ Formbricks instalado com sucesso!"
