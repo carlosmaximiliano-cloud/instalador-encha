@@ -184,7 +184,7 @@ centralizar "╚═╝      ╚═════╝     ╚═╝  ╚═╝╚═
 }
 
 msg_nocobase() {
-    clear
+  clear
     echo -e "${roxo}"
 centralizar "███╗   ██╗ ██████╗  ██████╗ ██████╗ ██████╗  █████╗ ███████╗███████╗"
 centralizar "████╗  ██║██╔═══██╗██╔════╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝"
@@ -5249,7 +5249,7 @@ ferramenta_nocobase() {
   pegar_senha_postgres
   criar_banco_postgres_da_stack "nocobase"
 
-  cat > nocobase.yml << EOL
+  cat > nocobase.yaml << EOL
 version: "3.7"
 services:
 
