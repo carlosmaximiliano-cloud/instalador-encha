@@ -5710,15 +5710,17 @@ ferramenta_calcom(){
     echo -en "\e[33m🔌 Digite a porta SMTP do email (ex: 465): \e[0m" && read -r porta_smtp_typebot
     echo ""
 
-    ## Define secure SMTP com base na porta
-    if [ "$porta_smtp_typebot" -eq 465 ]; then
-        smtp_secure_typebot=true
-    else
-        smtp_secure_typebot=false
-    fi
-
     ## Limpa o terminal
     clear
+    msg_calcom
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_calcom\e[0m"
+    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_calcom\e[0m"
+    echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_calcom\e[0m"
+    echo -e "🌐 \e[33mHost SMTP:\e[97m $smtp_email_calcom\e[0m"
+    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_calcom\e[0m"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_calcom; fi
   done
 
   echo -e "\e[97m🚀 Iniciando a instalação do Cal.com...\e[0m"
