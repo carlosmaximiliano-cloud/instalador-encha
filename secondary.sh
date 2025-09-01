@@ -365,6 +365,19 @@ centralizar "╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═
     echo ""
 }
 
+msg_outline(){
+    clear
+    echo -e "${roxo}"
+centralizar "  ██████╗ ██╗   ██╗████████╗██╗     ██╗███╗   ██╗███████╗"
+centralizar " ██╔═══██╗██║   ██║╚══██╔══╝██║     ██║████╗  ██║██╔════╝"
+centralizar " ██║   ██║██║   ██║   ██║   ██║     ██║██╔██╗ ██║█████╗"
+centralizar " ██║   ██║██║   ██║   ██║   ██║     ██║██║╚██╗██║██╔══╝"
+centralizar " ╚██████╔╝╚██████╔╝   ██║   ███████╗██║██║ ╚████║███████╗"
+centralizar "  ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6676,6 +6689,11 @@ ferramenta_mattermost() {
     cat > mattermost.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   mattermost:
     image: mattermost/mattermost-team-edition:latest
     volumes:
@@ -6698,7 +6716,6 @@ services:
         - "traefik.http.routers.mattermost.entrypoints=websecure"
         - "traefik.http.routers.mattermost.tls.certresolver=letsencryptresolver"
 
-# >>> CORREÇÃO DE INDENTAÇÃO E SINTAXE ABAIXO <<<
 volumes:
   mattermost_data:
     external: true
@@ -6735,6 +6752,106 @@ EOL
     echo "Acesse em: https://${url_mattermost}"
     echo "Crie seu usuário no primeiro acesso."
     msg_retorno_menu
+}
+
+ferramenta_outline(){
+  msg_outline
+  dados
+
+  while true; do
+    echo -e "\n\e[33mO Outline requer integração com um provedor de login (Google, Slack, etc).\e[0m"
+    echo -e "\e[33mVamos configurar com o Google.\e[0m"
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Outline (ex: wiki.encha.ai): \e[0m" && read -r url_outline
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -e "🔑 \e[33mCrie as credenciais em: https://console.cloud.google.com/apis/credentials\e[0m"
+    echo -en "🆔 \e[33mDigite seu ID de Cliente do Google: \e[0m" && read -r id_google_outline
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -en "🔒 \e[33mDigite sua Chave Secreta de Cliente do Google: \e[0m" && read -s -r key_google_outline
+    echo ""
+
+    clear
+    msg_outline
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_outline\e[0m"
+    echo -e "🆔 \e[33mID Cliente Google:\e[97m $id_google_outline\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_outline; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Outline...\e[0m"   
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "outline"
+  verificar_container_redis || ferramenta_redis
+
+  key1=$(openssl rand -hex 32)
+  key2=$(openssl rand -hex 32)
+
+  cat > outline.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  outline:
+    image: outlinewiki/outline:latest
+    networks:
+      - ${nome_rede_interna}
+    volumes:
+      - outline_uploads:/var/lib/outline/uploads
+    environment:
+      - URL=https://${url_outline}
+      - PORT=3000
+      - SECRET_KEY=${key1}
+      - UTILS_SECRET=${key2}
+      - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/outline
+      - REDIS_URL=redis://redis:6379
+      - OIDC_CLIENT_ID=${id_google_outline}
+      - OIDC_CLIENT_SECRET=${key_google_outline}
+      - OIDC_AUTH_URI=https://accounts.google.com/o/oauth2/auth
+      - OIDC_TOKEN_URI=https://accounts.google.com/o/oauth2/token
+      - OIDC_USERINFO_URI=https://www.googleapis.com/oauth2/v3/userinfo
+      - OIDC_DISPLAY_NAME=Google
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.outline.rule=Host(\`${url_outline}\`)"
+        - "traefik.http.services.outline.loadbalancer.server.port=3000"
+        - "traefik.http.routers.outline.entrypoints=websecure"
+        - "traefik.http.routers.outline.tls.certresolver=letsencryptresolver"
+volumes:
+  outline_uploads:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="outline"
+  stack_editavel
+  wait_stack outline_outline
+
+  cd /root/dados_vps
+  cat > dados_outline <<EOL
+[ OUTLINE ]
+
+Dominio: https://${url_outline}
+Login: via Google (você precisará autorizar a URL de callback nas suas credenciais do Google)
+URL de Callback: https://${url_outline}/auth/oidc.callback
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo "✅ Outline instalado com sucesso!"
+  echo "Acesse em: https://${url_outline}"
+  echo -e "⚠️  \e[33mIMPORTANTE: Adicione a seguinte URL de Callback nas suas credenciais do Google:\e[0m"
+  echo -e "➡️  \e[97mhttps://${url_outline}/auth/oidc.callback\e[0m"
+  msg_retorno_menu
+
 }
 
 verificar_status_servicos() {
@@ -6787,8 +6904,9 @@ exibir_menu() {
         echo -e "                                                                           ${azul}25.${reset} Instalar formbricks"
         echo -e "                                                                           ${azul}26.${reset} Instalar twentyCRM"
         echo -e "                                                                           ${azul}27.${reset} Instalar Mattermost"
+        echo -e "                                                                           ${azul}28.${reset} Instalar outline"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -7025,6 +7143,12 @@ exibir_menu() {
               verificar_stack "mattermost" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_mattermost
+                fi
+                ;;
+            28)
+              verificar_stack "outline" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_outline
                 fi
                 ;;
             *)
