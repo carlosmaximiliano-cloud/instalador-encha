@@ -391,6 +391,20 @@ centralizar "╚═╝      ╚═════╝  ╚═════╝╚═�
     echo ""
 }
 
+msg_glpi(){
+    clear
+    echo -e "${roxo}"
+centralizar "      ██████╗ ██╗     ██████╗ ██╗"
+centralizar "    ██╔════╝ ██║     ██╔══██╗██║"
+centralizar "    ██║  ███╗██║     ██████╔╝██║"
+centralizar "    ██║   ██║██║     ██╔═══╝ ██║"
+centralizar "    ╚██████╔╝███████╗██║     ██║"
+centralizar "     ╚═════╝ ╚══════╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6925,6 +6939,78 @@ EOL
 
 }
 
+ferramenta_glpi(){
+  msg_glpi
+  dados
+
+  read -p $'\e[33mDigite o domínio para o GLPI (ex: helpdesk.encha.ai): \e[0m' url_glpi
+
+  echo -e "\e[97m🚀 Iniciando a instalação do GLPI...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "glpi"
+
+  cat > glpi.yaml <<EOL
+version: "3.7"
+services:
+  glpi:
+    image: diouxx/glpi:latest
+    volumes:
+      - glpi_data:/var/www/html/glpi
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - TIMEZONE=America/Sao_Paulo
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.glpi.rule=Host(\`${url_glpi}\`)"
+        - "traefik.http.services.glpi.loadbalancer.server.port=80"
+        - "traefik.http.routers.glpi.entrypoints=websecure"
+        - "traefik.http.routers.glpi.tls.certresolver=letsencryptresolver"
+volumes:
+  glpi_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="glpi"
+  stack_editavel
+  wait_stack glpi_glpi
+
+  cd /root/dados_vps
+  cat > dados_glpi <<EOL
+[ GLPI ]
+
+Dominio: https://${url_glpi}
+---
+Credenciais do Banco de Dados para o Setup:
+Host: mysql
+Usuario: root
+Senha: ${senha_mysql}
+Banco de dados: glpi
+---
+Credenciais de Acesso Padrão (após setup):
+Usuario: glpi
+Senha: glpi
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo "✅ GLPI instalado!"
+  echo "Acesse https://${url_glpi} para completar a instalação."
+  echo ""
+  echo -e "\e[33mUse as seguintes informações na tela de setup do banco de dados:\e[0m"
+  echo "Endereço do servidor SQL: mysql"
+  echo "Usuário SQL: root"
+  echo "Senha SQL: ${senha_mysql}"
+  echo "Banco de dados: glpi"
+  msg_retorno_menu
+
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -6977,6 +7063,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}27.${reset} Instalar Mattermost"
         echo -e "                                                                           ${azul}28.${reset} Instalar outline"
         echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
+        echo -e "                                                                           ${azul}30.${reset} Instalar GLPI"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7227,6 +7314,12 @@ exibir_menu() {
               verificar_stack "focalboard" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_focalboard
+                fi
+                ;;
+            30)
+              verificar_stack "glpi" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_glpi
                 fi
                 ;;
             *)
