@@ -274,6 +274,19 @@ centralizar " ╚═════╝╚═╝  ╚═╝╚══════╝�
   echo ""
 }
 
+msg_mautic(){
+    clear
+    echo -e "${roxo}"
+centralizar "███╗   ███╗ █████╗ ██╗   ██╗████████╗██╗ ██████╗"
+centralizar "████╗ ████║██╔══██╗██║   ██║╚══██╔══╝██║██╔════╝"
+centralizar "██╔████╔██║███████║██║   ██║   ██║   ██║██║"     
+centralizar "██║╚██╔╝██║██╔══██║██║   ██║   ██║   ██║██║"     
+centralizar "██║ ╚═╝ ██║██║  ██║╚██████╔╝   ██║   ██║╚██████╗"
+centralizar "╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -1739,6 +1752,114 @@ wait_stack "postgres_postgres"
 
 echo ""
 }
+
+ferramenta_mysql() {
+  dados
+
+  senha_mysql=$(openssl rand -hex 16)
+
+  cat > mysql.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  mysql:
+    image: percona/percona-server:8.0
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ${nome_rede_interna}
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${senha_mysql}
+      - TZ=America/Sao_Paulo
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+volumes:
+  mysql_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="mysql"
+  stack_editavel
+  wait_stack mysql_mysql
+
+  cd /root/dados_vps
+  cat > dados_mysql <<EOL
+[ MYSQL ]
+
+Host: mysql
+Porta: 3306
+Usuario: root
+Senha: ${senha_mysql}
+EOL
+
+  cd
+  echo ""
+}
+
+verificar_container_mysql() {
+  if docker ps -q --filter "name=mysql_mysql" | grep -q .; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+pegar_senha_mysql_da_stack() {
+  while :; do
+    if [ -f /root/dados_vps/dados_mysql ]; then
+      senha_mysql=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+      break
+    else
+      echo "Aguardando arquivo de dados do MySQL..."
+      sleep 5
+    fi
+  done
+}
+
+criar_banco_mysql_da_stack() {
+    local dbname="$1"
+    while :; do
+        if docker ps -q --filter "name=^mysql_mysql" | grep -q .; then
+            CONTAINER_ID=$(docker ps -q --filter "name=^mysql_mysql")
+
+            # Verifica se o banco de dados já existe
+            if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
+                echo -e "\e[33mO banco de dados '$dbname' já existe. Mantendo o banco existente.\e[0m"
+                break
+            else
+                # Cria o banco de dados
+                docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "CREATE DATABASE $dbname;" > /dev/null 2>&1
+                
+                # Verifica se foi criado com sucesso
+                if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
+                    echo -e "\e[32mBanco de dados '$dbname' criado com sucesso.\e[0m"
+                    break
+                else
+                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    sleep 2
+                fi
+            fi
+        else
+            echo "Container MySQL não encontrado. Aguardando..."
+            sleep 5
+        fi
+    done
+}
+
 
 ferramenta_postgres_formacao_encha() {
 
@@ -5852,6 +5973,100 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_mautic(){
+  msg_mautic
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Mautic (ex: mautic.encha.ai): \e[0m" && read -r url_mautic
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
+    echo -en "👤 \e[33mDigite um usuário admin (ex: EnchaAdmin): \e[0m" && read -r user_mautic
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
+    echo -en "📧 \e[33mDigite o email do admin (ex: admin@encha.ai): \e[0m" && read -r email_mautic
+    echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
+    echo -en "🔑 \e[33mDigite a senha do admin: \e[0m" && read -s -r senha_mautic
+    echo ""
+
+    clear
+    msg_mautic
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_mautic\e[0m"
+    echo -e "👤 \e[33mUsuário Admin:\e[97m $user_mautic\e[0m"
+    echo -e "📧 \e[33mEmail Admin:\e[97m $email_mautic\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_mautic; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Mautic...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack 
+  criar_banco_mysql_da_stack "mautic"
+  
+  # Continuar depois de criar as informações do mysql...
+  cat > mautic.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  mautic_app:
+    image: mautic/mautic:latest
+    volumes:
+      - mautic_data:/var/www/html
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - MAUTIC_DB_HOST=mysql
+      - MAUTIC_DB_USER=root
+      - MAUTIC_DB_PASSWORD=${senha_mysql}
+      - MAUTIC_DB_NAME=mautic
+      - MAUTIC_ADMIN_EMAIL=${email_mautic}
+      - MAUTIC_ADMIN_USERNAME=${user_mautic}
+      - MAUTIC_ADMIN_PASSWORD=${senha_mautic}
+      - MAUTIC_TRUSTED_PROXIES=["0.0.0.0/0"]
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.mautic.rule=Host(\`${url_mautic}\`)"
+        - "traefik.http.services.mautic.loadbalancer.server.port=80"
+        - "traefik.http.routers.mautic.entrypoints=websecure"
+        - "traefik.http.routers.mautic.tls.certresolver=letsencryptresolver"
+volumes:
+  mautic_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="mautic"
+  stack_editavel
+  wait_stack mautic_mautic_app
+
+  cd /root/dados_vps
+  cat > dados_mautic <<EOL
+[ MAUTIC ]
+
+Dominio: https://${url_mautic}
+Usuario Admin: ${user_mautic}
+Email Admin: ${email_mautic}
+Senha Admin: ${senha_mautic}
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Mautic instalado com sucesso!"
+  echo "Acesse em: https://${url_mautic}"
+  echo "Usuário: ${user_mautic}"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5895,6 +6110,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}18.${reset} Instalar rabbitMQ"
         echo -e "                                                                           ${azul}19.${reset} Instalar uptimeKuma"
         echo -e "                                                                           ${azul}20.${reset} Instalar calcom"
+        echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6091,6 +6307,12 @@ exibir_menu() {
               verificar_stack "calcom" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_calcom
+                fi
+                ;;
+            21)
+              verificar_stack "mautic" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_mautic
                 fi
                 ;;
             *)
