@@ -287,6 +287,19 @@ centralizar "╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝  
     echo ""
 }
 
+msg_appsmith(){
+    clear
+    echo -e "${roxo}"
+centralizar "   █████╗ ██████╗ ██████╗ ███████╗███╗   ███╗██╗████████╗██╗  ██╗"
+centralizar "  ██╔══██╗██╔══██╗██╔══██╗██╔════╝████╗ ████║██║╚══██╔══╝██║  ██║"
+centralizar "  ███████║██████╔╝██████╔╝███████╗██╔████╔██║██║   ██║   ███████║"
+centralizar "  ██╔══██║██╔═══╝ ██╔═══╝ ╚════██║██║╚██╔╝██║██║   ██║   ██╔══██║"
+centralizar "  ██║  ██║██║     ██║     ███████║██║ ╚═╝ ██║██║   ██║   ██║  ██║"
+centralizar "  ╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝     ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6067,6 +6080,72 @@ EOL
 
 }
 
+ferramenta_appsmith(){
+  msg_appsmith
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Appsmith (ex: apps.encha.ai): \e[0m' url_appsmith
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Appsmith...\e[0m"
+
+  cat > appsmith.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  appsmith:
+    image: appsmith/appsmith-ee:latest
+    volumes:
+      - appsmith_data:/appsmith-stacks
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - APPSMITH_CUSTOM_DOMAIN=https://${url_appsmith}
+      - APPSMITH_SIGNUP_DISABLED=false
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.appsmith.rule=Host(\`${url_appsmith}\`)"
+        - "traefik.http.services.appsmith.loadbalancer.server.port=80"
+        - "traefik.http.routers.appsmith.entrypoints=websecure"
+        - "traefik.http.routers.appsmith.tls.certresolver=letsencryptresolver"
+volumes:
+  appsmith_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="appsmith"
+  stack_editavel
+  wait_stack appsmith_appsmith
+
+  cd /root/dados_vps
+  cat > dados_appsmith <<EOL
+[ APPSMITH ]
+
+Dominio: https://${url_appsmith}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Appsmith instalado com sucesso!"
+  echo "Acesse em: https://${url_appsmith}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -6111,6 +6190,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}19.${reset} Instalar uptimeKuma"
         echo -e "                                                                           ${azul}20.${reset} Instalar calcom"
         echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
+        echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6313,6 +6393,12 @@ exibir_menu() {
               verificar_stack "mautic" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_mautic
+                fi
+                ;;
+            22)
+              verificar_stack "appsmith" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_appsmith
                 fi
                 ;;
             *)
