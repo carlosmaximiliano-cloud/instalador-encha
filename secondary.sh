@@ -352,6 +352,19 @@ centralizar "   ╚═╝    ╚══╝╚══╝ ╚══════╝�
     echo ""
 }
 
+msg_mattermost(){
+    clear
+    echo -e "${roxo}"
+centralizar "███╗   ███╗ █████╗ ████████╗████████╗███████╗██████╗ ███╗   ███╗ ██████╗ ███████╗████████╗"
+centralizar "████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██╔═══██╗██╔════╝╚══██╔══╝"
+centralizar "██╔████╔██║███████║   ██║      ██║   █████╗  ██████╔╝██╔████╔██║██║   ██║███████╗   ██║"
+centralizar "██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║╚════██║   ██║"
+centralizar "██║ ╚═╝ ██║██║  ██║   ██║      ██║   ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝███████║   ██║"
+centralizar "╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6559,12 +6572,16 @@ ferramenta_twentycrm() {
     echo -e "\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
     
     senha_postgres_twentycrm=$(openssl rand -hex 16)
-    # >>> GERANDO A CHAVE SECRETA QUE FALTAVA <<<
     Key_aleatoria_twentycrm_1=$(openssl rand -hex 16)
 
     cat > twentycrm.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   twentycrm_server:
     image: twentycrm/twenty:latest
     volumes:
@@ -6578,7 +6595,6 @@ services:
       - REDIS_URL=redis://redis:6379
       - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
       - STORAGE_TYPE=local
-      # >>> LINHA ADICIONADA ABAIXO <<<
       - APP_SECRET=${Key_aleatoria_twentycrm_1}
     deploy:
       labels:
@@ -6600,7 +6616,6 @@ services:
       - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
       - DISABLE_DB_MIGRATIONS=true
       - STORAGE_TYPE=local
-      # >>> LINHA ADICIONADA ABAIXO <<<
       - APP_SECRET=${Key_aleatoria_twentycrm_1}
 
   twentycrm_db:
@@ -6630,7 +6645,6 @@ EOL
     stack_editavel
     wait_stack twentycrm_twentycrm_server twentycrm_twentycrm_worker twentycrm_twentycrm_db
 
-    # >>> BLOCO DE CÓDIGO PARA SALVAR DADOS <<<
     cd /root/dados_vps
     cat > dados_twentycrm <<EOL
 [ TWENTYCRM ]
@@ -6646,6 +6660,79 @@ EOL
     echo "Acesse em: https://${url_twentycrm}"
     echo "Crie seu usuário no primeiro acesso."
     msg_retorno_menu
+}
+
+ferramenta_mattermost() {
+  msg_mattermost
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Mattermost (ex: chat.encha.ai): \e[0m' url_mattermost
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack
+
+  cat > mattermost.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    volumes:
+      - mattermost_data:/mattermost/data
+      - mattermost_config:/mattermost/config
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - MM_SERVICESETTINGS_SITEURL=https://${url_mattermost}
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://postgres:${senha_postgres}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.mattermost.rule=Host(\`${url_mattermost}\`)"
+        - "traefik.http.services.mattermost.loadbalancer.server.port=8065"
+        - "traefik.http.routers.mattermost.entrypoints=websecure"
+        - "traefik.http.routers.mattermost.tls.certresolver=letsencryptresolver"
+volumes:
+  mattermost_data:
+  mattermost_config:
+  mattermost_logs:
+  mattermost_plugins:
+  mattermost_client_plugins:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="mattermost"
+  stack_editavel
+  wait_stack mattermost_mattermost
+
+  cd /root/dados_vps
+  cat > dados_mattermost <<EOL
+[ MATTERMOST ]
+
+Dominio: https://${url_mattermost}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo "✅ Mattermost instalado com sucesso!"
+  echo "Acesse em: https://${url_mattermost}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
 }
 
 verificar_status_servicos() {
@@ -6697,6 +6784,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}24.${reset} Instalar woofedcrm"
         echo -e "                                                                           ${azul}25.${reset} Instalar formbricks"
         echo -e "                                                                           ${azul}26.${reset} Instalar twentyCRM"
+        echo -e "                                                                           ${azul}27.${reset} Instalar Mattermost"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6929,6 +7017,12 @@ exibir_menu() {
               verificar_stack "twentycrm" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_twentycrm
+                fi
+                ;;
+            27)
+              verificar_stack "mattermost" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_mattermost
                 fi
                 ;;
             *)
