@@ -7076,6 +7076,8 @@ services:
       - REDIS_HOST=redis_redis # Nome correto do serviço Redis na rede
       - OVERWRITEPROTOCOL=https
       - TRUSTED_PROXIES=0.0.0.0/0
+      - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
+      - OVERWRITEPROTOCOL=https
     deploy:
       labels:
         - "traefik.enable=true"
