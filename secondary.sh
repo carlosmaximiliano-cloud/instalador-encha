@@ -222,6 +222,19 @@ centralizar "╚═════╝ ╚═╝  ╚═╝╚══════╝�
     echo ""
 }
 
+msg_mongodb(){
+  clear
+  echo -e "${roxo}"
+centralizar "███╗   ███╗ ██████╗ ███╗   ██╗ ██████╗  ██████╗     ██████╗ ██████╗"
+centralizar "████╗ ████║██╔═══██╗████╗  ██║██╔════╝ ██╔═══██╗    ██╔══██╗██╔══██╗"
+centralizar "██╔████╔██║██║   ██║██╔██╗ ██║██║  ███╗██║   ██║    ██║  ██║██████╔╝"
+centralizar "██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║██║   ██║    ██║  ██║██╔══██╗"
+centralizar "██║ ╚═╝ ██║╚██████╔╝██║ ╚████║╚██████╔╝╚██████╔╝    ██████╔╝██████╔╝"
+centralizar "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝     ╚═════╝ ╚═════╝"
+  echo -e "${reset}"
+  echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5433,6 +5446,74 @@ EOL
   msg_retorno_menu
 }
 
+ferramenta_mongodb(){
+  msg_mongodb
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+    echo -en "👤 \e[33mDigite o nome de usuário para o MongoDB (ex: encha_user): \e[0m" && read -r user_mongo
+
+    # Gera a senha aleatória
+    pass_mongo=$(openssl rand -hex 16)
+
+    clear
+    msg_mongodb
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_mongo\e[0m"
+    echo -e "🔑 \e[33mSenha Gerada:\e[97m $pass_mongo (esta senha será usada na instalação)\e[0m"
+    read -p $'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_mongodb; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do MongoDB...\e[0m"
+
+  cat > mongodb.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ${nome_rede_interna}
+    ports:
+      - "27017:27017" # Expondo a porta para acesso externo, se necessário
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${user_mongo}
+      - MONGO_INITDB_ROOT_PASSWORD=${pass_mongo}
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2048M
+volumes:
+  mongodb_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="mongodb"
+  stack_editavel
+  wait_stack mongodb_mongodb
+
+  read -r ip _ <<<"$(hostname -I)"
+
+  msg_resumo_informacoes
+  echo "✅ MongoDB instalado com sucesso!"
+  echo "Host: O IP do seu servidor (ex: $ip)"
+  echo "Porta: 27017"
+  echo "Usuário: ${user_mongo}"
+  echo "Senha: ${pass_mongo}"
+  msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5472,6 +5553,7 @@ exibir_menu() {
         echo -e "${azul}07.${reset} Instalar Minio                                          ${azul}14.${reset} Instalar nocobase"
         echo -e "                                                                           ${azul}15.${reset} Instalar botpress"
         echo -e "                                                                           ${azul}16.${reset} Instalar baserow"
+        echo -e "                                                                           ${azul}17.${reset} Instalar mongoDB"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-15): ${reset}"
         read -r opcao
@@ -5644,6 +5726,12 @@ exibir_menu() {
               verificar_stack "baserow" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_baserow
+                fi
+                ;;
+            17)
+              verificar_stack "mongodb" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_mongodb
                 fi
                 ;;
             *)
