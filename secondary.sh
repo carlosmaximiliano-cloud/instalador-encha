@@ -7282,6 +7282,97 @@ EOL
 
 }
 
+ferramenta_anythingllm() {
+  msg_anythingllm
+  dados
+
+  while true; do
+    read -r ip _ <<<"$(hostname -I)"
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o AnythingLLM (ex: anything.encha.ai): \e[0m" && read -r url_anythingllm
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -en "🔗 \e[33mDigite o endpoint do Qdrant (ex: http://$ip:6333): \e[0m" && read -r qdrant_anythingllm
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -en "🔑 \e[33mDigite a API Key do Qdrant (se houver): \e[0m" && read -r api_qdrant_anythingllm
+    echo ""
+
+    clear
+    msg_anythingllm
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio AnythingLLM:\e[97m $url_anythingllm\e[0m"
+    echo -e "🔗 \e[33mEndpoint Qdrant:\e[97m $qdrant_anythingllm\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_anythingllm; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do AnythingLLM...\e[0m"
+  verificar_docker_e_portainer_traefik || return
+  verificar_stack "qdrant" || ferramenta_qdrant
+
+  cat > anythingllm.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    volumes:
+      - anythingllm_storage:/app/server/storage
+    networks:
+      - $nome_rede_interna
+    environment:
+      - STORAGE_DIR=/app/server/storage
+      - VECTOR_DB=qdrant
+      - QDRANT_ENDPOINT=$qdrant_anythingllm
+      - QDRANT_API_KEY=$api_qdrant_anythingllm
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.anythingllm.rule=Host(\`$url_anythingllm\`)"
+        - "traefik.http.services.anythingllm.loadbalancer.server.port=3001"
+        - "traefik.http.routers.anythingllm.service=anythingllm"
+        - "traefik.http.routers.anythingllm.entrypoints=websecure"
+        - "traefik.http.routers.anythingllm.tls.certresolver=letsencryptresolver"
+volumes:
+  anythingllm_storage:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="anythingllm"
+  stack_editavel
+  wait_stack anythingllm_anythingllm
+
+  cd /root/dados_vps
+  cat > dados_anythingllm <<EOL
+[ ANYTHINGLLM ]
+Dominio: https://$url_anythingllm
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ ANYTHINGLLM ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_anythingllm\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7336,7 +7427,8 @@ exibir_menu() {
         echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
         echo -e "                                                                           ${azul}32.${reset} Instalar Flowise"
         echo -e "                                                                           ${azul}33.${reset} Instalar Langflow"
-        echo -e "                                                                           ${azul}33.${reset} Instalar Ollama"
+        echo -e "                                                                           ${azul}34.${reset} Instalar Ollama"
+        echo -e "                                                                           ${azul}35.${reset} Instalar Anythingllm"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7617,6 +7709,12 @@ exibir_menu() {
               verificar_stack "ollama" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_ollama
+                fi
+                ;;
+            35)
+              verificar_stack "anythingllm" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_anythingllm
                 fi
                 ;;
             *)
