@@ -5125,7 +5125,7 @@ msg_retorno_menu
 }
 
 ferramenta_pgadmin() {
-  msg_info "Iniciando instalação do PgAdmin 4..."
+  echo -p "Iniciando instalação do PgAdmin 4..."
   dados
 
   while true; do
