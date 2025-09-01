@@ -6464,7 +6464,6 @@ services:
         - "traefik.http.routers.formbricks.entrypoints=websecure"
         - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
 
-  # >>> BANCO DE DADOS DEDICADO ADICIONADO ABAIXO <<<
   formbricks_db:
     image: postgres:15
     volumes:
@@ -6490,7 +6489,11 @@ EOL
 
   STACK_NAME="formbricks"
   stack_editavel
-  wait_stack formbricks_formbricks
+
+  echo "Aguardando o banco de dados e a migração inicial..."
+  sleep 45 # Damos um tempo generoso para o DB subir e a migração rodar
+  
+  wait_stack formbricks_formbricks formbricks_formbricks_db
   cd /root/dados_vps
   cat > dados_formbricks <<EOL
 [ FORMBRICKS ]
