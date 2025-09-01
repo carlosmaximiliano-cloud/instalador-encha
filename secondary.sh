@@ -5721,6 +5721,7 @@ services:
 
   calcom:
     image: calcom/cal.com:latest
+    command: sh -c "yarn prisma migrate deploy && yarn start"
     networks:
       - ${nome_rede_interna}
     environment:
