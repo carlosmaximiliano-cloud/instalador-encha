@@ -339,6 +339,19 @@ centralizar "╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝ 
     echo ""
 }
 
+msg_twentycrm() {
+    clear
+    echo -e "${roxo}"
+centralizar "████████╗██╗    ██╗███████╗███╗   ██╗████████╗██╗   ██╗ ██████╗██████╗ ███╗   ███╗"
+centralizar "╚══██╔══╝██║    ██║██╔════╝████╗  ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗████╗ ████║"
+centralizar "   ██║   ██║ █╗ ██║█████╗  ██╔██╗ ██║   ██║    ╚████╔╝ ██║     ██████╔╝██╔████╔██║"
+centralizar "   ██║   ██║███╗██║██╔══╝  ██║╚██╗██║   ██║     ╚██╔╝  ██║     ██╔══██╗██║╚██╔╝██║"
+centralizar "   ██║   ╚███╔███╔╝███████╗██║ ╚████║   ██║      ██║   ╚██████╗██║  ██║██║ ╚═╝ ██║"
+centralizar "   ╚═╝    ╚══╝╚══╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6519,6 +6532,115 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_twentycrm() {
+  msg_twentycrm
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o TwentyCRM (ex: 20.encha.ai): \e[0m" && read -r url_twentycrm
+
+    clear
+    msg_twentycrm
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_twentycrm\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_twentycrm; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
+
+  senha_postgres_twentycrm=$(openssl rand -hex 16)
+
+  cat > twentycrm.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  twentycrm_server:
+    image: twentycrm/twenty:latest
+    volumes:
+      - twentycrm_data:/app/packages/twenty-server/.local-storage
+      - twentycrm_docker:/app/docker-data
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - PORT=3000
+      - SERVER_URL=https://${url_twentycrm}
+      - REDIS_URL=redis://redis:6379
+      - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
+      - STORAGE_TYPE=local
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.twentycrm.rule=Host(\`${url_twentycrm}\`)"
+        - "traefik.http.services.twentycrm.loadbalancer.server.port=3000"
+        - "traefik.http.routers.twentycrm.entrypoints=websecure"
+        - "traefik.http.routers.twentycrm.tls.certresolver=letsencryptresolver"
+
+  twentycrm_worker:
+    image: twentycrm/twenty:latest
+    command: ["yarn", "worker:prod"]
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - PORT=3000
+      - SERVER_URL=https://${url_twentycrm}
+      - REDIS_URL=redis://redis:6379
+      - PG_DATABASE_URL=postgres://postgres:${senha_postgres_twentycrm}@twentycrm_db:5432/default
+      - DISABLE_DB_MIGRATIONS=true
+      - STORAGE_TYPE=local
+
+  twentycrm_db:
+    image: twentycrm/twenty-postgres-spilo:latest
+    volumes:
+      - twentycrm_db_data:/home/postgres/pgdata
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - PGUSER_SUPERUSER=postgres
+      - POSTGRESQL_PASSWORD=${senha_postgres_twentycrm}
+      - PGPASSWORD_SUPERUSER=${senha_postgres_twentycrm}
+      - ALLOW_NOSSL=true
+      - SPILO_PROVIDER=local
+
+volumes:
+  twentycrm_data:
+  twentycrm_docker:
+  twentycrm_db_data:
+
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="twentycrm"
+  stack_editavel
+  wait_stack twentycrm_twentycrm_server twentycrm_twentycrm_worker twentycrm_twentycrm_db
+
+  cd /root/dados_vps
+  cat > dados_twentycrm <<EOL
+[ TWENTYCRM ]
+
+Dominio: https://${url_twentycrm}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo "✅ TwentyCRM instalado com sucesso!"
+  echo "Acesse em: https://${url_twentycrm}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -6567,6 +6689,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
         echo -e "                                                                           ${azul}24.${reset} Instalar woofedcrm"
         echo -e "                                                                           ${azul}25.${reset} Instalar formbricks"
+        echo -e "                                                                           ${azul}26.${reset} Instalar twentyCRM"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6793,6 +6916,12 @@ exibir_menu() {
               verificar_stack "formbricks" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_formbricks
+                fi
+                ;;
+            26)
+              verificar_stack "twentycrm" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_twentycrm
                 fi
                 ;;
             *)
