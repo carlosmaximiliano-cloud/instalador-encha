@@ -313,6 +313,19 @@ centralizar "     ╚══▀▀═╝ ╚═════╝ ╚═╝  ╚═�
     echo ""
 }
 
+msg_woofedcrm(){
+    clear
+    echo -e "${roxo}"
+centralizar "██╗    ██╗ ██████╗  ██████╗ ███████╗███████╗██████╗      ██████╗██████╗ ███╗   ███╗"
+centralizar "██║    ██║██╔═══██╗██╔═══██╗██╔════╝██╔════╝██╔══██╗    ██╔════╝██╔══██╗████╗ ████║"
+centralizar "██║ █╗ ██║██║   ██║██║   ██║█████╗  █████╗  ██║  ██║    ██║     ██████╔╝██╔████╔██║"
+centralizar "██║███╗██║██║   ██║██║   ██║██╔══╝  ██╔══╝  ██║  ██║    ██║     ██╔══██╗██║╚██╔╝██║"
+centralizar "╚███╔███╔╝╚██████╔╝╚██████╔╝██║     ███████╗██████╔╝    ╚██████╗██║  ██║██║ ╚═╝ ██║"
+centralizar " ╚══╝╚══╝  ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝╚═════╝      ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6104,6 +6117,11 @@ ferramenta_appsmith(){
   cat > appsmith.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   appsmith:
     image: appsmith/appsmith-ee:latest
     volumes:
@@ -6217,6 +6235,135 @@ EOL
 
 }
 
+ferramenta_woofedcrm() {
+  msg_woofedcrm
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o WoofedCRM (ex: crm.encha.ai): \e[0m" && read -r url_woofed
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -en "👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m" && read -r user_motor_woofed
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -en "🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m" && read -s -r pass_motor_woofed
+    echo ""
+
+    clear
+    msg_woofedcrm
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio WoofedCRM:\e[97m $url_woofed\e[0m"
+    echo -e "👤 \e[33mUsuário MOTOR:\e[97m $user_motor_woofed\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_woofedcrm; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Woofed CRM...\e[0m"
+  verificar_container_pgvector || ferramenta_pgvector
+  pegar_senha_pgvector
+  criar_banco_pgvector_da_stack "woofedcrm"
+
+  verificar_container_redis || ferramenta_redis
+
+  encryption_key_woofed=$(openssl rand -hex 16)
+
+  # verifica se o arquivo evolution.yaml existe para preencher as variáveis
+  if [ -f "/root/dados_vps/dados_evolution" ]; then
+    EVOLUTION_API_ENDPOINT="- EVOLUTION_API_ENDPOINT=$(grep "URL:" /root/dados_vps/dados_evolution | awk '{print $2}')"
+    EVOLUTION_API_ENDPOINT_TOKEN="- EVOLUTION_API_ENDPOINT_TOKEN=$(grep "Global API Key:" /root/dados_vps/dados_evolution | awk '{print $4}')"
+  else
+    EVOLUTION_API_ENDPOINT="#- EVOLUTION_API_ENDPOINT="
+    EVOLUTION_API_ENDPOINT_TOKEN="#- EVOLUTION_API_ENDPOINT_TOKEN="
+  fi
+
+  cat > woofedcrm.yaml <<EOL
+version: "3.7"
+services:
+  woofedcrm_web:
+    image: douglara/woofedcrm:latest
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    volumes:
+      - woofedcrm_data:/app/public/assets
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - FRONTEND_URL=https://${url_woofed}
+      - SECRET_KEY_BASE=${encryption_key_woofed}
+      - ENABLE_USER_SIGNUP=true
+      - MOTOR_AUTH_USERNAME=${user_motor_woofed}
+      - MOTOR_AUTH_PASSWORD=${pass_motor_woofed}
+      ${EVOLUTION_API_ENDPOINT}
+      ${EVOLUTION_API_ENDPOINT_TOKEN}
+      - DATABASE_URL=postgres://postgres:${senha_pgvector}@pgvector:5432/woofedcrm
+      - REDIS_URL=redis://redis:6379/0
+      - ACTIVE_STORAGE_SERVICE=local
+      - RAILS_ENV=production
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.woofedcrm.rule=Host(\`${url_woofed}\`)"
+        - "traefik.http.services.woofedcrm.loadbalancer.server.port=3000"
+        - "traefik.http.routers.woofedcrm.entrypoints=websecure"
+        - "traefik.http.routers.woofedcrm.tls.certresolver=letsencryptresolver"
+  woofedcrm_sidekiq:
+    image: douglara/woofedcrm:latest
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - woofedcrm_data:/app/public/assets
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - FRONTEND_URL=https://${url_woofed}
+      - SECRET_KEY_BASE=${encryption_key_woofed}
+      - DATABASE_URL=postgres://postgres:${senha_pgvector}@pgvector:5432/woofedcrm
+      - REDIS_URL=redis://redis:6379/0
+      - RAILS_ENV=production
+    deploy:
+      replicas: 1
+volumes:
+  woofedcrm_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="woofedcrm"
+  stack_editavel
+  wait_stack woofedcrm_woofedcrm_web woofedcrm_woofedcrm_sidekiq
+
+  echo "Aguardando o serviço estabilizar para migrar o banco de dados..."
+  sleep 20
+
+  CONTAINER_ID=$(docker ps -q --filter "name=woofedcrm_woofedcrm_web" | head -n1)
+  if [ -n "$CONTAINER_ID" ]; then
+    docker exec -it "$CONTAINER_ID" bundle exec rails db:create > /dev/null 2>&1
+    docker exec -it "$CONTAINER_ID" bundle exec rails db:migrate > /dev/null 2>&1
+    echo "✅ Migração do banco de dados concluída."
+  else
+    echo "❌ Não foi possível encontrar o contêiner do WoofedCRM para migrar o banco de dados."
+  fi
+
+  cd /root/dados_vps
+  cat > dados_woofedcrm <<EOL
+[ WOOFED CRM ]
+
+Dominio: https://${url_woofed}
+Usuario MOTOR: ${user_motor_woofed}
+Senha MOTOR: ${pass_motor_woofed}
+Painel MOTOR: https://${url_woofed}/motor_admin
+EOL
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Woofed CRM instalado com sucesso!"
+  echo "Acesse em: https://${url_woofed}"
+  echo "Crie seu usuário no primeiro acesso."
+  echo "Painel Admin (MOTOR): https://${url_woofed}/motor_admin"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -6263,6 +6410,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
         echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
         echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
+        echo -e "                                                                           ${azul}24.${reset} Instalar qdrant"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6477,6 +6625,12 @@ exibir_menu() {
               verificar_stack "qdrant" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_qdrant
+                fi
+                ;;
+            24)
+              verificar_stack "woofedcrm" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_woofedcrm
                 fi
                 ;;
             *)
