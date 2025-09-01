@@ -5135,7 +5135,7 @@ ferramenta_pgadmin() {
     echo ""
 
     # Validação
-    if [[ -n "$url_pgadmin" && -n "$user_pgadmin" && -n "$pass_pgadmin"]]; then
+    if [[ -n "$url_pgadmin" && -n "$user_pgadmin" && -n "$pass_pgadmin" ]]; then
       break
     else
       echo "Todos os campos são obrigatórios. Tente novamente"
