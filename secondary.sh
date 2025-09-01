@@ -7069,8 +7069,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${senha_postgres}
       - REDIS_HOST=redis_redis
+      # >>> CORREÇÃO: Variáveis redundantes removidas. Esta linha agora cuida de tudo. <<<
       - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
-      - OVERWRITEPROTOCOL=https
     deploy:
       labels:
         - "traefik.enable=true"
