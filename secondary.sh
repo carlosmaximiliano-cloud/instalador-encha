@@ -6671,7 +6671,7 @@ ferramenta_mattermost() {
   echo -e "\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
-  criar_banco_postgres_da_stack
+  criar_banco_postgres_da_stack "mattermost"
 
   cat > mattermost.yaml <<EOL
 version: "3.7"
