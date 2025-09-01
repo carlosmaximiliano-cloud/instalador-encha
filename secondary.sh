@@ -6280,11 +6280,15 @@ ferramenta_woofedcrm() {
   cat > woofedcrm.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   woofedcrm_web:
     image: douglara/woofedcrm:latest
     command: bundle exec rails s -p 3000 -b 0.0.0.0
-    volumes:
-      - woofedcrm_data:/app/public/assets
+    # CORREÇÃO: Volume de assets removido
     networks:
       - ${nome_rede_interna}
     environment:
@@ -6309,8 +6313,7 @@ services:
   woofedcrm_sidekiq:
     image: douglara/woofedcrm:latest
     command: bundle exec sidekiq -C config/sidekiq.yml
-    volumes:
-      - woofedcrm_data:/app/public/assets
+    # CORREÇÃO: Volume de assets removido
     networks:
       - ${nome_rede_interna}
     environment:
@@ -6321,8 +6324,7 @@ services:
       - RAILS_ENV=production
     deploy:
       replicas: 1
-volumes:
-  woofedcrm_data:
+# CORREÇÃO: Volume de assets removido da declaração final
 networks:
   ${nome_rede_interna}:
     external: true
