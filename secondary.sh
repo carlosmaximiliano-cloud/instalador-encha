@@ -170,6 +170,19 @@ centralizar " ╚═════╝ ╚═════╝  ╚═════╝
     echo ""  
 }
 
+msg_pgAdmin(){
+  clear
+    echo -e "${roxo}"
+centralizar "██████╗  ██████╗      █████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗    ██╗  ██╗"
+centralizar "██╔══██╗██╔════╝     ██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║    ██║  ██║"
+centralizar "██████╔╝██║  ███╗    ███████║██║  ██║██╔████╔██║██║██╔██╗ ██║    ███████║"
+centralizar "██╔═══╝ ██║   ██║    ██╔══██║██║  ██║██║╚██╔╝██║██║██║╚██╗██║    ╚════██║"
+centralizar "██║     ╚██████╔╝    ██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║         ██║"
+centralizar "╚═╝      ╚═════╝     ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝         ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5125,7 +5138,8 @@ msg_retorno_menu
 }
 
 ferramenta_pgadmin() {
-  echo -p "Iniciando instalação do PgAdmin 4..."
+  msg_pgAdmin
+  read -p "Iniciando instalação do PgAdmin 4..."
   dados
 
   while true; do
