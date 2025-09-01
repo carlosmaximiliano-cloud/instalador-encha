@@ -5124,6 +5124,69 @@ echo ""
 msg_retorno_menu
 }
 
+ferramenta_pgadmin() {
+  msg_info "Iniciando instalação do PgAdmin 4..."
+  dados
+
+  while true; do
+    read -p "Digite o domínio para o PgAdmin 4 (ex: pgadmin.encha.ai): " url_pgadmin
+    read -p "Digite um email para o PgAdmin 4: " user_pgadmin
+    read -s -p "Digite uma senha para o usuário: " pass_pgadmin
+    echo ""
+
+    # Validação
+    if [[ -n "$url_pgadmin" && -n "$user_pgadmin" && -n "$pass_pgadmin"]]; then
+      break
+    else
+      echo "Todos os campos são obrigatórios. Tente novamente"
+    fi
+  done
+
+  echo -e "🔧 \e[97mInstalando o PgAdmin 4... \e[33m[1/2]\e[0m"
+  cat > pgadmin.yaml << EOL
+version: "3.7"
+services:
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${user_pgadmin}
+      PGADMIN_DEFAULT_PASSWORD: ${pass_pgadmin}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ${nome_rede_interna}
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.pgadmin.rule=Host(\`${url_pgadmin}\`)"
+        - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+        - "traefik.http.routers.pgadmin.entrypoints=websecure"
+        - "traefik.http.routers.pgadmin.tls.certresolver=letsencryptresolver"
+volumes:
+  pgadmin_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="pgadmin"
+  stack_editavel
+
+  echo -e "⏳ \e[97mVerificando serviço... \e[33m[2/2]\e[0m"
+  pull dpage/pgadmin4:latest
+  wait_stack pgadmin_pgadmin
+
+  # Salvar informações e resumo
+  msg_resumo_informacoes
+  echo "✅ PgAdmin 4 instalado com sucesso!"
+  echo "Acesse em: https://${url_pgadmin}"
+  echo "Usuário: ${user_pgadmin}"
+  echo "Senha: [sua_senha_digitada]"
+
+  msg_retorno_menu
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5160,6 +5223,7 @@ exibir_menu() {
         echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"s
         echo -e "${azul}06.${reset} Instalar N8N Formação Encha                              "
         echo -e "${azul}07.${reset} Instalar Minio"
+        echo -e "                                                                           ${azul}13.${reset} Instalar pgAdmin"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-12): ${reset}"
         read -r opcao
@@ -5310,6 +5374,11 @@ exibir_menu() {
                 sleep 1
                 exit 0
                 ;;
+            13)
+              if verificar_docker_e_portainer_traefik; then
+                ferramenta_pgadmin
+              fi
+              ;;
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
