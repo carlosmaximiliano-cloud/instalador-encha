@@ -5322,7 +5322,7 @@ ferramenta_botpress(){
   criar_banco_postgres_da_stack "botpress"
 
   verificar_container_redis || ferramenta_redis
-  cat > botpress.yaml << EOL
+  cat > botpress.yaml <<EOL
 version: "3.7"
 services:
 
@@ -5353,7 +5353,7 @@ volumes:
 networks:
   ${nome_rede_interna}:
     external: true
-EOL  
+EOL
 
   STACK_NAME="botpress"
   stack_editavel
