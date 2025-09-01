@@ -7084,7 +7084,7 @@ services:
         - "traefik.http.routers.nextcloud.entrypoints=websecure"
         - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
         - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://\${1}/remote.php/dav/"
+        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://$${1}/remote.php/dav/"
         - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
 volumes:
   nextcloud_data:
