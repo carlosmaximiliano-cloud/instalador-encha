@@ -300,6 +300,19 @@ centralizar "  ╚═╝  ╚═╝╚═╝     ╚═╝     ╚════�
     echo ""
 }
 
+msg_qdrant(){
+    clear
+    echo -e "${roxo}"
+centralizar "      ██████╗ ██████╗ ██████╗  █████╗ ███╗   ██╗████████╗"
+centralizar "    ██╔═══██╗██╔══██╗██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝"
+centralizar "    ██║   ██║██║  ██║██████╔╝███████║██╔██╗ ██║   ██║"
+centralizar "    ██║▄▄ ██║██║  ██║██╔══██╗██╔══██║██║╚██╗██║   ██║"
+centralizar "    ╚██████╔╝██████╔╝██║  ██║██║  ██║██║ ╚████║   ██║"
+centralizar "     ╚══▀▀═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6091,11 +6104,6 @@ ferramenta_appsmith(){
   cat > appsmith.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   appsmith:
     image: appsmith/appsmith-ee:latest
     volumes:
@@ -6118,6 +6126,7 @@ services:
         - "traefik.http.routers.appsmith.tls.certresolver=letsencryptresolver"
 volumes:
   appsmith_data:
+    external: true
 networks:
   ${nome_rede_interna}:
     external: true
@@ -6142,6 +6151,68 @@ EOL
   echo "✅ Appsmith instalado com sucesso!"
   echo "Acesse em: https://${url_appsmith}"
   echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
+ferramenta_qdrant(){
+  msg_qdrant
+  dados
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Qdrant...\e[0m"
+
+  cat > qdrant.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - ${nome_rede_interna}
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2048M
+volumes:
+  qdrant_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="qdrant"
+  stack_editavel
+  wait_stack qdrant_qdrant
+
+  read -r ip _ <<<"$(hostname -I)"
+
+  cd /root/dados_vps
+  cat > dados_qdrant <<EOL
+[ QDRANT ]
+
+Host: ${ip}
+Porta gRPC: 6334
+Porta REST: 6333
+Dashboard: http://${ip}:6333/dashboard
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Qdrant instalado com sucesso!"
+  echo "Host: ${ip}"
+  echo "Porta REST API: 6333"
+  echo "Acesse o Dashboard em: http://${ip}:6333/dashboard"
   msg_retorno_menu
 
 }
@@ -6191,6 +6262,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}20.${reset} Instalar calcom"
         echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
         echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
+        echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6399,6 +6471,12 @@ exibir_menu() {
               verificar_stack "appsmith" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_appsmith
+                fi
+                ;;
+            23)
+              verificar_stack "qdrant" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_qdrant
                 fi
                 ;;
             *)
