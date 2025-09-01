@@ -6380,57 +6380,57 @@ EOL
 }
 
 ferramenta_formbricks() {
-  msg_formbricks
-  dados
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
-    echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
-    echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
-    echo -e "\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
-    echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
-    echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
-    echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
-    echo -en "🔌 \e[33mDigite a Porta SMTP do email (ex: 465): \e[0m" && read -r porta_formbricks
-
-    if [[ "$porta_formbricks" -eq 465 ]]; then ssl_formbricks=1; else ssl_formbricks=0; fi
-
-    clear
     msg_formbricks
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
-    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
-    echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_smtp_formbricks\e[0m"
-    echo -e "🏠 \e[33mHost SMTP:\e[97m $host_formbricks\e[0m"
-    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_formbricks\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
-  done
+    dados
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"    
-  verificar_container_pgvector || ferramenta_pgvector
-  pegar_senha_pgvector
-  criar_banco_pgvector_da_stack "formbricks"
+    while true; do
+        # Coleta de dados do usuário (seu código aqui estava perfeito)
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
+        echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
+        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
+        echo -e "\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
+        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
+        echo -e "\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
+        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
+        echo ""
+        echo -e "\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
+        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
+        echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
+        echo -en "🔌 \e[33mDigite a Porta SMTP do email (ex: 465): \e[0m" && read -r porta_formbricks
+        if [[ "$porta_formbricks" -eq 465 ]]; then ssl_formbricks=1; else ssl_formbricks=0; fi
 
-  senha_postgres_formbricks=$(openssl rand -hex 16)
-  encryption_key_form=$(openssl rand -hex 32)
-  next_key_form=$(openssl rand -hex 32)
+        clear
+        msg_formbricks
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
+        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
+        echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_smtp_formbricks\e[0m"
+        echo -e "🏠 \e[33mHost SMTP:\e[97m $host_formbricks\e[0m"
+        echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_formbricks\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
+    done
 
-  cat > formbricks.yaml <<EOL
+    echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
+    
+    # PASSO 1: Garantir que o PGVector está instalado
+    echo -e "\n\e[97m📦 Verificando ou instalando o PGVector...\e[0m"
+    verificar_container_pgvector || ferramenta_pgvector
+    pegar_senha_pgvector
+    criar_banco_pgvector_da_stack "formbricks"
+    echo ""
+
+    # Gerando chaves aleatórias
+    encryption_key_form=$(openssl rand -hex 32)
+    next_key_form=$(openssl rand -hex 32)
+    cron_key_form=$(openssl rand -hex 32) # Adicionada para compatibilidade com o original
+
+    cat > formbricks.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   formbricks:
     image: ghcr.io/formbricks/formbricks:latest
     volumes:
@@ -6440,10 +6440,11 @@ services:
     environment:
       - WEBAPP_URL=https://${url_formbricks}
       - NEXTAUTH_URL=https://${url_formbricks}
-      # CORREÇÃO: Apontando para o novo banco de dados dedicado 'formbricks_db'
-      - DATABASE_URL=postgresql://postgres:${senha_postgres_formbricks}@formbricks_db:5432/formbricks?schema=public
+      # CORREÇÃO: Voltando a usar o serviço compartilhado 'pgvector'
+      - DATABASE_URL=postgresql://postgres:${senha_pgvector}@pgvector:5432/formbricks?schema=public
       - ENCRYPTION_KEY=${encryption_key_form}
       - NEXTAUTH_SECRET=${next_key_form}
+      - CRON_SECRET=${cron_key_form}
       - MAIL_FROM=${email_formbricks}
       - SMTP_HOST=${host_formbricks}
       - SMTP_PORT=${porta_formbricks}
@@ -6452,64 +6453,48 @@ services:
       - SMTP_PASSWORD=${senha_formbricks}
       - SIGNUP_DISABLED=0
     deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 10s
-        max_attempts: 3
-        window: 120s
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.formbricks.rule=Host(\`${url_formbricks}\`)"
         - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
         - "traefik.http.routers.formbricks.entrypoints=websecure"
         - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
-
-  formbricks_db:
-    image: postgres:15
-    volumes:
-      - formbricks_db_data:/var/lib/postgresql/data
-    networks:
-      - ${nome_rede_interna}
-    environment:
-      - POSTGRES_DB=formbricks
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${senha_postgres_formbricks}
-    deploy:
-      restart_policy:
-        condition: on-failure
-
 volumes:
   formbricks_data:
-  formbricks_db_data:
-
 networks:
   ${nome_rede_interna}:
     external: true
 EOL
 
-  STACK_NAME="formbricks"
-  stack_editavel
+    STACK_NAME="formbricks"
+    stack_editavel
+    wait_stack formbricks_formbricks
 
-  echo "Aguardando o banco de dados e a migração inicial..."
-  sleep 45 # Damos um tempo generoso para o DB subir e a migração rodar
-  
-  wait_stack formbricks_formbricks formbricks_formbricks_db
-  cd /root/dados_vps
-  cat > dados_formbricks <<EOL
+    # Salvando os dados
+    cd /root/dados_vps
+    cat > dados_formbricks <<EOL
 [ FORMBRICKS ]
 
 Dominio: https://${url_formbricks}
 Usuario: (criado no primeiro acesso)
 Senha: (criada no primeiro acesso)
 EOL
-
-  cd
-  msg_resumo_informacoes
-  echo "✅ Formbricks instalado com sucesso!"
-  echo "Acesse em: https://${url_formbricks}"
-  echo "Crie seu usuário no primeiro acesso."
-  msg_retorno_menu
-
+    cd
+    
+    msg_resumo_informacoes
+    echo "✅ Formbricks instalado com sucesso!"
+    echo "Acesse em: https://${url_formbricks}"
+    echo "Crie seu usuário no primeiro acesso."
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
