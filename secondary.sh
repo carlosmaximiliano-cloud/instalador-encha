@@ -443,6 +443,19 @@ msg_flowise() {
     echo ""
 }
 
+msg_langflow() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗      █████╗ ███╗   ██╗ ██████╗ ███████╗██╗      ██████╗ ██╗    ██╗"
+    centralizar "██║     ██╔══██╗████╗  ██║██╔════╝ ██╔════╝██║     ██╔═══██╗██║    ██║"
+    centralizar "██║     ███████║██╔██╗ ██║██║  ███╗█████╗  ██║     ██║   ██║██║ █╗ ██║"
+    centralizar "██║     ██╔══██║██║╚██╗██║██║   ██║██╔══╝  ██║     ██║   ██║██║███╗██║"
+    centralizar "███████╗██║  ██║██║ ╚████║╚██████╔╝██║     ███████╗╚██████╔╝╚███╔███╔╝"
+    centralizar "╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7010,6 +7023,107 @@ EOL
 
 }
 
+ferramenta_langflow(){
+  msg_langflow
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o LangFlow (ex: langflow.encha.ai): \e[0m" && read -r url_langflow
+        
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -en "👤 \e[33mDigite um usuário para o LangFlow (ex: admin): \e[0m" && read -r user_langflow
+        
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_langflow
+    echo ""
+
+    clear
+    msg_langflow
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio LangFlow:\e[97m $url_langflow\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_langflow\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_langflow; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do LangFlow...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "langflow"
+
+  echo -e "\e[97m⚙️ Instalando o LangFlow...\e[0m"
+  key_langflow=$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')
+
+  cat > langflow.yaml <<EOL
+version: "3.8"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  langflow:
+    image: langflowai/langflow:latest
+    volumes:
+      - langflow_data:/app/langflow
+    networks:
+      - $nome_rede_interna
+    environment:
+      - LANGFLOW_AUTO_LOGIN=false
+      - LANGFLOW_SUPERUSER=$user_langflow
+      - LANGFLOW_SUPERUSER_PASSWORD=$pass_langflow
+      - LANGFLOW_HOST=0.0.0.0
+      - BACKEND_URL=https://$url_langflow
+      - LANGFLOW_SECRET_KEY=$key_langflow
+      - LANGFLOW_NEW_USER_IS_ACTIVE=false
+      - LANGFLOW_DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/langflow
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.langflow.rule=Host(\`$url_langflow\`)"
+        - "traefik.http.services.langflow.loadbalancer.server.port=7860"
+        - "traefik.http.routers.langflow.service=langflow"
+        - "traefik.http.routers.langflow.entrypoints=websecure"
+        - "traefik.http.routers.langflow.tls.certresolver=letsencryptresolver"
+volumes:
+  langflow_data:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="langflow"
+  stack_editavel
+  wait_stack langflow_langflow
+
+  cd /root/dados_vps
+  cat > dados_langflow <<EOL
+[ LANGFLOW ]
+Dominio: https://$url_langflow
+Usuario: $user_langflow
+Senha: $pass_langflow
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ LANGFLOW ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_langflow\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_langflow\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_langflow\e[0m\n"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7062,7 +7176,8 @@ exibir_menu() {
         echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
         echo -e "                                                                           ${azul}30.${reset} Instalar GLPI"
         echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
-        echo -e "                                                                           ${azul}32.${reset} Instalar flowise"
+        echo -e "                                                                           ${azul}32.${reset} Instalar Flowise"
+        echo -e "                                                                           ${azul}33.${reset} Instalar Langflow"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7331,6 +7446,12 @@ exibir_menu() {
               verificar_stack "flowise" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_flowise
+                fi
+                ;;
+            33)
+              verificar_stack "langflow" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_langflow
                 fi
                 ;;
             *)
