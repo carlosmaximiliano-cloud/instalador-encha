@@ -417,6 +417,19 @@ centralizar "╚═╝  ╚═══╝╚══════╝╚═╝  ╚═
     echo ""
 }
 
+msg_strapi(){
+    clear
+    echo -e "${roxo}"
+centralizar " ███████╗████████╗██████╗  █████╗ ██████╗ ██╗"
+centralizar " ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██║"
+centralizar " ███████╗   ██║   ██████╔╝███████║██████╔╝██║"
+centralizar " ╚════██║   ██║   ██╔══██╗██╔══██║██╔═══╝ ██║"
+centralizar " ███████║   ██║   ██║  ██║██║  ██║██║     ██║"
+centralizar " ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7111,6 +7124,79 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_strapi(){
+  msg_strapi
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Strapi (ex: cms.encha.ai): \e[0m' url_strapi
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Strapi...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "strapi"
+
+  app_keys=$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32)
+  api_token_salt=$(openssl rand -base64 32)
+  admin_jwt_secret=$(openssl rand -base64 32)
+  jwt_secret=$(openssl rand -base64 32)
+
+  cat > strapi.yaml <<EOL
+version: "3.7"
+services:
+  strapi:
+    image: strapi/strapi:latest
+    volumes:
+      - strapi_data:/opt/app
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - DATABASE_CLIENT=mysql
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=strapi
+      - DATABASE_USERNAME=root
+      - DATABASE_PASSWORD=${senha_mysql}
+      - APP_KEYS=${app_keys}
+      - API_TOKEN_SALT=${api_token_salt}
+      - ADMIN_JWT_SECRET=${admin_jwt_secret}
+      - JWT_SECRET=${jwt_secret}
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.strapi.rule=Host(\`${url_strapi}\`)"
+        - "traefik.http.services.strapi.loadbalancer.server.port=1337"
+        - "traefik.http.routers.strapi.entrypoints=websecure"
+        - "traefik.http.routers.strapi.tls.certresolver=letsencryptresolver"
+volumes:
+  strapi_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="strapi"
+  stack_editavel
+  wait_stack strapi_strapi
+
+  cd /root/dados_vps
+  cat > dados_strapi <<EOL
+[ STRAPI ]
+
+Dominio: https://${url_strapi}
+Admin: https://${url_strapi}/admin
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Strapi instalado com sucesso!"
+  echo "Acesse https://${url_strapi}/admin para criar sua conta de administrador."
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -7130,8 +7216,6 @@ verificar_status_servicos() {
         echo -e "${vermelho}❌ Docker Swarm: Inativo${reset}"
     fi
 }
-
-
 
 exibir_menu() {
     while true; do
@@ -7166,6 +7250,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
         echo -e "                                                                           ${azul}30.${reset} Instalar GLPI"
         echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
+        echo -e "                                                                           ${azul}32.${reset} Instalar Strapi"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7428,6 +7513,12 @@ exibir_menu() {
               verificar_stack "nextcloud" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_nextcloud
+                fi
+                ;;
+            32)
+              verificar_stack "strapi" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_strapi
                 fi
                 ;;
             *)
