@@ -6384,7 +6384,6 @@ ferramenta_formbricks() {
     dados
 
     while true; do
-        # Coleta de dados do usuário (seu código aqui estava perfeito)
         echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
         echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
         echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
@@ -6398,6 +6397,7 @@ ferramenta_formbricks() {
         echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
         echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
         echo -en "🔌 \e[33mDigite a Porta SMTP do email (ex: 465): \e[0m" && read -r porta_formbricks
+
         if [[ "$porta_formbricks" -eq 465 ]]; then ssl_formbricks=1; else ssl_formbricks=0; fi
 
         clear
@@ -6415,18 +6415,13 @@ ferramenta_formbricks() {
     done
 
     echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
-    
-    # PASSO 1: Garantir que o PGVector está instalado
-    echo -e "\n\e[97m📦 Verificando ou instalando o PGVector...\e[0m"
     verificar_container_pgvector || ferramenta_pgvector
     pegar_senha_pgvector
     criar_banco_pgvector_da_stack "formbricks"
-    echo ""
 
-    # Gerando chaves aleatórias
     encryption_key_form=$(openssl rand -hex 32)
     next_key_form=$(openssl rand -hex 32)
-    cron_key_form=$(openssl rand -hex 32) # Adicionada para compatibilidade com o original
+    cron_key_form=$(openssl rand -hex 32)
 
     cat > formbricks.yaml <<EOL
 version: "3.7"
@@ -6438,30 +6433,58 @@ services:
     networks:
       - ${nome_rede_interna}
     environment:
+      # Url da aplicação
       - WEBAPP_URL=https://${url_formbricks}
       - NEXTAUTH_URL=https://${url_formbricks}
-      # CORREÇÃO: Voltando a usar o serviço compartilhado 'pgvector'
+
+      # Banco de dados Postgres (usando o compartilhado)
       - DATABASE_URL=postgresql://postgres:${senha_pgvector}@pgvector:5432/formbricks?schema=public
+
+      # Licença
+      - ENTERPRISE_LICENSE_KEY=
+
+      # Keys aleatórias
       - ENCRYPTION_KEY=${encryption_key_form}
       - NEXTAUTH_SECRET=${next_key_form}
       - CRON_SECRET=${cron_key_form}
+
+      # Dados do SMTP
       - MAIL_FROM=${email_formbricks}
       - SMTP_HOST=${host_formbricks}
       - SMTP_PORT=${porta_formbricks}
       - SMTP_SECURE_ENABLED=${ssl_formbricks}
       - SMTP_USER=${user_smtp_formbricks}
       - SMTP_PASSWORD=${senha_formbricks}
+
+      # Ativar/Desativar registros e convites (0= false | 1= true)
       - SIGNUP_DISABLED=0
+      - INVITE_DISABLED=0
+      - EMAIL_VERIFICATION_DISABLED=0
+      - PASSWORD_RESET_DISABLED=0
+
+      # Variáveis opcionais (deixamos vazias como no original)
+      - NEXT_PUBLIC_FORMBRICKS_API_HOST=
+      - NEXT_PUBLIC_FORMBRICKS_ENVIRONMENT_ID=
+      - NEXT_PUBLIC_FORMBRICKS_ONBOARDING_SURVEY_ID=
+      - GOOGLE_AUTH_ENABLED=0
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GOOGLE_SHEETS_CLIENT_ID=
+      - GOOGLE_SHEETS_CLIENT_SECRET=
+      - GOOGLE_SHEETS_REDIRECT_URL=
+      - GITHUB_AUTH_ENABLED=0
+      - GITHUB_ID=
+      - GITHUB_SECRET=
+      - NOTION_OAUTH_CLIENT_ID=
+      - NOTION_OAUTH_CLIENT_SECRET=
+      - AIRTABLE_CLIENT_ID=
     deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      resources:
-        limits:
-          cpus: "1"
-          memory: 1024M
+      # Política de reinicialização para dar tempo ao banco
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.formbricks.rule=Host(\`${url_formbricks}\`)"
@@ -6479,7 +6502,6 @@ EOL
     stack_editavel
     wait_stack formbricks_formbricks
 
-    # Salvando os dados
     cd /root/dados_vps
     cat > dados_formbricks <<EOL
 [ FORMBRICKS ]
@@ -6489,7 +6511,7 @@ Usuario: (criado no primeiro acesso)
 Senha: (criada no primeiro acesso)
 EOL
     cd
-    
+
     msg_resumo_informacoes
     echo "✅ Formbricks instalado com sucesso!"
     echo "Acesse em: https://${url_formbricks}"
