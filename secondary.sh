@@ -5286,6 +5286,17 @@ EOL
   pull dpage/pgadmin4:latest
   wait_stack pgadmin_pgadmin
 
+  cd /root/dados_vps
+  cat > dados_pgadmin <<EOL
+[ PGADMIN 4 ]
+
+Dominio do PgAdmin: https://${url_pgadmin}
+Usuario: ${user_pgadmin}
+Senha: ${pass_pgadmin}
+EOL
+
+  cd
+
   # Salvar informações e resumo
   msg_resumo_informacoes
   echo "✅ PgAdmin 4 instalado com sucesso!"
