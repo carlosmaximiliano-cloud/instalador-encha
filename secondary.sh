@@ -456,6 +456,58 @@ msg_langflow() {
     echo ""
 }
 
+msg_dify(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗███████╗██╗   ██╗ █████╗ ██╗"
+    centralizar "██╔══██╗██║██╔════╝╚██╗ ██╔╝██╔══██╗██║"
+    centralizar "██║  ██║██║█████╗   ╚████╔╝ ███████║██║"
+    centralizar "██║  ██║██║██╔══╝    ╚██╔╝  ██╔══██║██║"
+    centralizar "██████╔╝██║██║        ██║██╗██║  ██║██║"
+    centralizar "╚═════╝ ╚═╝╚═╝        ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_ollama(){
+    clear
+    echo -e "${roxo}"
+    centralizar " ██████╗ ██╗     ██╗      █████╗ ███╗   ███╗ █████╗"
+    centralizar "██╔═══██╗██║     ██║     ██╔══██╗████╗ ████║██╔══██╗"
+    centralizar "██║   ██║██║     ██║     ███████║██╔████╔██║███████║"
+    centralizar "██║   ██║██║     ██║     ██╔══██║██║╚██╔╝██║██╔══██║"
+    centralizar "╚██████╔╝███████╗███████╗██║  ██║██║ ╚═╝ ██║██║  ██║"
+    centralizar " ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_anythingllm(){
+    clear
+    echo -e "${roxo}"
+    centralizar " █████╗ ███╗   ██╗██╗   ██╗████████╗██╗  ██╗██╗███╗   ██╗ ██████╗     ██╗     ██╗     ███╗   ███╗"
+    centralizar "██╔══██╗████╗  ██║╚██╗ ██╔╝╚══██╔══╝██║  ██║██║████╗  ██║██╔════╝     ██║     ██║     ████╗ ████║"
+    centralizar "███████║██╔██╗ ██║ ╚████╔╝    ██║   ███████║██║██╔██╗ ██║██║  ███╗    ██║     ██║     ██╔████╔██║"
+    centralizar "██╔══██║██║╚██╗██║  ╚██╔╝     ██║   ██╔══██║██║██║╚██╗██║██║   ██║    ██║     ██║     ██║╚██╔╝██║"
+    centralizar "██║  ██║██║ ╚████║   ██║      ██║   ██║  ██║██║██║ ╚████║╚██████╔╝    ███████╗███████╗██║ ╚═╝ ██║"
+    centralizar "╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝╚══════╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_nocodb(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ██╗ ██████╗  ██████╗ ██████╗ ██████╗ ██████╗"
+    centralizar "████╗  ██║██╔═══██╗██╔════╝██╔═══██╗██╔══██╗██╔══██╗"
+    centralizar "██╔██╗ ██║██║   ██║██║     ██║   ██║██║  ██║██████╔╝"
+    centralizar "██║╚██╗██║██║   ██║██║     ██║   ██║██║  ██║██╔══██╗"
+    centralizar "██║ ╚████║╚██████╔╝╚██████╗╚██████╔╝██████╔╝██████╔╝"
+    centralizar "╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7124,6 +7176,112 @@ EOL
 
 }
 
+ferramenta_ollama(){
+  msg_ollama
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para a WebUI do Ollama (ex: ollama.encha.ai): \e[0m" && read -r url_ollama
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para a API do Ollama (ex: api-ollama.encha.ai): \e[0m" && read -r url_apiollama
+    echo ""
+  
+    clear
+    msg_ollama
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio WebUI:\e[97m $url_ollama\e[0m"
+    echo -e "🔗 \e[33mDomínio API:\e[97m $url_apiollama\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_ollama; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Ollama & OpenWebUI...\e[0m"
+
+  WEBUI_SECRET_KEY=$(openssl rand -hex 16)
+  cat > ollama.yaml << EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - $nome_rede_interna
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.ollama.rule=Host(\`$url_apiollama\`)"
+        - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+        - "traefik.http.routers.ollama.service=ollama"
+        - "traefik.http.routers.ollama.entrypoints=websecure"
+        - "traefik.http.routers.ollama.tls.certresolver=letsencryptresolver"
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    volumes:
+      - openwebui_data:/app/backend/data
+    networks:
+      - $nome_rede_interna
+    environment:
+      - OLLAMA_BASE_URL=https://$url_apiollama
+      - WEBUI_SECRET_KEY=$WEBUI_SECRET_KEY
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.openwebui.rule=Host(\`$url_ollama\`)"
+        - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
+        - "traefik.http.routers.openwebui.service=openwebui"
+        - "traefik.http.routers.openwebui.entrypoints=websecure"
+        - "traefik.http.routers.openwebui.tls.certresolver=letsencryptresolver"
+volumes:
+  ollama_data:
+  openwebui_data:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="ollama"
+  stack_editavel
+  wait_stack "ollama_openwebui" "ollama_ollama"
+
+  cd /root/dados_vps
+  cat > dados_ollama <<EOL
+[ OLLAMA ]
+WebUI: https://$url_ollama
+API: https://$url_apiollama
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ OLLAMA & OPENWEBUI ]\e[0m\n"
+  echo -e "\e[33m🌐 WebUI:\e[97m https://$url_ollama\e[0m"
+  echo -e "\e[33m🔗 API:\e[97m https://$url_apiollama\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7178,6 +7336,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
         echo -e "                                                                           ${azul}32.${reset} Instalar Flowise"
         echo -e "                                                                           ${azul}33.${reset} Instalar Langflow"
+        echo -e "                                                                           ${azul}33.${reset} Instalar Ollama"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7452,6 +7611,12 @@ exibir_menu() {
               verificar_stack "langflow" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_langflow
+                fi
+                ;;
+            34)
+              verificar_stack "ollama" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_ollama
                 fi
                 ;;
             *)
