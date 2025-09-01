@@ -7068,6 +7068,11 @@ ferramenta_nextcloud() {
     cat > nextcloud.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   nextcloud:
     image: nextcloud:latest
     volumes:
@@ -7124,31 +7129,51 @@ EOL
     msg_retorno_menu
 }
 
-ferramenta_strapi(){
-  msg_strapi
-  dados
 
-  read -p $'\e[33mDigite o domínio para o Strapi (ex: cms.encha.ai): \e[0m' url_strapi
+ferramenta_strapi() {
+    msg_strapi
+    dados
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Strapi...\e[0m"
-  verificar_container_mysql || ferramenta_mysql
-  pegar_senha_mysql_da_stack
-  criar_banco_mysql_da_stack "strapi"
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o Strapi (ex: cms.encha.ai): \e[0m" && read -r url_strapi
+        
+        clear
+        msg_strapi
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio:\e[97m $url_strapi\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_strapi; fi
+    done
 
-  app_keys=$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32)
-  api_token_salt=$(openssl rand -base64 32)
-  admin_jwt_secret=$(openssl rand -base64 32)
-  jwt_secret=$(openssl rand -base64 32)
+    echo -e "\e[97m🚀 Iniciando a instalação do Strapi v4...\e[0m"
+    verificar_container_mysql || ferramenta_mysql
+    pegar_senha_mysql
+    criar_banco_mysql_da_stack "strapi"
 
-  cat > strapi.yaml <<EOL
+    # Strapi v4 requer várias chaves de segurança
+    app_keys=$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32)
+    api_token_salt=$(openssl rand -base64 32)
+    admin_jwt_secret=$(openssl rand -base64 32)
+    jwt_secret=$(openssl rand -base64 32)
+
+    cat > strapi.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   strapi:
     image: strapi/strapi:latest
     volumes:
       - strapi_data:/opt/app
     networks:
       - ${nome_rede_interna}
+    # CORREÇÃO: Variáveis de ambiente atualizadas para o Strapi v4
     environment:
       - DATABASE_CLIENT=mysql
       - DATABASE_HOST=mysql
@@ -7160,6 +7185,7 @@ services:
       - API_TOKEN_SALT=${api_token_salt}
       - ADMIN_JWT_SECRET=${admin_jwt_secret}
       - JWT_SECRET=${jwt_secret}
+      - STRAPI_TELEMETRY_DISABLED=true
     deploy:
       labels:
         - "traefik.enable=true"
@@ -7174,27 +7200,25 @@ networks:
     external: true
 EOL
 
-  STACK_NAME="strapi"
-  stack_editavel
-  wait_stack strapi_strapi
+    STACK_NAME="strapi"
+    stack_editavel
+    wait_stack strapi_strapi
 
-  cd /root/dados_vps
-  cat > dados_strapi <<EOL
+    cd /root/dados_vps
+    cat > dados_strapi <<EOL
 [ STRAPI ]
 
 Dominio: https://${url_strapi}
 Admin: https://${url_strapi}/admin
-Usuario: (criado no primeiro acesso)
-Senha: (criada no primeiro acesso)
+Usuario: (criado no primeiro acesso ao painel admin)
+Senha: (criada no primeiro acesso ao painel admin)
 EOL
+    cd
 
-  cd
-
-  msg_resumo_informacoes
-  echo "✅ Strapi instalado com sucesso!"
-  echo "Acesse https://${url_strapi}/admin para criar sua conta de administrador."
-  msg_retorno_menu
-
+    msg_resumo_informacoes
+    echo "✅ Strapi instalado com sucesso!"
+    echo "Acesse https://${url_strapi}/admin para criar sua conta de administrador."
+    msg_retorno_menu
 }
 
 
