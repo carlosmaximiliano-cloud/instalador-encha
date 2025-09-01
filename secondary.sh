@@ -6806,6 +6806,8 @@ services:
       - UTILS_SECRET=${key2}
       - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/outline
       - REDIS_URL=redis://redis_redis:6379
+      # >>> CORREÇÃO APLICADA ABAIXO <<<
+      - PGSSLMODE=disable
       - OIDC_CLIENT_ID=${id_google_outline}
       - OIDC_CLIENT_SECRET=${key_google_outline}
       - OIDC_AUTH_URI=https://accounts.google.com/o/oauth2/auth
