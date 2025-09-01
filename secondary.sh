@@ -7052,6 +7052,19 @@ ferramenta_nextcloud() {
     criar_banco_postgres_da_stack "nextcloud"
     verificar_container_redis || ferramenta_redis
 
+    # >>> PASSO 1 DA CORREÇÃO: Forçar a criação do volume <<<
+    echo "Pré-configurando o volume do Nextcloud..."
+    docker volume create nextcloud_data > /dev/null 2>&1
+    
+    # Inicia um contêiner temporário apenas para criar a estrutura de pastas e ajustar permissões
+    docker run -d --name nextcloud-init -v nextcloud_data:/var/www/html busybox sleep 10 > /dev/null 2>&1
+    sleep 5 # Dá um tempo para o Docker montar o volume
+    
+    # >>> PASSO 2 DA CORREÇÃO: Ajustar as permissões ANTES do deploy <<<
+    echo "Ajustando permissões do volume..."
+    sudo chown -R 33:33 /var/lib/docker/volumes/nextcloud_data/_data
+    docker rm -f nextcloud-init > /dev/null 2>&1
+
     cat > nextcloud.yaml <<EOL
 version: "3.7"
 services:
@@ -7091,17 +7104,6 @@ EOL
     
     STACK_NAME="nextcloud"
     stack_editavel
-    wait_stack nextcloud_nextcloud
-
-    # >>> BLOCO DE CORREÇÃO DE PERMISSÕES ADICIONADO ABAIXO <<<
-    echo "Ajustando permissões do volume..."
-    # Espera um pouco para garantir que o Docker criou o diretório
-    sleep 5 
-    sudo chown -R 33:33 /var/lib/docker/volumes/nextcloud_data/_data
-    # Reinicia o serviço para aplicar as novas permissões
-    docker service update --force nextcloud_nextcloud > /dev/null 2>&1
-    echo "Aguardando reinicialização do serviço..."
-    sleep 15
     wait_stack nextcloud_nextcloud
 
     cd /root/dados_vps
