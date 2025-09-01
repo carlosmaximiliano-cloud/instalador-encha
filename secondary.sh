@@ -378,6 +378,19 @@ centralizar "  ╚═════╝  ╚═════╝    ╚═╝   ╚�
     echo ""
 }
 
+msg_focalboard(){
+    clear
+    echo -e "${roxo}"
+centralizar "███████╗ ██████╗  ██████╗ █████╗ ██╗     ██████╗  ██████╗  █████╗ ██████╗ ██████╗"
+centralizar "██╔════╝██╔═══██╗██╔════╝██╔══██╗██║     ██╔══██╗██╔═══██╗██╔══██╗██╔══██╗██╔══██╗"
+centralizar "█████╗  ██║   ██║██║     ███████║██║     ██████╔╝██║   ██║███████║██████╔╝██║  ██║"
+centralizar "██╔══╝  ██║   ██║██║     ██╔══██║██║     ██╔══██╗██║   ██║██╔══██║██╔══██╗██║  ██║"
+centralizar "██║     ╚██████╔╝╚██████╗██║  ██║███████╗██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝"
+centralizar "╚═╝      ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6793,6 +6806,11 @@ ferramenta_outline(){
   cat > outline.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   outline:
     image: outlinewiki/outline:latest
     networks:
@@ -6806,7 +6824,6 @@ services:
       - UTILS_SECRET=${key2}
       - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/outline
       - REDIS_URL=redis://redis_redis:6379
-      # >>> CORREÇÃO APLICADA ABAIXO <<<
       - PGSSLMODE=disable
       - OIDC_CLIENT_ID=${id_google_outline}
       - OIDC_CLIENT_SECRET=${key_google_outline}
@@ -6847,6 +6864,63 @@ EOL
   echo "Acesse em: https://${url_outline}"
   echo -e "⚠️  \e[33mIMPORTANTE: Adicione a seguinte URL de Callback nas suas credenciais do Google:\e[0m"
   echo -e "➡️  \e[97mhttps://${url_outline}/auth/oidc.callback\e[0m"
+  msg_retorno_menu
+
+}
+
+ferramenta_focalboard() {
+  msg_focalboard
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Focalboard (ex: boards.encha.ai): \e[0m' url_focalboard
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Focalboard...\e[0m"
+
+  cat > focalboard.yaml <<EOL
+version: "3.8"
+services:
+  focalboard:
+    image: mattermost/focalboard:latest
+    volumes:
+      - focalboard_data:/opt/focalboard/data
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - VIRTUAL_HOST=${url_focalboard}
+      - VIRTUAL_PORT=8000
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.focalboard.rule=Host(\`${url_focalboard}\`)"
+        - "traefik.http.services.focalboard.loadbalancer.server.port=8000"
+        - "traefik.http.routers.focalboard.entrypoints=websecure"
+        - "traefik.http.routers.focalboard.tls.certresolver=letsencryptresolver"
+volumes:
+  focalboard_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="focalboard"
+  stack_editavel
+  wait_stack focalboard_focalboard
+
+  cd /root/dados_vps
+  cat > dados_focalboard <<EOL
+[ FOCALBOARD ]
+
+Dominio: https://${url_focalboard}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo "✅ Focalboard instalado com sucesso!"
+  echo "Acesse em: https://${url_focalboard}"
+  echo "Crie seu usuário no primeiro acesso."
   msg_retorno_menu
 
 }
@@ -6902,6 +6976,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}26.${reset} Instalar twentyCRM"
         echo -e "                                                                           ${azul}27.${reset} Instalar Mattermost"
         echo -e "                                                                           ${azul}28.${reset} Instalar outline"
+        echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7146,6 +7221,12 @@ exibir_menu() {
               verificar_stack "outline" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_outline
+                fi
+                ;;
+            29)
+              verificar_stack "focalboard" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_focalboard
                 fi
                 ;;
             *)
