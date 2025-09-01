@@ -196,6 +196,19 @@ centralizar "╚═╝  ╚═══╝ ╚═════╝  ╚════�
     echo ""
 }
 
+msg_botpress(){
+  clear
+    echo -e "${roxo}"
+centralizar "██████╗  ██████╗ ████████╗██████╗ ██████╗ ███████╗███████╗███████╗"
+centralizar "██╔══██╗██╔═══██╗╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝"
+centralizar "██████╔╝██║   ██║   ██║   ██████╔╝██████╔╝█████╗  ███████╗███████╗"
+centralizar "██╔══██╗██║   ██║   ██║   ██╔═══╝ ██╔══██╗██╔══╝  ╚════██║╚════██║"
+centralizar "██████╔╝╚██████╔╝   ██║   ██║     ██║  ██║███████╗███████║███████╗"
+centralizar "╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -5298,6 +5311,62 @@ EOL
 
 }
 
+ferramenta_botpress(){
+  msg_botpress
+  dados
+
+  read -p $'\e[33mDigite o domínio para o Botpress (ex: botpress.encha.ai): \e[0m' url_botpress
+  echo -e "\e[97m🚀 Iniciando a instalação do Botpress...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "botpress"
+
+  verificar_container_redis || ferramenta_redis
+  cat > botpress.yaml << EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  botpress:
+    image: botpress/server:latest
+    volumes:
+      - botpress_data:/botpress/data
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - EXTERNAL_URL=https://${url_botpress}
+      - BP_PRODUCTION=true
+      - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/botpress
+      - REDIS_URL=redis://redis:6379
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.botpress.rule=Host(\`${url_botpress}\`)"
+        - "traefik.http.services.botpress.loadbalancer.server.port=3000"
+        - "traefik.http.routers.botpress.entrypoints=websecure"
+        - "traefik.http.routers.botpress.tls.certresolver=letsencryptresolver"
+volumes:
+  botpress_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL  
+
+  STACK_NAME="botpress"
+  stack_editavel
+  wait_stack botpress_botpress
+
+  msg_resumo_informacoes
+  echo "✅ Botpress instalado com sucesso!"
+  echo "Acesse em: https://${url_botpress}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -5335,8 +5404,9 @@ exibir_menu() {
         echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"
         echo -e "${azul}06.${reset} Instalar N8N Formação Encha                             ${azul}13.${reset} Instalar pgAdmin"
         echo -e "${azul}07.${reset} Instalar Minio                                          ${azul}14.${reset} Instalar nocobase"
+        echo -e "                                                                           ${azul}15.${reset} Instalar botpress"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-14): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-15): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -5495,6 +5565,12 @@ exibir_menu() {
               verificar_stack "nocobase" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_nocobase
+                fi
+                ;;
+            15)
+              verificar_stack "botpress" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_botpress
                 fi
                 ;;
             *)
