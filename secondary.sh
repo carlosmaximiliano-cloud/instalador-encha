@@ -5139,7 +5139,7 @@ msg_retorno_menu
 
 ferramenta_pgadmin() {
   msg_pgAdmin
-  read -p "Iniciando instalação do PgAdmin 4..."
+  read -p "Iniciando instalação do PgAdmin 4... Pressione enter para continuar"
   dados
 
   while true; do
@@ -5159,6 +5159,11 @@ ferramenta_pgadmin() {
   echo -e "🔧 \e[97mInstalando o PgAdmin 4... \e[33m[1/2]\e[0m"
   cat > pgadmin.yaml << EOL
 version: "3.7"
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
 services:
   pgadmin:
     image: dpage/pgadmin4:latest
