@@ -7062,24 +7062,14 @@ services:
     networks:
       - ${nome_rede_interna}
     environment:
-      # Credenciais do Admin
       - NEXTCLOUD_ADMIN_USER=${user_nextcloud}
       - NEXTCLOUD_ADMIN_PASSWORD=${pass_nextcloud}
-      
-      # Banco de Dados
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${senha_postgres}
-      
-      # Redis
       - REDIS_HOST=redis_redis
-
-      # >>> CORREÇÃO APLICADA ABAIXO <<<
-      # Informa ao Nextcloud o domínio confiável desde o início
       - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
-
-      # Força o uso de HTTPS, necessário quando atrás de um reverse proxy como o Traefik
       - OVERWRITEPROTOCOL=https
     deploy:
       labels:
