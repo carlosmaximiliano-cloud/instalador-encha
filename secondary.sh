@@ -326,6 +326,19 @@ centralizar " ╚══╝╚══╝  ╚═════╝  ╚════�
     echo ""
 }
 
+msg_formbricks(){
+    clear
+    echo -e "${roxo}"
+centralizar "███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ ██╗ ██████╗██╗  ██╗███████╗"
+centralizar "██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔══██╗██╔══██╗██║██╔════╝██║ ██╔╝██╔════╝"
+centralizar "█████╗  ██║   ██║██████╔╝██╔████╔██║██████╔╝██████╔╝██║██║     █████╔╝ ███████╗"
+centralizar "██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔══██╗██╔══██╗██║██║     ██╔═██╗ ╚════██║"
+centralizar "██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██║  ██║██║╚██████╗██║  ██╗███████║"
+centralizar "╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6366,6 +6379,112 @@ EOL
 
 }
 
+ferramenta_formbricks() {
+  msg_formbricks
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
+    echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
+    echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
+    echo -e "\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
+    echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
+    echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
+    echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
+    echo -en "🔌 \e[33mDigite a Porta SMTP do email (ex: 465): \e[0m" && read -r porta_formbricks
+
+    if [[ "$porta_formbricks" -eq 465 ]]; then ssl_formbricks=1; else ssl_formbricks=0; fi
+
+    clear
+    msg_formbricks
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
+    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
+    echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_smtp_formbricks\e[0m"
+    echo -e "🏠 \e[33mHost SMTP:\e[97m $host_formbricks\e[0m"
+    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_formbricks\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
+  done
+
+  echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"    
+  verificar_container_pgvector || ferramenta_pgvector
+  pegar_senha_pgvector
+  criar_banco_pgvector_da_stack "formbricks"
+
+  encryption_key_form=$(openssl rand -hex 32)
+  next_key_form=$(openssl rand -hex 32)
+
+  cat > formbricks.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  formbricks:
+    image: ghcr.io/formbricks/formbricks:latest
+    volumes:
+      - formbricks_data:/home/nextjs/apps/web/uploads/
+    networks:
+      - ${nome_rede_interna}
+    environment:
+      - WEBAPP_URL=https://${url_formbricks}
+      - NEXTAUTH_URL=https://${url_formbricks}
+      - DATABASE_URL=postgresql://postgres:${senha_pgvector}@pgvector:5432/formbricks?schema=public
+      - ENCRYPTION_KEY=${encryption_key_form}
+      - NEXTAUTH_SECRET=${next_key_form}
+      - MAIL_FROM=${email_formbricks}
+      - SMTP_HOST=${host_formbricks}
+      - SMTP_PORT=${porta_formbricks}
+      - SMTP_SECURE_ENABLED=${ssl_formbricks}
+      - SMTP_USER=${user_smtp_formbricks}
+      - SMTP_PASSWORD=${senha_formbricks}
+      - SIGNUP_DISABLED=0
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.formbricks.rule=Host(\`${url_formbricks}\`)"
+        - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
+        - "traefik.http.routers.formbricks.entrypoints=websecure"
+        - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
+volumes:
+  formbricks_data:
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+  STACK_NAME="formbricks"
+  stack_editavel
+  wait_stack formbricks_formbricks
+
+  cd /root/dados_vps
+  cat > dados_formbricks <<EOL
+[ FORMBRICKS ]
+
+Dominio: https://${url_formbricks}
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo "✅ Formbricks instalado com sucesso!"
+  echo "Acesse em: https://${url_formbricks}"
+  echo "Crie seu usuário no primeiro acesso."
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -6412,7 +6531,8 @@ exibir_menu() {
         echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
         echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
         echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
-        echo -e "                                                                           ${azul}24.${reset} Instalar qdrant"
+        echo -e "                                                                           ${azul}24.${reset} Instalar woofedcrm"
+        echo -e "                                                                           ${azul}24.${reset} Instalar formbricks"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-20): ${reset}"
         read -r opcao
@@ -6633,6 +6753,12 @@ exibir_menu() {
               verificar_stack "woofedcrm" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_woofedcrm
+                fi
+                ;;
+            25)
+              verificar_stack "formbricks" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_formbricks
                 fi
                 ;;
             *)
