@@ -5726,6 +5726,7 @@ services:
       - ${nome_rede_interna}
     environment:
       - NEXT_PUBLIC_WEBAPP_URL=https://${url_calcom}
+      - DATABASE_DIRECT_URL=postgresql://postgres:${senha_postgres}@postgres:5432/calcom
       - DATABASE_URL=postgresql://postgres:${senha_postgres}@postgres:5432/calcom
       - NEXTAUTH_SECRET=${secret}
       - CALENDSO_ENCRYPTION_KEY=${secret}
