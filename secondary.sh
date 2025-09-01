@@ -430,6 +430,19 @@ centralizar " ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═�
     echo ""
 }
 
+msg_flowise() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗      ██████╗ ██╗    ██╗██╗███████╗███████╗"
+    centralizar "██╔════╝██║     ██╔═══██╗██║    ██║██║██╔════╝██╔════╝"
+    centralizar "█████╗  ██║     ██║   ██║██║ █╗ ██║██║███████╗█████╗"
+    centralizar "██╔══╝  ██║     ██║   ██║██║███╗██║██║╚════██║██╔══╝"
+    centralizar "██║     ███████╗╚██████╔╝╚███╔███╔╝██║███████║███████╗"
+    centralizar "╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -6470,146 +6483,6 @@ EOL
 
 }
 
-ferramenta_formbricks() {
-    msg_formbricks
-    dados
-
-    while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
-        echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
-        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
-        echo -e "\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
-        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
-        echo -e "\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
-        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
-        echo ""
-        echo -e "\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
-        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
-        echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
-        echo -en "🔌 \e[33mDigite a Porta SMTP do email (ex: 465): \e[0m" && read -r porta_formbricks
-
-        if [[ "$porta_formbricks" -eq 465 ]]; then ssl_formbricks=1; else ssl_formbricks=0; fi
-
-        clear
-        msg_formbricks
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
-        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
-        echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_smtp_formbricks\e[0m"
-        echo -e "🏠 \e[33mHost SMTP:\e[97m $host_formbricks\e[0m"
-        echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_formbricks\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
-    done
-
-    echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
-    verificar_container_pgvector || ferramenta_pgvector
-    pegar_senha_pgvector
-    criar_banco_pgvector_da_stack "formbricks"
-
-    encryption_key_form=$(openssl rand -hex 32)
-    next_key_form=$(openssl rand -hex 32)
-    cron_key_form=$(openssl rand -hex 32)
-
-    cat > formbricks.yaml <<EOL
-version: "3.7"
-services:
-  formbricks:
-    image: ghcr.io/formbricks/formbricks:latest
-    volumes:
-      - formbricks_data:/home/nextjs/apps/web/uploads/
-    networks:
-      - ${nome_rede_interna}
-    environment:
-      # Url da aplicação
-      - WEBAPP_URL=https://${url_formbricks}
-      - NEXTAUTH_URL=https://${url_formbricks}
-
-      # Banco de dados Postgres (usando o compartilhado)
-      - DATABASE_URL=postgresql://postgres:${senha_pgvector}@pgvector:5432/formbricks?schema=public
-
-      # Licença
-      - ENTERPRISE_LICENSE_KEY=
-
-      # Keys aleatórias
-      - ENCRYPTION_KEY=${encryption_key_form}
-      - NEXTAUTH_SECRET=${next_key_form}
-      - CRON_SECRET=${cron_key_form}
-
-      # Dados do SMTP
-      - MAIL_FROM=${email_formbricks}
-      - SMTP_HOST=${host_formbricks}
-      - SMTP_PORT=${porta_formbricks}
-      - SMTP_SECURE_ENABLED=${ssl_formbricks}
-      - SMTP_USER=${user_smtp_formbricks}
-      - SMTP_PASSWORD=${senha_formbricks}
-
-      # Ativar/Desativar registros e convites (0= false | 1= true)
-      - SIGNUP_DISABLED=0
-      - INVITE_DISABLED=0
-      - EMAIL_VERIFICATION_DISABLED=0
-      - PASSWORD_RESET_DISABLED=0
-
-      # Variáveis opcionais (deixamos vazias como no original)
-      - NEXT_PUBLIC_FORMBRICKS_API_HOST=
-      - NEXT_PUBLIC_FORMBRICKS_ENVIRONMENT_ID=
-      - NEXT_PUBLIC_FORMBRICKS_ONBOARDING_SURVEY_ID=
-      - GOOGLE_AUTH_ENABLED=0
-      - GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - GOOGLE_SHEETS_CLIENT_ID=
-      - GOOGLE_SHEETS_CLIENT_SECRET=
-      - GOOGLE_SHEETS_REDIRECT_URL=
-      - GITHUB_AUTH_ENABLED=0
-      - GITHUB_ID=
-      - GITHUB_SECRET=
-      - NOTION_OAUTH_CLIENT_ID=
-      - NOTION_OAUTH_CLIENT_SECRET=
-      - AIRTABLE_CLIENT_ID=
-    deploy:
-      # Política de reinicialização para dar tempo ao banco
-      restart_policy:
-        condition: on-failure
-        delay: 10s
-        max_attempts: 3
-        window: 120s
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.formbricks.rule=Host(\`${url_formbricks}\`)"
-        - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
-        - "traefik.http.routers.formbricks.entrypoints=websecure"
-        - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
-volumes:
-  formbricks_data:
-networks:
-  ${nome_rede_interna}:
-    external: true
-EOL
-
-    STACK_NAME="formbricks"
-    stack_editavel
-    wait_stack formbricks_formbricks
-
-    cd /root/dados_vps
-    cat > dados_formbricks <<EOL
-[ FORMBRICKS ]
-
-Dominio: https://${url_formbricks}
-Usuario: (criado no primeiro acesso)
-Senha: (criada no primeiro acesso)
-EOL
-    cd
-
-    msg_resumo_informacoes
-    echo "✅ Formbricks instalado com sucesso!"
-    echo "Acesse em: https://${url_formbricks}"
-    echo "Crie seu usuário no primeiro acesso."
-    msg_retorno_menu
-}
-
 ferramenta_twentycrm() {
     msg_twentycrm
     dados
@@ -7035,37 +6908,42 @@ EOL
 
 }
 
-ferramenta_nextcloud() {
-    msg_nextcloud
-    dados
+ferramenta_flowise() {
+  msg_flowise
+  dados
 
-    while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m" && read -r url_nextcloud
-        echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-        echo -en "👤 \e[33mDigite um nome de usuário admin (ex: encha): \e[0m" && read -r user_nextcloud
-        echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-        echo -en "🔑 \e[33mDigite a senha para o admin: \e[0m" && read -s -r pass_nextcloud
-        echo ""
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Flowise (ex: flowise.encha.ai): \e[0m" && read -r url_flowise
+        
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -en "👤 \e[33mDigite um usuário para o Flowise (ex: admin): \e[0m" && read -r user_flowise
+        
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_flowise
+    echo ""
 
-        clear
-        msg_nextcloud
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio:\e[97m $url_nextcloud\e[0m"
-        echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
-    done
+    clear
+    msg_flowise
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Flowise:\e[97m $url_flowise\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_flowise\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; msg_flowise; fi
+  done
 
-    echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
-    verificar_container_postgres || ferramenta_postgres
-    pegar_senha_postgres
-    criar_banco_postgres_da_stack "nextcloud"
-    verificar_container_redis || ferramenta_redis
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Flowise...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "flowise"
 
-    cat > nextcloud.yaml <<EOL
+  echo -e "\e[97m⚙️ Instalando o Flowise...\e[0m"
+  encryption_key=$(openssl rand -hex 16)
+
+  cat > flowise.yaml <<EOL
 version: "3.7"
 services:
 
@@ -7073,145 +6951,63 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  nextcloud:
-    image: nextcloud:latest
+  flowise:
+    image: flowiseai/flowise:latest
     volumes:
-      - nextcloud_data:/var/www/html
+      - flowise_data:/root/.flowise
     networks:
-      - ${nome_rede_interna}
+      - $nome_rede_interna
     environment:
-      - APACHE_SERVER_NAME=${url_nextcloud}
-      - NEXTCLOUD_ADMIN_USER=${user_nextcloud}
-      - NEXTCLOUD_ADMIN_PASSWORD=${pass_nextcloud}
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${senha_postgres}
-      - REDIS_HOST=redis_redis
-      - NEXTCLOUD_TRUSTED_DOMAINS=${url_nextcloud}
+      - FLOWISE_USERNAME=$user_flowise
+      - FLOWISE_PASSWORD=$pass_flowise
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=$senha_postgres
+      - DATABASE_NAME=flowise
+      - FLOWISE_SECRETKEY_OVERWRITE=$encryption_key
     deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.nextcloud.rule=Host(\`${url_nextcloud}\`)"
-        - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-        - "traefik.http.routers.nextcloud.entrypoints=websecure"
-        - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=PLACEHOLDER_URL"
-        - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
+        - "traefik.http.routers.flowise.rule=Host(\`$url_flowise\`)"
+        - "traefik.http.services.flowise.loadbalancer.server.port=3000"
+        - "traefik.http.routers.flowise.service=flowise"
+        - "traefik.http.routers.flowise.entrypoints=websecure"
+        - "traefik.http.routers.flowise.tls.certresolver=letsencryptresolver"
 volumes:
-  nextcloud_data:
+  flowise_data:
 networks:
-  ${nome_rede_interna}:
+  $nome_rede_interna:
     external: true
 EOL
 
-    sed -i 's|PLACEHOLDER_URL|https://$${1}/remote.php/dav/|g' nextcloud.yaml
-    
-    STACK_NAME="nextcloud"
-    stack_editavel
-    wait_stack nextcloud_nextcloud
+  STACK_NAME="flowise"
+  stack_editavel
+  wait_stack flowise_flowise
 
-    cd /root/dados_vps
-    cat > dados_nextcloud <<EOL
-[ NEXTCLOUD ]
-
-Dominio: https://${url_nextcloud}
-Usuario Admin: ${user_nextcloud}
-Senha Admin: ${pass_nextcloud}
-EOL
-    cd
-
-    msg_resumo_informacoes
-    echo "✅ Nextcloud instalado com sucesso!"
-    echo "Acesse em: https://${url_nextcloud}"
-    echo "Usuário: ${user_nextcloud}"
-    msg_retorno_menu
-}
-
-ferramenta_strapi() {
-    msg_strapi
-    dados
-
-    while true; do
-        echo -e "\n📍 \e[97mPasso 1/1\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Strapi (ex: cms.encha.ai): \e[0m" && read -r url_strapi
-        
-        clear
-        msg_strapi
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio:\e[97m $url_strapi\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_strapi; fi
-    done
-
-    echo -e "\e[97m🚀 Iniciando a instalação do Strapi v4...\e[0m"
-    verificar_container_mysql || ferramenta_mysql
-    pegar_senha_mysql_da_stack
-    criar_banco_mysql_da_stack "strapi"
-
-    # Strapi v4 requer várias chaves de segurança
-    app_keys=$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32),$(openssl rand -base64 32)
-    api_token_salt=$(openssl rand -base64 32)
-    admin_jwt_secret=$(openssl rand -base64 32)
-    jwt_secret=$(openssl rand -base64 32)
-
-    cat > strapi.yaml <<EOL
-version: "3.7"
-services:
-  strapi:
-    image: strapi/strapi:latest
-    volumes:
-      - strapi_data:/opt/app
-    networks:
-      - ${nome_rede_interna}
-    environment:
-      - DATABASE_CLIENT=mysql
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
-      - DATABASE_NAME=strapi
-      - DATABASE_USERNAME=root
-      - DATABASE_PASSWORD=${senha_mysql}
-      - APP_KEYS=${app_keys}
-      - API_TOKEN_SALT=${api_token_salt}
-      - ADMIN_JWT_SECRET=${admin_jwt_secret}
-      - JWT_SECRET=${jwt_secret}
-      - STRAPI_TELEMETRY_DISABLED=true
-    deploy:
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.strapi.rule=Host(\`${url_strapi}\`)"
-        - "traefik.http.services.strapi.loadbalancer.server.port=1337"
-        - "traefik.http.routers.strapi.entrypoints=websecure"
-        - "traefik.http.routers.strapi.tls.certresolver=letsencryptresolver"
-volumes:
-  strapi_data:
-networks:
-  ${nome_rede_interna}:
-    external: true
+  cd /root/dados_vps
+  cat > dados_flowise <<EOL
+[ FLOWISE ]
+Dominio: https://$url_flowise
+Usuario: $user_flowise
+Senha: $pass_flowise
 EOL
 
-    STACK_NAME="strapi"
-    stack_editavel
-    wait_stack strapi_strapi
+  cd
 
-    cd /root/dados_vps
-    cat > dados_strapi <<EOL
-[ STRAPI ]
+  msg_resumo_informacoes
+  echo -e "\e[32m[ FLOWISE ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_flowise\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_flowise\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_flowise\e[0m\n"
+  msg_retorno_menu
 
-Dominio: https://${url_strapi}
-Admin: https://${url_strapi}/admin
-Usuario: (criado no primeiro acesso ao painel admin)
-Senha: (criada no primeiro acesso ao painel admin)
-EOL
-    cd
-
-    msg_resumo_informacoes
-    echo "✅ Strapi instalado com sucesso!"
-    echo "Acesse https://${url_strapi}/admin para criar sua conta de administrador."
-    msg_retorno_menu
 }
 
 verificar_status_servicos() {
@@ -7266,7 +7062,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
         echo -e "                                                                           ${azul}30.${reset} Instalar GLPI"
         echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
-        echo -e "                                                                           ${azul}32.${reset} Instalar Strapi"
+        echo -e "                                                                           ${azul}32.${reset} Instalar flowise"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7532,9 +7328,9 @@ exibir_menu() {
                 fi
                 ;;
             32)
-              verificar_stack "strapi" && continue || echo ""
+              verificar_stack "flowise" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                  ferramenta_strapi
+                  ferramenta_flowise
                 fi
                 ;;
             *)
