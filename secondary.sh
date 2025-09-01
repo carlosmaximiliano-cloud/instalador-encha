@@ -7089,7 +7089,7 @@ services:
         - "traefik.http.routers.nextcloud.entrypoints=websecure"
         - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
         - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://\${1}/remote.php/dav/"
+        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=PLACEHOLDER_URL"
         - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
 volumes:
   nextcloud_data:
@@ -7098,7 +7098,7 @@ networks:
     external: true
 EOL
 
-    # Os comandos 'sed' antigos foram removidos pois não são mais necessários
+    sed -i 's|PLACEHOLDER_URL|https://$${1}/remote.php/dav/|g' nextcloud.yaml
     
     STACK_NAME="nextcloud"
     stack_editavel
