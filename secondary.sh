@@ -625,6 +625,45 @@ msg_supabase(){
     echo ""
 }
 
+msg_ntfy(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ██╗████████╗███████╗██╗   ██╗"
+    centralizar "████╗  ██║╚══██╔══╝██╔════╝╚██╗ ██╔╝"
+    centralizar "██╔██╗ ██║   ██║   █████╗   ╚████╔╝"
+    centralizar "██║╚██╗██║   ██║   ██╔══╝    ╚██╔╝"
+    centralizar "██║ ╚████║   ██║   ██║        ██║"
+    centralizar "╚═╝  ╚═══╝   ╚═╝   ╚═╝        ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_lowcoder(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗      ██████╗ ██╗    ██╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗"
+    centralizar "██║     ██╔═══██╗██║    ██║██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗"
+    centralizar "██║     ██║   ██║██║ █╗ ██║██║     ██║   ██║██║  ██║█████╗  ██████╔╝"
+    centralizar "██║     ██║   ██║██║███╗██║██║     ██║   ██║██║  ██║██╔══╝  ██╔══██╗"
+    centralizar "███████╗╚██████╔╝╚███╔███╔╝╚██████╗╚██████╔╝██████╔╝███████╗██║  ██║"
+    centralizar "╚══════╝ ╚═════╝  ╚══╝╚══╝  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_openproject() {
+    clear
+    echo -e "${roxo}"
+    centralizar " ██████╗ ██████╗ ███████╗███╗   ██╗    ██████╗ ██████╗  ██████╗      ██╗███████╗ ██████╗████████╗"
+    centralizar "██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██╔══██╗██╔══██╗██╔═══██╗     ██║██╔════╝██╔════╝╚══██╔══╝"
+    centralizar "██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║        ██║"
+    centralizar "██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██╔═══╝ ██╔══██╗██║   ██║██   ██║██╔══╝  ██║        ██║"
+    centralizar "╚██████╔╝██║     ███████╗██║ ╚████║    ██║     ██║  ██║╚██████╔╝╚█████╔╝███████╗╚██████╗   ██║"
+    centralizar " ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -10943,15 +10982,10 @@ EOL
 [ SUPABASE ]
 
 Dominio do Supabase: https://$url_supabase
-
 Usuario: $user_supabase
-
 Senha: $pass_supabase
-
 JWT Key: $JWT_Key
-
 Anon Key: $ANON_KEY
-
 Service Key: $SERVICE_KEY
 EOL
 
@@ -10977,6 +11011,134 @@ EOL
 
   echo -e "\e[33mService key:\e[97m $SERVICE_KEY\e[0m"
   msg_retorno_menu
+}
+
+ferramenta_ntfy(){
+  msg_ntfy
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o domínio para o Ntfy (ex: ntfy.encha.ai): \e[0m" && read -r url_ntfy
+    echo ""
+    echo -e "\n📍 Passo 2/3"
+    echo -en "👤 \e[33mDigite um nome de usuário para proteger o acesso (ex: encha): \e[0m" && read -r user_ntfy
+    echo ""
+    echo -e "\n📍 Passo 3/3"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_ntfy
+    echo ""
+
+    clear
+    msg_ntfy
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Ntfy:\e[97m $url_ntfy\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_ntfy\e[0m"
+    echo -e "🔑 \e[33mSenha do Ntfy:\e[97m $pass_ntfy\e[0m"
+    cho -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_ntfy; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Ntfy...\e[0m"
+  ## Gerando Hash
+  hashed_senha=$(htpasswd -nb $user_ntfy $pass_ntfy | sed -e s/\\$/\\$\\$/g)
+
+  ## Gerando Base64
+  authentication=$(echo -n "$user_ntfy:$pass_ntfy" | base64)
+
+  cat > ntfy${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+  ntfy${1:+_$1}:
+    image: binwiederhier/ntfy:latest
+    command:
+      - serve
+
+    volumes:
+      - ntfy${1:+_$1}_cache:/var/cache/ntfy
+      - ntfy${1:+_$1}_etc:/etc/ntfy
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      - TZ=UTC
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.ntfy${1:+_$1}.rule=Host(\`$url_ntfy\`)
+        - traefik.http.services.ntfy${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.ntfy${1:+_$1}.service=ntfy${1:+_$1}
+        - traefik.http.routers.ntfy${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.ntfy${1:+_$1}.entrypoints=websecure
+        - traefik.http.middlewares.ntfy${1:+_$1}-auth.basicauth.users=$hashed_senha
+        - traefik.http.routers.ntfy${1:+_$1}.middlewares=ntfy${1:+_$1}-auth
+        - traefik.http.routers.ntfy${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+volumes:
+  ntfy${1:+_$1}_cache:
+    external: true
+    name: ntfy${1:+_$1}_cache
+  ntfy${1:+_$1}_etc:
+    external: true
+    name: ntfy${1:+_$1}_etc
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="ntfy${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+  pull binwiederhier/ntfy:latest
+
+  wait_stack ntfy${1:+_$1}_ntfy${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_ntfy${1:+_$1} <<EOL
+[ NTFY ]
+Link do Ntfy: https://$url_ntfy
+Usuario: $user_ntfy
+Senha: $pass_ntfy
+Authorization: Basic $authentication
+EOL
+  cd
+
+    msg_resumo_informacoes
+    echo -e "\e[32m[ NTFY ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_ntfy\e[0m"
+    echo -e "\e[33m👤 Usuário:\e[97m $user_ntfy\e[0m"
+    echo -e "\e[33m🔑 Senha:\e[97m $pass_ntfy\e[0m"
+    echo -e "\e[33m🔐 Autorização para API:\e[97m Basic $authentication\e[0m"
+    msg_retorno_menu
+
 }
 
 verificar_status_servicos() {
@@ -11029,13 +11191,13 @@ exibir_menu() {
         echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}46.${reset} Instalar Strapi"
         echo -e "${azul}20.${reset} Instalar calcom                  ${azul}47.${reset} Instalar MyphpAdmin"
         echo -e "${azul}21.${reset} Instalar mautic                  ${azul}48.${reset} Instalar Supabase"
-        echo -e "${azul}22.${reset} Instalar appsmith"
+        echo -e "${azul}22.${reset} Instalar appsmith                ${azul}49.${reset} Instalar NTFY"
         echo -e "${azul}23.${reset} Instalar qdrant"
         echo -e "${azul}24.${reset} Instalar woofedcrm"
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-48): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-49): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -11382,6 +11544,12 @@ exibir_menu() {
                 verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_supabase
+                  fi
+                  ;;
+            49)
+                verificar_stack "ntfy${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_ntfy
                   fi
                   ;;
             *)
