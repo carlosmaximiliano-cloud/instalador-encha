@@ -547,6 +547,45 @@ msg_dify() {
     echo ""
 }
 
+msg_affine(){
+    clear
+    echo -e "${roxo}"
+    centralizar "   █████╗ ███████╗███████╗██╗███╗   ██╗███████╗"
+    centralizar "  ██╔══██╗██╔════╝██╔════╝██║████╗  ██║██╔════╝"
+    centralizar "  ███████║█████╗  █████╗  ██║██╔██╗ ██║█████╗"
+    centralizar "  ██╔══██║██╔══╝  ██╔══╝  ██║██║╚██╗██║██╔══╝"
+    centralizar "  ██║  ██║██║     ██║     ██║██║ ╚████║███████╗"
+    centralizar "  ╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_vaultwarden() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗██╗    ██╗ █████╗ ██████╗ ██████╗ ███████╗███╗   ██╗"
+    centralizar "██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝██║    ██║██╔══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║"
+    centralizar "██║   ██║███████║██║   ██║██║     ██║   ██║ █╗ ██║███████║██████╔╝██║  ██║█████╗  ██╔██╗ ██║"
+    centralizar "╚██╗ ██╔╝██╔══██║██║   ██║██║     ██║   ██║███╗██║██╔══██║██╔══██╗██║  ██║██╔══╝  ██║╚██╗██║"
+    centralizar " ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║   ╚███╔███╔╝██║  ██║██║  ██║██████╔╝███████╗██║ ╚████║"
+    centralizar "  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_nextcloud() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ██╗███████╗██╗  ██╗████████╗ ██████╗██╗      ██████╗ ██╗   ██╗██████╗"
+    centralizar "████╗  ██║██╔════╝╚██╗██╔╝╚══██╔══╝██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗"
+    centralizar "██╔██╗ ██║█████╗   ╚███╔╝    ██║   ██║     ██║     ██║   ██║██║   ██║██║  ██║"
+    centralizar "██║╚██╗██║██╔══╝   ██╔██╗    ██║   ██║     ██║     ██║   ██║██║   ██║██║  ██║"
+    centralizar "██║ ╚████║███████╗██╔╝ ██╗   ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝"
+    centralizar "╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7864,6 +7903,11 @@ ferramenta_metabase() {
     cat > metabase.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   metabase:
     image: metabase/metabase:latest
     volumes:
@@ -7979,6 +8023,11 @@ ferramenta_docuseal() {
     cat > docuseal.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   docuseal:
     image: docuseal/docuseal:latest
     volumes:
@@ -8083,6 +8132,11 @@ ferramenta_monitor() {
     
     cat > /opt/monitor-stack/prometheus/prometheus.yml <<EOL
 global:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   scrape_interval: 15s
 scrape_configs:
   - job_name: 'prometheus'
@@ -8110,6 +8164,11 @@ EOL
     cat > monitor.yaml <<EOL
 version: '3.7'
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -8148,6 +8207,10 @@ services:
         - "traefik.http.routers.grafana.entrypoints=websecure"
         - "traefik.http.routers.grafana.tls.certresolver=letsencryptresolver"
 
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   node-exporter:
     image: prom/node-exporter:latest
     networks:
@@ -8161,6 +8224,10 @@ services:
         - "traefik.http.routers.node-exporter.service=node-exporter"
         - "traefik.http.routers.node-exporter.entrypoints=websecure"
         - "traefik.http.routers.node-exporter.tls.certresolver=letsencryptresolver"
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -8268,6 +8335,11 @@ ferramenta_dify() {
     cat > dify.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   dify_api:
     image: langgenius/dify-api:latest
     volumes:
@@ -8316,6 +8388,10 @@ services:
         - "traefik.http.routers.dify_api.entrypoints=websecure"
         - "traefik.http.routers.dify_api.tls.certresolver=letsencryptresolver"
 
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   dify_worker:
     image: langgenius/dify-api:latest
     command: worker
@@ -8350,6 +8426,10 @@ services:
       placement:
         constraints: [node.role == manager]
 
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   dify_web:
     image: langgenius/dify-web:latest
     networks:
@@ -8370,6 +8450,10 @@ services:
         - "traefik.http.routers.dify_web.service=dify_web"
         - "traefik.http.routers.dify_web.entrypoints=websecure"
         - "traefik.http.routers.dify_web.tls.certresolver=letsencryptresolver"
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   dify_weaviate:
     image: semitechnologies/weaviate:latest
@@ -8428,6 +8512,347 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_affine() {
+    msg_affine
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/7"
+        echo -en "🔗 \e[33mDigite o domínio para o Affine (ex: affine.encha.ai): \e[0m" && read -r url_affine
+        echo ""
+        echo -e "\n📍 Passo 2/7"
+        echo -en "📧 \e[33mDigite o email do administrador: \e[0m" && read -r email_affine
+        echo ""
+        echo -e "\n📍 Passo 3/7"
+        echo -en "🔑 \e[33mDigite a senha do administrador: \e[0m" && read -s -r senha_affine
+        echo ""
+        echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+        echo -e "\n📍 Passo 4/7"
+        echo -en "📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_affine
+        echo ""
+        echo -e "\n📍 Passo 5/7"
+        echo -en "🔑 \e[33mDigite a senha do seu email de envio: \e[0m" && read -s -r senha_smtp_affine
+        echo ""
+        echo -e "\n📍 Passo 6/7"
+        echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_affine
+        echo ""
+        echo -e "\n📍 Passo 7/7"
+        echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_affine
+        echo ""
+
+        clear
+        msg_affine
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Affine:\e[97m $url_affine\e[0m"
+        echo -e "📧 \e[33mEmail Admin:\e[97m $email_affine\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_affine; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "affine"
+    verificar_container_redis || ferramenta_redis
+
+    cat > affine.yaml <<EOL
+version: "3.7"
+services:
+  affine:
+    image: ghcr.io/toeverything/affine-graphql:stable-39476d1
+    command: ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
+    volumes:
+      - affine_config:/root/.affine/config:rw
+      - affine_storage:/root/.affine/storage:rw
+    networks:
+      - $nome_rede_interna
+    environment:
+      - AFFINE_ADMIN_EMAIL=$email_affine
+      - AFFINE_ADMIN_PASSWORD=$senha_affine
+      - AFFINE_SERVER_HOST=$url_affine
+      - MAILER_USER=$email_smtp_affine
+      - MAILER_PASSWORD=$senha_smtp_affine
+      - MAILER_HOST=$host_smtp_affine
+      - MAILER_PORT=$porta_smtp_affine
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=$senha_postgres
+      - POSTGRES_DB=affine
+      - DATABASE_URL=postgres://postgres:$senha_postgres@postgres:5432/affine?sslmode=disable
+      - REDIS_SERVER_HOST=redis
+      - NODE_ENV=production
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.affine.rule=Host(\`$url_affine\`)"
+        - "traefik.http.services.affine.loadbalancer.server.port=3010"
+        - "traefik.http.routers.affine.service=affine"
+        - "traefik.http.routers.affine.entrypoints=websecure"
+        - "traefik.http.routers.affine.tls.certresolver=letsencryptresolver"
+volumes:
+  affine_config:
+    name: affine_config
+    external: true
+  affine_storage:
+    name: affine_storage
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="affine"
+    stack_editavel
+    wait_stack "affine_affine"
+
+    cd /root/dados_vps
+    cat > dados_affine <<EOL
+[ AFFINE ]
+Dominio: https://$url_affine
+Usuario: $email_affine
+Senha: $senha_affine
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ AFFINE ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_affine\e[0m"
+    echo -e "\e[33m📧 Usuário Admin:\e[97m $email_affine\e[0m"
+    echo -e "\e[33m🔑 Senha Admin:\e[97m $senha_affine\e[0m"
+    msg_retorno_menu
+}
+
+ferramenta_vaultwarden() {
+    msg_vaultwarden
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/5"
+        echo -en "🔗 \e[33mDigite o domínio para o Vaultwarden (ex: senhas.encha.ai): \e[0m" && read -r url_vaultwarden
+        echo ""
+        echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+        echo -e "\n📍 Passo 2/5"
+        echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_vaultwarden
+        echo ""
+        echo -e "\n📍 Passo 3/5"
+        echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_vaultwarden
+        echo ""
+        echo -e "\n📍 Passo 4/5"
+        echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_vaultwarden
+        echo ""
+        echo -e "\n📍 Passo 5/5"
+        echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_vaultwarden
+        echo ""
+
+        if [ "$porta_vaultwarden" -eq 465 ] || [ "$porta_vaultwarden" -eq 25 ]; then
+            ssl_vaultwarden=force_tls
+        else
+            ssl_vaultwarden=starttls
+        fi
+
+        clear
+        msg_vaultwarden
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Vaultwarden:\e[97m $url_vaultwarden\e[0m"
+        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_vaultwarden\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_vaultwarden; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Vaultwarden...\e[0m"
+    
+    cat > vaultwarden.yaml <<EOL
+version: "3.7"
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - $nome_rede_interna
+    environment:
+      - DOMAIN=https://$url_vaultwarden
+      - SIGNUPS_ALLOWED=true
+      - SMTP_FROM=$email_vaultwarden
+      - SMTP_USERNAME=$email_vaultwarden
+      - SMTP_PASSWORD=$senha_vaultwarden
+      - SMTP_HOST=$host_vaultwarden
+      - SMTP_PORT=$porta_vaultwarden
+      - SMTP_SECURITY=$ssl_vaultwarden
+      - WEBSOCKET_ENABLED=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.vaultwarden.rule=Host(\`$url_vaultwarden\`)"
+        - "traefik.http.routers.vaultwarden.service=vaultwarden"
+        - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+        - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+        - "traefik.http.routers.vaultwarden.tls.certresolver=letsencryptresolver"
+volumes:
+  vaultwarden_data:
+    name: vaultwarden_data
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="vaultwarden"
+    stack_editavel
+    wait_stack "vaultwarden_vaultwarden"
+
+    cd /root/dados_vps
+    cat > dados_vaultwarden <<EOL
+[ VAULTWARDEN ]
+Dominio: https://$url_vaultwarden
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ VAULTWARDEN ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_vaultwarden\e[0m"
+    echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio.\e[0m"
+    msg_retorno_menu
+}
+
+ferramenta_nextcloud() {
+    msg_nextcloud
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/3"
+        echo -en "🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m" && read -r url_nextcloud
+        echo ""
+        echo -e "\n📍 Passo 2/3"
+        echo -en "👤 \e[33mDigite o nome do usuário administrador: \e[0m" && read -r user_nextcloud
+        echo ""
+        echo -e "\n📍 Passo 3/3"
+        echo -en "🔑 \e[33mDigite a senha para o administrador: \e[0m" && read -s -r pass_nextcloud
+        echo ""
+
+        clear
+        msg_nextcloud
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Nextcloud:\e[97m $url_nextcloud\e[0m"
+        echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "nextcloud"
+    verificar_container_redis || ferramenta_redis
+
+    cat > nextcloud.yaml <<EOL
+version: "3.7"
+services:
+  nextcloud:
+    image: nextcloud:latest
+    volumes:
+      - nextcloud_data:/var/www/html
+    networks:
+      - $nome_rede_interna
+    environment:
+      - NEXTCLOUD_ADMIN_USER=$user_nextcloud
+      - NEXTCLOUD_ADMIN_PASSWORD=$pass_nextcloud
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=$senha_postgres
+      - REDIS_HOST=redis
+      - OVERWRITEPROTOCOL=https
+      - TRUSTED_PROXIES=0.0.0.0/0
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nextcloud.rule=Host(\`$url_nextcloud\`)"
+        - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+        - "traefik.http.routers.nextcloud.service=nextcloud"
+        - "traefik.http.routers.nextcloud.entrypoints=websecure"
+        - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
+        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
+        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://\${1}/remote.php/dav/"
+        - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
+
+  nextcloud_cron:
+    image: nextcloud:latest
+    entrypoint: /cron.sh
+    volumes:
+      - nextcloud_data:/var/www/html
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+volumes:
+  nextcloud_data:
+    name: nextcloud_data
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="nextcloud"
+    stack_editavel
+    wait_stack "nextcloud_nextcloud" "nextcloud_nextcloud_cron"
+
+    echo "Aguardando para aplicar configurações adicionais..."
+    sleep 30
+    
+    local config_path="/var/lib/docker/volumes/nextcloud_data/_data/config/config.php"
+    if [ -f "$config_path" ]; then
+        # Adiciona o domínio à lista de trusted_domains
+        docker exec $(docker ps -q --filter "name=nextcloud_nextcloud") sed -i "/'trusted_domains' =>/a \    1 => '$url_nextcloud'," "$config_path"
+        echo "✅ Domínio adicionado aos trusted_domains do Nextcloud."
+    else
+        echo "⚠️  Arquivo de configuração do Nextcloud não encontrado. A configuração de trusted_domains pode precisar ser feita manualmente."
+    fi
+
+    cd /root/dados_vps
+    cat > dados_nextcloud <<EOL
+[ NEXTCLOUD ]
+Dominio: https://$url_nextcloud
+Usuario: $user_nextcloud
+Senha: $pass_nextcloud
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ NEXTCLOUD ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_nextcloud\e[0m"
+    echo -e "\e[33m👤 Usuário:\e[97m $user_nextcloud\e[0m"
+    echo -e "\e[33m🔑 Senha:\e[97m $pass_nextcloud\e[0m"
+    msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -8472,9 +8897,9 @@ exibir_menu() {
         echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}40.${reset} Instalar Docuseal"
         echo -e "${azul}14.${reset} Instalar nocobase                ${azul}41.${reset} Instalar Monitor"
         echo -e "${azul}15.${reset} Instalar botpress                ${azul}42.${reset} Instalar Dify"
-        echo -e "${azul}16.${reset} Instalar baserow"
-        echo -e "${azul}17.${reset} Instalar mongoDB"
-        echo -e "${azul}18.${reset} Instalar rabbitMQ"
+        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}43.${reset} Instalar Affine"
+        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}44.${reset} Instalar Vaultwarden"
+        echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}45.${reset} Instalar Nextcloud"
         echo -e "${azul}19.${reset} Instalar uptimeKuma"
         echo -e "${azul}20.${reset} Instalar calcom"
         echo -e "${azul}21.${reset} Instalar mautic"
@@ -8484,7 +8909,7 @@ exibir_menu() {
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-40): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-42): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -8795,6 +9220,24 @@ exibir_menu() {
                 verificar_stack "dify" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_dify
+                  fi
+                  ;;
+            43)
+                verificar_stack "affine" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_affine
+                  fi
+                  ;;
+            44)
+                verificar_stack "vaultwarden" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_vaultwarden
+                  fi
+                  ;;
+            45)
+                verificar_stack "nextcloud" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_nextcloud
                   fi
                   ;;
             *)
