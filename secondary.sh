@@ -508,6 +508,45 @@ msg_metabase() {
     echo ""
 }
 
+msg_docuseal(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗  ██████╗  ██████╗██╗   ██╗███████╗███████╗ █████╗ ██╗"
+    centralizar "██╔══██╗██╔═══██╗██╔════╝██║   ██║██╔════╝██╔════╝██╔══██╗██║"
+    centralizar "██║  ██║██║   ██║██║     ██║   ██║███████╗█████╗  ███████║██║"
+    centralizar "██║  ██║██║   ██║██║     ██║   ██║╚════██║██╔══╝  ██╔══██║██║"
+    centralizar "██████╔╝╚██████╔╝╚██████╗╚██████╔╝███████║███████╗██║  ██║███████╗"
+    centralizar "╚═════╝  ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_monitor() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██████╗  █████╗ ███████╗ █████╗ ███╗   ██╗ █████╗"
+    centralizar "██╔════╝ ██╔══██╗██╔══██╗██╔════╝██╔══██╗████╗  ██║██╔══██╗"
+    centralizar "██║  ███╗██████╔╝███████║█████╗  ███████║██╔██╗ ██║███████║"
+    centralizar "██║   ██║██╔══██╗██╔══██║██╔══╝  ██╔══██║██║╚██╗██║██╔══██║"
+    centralizar "╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║██║ ╚████║██║  ██║"
+    centralizar " ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_dify() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗███████╗██╗   ██╗ █████╗ ██╗"
+    centralizar "██╔══██╗██║██╔════╝╚██╗ ██╔╝██╔══██╗██║"
+    centralizar "██║  ██║██║█████╗   ╚████╔╝ ███████║██║"
+    centralizar "██║  ██║██║██╔══╝    ╚██╔╝  ██╔══██║██║"
+    centralizar "██████╔╝██║██║        ██║   ██║  ██║██║"
+    centralizar "╚═════╝ ╚═╝╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7891,6 +7930,504 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_docuseal() {
+    msg_docuseal
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/6"
+        echo -en "🔗 \e[33mDigite o domínio para o Docuseal (ex: assine.encha.ai): \e[0m" && read -r url_docuseal
+        echo ""
+        echo -e "\n📍 Passo 2/6"
+        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_docuseal
+        echo ""
+        echo -e "\n📍 Passo 3/6"
+        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_docuseal
+        echo ""
+        echo -e "\n📍 Passo 4/6"
+        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_smtp_docuseal
+        echo ""
+        echo -e "\n📍 Passo 5/6"
+        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_docuseal
+        echo ""
+        echo -e "\n📍 Passo 6/6"
+        echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_smtp_docuseal
+        echo ""
+
+        clear
+        msg_docuseal
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Docuseal:\e[97m $url_docuseal\e[0m"
+        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_smtp_docuseal\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_docuseal; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Docuseal...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "docuseal"
+    verificar_minio || ferramenta_minio
+    pegar_senha_minio
+    criar_bucket.minio "docuseal"
+    
+    key_docuseal=$(openssl rand -hex 32)
+    
+    cat > docuseal.yaml <<EOL
+version: "3.7"
+services:
+  docuseal:
+    image: docuseal/docuseal:latest
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - $nome_rede_interna
+    environment:
+      - HOST=$url_docuseal
+      - FORCE_SSL=true
+      - SECRET_KEY_BASE=$key_docuseal
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/docuseal
+      - SMTP_USERNAME=$user_smtp_docuseal
+      - SMTP_PASSWORD=$senha_smtp_docuseal
+      - SMTP_ADDRESS=$host_smtp_docuseal
+      - SMTP_PORT=$porta_smtp_docuseal
+      - SMTP_FROM=$email_smtp_docuseal
+      - SMTP_DOMAIN=$(echo "$email_smtp_docuseal" | cut -d'@' -f2)
+      - SMTP_AUTHENTICATION=login
+      - AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - S3_ATTACHMENTS_BUCKET=docuseal
+      - S3_ATTACHMENTS_ENDPOINT=https://$url_s3
+      - S3_ATTACHMENTS_REGION=us-east-1
+      - S3_FORCE_PATH_STYLE=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.docuseal.rule=Host(\`$url_docuseal\`)"
+        - "traefik.http.services.docuseal.loadbalancer.server.port=3000"
+        - "traefik.http.routers.docuseal.service=docuseal"
+        - "traefik.http.routers.docuseal.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.docuseal.entrypoints=websecure"
+volumes:
+  docuseal_data:
+    name: docuseal_data
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+    
+    STACK_NAME="docuseal"
+    stack_editavel
+    wait_stack "docuseal_docuseal"
+
+    cd /root/dados_vps
+    cat > dados_docuseal <<EOL
+[ DOCUSEAL ]
+Dominio: https://$url_docuseal
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ DOCUSEAL ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_docuseal\e[0m"
+    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    msg_retorno_menu
+}
+
+ferramenta_monitor() {
+    msg_monitor
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/4"
+        echo -en "🔗 \e[33mDigite o domínio para o Grafana (ex: grafana.encha.ai): \e[0m" && read -r url_grafana
+        echo ""
+        echo -e "\n📍 Passo 2/4"
+        echo -en "🔗 \e[33mDigite o domínio para o Prometheus (ex: prometheus.encha.ai): \e[0m" && read -r url_prometheus
+        echo ""
+        echo -e "\n📍 Passo 3/4"
+        echo -en "🔗 \e[33mDigite o domínio para o cAdvisor (ex: cadvisor.encha.ai): \e[0m" && read -r url_cadvisor
+        echo ""
+        echo -e "\n📍 Passo 4/4"
+        echo -en "🔗 \e[33mDigite o domínio para o NodeExporter (ex: node.encha.ai): \e[0m" && read -r url_nodeexporter
+        echo ""
+
+        clear
+        msg_monitor
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "📊 \e[33mDomínio Grafana:\e[97m $url_grafana\e[0m"
+        echo -e "🔥 \e[33mDomínio Prometheus:\e[97m $url_prometheus\e[0m"
+        echo -e "🐋 \e[33mDomínio cAdvisor:\e[97m $url_cadvisor\e[0m"
+        echo -e "💻 \e[33mDomínio NodeExporter:\e[97m $url_nodeexporter\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_monitor; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Monitoramento...\e[0m"
+    
+    echo "Baixando e configurando arquivos..."
+    mkdir -p /opt/monitor-stack/prometheus /opt/monitor-stack/grafana/provisioning/datasources /opt/monitor-stack/grafana/provisioning/dashboards
+    
+    cat > /opt/monitor-stack/prometheus/prometheus.yml <<EOL
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+EOL
+
+    cat > /opt/monitor-stack/grafana/provisioning/datasources/datasource.yml <<EOL
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    access: proxy
+    editable: true
+EOL
+
+    cat > monitor.yaml <<EOL
+version: '3.7'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - /opt/monitor-stack/prometheus:/etc/prometheus
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.prometheus.rule=Host(\`$url_prometheus\`)"
+        - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+        - "traefik.http.routers.prometheus.service=prometheus"
+        - "traefik.http.routers.prometheus.entrypoints=websecure"
+        - "traefik.http.routers.prometheus.tls.certresolver=letsencryptresolver"
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - /opt/monitor-stack/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.grafana.rule=Host(\`$url_grafana\`)"
+        - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+        - "traefik.http.routers.grafana.service=grafana"
+        - "traefik.http.routers.grafana.entrypoints=websecure"
+        - "traefik.http.routers.grafana.tls.certresolver=letsencryptresolver"
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: global
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.node-exporter.rule=Host(\`$url_nodeexporter\`)"
+        - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"
+        - "traefik.http.routers.node-exporter.service=node-exporter"
+        - "traefik.http.routers.node-exporter.entrypoints=websecure"
+        - "traefik.http.routers.node-exporter.tls.certresolver=letsencryptresolver"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: global
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.cadvisor.rule=Host(\`$url_cadvisor\`)"
+        - "traefik.http.services.cadvisor.loadbalancer.server.port=8080"
+        - "traefik.http.routers.cadvisor.service=cadvisor"
+        - "traefik.http.routers.cadvisor.entrypoints=websecure"
+        - "traefik.http.routers.cadvisor.tls.certresolver=letsencryptresolver"
+
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="monitor"
+    stack_editavel
+    wait_stack "monitor_prometheus" "monitor_grafana" "monitor_node-exporter" "monitor_cadvisor"
+
+    cd /root/dados_vps
+    cat > dados_monitor <<EOL
+[ MONITORAMENTO ]
+Dominio Grafana: https://$url_grafana
+Usuario Grafana: admin
+Senha Grafana: admin (alterar no primeiro acesso)
+
+Dominio Prometheus: https://$url_prometheus
+Dominio cAdvisor: https://$url_cadvisor
+Dominio NodeExporter: https://$url_nodeexporter
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ MONITORAMENTO ]\e[0m\n"
+    echo -e "📊 \e[33mGrafana:\e[97m https://$url_grafana\e[0m (user: admin, pass: admin)"
+    echo -e "🔥 \e[33mPrometheus:\e[97m https://$url_prometheus\e[0m"
+    echo -e "🐋 \e[33mcAdvisor:\e[97m https://$url_cadvisor\e[0m"
+    echo -e "💻 \e[33mNodeExporter:\e[97m https://$url_nodeexporter\e[0m"
+    msg_retorno_menu
+}
+
+ferramenta_dify() {
+    msg_dify
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/7"
+        echo -en "🔗 \e[33mDigite o domínio para a interface Web do Dify (ex: dify.encha.ai): \e[0m" && read -r url_dify
+        echo ""
+        echo -e "\n📍 Passo 2/7"
+        echo -en "🔗 \e[33mDigite o domínio para a API do Dify (ex: api-dify.encha.ai): \e[0m" && read -r url_dify_api
+        echo ""
+        echo -e "\n📍 Passo 3/7"
+        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_dify
+        echo ""
+        echo -e "\n📍 Passo 4/7"
+        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_email_dify
+        echo ""
+        echo -e "\n📍 Passo 5/7"
+        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_email_dify
+        echo ""
+        echo -e "\n📍 Passo 6/7"
+        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_dify
+        echo ""
+        echo -e "\n📍 Passo 7/7"
+        echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_smtp_dify
+        echo ""
+
+        clear
+        msg_dify
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Web Dify:\e[97m $url_dify\e[0m"
+        echo -e "🔗 \e[33mDomínio API Dify:\e[97m $url_dify_api\e[0m"
+        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_dify\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_dify; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "dify"
+    criar_banco_postgres_da_stack "dify_plugin"
+    verificar_container_redis || ferramenta_redis
+    verificar_minio || ferramenta_minio
+    pegar_senha_minio
+    criar_bucket.minio "dify"
+
+    secret_key=$(openssl rand -hex 32)
+    token_weaviate=$(openssl rand -hex 32)
+
+    cat > dify.yaml <<EOL
+version: "3.7"
+services:
+  dify_api:
+    image: langgenius/dify-api:latest
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - $nome_rede_interna
+    environment:
+      - CONSOLE_WEB_URL=https://$url_dify
+      - APP_WEB_URL=https://$url_dify
+      - API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - MAIL_TYPE=smtp
+      - MAIL_DEFAULT_SEND_FROM=$email_dify
+      - SMTP_SERVER=$smtp_email_dify
+      - SMTP_PORT=$porta_smtp_dify
+      - SMTP_USERNAME=$user_email_dify
+      - SMTP_PASSWORD=$senha_email_dify
+      - SMTP_USE_TLS=true
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=dify
+      - REDIS_HOST=redis
+      - REDIS_DB=0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_TYPE=s3
+      - S3_ENDPOINT=https://$url_s3
+      - S3_BUCKET_NAME=dify
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - S3_REGION=us-east-1
+      - VECTOR_STORE=weaviate
+      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
+      - WEAVIATE_API_KEY=$token_weaviate
+      - SECRET_KEY=$secret_key
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dify_api.rule=Host(\`$url_dify_api\`)"
+        - "traefik.http.services.dify_api.loadbalancer.server.port=5001"
+        - "traefik.http.routers.dify_api.service=dify_api"
+        - "traefik.http.routers.dify_api.entrypoints=websecure"
+        - "traefik.http.routers.dify_api.tls.certresolver=letsencryptresolver"
+
+  dify_worker:
+    image: langgenius/dify-api:latest
+    command: worker
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - $nome_rede_interna
+    environment:
+      - CONSOLE_WEB_URL=https://$url_dify
+      - APP_WEB_URL=https://$url_dify
+      - API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=dify
+      - REDIS_HOST=redis
+      - REDIS_DB=0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_TYPE=s3
+      - S3_ENDPOINT=https://$url_s3
+      - S3_BUCKET_NAME=dify
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - VECTOR_STORE=weaviate
+      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
+      - WEAVIATE_API_KEY=$token_weaviate
+      - SECRET_KEY=$secret_key
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+  dify_web:
+    image: langgenius/dify-web:latest
+    networks:
+      - $nome_rede_interna
+    environment:
+      - CONSOLE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - API_URL=https://$url_dify_api
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dify_web.rule=Host(\`$url_dify\`)"
+        - "traefik.http.services.dify_web.loadbalancer.server.port=3000"
+        - "traefik.http.routers.dify_web.service=dify_web"
+        - "traefik.http.routers.dify_web.entrypoints=websecure"
+        - "traefik.http.routers.dify_web.tls.certresolver=letsencryptresolver"
+
+  dify_weaviate:
+    image: semitechnologies/weaviate:latest
+    volumes:
+      - dify_weaviate:/var/lib/weaviate
+    networks:
+      - $nome_rede_interna
+    environment:
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=false
+      - AUTHENTICATION_APIKEY_ENABLED=true
+      - AUTHENTICATION_APIKEY_ALLOWED_KEYS=$token_weaviate
+      - AUTHENTICATION_APIKEY_USERS=dify
+      - AUTHORIZATION_ADMINLIST_ENABLED=false
+      - CLUSTER_HOSTNAME=node1
+      - DISABLE_TELEMETRY=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+volumes:
+  dify_storage:
+    name: dify_storage
+    external: true
+  dify_weaviate:
+    name: dify_weaviate
+    external: true
+
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="dify"
+    stack_editavel
+    wait_stack "dify_dify_api" "dify_dify_worker" "dify_dify_web" "dify_dify_weaviate"
+
+    cd /root/dados_vps
+    cat > dados_dify <<EOL
+[ DIFY AI ]
+Dominio Web: https://$url_dify
+Dominio API: https://$url_dify_api
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ DIFY AI ]\e[0m\n"
+    echo -e "🌐 \e[33mWeb:\e[97m https://$url_dify\e[0m"
+    echo -e "🔗 \e[33mAPI:\e[97m https://$url_dify_api\e[0m"
+    echo -e "⚠️ \e[33m Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
+    msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7932,9 +8469,9 @@ exibir_menu() {
         echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
         echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Frombricks"
         echo -e "${azul}12.${reset} Sair do menu                     ${azul}39.${reset} Instalar MetaBase"
-        echo -e "${azul}13.${reset} Instalar pgAdmin"
-        echo -e "${azul}14.${reset} Instalar nocobase"
-        echo -e "${azul}15.${reset} Instalar botpress"
+        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}40.${reset} Instalar Docuseal"
+        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}41.${reset} Instalar Monitor"
+        echo -e "${azul}15.${reset} Instalar botpress                ${azul}42.${reset} Instalar Dify"
         echo -e "${azul}16.${reset} Instalar baserow"
         echo -e "${azul}17.${reset} Instalar mongoDB"
         echo -e "${azul}18.${reset} Instalar rabbitMQ"
@@ -8240,6 +8777,24 @@ exibir_menu() {
                 verificar_stack "metabase" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_metabase
+                  fi
+                  ;;
+            40)
+                verificar_stack "docuseal" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_docuseal
+                  fi
+                  ;;
+            41)
+                verificar_stack "monitor" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_monitor
+                  fi
+                  ;;
+            42)
+                verificar_stack "dify" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_dify
                   fi
                   ;;
             *)
