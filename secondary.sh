@@ -1093,6 +1093,22 @@ pegar_senha_postgres() {
     done
 }
 
+pegar_senha_postgres_formatada() {
+    while [[ ! -f /root/postgres.yaml ]]; do
+        echo "Aguardando o arquivo /root/postgres.yaml..."
+        sleep 5
+    done
+
+    # Extrai a senha e já a formata, removendo delimitadores, aspas, espaços e colchetes.
+    senha_postgres=$(grep "POSTGRES_PASSWORD" /root/postgres.yaml | sed 's/.*[=:] *//; s/[][\"'\'']//g; s/^[ \t]*//;s/[ \t]*$//')
+
+    # Validação para garantir que a senha não ficou vazia após a limpeza
+    if [ -z "$senha_postgres" ]; then
+        echo "ERRO: Não foi possível extrair a senha do postgres de /root/postgres.yaml."
+        exit 1
+    fi
+}
+
 pegar_senha_postgres_formacao_encha(){
     while :; do
         if [ -f /root/postgres_formacao_encha.yaml ]; then
@@ -8555,7 +8571,7 @@ ferramenta_affine() {
     clear
     echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
     verificar_container_postgres || ferramenta_postgres
-    pegar_senha_postgres
+    pegar_senha_postgres_formatada
     echo "A senha do Postgres capturada é: [$senha_postgres]"
     criar_banco_postgres_da_stack "affine"
     verificar_container_redis || ferramenta_redis
