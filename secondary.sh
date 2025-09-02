@@ -8571,7 +8571,7 @@ ferramenta_affine() {
     clear
     echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
     verificar_container_postgres || ferramenta_postgres
-    pegar_senha_postgres_formatada
+    pegar_senha_postgres
     criar_banco_postgres_da_stack "affine"
     verificar_container_redis || ferramenta_redis
 
@@ -8582,7 +8582,7 @@ version: "3.7"
 services:
   affine:
     image: ghcr.io/toeverything/affine-graphql:stable-39476d1
-    command: ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
+    command: ['sh', '-c', 'echo "Aguardando 15 segundos para o banco de dados inicializar..." && sleep 15 && echo "Iniciando aplicação." && node ./scripts/self-host-predeploy && node ./dist/index.js']
     volumes:
       - affine_config:/root/.affine/config:rw
       - affine_storage:/root/.affine/storage:rw
