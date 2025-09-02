@@ -586,6 +586,19 @@ msg_nextcloud() {
     echo ""
 }
 
+msg_strapi() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗████████╗██████╗  █████╗ ██████╗ ██╗"
+    centralizar "██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██║"
+    centralizar "███████╗   ██║   ██████╔╝███████║██████╔╝██║"
+    centralizar "╚════██║   ██║   ██╔══██╗██╔══██║██╔═══╝ ██║"
+    centralizar "███████║   ██║   ██║  ██║██║  ██║██║     ██║"
+    centralizar "╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -8966,6 +8979,168 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_strapi(){
+  msg_strapi
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Strapi (ex: strapi.encha.ai): \e[0m" && read -r url_strapi
+    echo ""
+
+    clear
+    msg_strapi
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Strapi:\e[97m $url_strapi\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_strapi; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Strapi...\e[0m"
+  
+  jwt_secret=$(openssl rand -hex 16)
+  admin_jwt=$(openssl rand -hex 16)
+  app_key=$(openssl rand -hex 16)
+  senha_mysql=$(openssl rand -hex 16)
+
+  cat > strapi.yaml <<EOL
+version: "3.7"
+services:
+
+## --------------------------- ORION --------------------------- ##
+
+  strapi_app:
+    image: strapi/strapi
+
+    volumes:
+      #- strapi_config:/srv/app/config
+      #- strapi_src:/srv/app/src
+      #- strapi_public_uploads:/srv/app/public/uploads
+      - strapi_data:/srv/app
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados MySQL
+      - DATABASE_CLIENT=mysql
+      - DATABASE_HOST=strapi_db
+      - DATABASE_NAME=strapi
+      - DATABASE_PORT=3306
+      - DATABASE_USERNAME=root
+      - DATABASE_PASSWORD=$senha_mysql
+
+      ## Secret Keys
+      - JWT_SECRET=$jwt_secret
+      - ADMIN_JWT_SECRET=$admin_jwt
+      - APP_KEYS=$app_key
+
+      ## Outros dados
+      - NODE_ENV=production
+      - STRAPI_TELEMETRY_DISABLED=true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.strapi.rule=Host(\`$url_strapi\`)
+        - traefik.http.routers.strapi.entrypoints=web,websecure
+        - traefik.http.routers.strapi.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.strapi.service=strapi
+        - traefik.http.services.strapi.loadbalancer.server.port=1337
+        - traefik.http.services.strapi.loadbalancer.passHostHeader=true
+
+## --------------------------- ORION --------------------------- ##
+
+  strapi_db:
+    image: percona/percona-server:8.0
+    command:
+      [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_general_ci",
+        "--sql-mode=",
+        "--default-authentication-plugin=mysql_native_password",
+        "--max-allowed-packet=512MB"
+      ]
+
+    volumes:
+      - strapi_db:/var/lib/mysql
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      - MYSQL_ROOT_PASSWORD=$senha_mysql
+      - MYSQL_DATABASE=strapi
+      - TZ=America/Sao_Paulo
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+## --------------------------- ORION --------------------------- ##
+
+volumes:
+  #strapi_config:
+  #  external: true
+  #  name: strapi_config
+  #strapi_src:
+  #  external: true
+  #  name: strapi_src
+  #strapi_public_uploads:
+  #  external: true
+  #  name: strapi_public_uploads
+  strapi_data:
+    external: true
+    name: strapi_data
+  strapi_db:
+    external: true
+    name: strapi_db
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="strapi"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+
+  ## Baixando imagens
+  pull strapi/strapi percona/percona-server:8.0
+  wait "strapi_strapi_app" "strapi_strapi_db"
+
+  cd /root/dados_vps
+  cat > dados_strapi << EOL
+[ STRAPI ]
+Dominio: https://$url_strapi/admin
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ STRAPI ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_strapi/admin\e[0m"
+  echo -e "\e[33m⚠️  Aguarde até 5 minutos para a primeira inicialização e acesse o link para criar seu usuário.\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -9005,7 +9180,7 @@ exibir_menu() {
         echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
         echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
         echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
-        echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Frombricks"
+        echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Formbricks"
         echo -e "${azul}12.${reset} Sair do menu                     ${azul}39.${reset} Instalar MetaBase"
         echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}40.${reset} Instalar Docuseal"
         echo -e "${azul}14.${reset} Instalar nocobase                ${azul}41.${reset} Instalar Monitor"
@@ -9013,7 +9188,7 @@ exibir_menu() {
         echo -e "${azul}16.${reset} Instalar baserow                 ${azul}43.${reset} Instalar Affine"
         echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}44.${reset} Instalar Vaultwarden"
         echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}45.${reset} Instalar Nextcloud"
-        echo -e "${azul}19.${reset} Instalar uptimeKuma"
+        echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}46.${reset} Instalar Strapi"
         echo -e "${azul}20.${reset} Instalar calcom"
         echo -e "${azul}21.${reset} Instalar mautic"
         echo -e "${azul}22.${reset} Instalar appsmith"
@@ -9351,6 +9526,12 @@ exibir_menu() {
                 verificar_stack "nextcloud" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_nextcloud
+                  fi
+                  ;;
+            46)
+                verificar_stack "strapi" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_strapi
                   fi
                   ;;
             *)
