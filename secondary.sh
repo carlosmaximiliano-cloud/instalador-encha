@@ -7879,181 +7879,228 @@ EOL
         
 }
 
-ferramenta_frappe(){
-  msg_frappe
-  dados
+ferramenta_frappe() {
+    # --------------------------------------------------------------------------
+    # PASSO 1: COLETA DE DADOS DO USUÁRIO
+    # --------------------------------------------------------------------------
+    # Chama uma função para exibir a mensagem/banner da ferramenta
+    msg_frappe
 
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m" && read -r url_frappe
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-    echo -en "🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m" && read -s -r senha_frappe
-    echo ""
+    # Chama uma função para carregar dados pré-existentes (ex: nome da rede interna)
+    dados
 
-    clear
-    msg_frappe
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Frappe:\e[97m $url_frappe\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m Administrator\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_frappe; fi
-  done
+    # Inicia um loop para garantir que as informações inseridas estejam corretas
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/2${reset}"
+        echo -en "🔗 ${amarelo}Digite o domínio para o Frappe ERPNext (ex: erp.meudominio.com): ${reset}" && read -r url_frappe
+        
+        echo -e "\n📍 \e[97mPasso ${amarelo}2/2${reset}"
+        echo -en "🔑 ${amarelo}Digite a senha para o usuário 'Administrator': ${reset}" && read -s -r senha_frappe
+        echo ""
 
-  clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Frappe/ERPNext em 3 fases...\e[0m"
+        # Limpa o terminal e exibe as informações para confirmação
+        clear
+        msg_frappe
+        echo -e "${amarelo}🔍 Por favor, revise as informações abaixo:${reset}\n"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 ${amarelo}Domínio Frappe:${reset}\e[97m $url_frappe${reset}"
+        echo -e "👤 ${amarelo}Usuário Padrão:${reset}\e[97m Administrator${reset}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        read -p $'\n\e[32m✅ As informações estão corretas? (Y/N): \e[0m' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
+            break # Sai do loop se o usuário confirmar
+        else
+            clear
+            msg_frappe # Mostra o banner novamente para recomeçar
+        fi
+    done
 
-  # Limpeza preventiva para garantir que não há resquícios de uma instalação anterior
-  echo -e "\n\e[33m⚠️  Garantindo uma implantação limpa... Removendo stack antiga, se existir.\e[0m"
-  docker stack rm erpnext &>/dev/null
-  sleep 5 # Dá um tempo para os serviços serem removidos
+    # --------------------------------------------------------------------------
+    # PASSO 2: PREPARAÇÃO E GERAÇÃO DO ARQUIVO DOCKER-COMPOSE
+    # --------------------------------------------------------------------------
+    clear
+    echo -e "\e[97m🚀 Iniciando a preparação do ambiente Frappe/ERPNext...${reset}"
+    sleep 1
 
-  DB_PASSWORD=$(openssl rand -hex 16)
-  STACK_NAME="erpnext"
+    # Gera uma senha aleatória segura para o banco de dados
+    DB_PASSWORD=$(openssl rand -hex 16)
+    
+    # Define o nome do stack, usando o primeiro argumento ($1) se fornecido
+    # Isso permite criar múltiplos stacks (ex: erpnext_cliente1, erpnext_cliente2)
+    STACK_NAME="erpnext${1:+_$1}"
 
-  # --- FASE 1: Iniciar apenas os serviços de dados (DB e Redis) ---
-  echo -e "\n\e[97m⚙️  FASE 1/3: Iniciando serviços de banco de dados e Redis...\e[0m"
-  cat > erpnext-prereq.yaml <<EOL
+    # Cria o arquivo YAML do Docker Swarm dinamicamente com os dados inseridos
+    echo -e "\e[97m📄 Gerando arquivo de configuração do stack...${reset}"
+    cat > ${STACK_NAME}.yaml <<EOL
 version: "3.7"
+
 services:
-  erpnext_db:
-    image: mariadb:10.6
+  frontend:
+    image: frappe/erpnext:v15.49.3
+    command: ["nginx-entrypoint.sh"]
     volumes:
-      - erpnext_db:/var/lib/mysql
+      - ${STACK_NAME}_sites:/home/frappe/frappe-bench/sites
+      - ${STACK_NAME}_logs:/home/frappe/frappe-bench/logs
+    networks:
+      - $nome_rede_interna
+    environment:
+      - BACKEND=backend:8000
+      - FRAPPE_SITE_NAME_HEADER=$url_frappe
+      - SOCKETIO=websocket:9000
+      - UPSTREAM_REAL_IP_ADDRESS=127.0.0.1
+      - UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
+      - UPSTREAM_REAL_IP_RECURSIVE=off
+      - PROXY_READ_TIMEOUT=120
+      - CLIENT_MAX_BODY_SIZE=50m
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK_NAME}.rule=Host(\`$url_frappe\`)"
+        - "traefik.http.services.${STACK_NAME}.loadbalancer.server.port=8080"
+        - "traefik.http.routers.${STACK_NAME}.service=${STACK_NAME}"
+        - "traefik.http.routers.${STACK_NAME}.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.${STACK_NAME}.entrypoints=websecure"
+        - "traefik.http.routers.${STACK_NAME}.tls=true"
+
+  backend:
+    image: frappe/erpnext:v15.49.3
+    volumes:
+      - ${STACK_NAME}_sites:/home/frappe/frappe-bench/sites
+      - ${STACK_NAME}_logs:/home/frappe/frappe-bench/logs
+    networks:
+      - $nome_rede_interna
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_CACHE=redis://cache:6379
+      - REDIS_QUEUE=redis://queue:6379
+      - REDIS_SOCKETIO=redis://socketio:6379
+      - DB_PASSWORD=$DB_PASSWORD
+      
+  configurator:
+    image: frappe/erpnext:v15.49.3
+    volumes:
+      - ${STACK_NAME}_sites:/home/frappe/frappe-bench/sites
+      - ${STACK_NAME}_logs:/home/frappe/frappe-bench/logs
+    networks:
+      - $nome_rede_interna
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_PASSWORD=$DB_PASSWORD
+
+  websocket:
+    image: frappe/erpnext:v15.49.3
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    volumes:
+      - ${STACK_NAME}_sites:/home/frappe/frappe-bench/sites
+      - ${STACK_NAME}_logs:/home/frappe/frappe-bench/logs
+    networks:
+      - $nome_rede_interna
+    environment:
+      - REDIS_SOCKETIO=redis://socketio:6379
+      - FRAPPE_SITE_NAME_HEADER=$url_frappe
+
+  db:
+    image: mariadb:10.6
+    command: 
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    volumes:
+      - ${STACK_NAME}_db:/var/lib/mysql
     networks:
       - $nome_rede_interna
     environment:
       - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
-  erpnext_cache:
+
+  cache:
     image: redis:latest
     volumes:
-      - erpnext_cache:/data
+      - ${STACK_NAME}_cache:/data
     networks:
       - $nome_rede_interna
-  erpnext_queue:
+
+  queue:
     image: redis:latest
     volumes:
-      - erpnext_queue:/data
+      - ${STACK_NAME}_queue:/data
     networks:
       - $nome_rede_interna
-  erpnext_socketio:
+
+  socketio:
     image: redis:latest
     volumes:
-      - erpnext_socketio:/data
+      - ${STACK_NAME}_socketio:/data
     networks:
       - $nome_rede_interna
+
 volumes:
-  erpnext_db:
-  erpnext_cache:
-  erpnext_queue:
-  erpnext_socketio:
-  erpnext_sites: # Volume do site precisa ser criado aqui
+  ${STACK_NAME}_sites:
+  ${STACK_NAME}_logs:
+  ${STACK_NAME}_db:
+  ${STACK_NAME}_cache:
+  ${STACK_NAME}_queue:
+  ${STACK_NAME}_socketio:
+
 networks:
   $nome_rede_interna:
     external: true
 EOL
-  docker stack deploy -c erpnext-prereq.yaml $STACK_NAME
-  
-  echo -e "\e[97m🔍 Aguardando o banco de dados ficar pronto (isso pode levar um minuto)...\e[0m"
-  wait_stack erpnext_erpnext_db
+    sleep 1
 
-  # --- FASE 2: Criar e configurar o site ---
-  echo -e "\n\e[97m⚙️  FASE 2/3: Configurando o site do ERPNext...\e[0m"
-  docker run -it --rm \
-    --network ${nome_rede_interna} \
-    -v erpnext_sites:/home/frappe/frappe-bench/sites \
-    -e DB_HOST=erpnext_db \
-    -e DB_PORT=3306 \
-    -e DB_PASSWORD=$DB_PASSWORD \
-    -e REDIS_CACHE=redis://erpnext_cache:6379 \
-    -e REDIS_QUEUE=redis://erpnext_queue:6379 \
-    -e REDIS_SOCKETIO=redis://erpnext_socketio:6379 \
-    -e "FRAPPE_SITE_NAME_HEADER=$url_frappe" \
-    frappe/erpnext:v15.24.1 bench new-site "$url_frappe" --no-mariadb-socket --admin-password "$senha_frappe" --install-app erpnext
+    # --------------------------------------------------------------------------
+    # PASSO 3: DEPLOY E CONFIGURAÇÃO DO SITE
+    # --------------------------------------------------------------------------
+    echo -e "\e[97m🔧 Editando e subindo o stack...${reset}"
+    # Chama a função que permite ao usuário editar o YAML e faz o deploy
+    stack_editavel
 
-  # --- FASE 3: Iniciar os serviços da aplicação ---
-  echo -e "\n\e[97m⚙️  FASE 3/3: Iniciando os serviços da aplicação ERPNext...\e[0m"
-  cat > erpnext-app.yaml <<EOL
-version: "3.7"
-services:
-  erpnext_frontend:
-    image: frappe/erpnext:v15.24.1
-    environment:
-      - BACKEND=erpnext_backend:8000
-      - FRAPPE_SITE_NAME_HEADER=$url_frappe
-      - SOCKETIO=erpnext_websocket:9000
-    networks:
-      - $nome_rede_interna
-    deploy:
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.erpnext_frontend.rule=Host(\`$url_frappe\`)"
-        - "traefik.http.services.erpnext_frontend.loadbalancer.server.port=8080"
-        - "traefik.http.routers.erpnext_frontend.service=erpnext_frontend"
-        - "traefik.http.routers.erpnext_frontend.entrypoints=websecure"
-        - "traefik.http.routers.erpnext_frontend.tls.certresolver=letsencryptresolver"
-  erpnext_backend:
-    image: frappe/erpnext:v15.24.1
-    volumes:
-      - erpnext_sites:/home/frappe/frappe-bench/sites
-    networks:
-      - $nome_rede_interna
-    environment:
-      - DB_HOST=erpnext_db
-      - DB_PORT=3306
-      - REDIS_CACHE=redis://erpnext_cache:6379
-      - REDIS_QUEUE=redis://erpnext_queue:6379
-      - SOCKETIO_PORT=9000
-      - DB_PASSWORD=$DB_PASSWORD
-      - FRAPPE_SITE_NAME_HEADER=$url_frappe # Boa prática adicionar aqui também
-  erpnext_websocket:
-    image: frappe/erpnext:v15.24.1
-    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
-    volumes:
-      - erpnext_sites:/home/frappe/frappe-bench/sites
-    networks:
-      - $nome_rede_interna
-    environment:
-      - REDIS_SOCKETIO=redis://erpnext_socketio:6379
-      - FRAPPE_SITE_NAME_HEADER=$url_frappe
-volumes:
-  erpnext_sites:
-    external: true
-  erpnext_db:
-    external: true
-  erpnext_cache:
-    external: true
-  erpnext_queue:
-    external: true
-  erpnext_socketio:
-    external: true
-networks:
-  $nome_rede_interna:
-    external: true
-EOL
-  docker stack deploy -c erpnext-app.yaml $STACK_NAME
-  rm erpnext-prereq.yaml erpnext-app.yaml # Limpa os arquivos temporários
+    echo -e "\n\e[97m🔍 Verificando serviços (isso pode levar alguns minutos)...${reset}"
+    # Aguarda o banco de dados e o configurador estarem prontos
+    wait_stack ${STACK_NAME}_db ${STACK_NAME}_configurator
 
-  echo -e "\n\e[97m🔍 Verificando serviços... A aplicação pode levar alguns minutos para estabilizar.\e[0m"
-  wait_stack erpnext_erpnext_frontend erpnext_erpnext_backend
+    echo -e "\e[97m⚙️  Criando e configurando o site ERPNext...${reset}"
+    # Executa o comando para criar um novo site dentro do container 'configurator'
+    # Usar o container 'configurator' para tarefas de setup é uma boa prática
+    docker exec \
+      $(docker ps -qf "name=${STACK_NAME}_configurator" | head -n 1) \
+      bench new-site "$url_frappe" \
+      --no-mariadb-socket \
+      --mariadb-root-password "$DB_PASSWORD" \
+      --admin-password "$senha_frappe" \
+      --install-app erpnext
+    
+    # Aguarda os serviços principais após a criação do site
+    wait_stack ${STACK_NAME}_frontend ${STACK_NAME}_backend
 
-  cd /root/dados_vps
-  cat > dados_erpnext <<EOL
+    # --------------------------------------------------------------------------
+    # PASSO 4: SALVANDO E EXIBINDO OS DADOS
+    # --------------------------------------------------------------------------
+    # Cria um diretório para salvar os dados da VPS se não existir e entra nele
+    mkdir -p /root/dados_vps && cd /root/dados_vps
+    
+    # Salva as credenciais em um arquivo para referência futura
+    cat > dados_${STACK_NAME} <<EOL
 [ FRAPPE / ERPNEXT ]
 Dominio: https://$url_frappe
 Usuario: administrator
 Senha: $senha_frappe
 EOL
-  
-  cd
-  msg_resumo_informacoes
-  echo -e "\e[32m[ FRAPPE / ERPNEXT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_frappe\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m administrator\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $senha_frappe\e[0m"
-  msg_retorno_menu
+    
+    # Volta para o diretório root
+    cd
+
+    # Exibe a mensagem final de resumo
+    clear
+    msg_resumo_informacoes
+    echo -e "\e[32m[ FRAPPE / ERPNEXT - ${STACK_NAME} ]\e[0m\n"
+    echo -e "🌐 ${amarelo}Domínio:${reset}\e[97m https://$url_frappe${reset}"
+    echo -e "👤 ${amarelo}Usuário:${reset}\e[97m administrator${reset}"
+    echo -e "🔑 ${amarelo}Senha:${reset}\e[97m $senha_frappe${reset}"
+    
+    # Mostra mensagem final e opção para retornar ao menu principal
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
