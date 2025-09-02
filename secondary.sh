@@ -508,6 +508,58 @@ msg_nocodb(){
     echo ""
 }
 
+msg_wordpress(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗ ██████╗ ██████╗ ██████╗ ██████╗ ██████╗ ███████╗███████╗███████╗"
+    centralizar "██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝"
+    centralizar "██║ █╗ ██║██║   ██║██████╔╝██║  ██║██████╔╝██████╔╝█████╗  ███████╗███████╗"
+    centralizar "██║███╗██║██║   ██║██╔══██╗██║  ██║██╔═══╝ ██╔══██╗██╔══╝  ╚════██║╚════██║"
+    centralizar "╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝██║     ██║  ██║███████╗███████║███████║"
+    centralizar " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_frappe(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██████╗  █████╗ ██████╗ ██████╗ ███████╗"
+    centralizar "██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝"
+    centralizar "█████╗  ██████╔╝███████║██████╔╝██████╔╝█████╗"  
+    centralizar "██╔══╝  ██╔══██╗██╔══██║██╔═══╝ ██╔═══╝ ██╔══╝"  
+    centralizar "██║     ██║  ██║██║  ██║██║     ██║     ███████╗"
+    centralizar "╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_moodle(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ███╗ ██████╗  ██████╗ ██████╗ ██╗     ███████╗"
+    centralizar "████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗██║     ██╔════╝"
+    centralizar "██╔████╔██║██║   ██║██║   ██║██║  ██║██║     █████╗"  
+    centralizar "██║╚██╔╝██║██║   ██║██║   ██║██║  ██║██║     ██╔══╝"  
+    centralizar "██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██████╔╝███████╗███████╗"
+    centralizar "╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_humhub(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗  ██╗██╗   ██╗███╗   ███╗██╗  ██╗██╗   ██╗██████╗"
+    centralizar "██║  ██║██║   ██║████╗ ████║██║  ██║██║   ██║██╔══██╗"
+    centralizar "███████║██║   ██║██╔████╔██║███████║██║   ██║██████╔╝"
+    centralizar "██╔══██║██║   ██║██║╚██╔╝██║██╔══██║██║   ██║██╔══██╗"
+    centralizar "██║  ██║╚██████╔╝██║ ╚═╝ ██║██║  ██║╚██████╔╝██████╔╝"
+    centralizar "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7476,16 +7528,16 @@ ferramenta_dify() {
     echo -en "📧 \e[33mDigite o email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_dify
     echo ""
     echo -e "\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
-    echo -en "👤 \e[33mDigite o Usuário para SMTP: \e[0m" && read -r user_email_dify
+    echo -en "👤 \e[33mDigite o Usuário para SMTP (ex: admin || encha): \e[0m" && read -r user_email_dify
     echo ""
     echo -e "\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
     echo -en "🔑 \e[33mDigite a Senha SMTP do Email: \e[0m" && read -s -r senha_email_dify
     echo ""
     echo -e "\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
-    echo -en "🏠 \e[33mDigite o Host SMTP do Email: \e[0m" && read -r smtp_email_dify
+    echo -en "🏠 \e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_dify
     echo ""
     echo -e "\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
-    echo -en "🔌 \e[33mDigite a porta SMTP do Email: \e[0m" && read -r porta_smtp_dify
+    echo -en "🔌 \e[33mDigite a porta SMTP do Email  (ex: 465): \e[0m" && read -r porta_smtp_dify
     echo ""
 
     clear
@@ -7579,14 +7631,12 @@ services:
     image: langgenius/dify-api:latest
     command: worker
     environment:
-      # --- SEÇÃO CORRIGIDA ---
       - CONSOLE_WEB_URL=https://$url_dify
       - APP_WEB_URL=https://$url_dify
       - CONSOLE_API_URL=https://$url_dify_api
       - SERVICE_API_URL=https://$url_dify_api
       - APP_API_URL=https://$url_dify_api
       - FILES_URL=https://$url_dify_api
-      # --- FIM DA CORREÇÃO ---
       - DB_USERNAME=postgres
       - DB_PASSWORD=$senha_postgres
       - DB_HOST=postgres
@@ -7686,6 +7736,101 @@ EOL
 
 }
 
+ferramenta_wordpress() {
+  msg_wordpress
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: blog.encha.ai): \e[0m" && read -r url_wordpress
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    echo -e "📦 \e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
+    echo -en "📝 \e[33mDigite um nome para o site (para identificar os volumes, ex: enchasite): \e[0m" && read -r nome_site_wordpress
+    echo ""  
+
+    clear
+    msg_wordpress
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
+    echo -e "📝 \e[33mNome do Site (identificador):\e[97m $nome_site_wordpress\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  verificar_container_redis || ferramenta_redis
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "$nome_site_wordpress"
+
+  echo -e "\e[97m⚙️ Instalando o Wordpress...\e[0m"
+  cat > wordpress_$nome_site_wordpress.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wordpress_$nome_site_wordpress:
+    image: wordpress:latest
+    volumes:
+      - wordpress_$nome_site_wordpress:/var/www/html
+      - wordpress_${nome_site_wordpress}_php:/usr/local/etc/php
+    networks:
+      - $nome_rede_interna
+    environment:
+      - WORDPRESS_DB_NAME=$nome_site_wordpress
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=$senha_mysql
+      - WP_REDIS_HOST=redis
+      - WP_REDIS_PORT=6379
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.rule=Host(\`$url_wordpress\`)"
+        - "traefik.http.services.wordpress_$nome_site_wordpress.loadbalancer.server.port=80"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.service=wordpress_$nome_site_wordpress"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.entrypoints=websecure"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.tls.certresolver=letsencryptresolver"
+volumes:
+  wordpress_$nome_site_wordpress:
+  wordpress_${nome_site_wordpress}_php:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="wordpress_$nome_site_wordpress"
+  stack_editavel
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_$nome_site_wordpress"
+
+  cd /root/dados_vps
+  cat > dados_wordpress_$nome_site_wordpress <<EOL
+[ WORDPRESS - $nome_site_wordpress ]
+Dominio: https://$url_wordpress
+Arquivos do site: /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WORDPRESS - $nome_site_wordpress ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wordpress\e[0m"
+  echo -e "\e[33m📂 Arquivos:\e[97m /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data\e[0m"
+  echo -e "\n\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+  msg_retorno_menu
+        
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7744,6 +7889,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}35.${reset} Instalar Anythingllm"
         echo -e "                                                                           ${azul}36.${reset} Instalar Nocodb"
         echo -e "                                                                           ${azul}37.${reset} Instalar Dify"
+        echo -e "                                                                           ${azul}38.${reset} Instalar Wordpress"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -8042,6 +8188,11 @@ exibir_menu() {
               verificar_stack "dify" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_dify
+                fi
+                ;;
+            38)
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_wordpress
                 fi
                 ;;
             *)
