@@ -7780,9 +7780,8 @@ ferramenta_wordpress() {
   cat > $YAML_FILE <<EOL
 version: "3.7"
 services:
-  # Serviço principal do WordPress
-  # Simplificamos o nome do serviço para 'app' para facilitar a referência.
-  # O nome final do serviço será: ${STACK_NAME}_app
+  # O nome do serviço foi simplificado para 'app'.
+  # Isto é crucial para o resto do script funcionar.
   app:
     image: wordpress:latest
     volumes:
@@ -7797,26 +7796,26 @@ services:
       - WORDPRESS_DB_PASSWORD=$senha_mysql
       - WP_REDIS_HOST=redis
       - WP_REDIS_PORT=6379
-      # - WP_LOCALE=pt_BR # Descomente se quiser forçar o idioma
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints: [node.role == manager]
       labels:
+        # As labels também usam a combinação de STACK_NAME e 'app'
         - "traefik.enable=true"
         - "traefik.http.routers.${STACK_NAME}.rule=Host(\`${url_wordpress}\`)"
         - "traefik.http.routers.${STACK_NAME}.service=${STACK_NAME}_app"
         - "traefik.http.services.${STACK_NAME}_app.loadbalancer.server.port=80"
-        - "traefik.http.services.${STACK_NAME}_app.loadbalancer.passHostHeader=true" # Boa prática
+        - "traefik.http.services.${STACK_NAME}_app.loadbalancer.passHostHeader=true"
         - "traefik.http.routers.${STACK_NAME}.entrypoints=websecure"
         - "traefik.http.routers.${STACK_NAME}.tls.certresolver=letsencryptresolver"
 
 volumes:
   wordpress_data:
-    name: ${STACK_NAME}_data # Nome explícito para evitar conflitos
+    name: ${STACK_NAME}_data
   wordpress_php:
-    name: ${STACK_NAME}_php   # Nome explícito para evitar conflitos
+    name: ${STACK_NAME}_php
 
 networks:
   $nome_rede_interna:
