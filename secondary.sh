@@ -10699,7 +10699,7 @@ exibir_menu() {
                   fi
                   ;;
             38)
-                verificar_stack "formbricks" && continue || echo ""
+                verificar_stack "formbricks${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_formbricks
                   fi
