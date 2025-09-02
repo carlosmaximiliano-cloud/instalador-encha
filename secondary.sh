@@ -7740,6 +7740,11 @@ ferramenta_wordpress() {
   msg_wordpress
   dados
 
+  # Pega as informações do banco de dados já existente
+  DB_NAME=$(grep "Database:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_USER=$(grep "Usuario:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_PASS=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+
   while true; do
     echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
     echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: blog.encha.ai): \e[0m" && read -r url_wordpress
@@ -7771,6 +7776,11 @@ ferramenta_wordpress() {
   cat > wordpress_$nome_site_wordpress.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   wordpress_$nome_site_wordpress:
     image: wordpress:latest
     volumes:
