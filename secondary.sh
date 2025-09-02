@@ -9389,7 +9389,7 @@ ferramenta_supabase() {
     echo -e "\e[33mService Key:\e[97m $SERVICE_KEY\e[0m"
     echo ""
     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then breal; else msg_supabase; fi
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_supabase; fi
   done
 
   clear
