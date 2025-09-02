@@ -7819,41 +7819,35 @@ ferramenta_metabase() {
     pegar_senha_postgres
     criar_banco_postgres_da_stack "metabase"
 
-    ## Criando key Aleatória 64caracteres
-    key_secret=$(openssl rand -hex 32)
-
-    ## Criando key Aleatória 32caracteres
-    key_salt=$(openssl rand -hex 16)
+    # Gerando chave de criptografia para a segurança do banco de dados do Metabase
+    encryption_key=$(openssl rand -hex 32)
 
     cat > metabase.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   metabase:
     image: metabase/metabase:latest
     volumes:
-      - metabase_data:/metabase3-data
+      - metabase_data:/metabase-data # <-- CORRIGIDO: Caminho padrão do volume
     networks:
       - $nome_rede_interna
     environment:
-      ## Url MetaBase
+      # URLs e Configurações de Rede
       - MB_SITE_URL=https://$url_metabase
-      - MB_REDIRECT_ALL_REQUESTS_TO_HTTPS=true
       - MB_JETTY_PORT=3000
-      - MB_JETTY_HOST=0.0.0.0
-      ## Dados postgres
-      - MB_DB_MIGRATION_LOCATION=none
+
+      # Configurações do Banco de Dados do Metabase
       - MB_DB_TYPE=postgres
       - MB_DB_DBNAME=metabase
       - MB_DB_PORT=5432
       - MB_DB_USER=postgres
       - MB_DB_PASS=$senha_postgres
       - MB_DB_HOST=postgres
-      - MB_AUTOMIGRATE=false
+      - MB_AUTOMIGRATE=true # <-- ALTERADO para "true" para uma inicialização mais suave
+
+      # Chave de Criptografia para segurança
+      - MB_ENCRYPTION_SECRET_KEY=$encryption_key # <-- ADICIONADO: Corrige o aviso de segurança dos logs
+
     deploy:
       mode: replicated
       replicas: 1
@@ -7861,13 +7855,12 @@ services:
         constraints:
           - node.role == manager
       labels:
-        - traefik.enable=true
-        - traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)
-        - traefik.http.services.metabase.loadbalancer.server.port=3000
-        - traefik.http.routers.metabase.service=metabase
-        - traefik.http.routers.metabase.entrypoints=websecure
-        - traefik.http.routers.metabase.tls=true
-        - traefik.http.routers.metabase.tls.certresolver=letsencryptresolver
+        - "traefik.enable=true"
+        - "traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)"
+        - "traefik.http.services.metabase.loadbalancer.server.port=3000"
+        - "traefik.http.routers.metabase.service=metabase"
+        - "traefik.http.routers.metabase.entrypoints=websecure"
+        - "traefik.http.routers.metabase.tls.certresolver=letsencryptresolver"
 volumes:
   metabase_data:
     external: true
