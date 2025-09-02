@@ -9009,8 +9009,13 @@ ferramenta_strapi() {
     cat > strapi.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   strapi_app:
-    image: strapi/strapi
+    image: strapi/strapi:4.25.3
     volumes:
       - strapi_data:/srv/app
     networks:
