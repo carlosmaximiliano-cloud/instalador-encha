@@ -8582,7 +8582,7 @@ version: "3.7"
 services:
   affine:
     image: ghcr.io/toeverything/affine-graphql:stable
-    command: ['sh', '-c', 'echo "Aguardando 15 segundos para o banco de dados inicializar..." && sleep 15 && echo "Iniciando aplicação." && node ./scripts/self-host-predeploy && node ./dist/index.js']
+    command: ['sh', '-c', 'echo "Aguardando 15 segundos..." && sleep 15 && node ./scripts/self-host-predeploy && node ./packages/server/dist/index.js']
     volumes:
       - affine_config:/root/.affine/config:rw
       - affine_storage:/root/.affine/storage:rw
