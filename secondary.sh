@@ -1092,6 +1092,7 @@ pegar_senha_postgres() {
         fi
     done
 }
+
 pegar_senha_postgres_formacao_encha(){
     while :; do
         if [ -f /root/postgres_formacao_encha.yaml ]; then
@@ -8555,6 +8556,7 @@ ferramenta_affine() {
     echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
+    echo "A senha do Postgres capturada é: [$senha_postgres]"
     criar_banco_postgres_da_stack "affine"
     verificar_container_redis || ferramenta_redis
 
@@ -8909,7 +8911,7 @@ exibir_menu() {
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-42): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-45): ${reset}"
         read -r opcao
 
         case $opcao in
