@@ -7639,18 +7639,21 @@ exibir_menu() {
           fi
         fi
         ;;
-        liberar_chatwoot
-        verificar_stack "minio${opcao2:+_$opcao2}" && continue
+      07|7)
+        verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
+
         if verificar_docker_e_portainer_traefik; then
+          ## INICIO TOKEN
           STACK_NAME="minio${opcao2:+_$opcao2}"
           if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-            ferramenta_minio "$opcao2"
+              ferramenta_minio "$opcao2"
           else
             APP_ENCHA="ferramenta_minio"
             verificar_arquivo
           fi
+          ## FIM TOKEN 
         fi
-        ;;
+        ;;  
       08|8)
         verificar_stack "typebot${opcao2:+_$opcao2}" && continue
         if verificar_docker_e_portainer_traefik && verificar_minio; then
