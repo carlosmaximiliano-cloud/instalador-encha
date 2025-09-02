@@ -7819,23 +7819,41 @@ ferramenta_metabase() {
     pegar_senha_postgres
     criar_banco_postgres_da_stack "metabase"
 
+    ## Criando key Aleatória 64caracteres
+    key_secret=$(openssl rand -hex 32)
+
+    ## Criando key Aleatória 32caracteres
+    key_salt=$(openssl rand -hex 16
+
     cat > metabase.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   metabase:
     image: metabase/metabase:latest
     volumes:
-      - metabase_data:/metabase-data
+      - metabase_data:/metabase3-data
     networks:
       - $nome_rede_interna
     environment:
+      ## Url MetaBase
       - MB_SITE_URL=https://$url_metabase
+      - MB_REDIRECT_ALL_REQUESTS_TO_HTTPS=true
+      - MB_JETTY_PORT=3000
+      - MB_JETTY_HOST=0.0.0.0
+      ## Dados postgres
+      - MB_DB_MIGRATION_LOCATION=none
       - MB_DB_TYPE=postgres
       - MB_DB_DBNAME=metabase
       - MB_DB_PORT=5432
       - MB_DB_USER=postgres
       - MB_DB_PASS=$senha_postgres
       - MB_DB_HOST=postgres
+      - MB_AUTOMIGRATE=false
     deploy:
       mode: replicated
       replicas: 1
@@ -7843,19 +7861,21 @@ services:
         constraints:
           - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)"
-        - "traefik.http.services.metabase.loadbalancer.server.port=3000"
-        - "traefik.http.routers.metabase.service=metabase"
-        - "traefik.http.routers.metabase.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.metabase.entrypoints=websecure"
+        - traefik.enable=true
+        - traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)
+        - traefik.http.services.metabase.loadbalancer.server.port=3000
+        - traefik.http.routers.metabase.service=metabase
+        - traefik.http.routers.metabase.entrypoints=websecure
+        - traefik.http.routers.metabase.tls=true
+        - traefik.http.routers.metabase.tls.certresolver=letsencryptresolver
 volumes:
   metabase_data:
-    name: metabase_data
     external: true
+    name: metabase_data
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
     
     STACK_NAME="metabase"
@@ -7918,7 +7938,7 @@ exibir_menu() {
         echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
         echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
         echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Frombricks"
-        echo -e "${azul}12.${reset} Sair do menu                     ${azul}38.${reset} Instalar MetaBase"
+        echo -e "${azul}12.${reset} Sair do menu                     ${azul}39.${reset} Instalar MetaBase"
         echo -e "${azul}13.${reset} Instalar pgAdmin"
         echo -e "${azul}14.${reset} Instalar nocobase"
         echo -e "${azul}15.${reset} Instalar botpress"
