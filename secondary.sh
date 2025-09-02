@@ -7856,7 +7856,9 @@ ferramenta_formbricks() {
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   formbricks${1:+_$1}:
     image: ghcr.io/formbricks/formbricks:latest
@@ -7949,7 +7951,9 @@ services:
         - traefik.http.routers.formbricks${1:+_$1}.entrypoints=websecure
         - traefik.http.routers.formbricks${1:+_$1}.tls=true
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
   formbricks${1:+_$1}_data:
@@ -8020,38 +8024,43 @@ ferramenta_metabase() {
     criar_banco_postgres_da_stack "metabase"
 
     # Gerando chave de criptografia para a segurança do banco de dados do Metabase
-    encryption_key=$(openssl rand -hex 32)
+    ## Criando key Aleatória 64caracteres
+    key_secret=$(openssl rand -hex 32)
 
-    cat > metabase.yaml <<EOL
+    ## Criando key Aleatória 32caracteres
+    key_salt=$(openssl rand -hex 16)
+
+    cat > metabase${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+## --------------------------- ORION --------------------------- ##
 
-  metabase:
+  metabase${1:+_$1}:
     image: metabase/metabase:latest
+
     volumes:
-      - metabase_data:/metabase-data # <-- CORRIGIDO: Caminho padrão do volume
+      - metabase${1:+_$1}_data:/metabase3-data
+
     networks:
       - $nome_rede_interna
-    environment:
-      # URLs e Configurações de Rede
-      - MB_SITE_URL=https://$url_metabase
-      - MB_JETTY_PORT=3000
 
-      # Configurações do Banco de Dados do Metabase
+    environment:
+      ## Url MetaBase
+      - MB_SITE_URL=https://$url_metabase
+      - MB_REDIRECT_ALL_REQUESTS_TO_HTTPS=true
+      - MB_JETTY_PORT=3000
+      - MB_JETTY_HOST=0.0.0.0
+
+      ## Dados postgres
+      - MB_DB_MIGRATION_LOCATION=none
       - MB_DB_TYPE=postgres
-      - MB_DB_DBNAME=metabase
+      - MB_DB_DBNAME=metabase${1:+_$1}
       - MB_DB_PORT=5432
       - MB_DB_USER=postgres
       - MB_DB_PASS=$senha_postgres
       - MB_DB_HOST=postgres
-      - MB_AUTOMIGRATE=true # <-- ALTERADO para "true" para uma inicialização mais suave
-
-      # Chave de Criptografia para segurança
-      - MB_ENCRYPTION_SECRET_KEY=$encryption_key # <-- ADICIONADO: Corrige o aviso de segurança dos logs
+      - MB_AUTOMIGRATE=false
 
     deploy:
       mode: replicated
@@ -8060,25 +8069,38 @@ services:
         constraints:
           - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)"
-        - "traefik.http.services.metabase.loadbalancer.server.port=3000"
-        - "traefik.http.routers.metabase.service=metabase"
-        - "traefik.http.routers.metabase.entrypoints=websecure"
-        - "traefik.http.routers.metabase.tls.certresolver=letsencryptresolver"
+        - traefik.enable=true
+        - traefik.http.routers.metabase${1:+_$1}.rule=Host(\`$url_metabase\`)
+        - traefik.http.services.metabase${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.metabase${1:+_$1}.service=metabase${1:+_$1}
+        - traefik.http.routers.metabase${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.metabase${1:+_$1}.tls=true
+        - traefik.http.routers.metabase${1:+_$1}.tls.certresolver=letsencryptresolver
+
+## --------------------------- ORION --------------------------- ##
+
 volumes:
-  metabase_data:
+  metabase${1:+_$1}_data:
     external: true
-    name: metabase_data
+    name: metabase${1:+_$1}_data
+
 networks:
   $nome_rede_interna:
     external: true
     name: $nome_rede_interna
 EOL
     
-    STACK_NAME="metabase"
+    STACK_NAME="metabase${1:+_$1}"
     stack_editavel
-    wait_stack "metabase_metabase"
+
+    ## Mensagem de Passo
+    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+    echo ""
+
+    ## Baixando imagens:
+    pull metabase/metabase:latest
+
+    wait_stack metabase${1:+_$1}_metabase${1:+_$1}
 
     cd /root/dados_vps
     cat > dados_metabase <<EOL
@@ -10705,7 +10727,7 @@ exibir_menu() {
                   fi
                   ;;
             39)
-                verificar_stack "metabase" && continue || echo ""
+                verificar_stack "metabase${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_metabase
                   fi
