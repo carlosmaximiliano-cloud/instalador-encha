@@ -7529,8 +7529,14 @@ services:
   dify_api:
     image: langgenius/dify-api:latest
     environment:
+      # --- SEÇÃO CORRIGIDA ---
       - CONSOLE_WEB_URL=https://$url_dify
-      - API_URL=https://$url_dify_api
+      - APP_WEB_URL=https://$url_dify
+      - CONSOLE_API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - FILES_URL=https://$url_dify_api
+      # --- FIM DA CORREÇÃO ---
       - MAIL_TYPE=smtp
       - MAIL_DEFAULT_SEND_FROM=$email_dify
       - SMTP_SERVER=$smtp_email_dify
@@ -7554,9 +7560,9 @@ services:
       - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
       - WEAVIATE_API_KEY=$token_weaviate
       - SECRET_KEY=$secret_key
-    networks: # <-- CORREÇÃO: Indentação ajustada
+    networks:
       - $nome_rede_interna
-    deploy: # <-- CORREÇÃO: Indentação ajustada
+    deploy:
       mode: replicated
       replicas: 1
       placement:
@@ -7573,8 +7579,14 @@ services:
     image: langgenius/dify-api:latest
     command: worker
     environment:
+      # --- SEÇÃO CORRIGIDA ---
       - CONSOLE_WEB_URL=https://$url_dify
-      - API_URL=https://$url_dify_api
+      - APP_WEB_URL=https://$url_dify
+      - CONSOLE_API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - FILES_URL=https://$url_dify_api
+      # --- FIM DA CORREÇÃO ---
       - DB_USERNAME=postgres
       - DB_PASSWORD=$senha_postgres
       - DB_HOST=postgres
@@ -7591,9 +7603,9 @@ services:
       - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
       - WEAVIATE_API_KEY=$token_weaviate
       - SECRET_KEY=$secret_key
-    networks: # <-- CORREÇÃO: Indentação ajustada
+    networks:
       - $nome_rede_interna
-    deploy: # <-- CORREÇÃO: Indentação ajustada
+    deploy:
       mode: replicated
       replicas: 1
       placement:
@@ -7606,9 +7618,9 @@ services:
       - CONSOLE_URL=https://$url_dify
       - APP_URL=https://$url_dify
       - NEXT_TELEMETRY_DISABLED=1
-    networks: # <-- CORREÇÃO: Indentação ajustada
+    networks:
       - $nome_rede_interna
-    deploy: # <-- CORREÇÃO: Indentação ajustada
+    deploy:
       mode: replicated
       replicas: 1
       placement:
@@ -7633,9 +7645,9 @@ services:
       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
       - DEFAULT_VECTORIZER_MODULE=none
       - CLUSTER_HOSTNAME=node1
-    networks: # <-- CORREÇÃO: Indentação ajustada
+    networks:
       - $nome_rede_interna
-    deploy: # <-- CORREÇÃO: Indentação ajustada
+    deploy:
       mode: replicated
       replicas: 1
       placement:
