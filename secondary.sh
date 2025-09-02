@@ -7552,12 +7552,12 @@ exibir_menu() {
         echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}28.${reset} Instalar outline"
         echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}29.${reset} Instalar focalboard"
         echo -e "${azul}03.${reset} Instalar N8N                     ${azul}30.${reset} Instalar GLPI"
-        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}32.${reset} Instalar Flowise"
-        echo -e "${azul}05.${reset} Liberar Chatwoot                 ${azul}33.${reset} Instalar Langflow"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}34.${reset} Instalar Ollama"
-        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}35.${reset} Instalar Anythingllm"
-        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}36.${reset} Instalar Nocodb"
-        echo -e "${azul}09.${reset} Instalar Directus                ${azul}40.${reset} Instalar humhub"
+        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}31.${reset} Instalar Flowise"
+        echo -e "${azul}05.${reset} Liberar Chatwoot                 ${azul}32.${reset} Instalar Langflow"
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}33.${reset} Instalar Ollama"
+        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}34.${reset} Instalar Anythingllm"
+        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
+        echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
         echo -e "${azul}10.${reset} Instalar Odoo"
         echo -e "${azul}11.${reset} Verificar status dos serviços"
         echo -e "${azul}12.${reset} Sair do menu"
@@ -7817,37 +7817,37 @@ exibir_menu() {
                     ferramenta_glpi
                 fi
                 ;;
-            32)
+            31)
                 verificar_stack "flowise" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_flowise
                 fi
                 ;;
-            33)
+            32)
                 verificar_stack "langflow" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_langflow
                 fi
                 ;;
-            34)
+            33)
                 verificar_stack "ollama" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_ollama
                 fi
                 ;;
-            35)
+            34)
                 verificar_stack "anythingllm" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_anythingllm
                 fi
                 ;;
-            36)
+            35)
                 verificar_stack "nocodb" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_nocodb
                 fi
                 ;;
-            40)
+            36)
                 verificar_stack "humhub" && continue || echo "" 
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_humhub 
