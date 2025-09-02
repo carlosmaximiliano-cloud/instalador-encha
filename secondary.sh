@@ -2105,20 +2105,23 @@ pegar_senha_mysql_da_stack() {
 
 criar_banco_mysql_da_stack() {
     local dbname="$1"
+    
+    # Garante que a variável de senha está carregada
+    pegar_senha_mysql_da_stack
+
     while :; do
         if docker ps -q --filter "name=^mysql_mysql" | grep -q .; then
             CONTAINER_ID=$(docker ps -q --filter "name=^mysql_mysql")
 
-            # Verifica se o banco de dados já existe
-            if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
+            # --- CORREÇÃO APLICADA AQUI ---
+            # A senha agora é passada diretamente com -p"$senha_mysql"
+            if docker exec "$CONTAINER_ID" mysql -u root -p"$senha_mysql" -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
                 echo -e "\e[33mO banco de dados '$dbname' já existe. Mantendo o banco existente.\e[0m"
                 break
             else
-                # Cria o banco de dados
-                docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "CREATE DATABASE $dbname;" > /dev/null 2>&1
+                docker exec "$CONTAINER_ID" mysql -u root -p"$senha_mysql" -e "CREATE DATABASE \`$dbname\`;" > /dev/null 2>&1
                 
-                # Verifica se foi criado com sucesso
-                if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
+                if docker exec "$CONTAINER_ID" mysql -u root -p"$senha_mysql" -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
                     echo -e "\e[32mBanco de dados '$dbname' criado com sucesso.\e[0m"
                     break
                 else
