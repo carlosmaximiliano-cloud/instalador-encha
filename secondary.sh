@@ -7817,54 +7817,109 @@ ferramenta_formbricks() {
 version: "3.7"
 services:
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+## --------------------------- ORION --------------------------- ##
 
   formbricks:
     image: ghcr.io/formbricks/formbricks:latest
+
     volumes:
       - formbricks_data:/home/nextjs/apps/web/uploads/
+
     networks:
       - $nome_rede_interna
+
     environment:
+      ## Url da aplicação
       - WEBAPP_URL=https://$url_formbricks
       - NEXTAUTH_URL=https://$url_formbricks
+
+      ## Banco de dados Postgres
       - DATABASE_URL=postgresql://postgres:$senha_pgvector@pgvector:5432/formbricks?schema=public
+
+      ## Licença Enterprise ou Self-hosting
+      ## Solicitar licenta Self-hosting --> https://oriondesign.art.br/formbricks_licence/ <-- ##
+      - ENTERPRISE_LICENSE_KEY=
+
+      ## Keys aleatórias 32 caracteres
       - ENCRYPTION_KEY=$encryption_key_form
       - NEXTAUTH_SECRET=$next_key_form
       - CRON_SECRET=$cron_key_form
+
+      ## Dados do SMTP
       - MAIL_FROM=$email_formbricks
       - SMTP_HOST=$host_formbricks
       - SMTP_PORT=$porta_formbricks
-      - SMTP_SECURE_ENABLED=$ssl_formbricks
+      - SMTP_SECURE_ENABLED=$ssl_formbricks #(0= false | 1= true)
       - SMTP_USER=$user_smtp_formbricks
       - SMTP_PASSWORD=$senha_formbricks
+
+      ## Ativar/Desativar registros e convites (0= false | 1= true)
       - SIGNUP_DISABLED=0
       - INVITE_DISABLED=0
+      - EMAIL_VERIFICATION_DISABLED=0
+      - PASSWORD_RESET_DISABLED=0
+
+      ## Dados do Formbricks (para pesquisa)
+      - NEXT_PUBLIC_FORMBRICKS_API_HOST=
+      - NEXT_PUBLIC_FORMBRICKS_ENVIRONMENT_ID=
+      - NEXT_PUBLIC_FORMBRICKS_ONBOARDING_SURVEY_ID=
+
+      ## Login Google Cloud
+      - GOOGLE_AUTH_ENABLED=0
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+
+      ## Google Sheets
+      - GOOGLE_SHEETS_CLIENT_ID=
+      - GOOGLE_SHEETS_CLIENT_SECRET=
+      - GOOGLE_SHEETS_REDIRECT_URL=
+
+      ## Login Github
+      - GITHUB_AUTH_ENABLED=0
+      - GITHUB_ID=
+      - GITHUB_SECRET=
+
+      ## Login Github
+      - NOTION_OAUTH_CLIENT_ID=
+      - NOTION_OAUTH_CLIENT_SECRET=   
+      
+      ## Login Airtable
+      - AIRTABLE_CLIENT_ID=
+
+      ## Termos e politica de privacidade
+      #- PRIVACY_URL=
+      #- TERMS_URL=
+      #- IMPRINT_URL=
+
     deploy:
       mode: replicated
       replicas: 1
-      restart_policy:         
-        condition: on-failure 
-        delay: 10s            
-        max_attempts: 3       
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.formbricks.rule=Host(\`$url_formbricks\`)"
-        - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
-        - "traefik.http.routers.formbricks.service=formbricks"
-        - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.formbricks.entrypoints=websecure"
+        - traefik.enable=true
+        - traefik.http.routers.formbricks.rule=Host(\`$url_formbricks\`)
+        - traefik.http.services.formbricks.loadbalancer.server.port=3000
+        - traefik.http.routers.formbricks.service=formbricks
+        - traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.formbricks.entrypoints=websecure
+        - traefik.http.routers.formbricks.tls=true
+
+## --------------------------- ORION --------------------------- ##
+
 volumes:
   formbricks_data:
-    name: formbricks_data
     external: true
+    name: formbricks_data
+
 networks:
   $nome_rede_interna:
+    name: $nome_rede_interna
     external: true
 EOL
 
@@ -8575,13 +8630,13 @@ ferramenta_affine() {
     criar_banco_postgres_da_stack "affine"
     verificar_container_redis || ferramenta_redis
 
-    echo "DEBUG: A senha que será usada no YAML é: '[$senha_postgres]'"
-
     cat > affine.yaml <<EOL
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   affine:
     image: ghcr.io/toeverything/affine-graphql:stable-39476d1
@@ -8647,7 +8702,9 @@ services:
         - traefik.frontend.headers.STSPreload=true
         - traefik.frontend.headers.STSSeconds=31536000
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
   affine_config:
