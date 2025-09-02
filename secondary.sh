@@ -8027,36 +8027,72 @@ EOL
 
 }
 
+# SUBSTITUA A SUA FUNÇÃO EXISTENTE POR ESTA
 ferramenta_moodle() {
-  msg_moodle
-  dados
+    recursos 2 2 && continue || return
+    msg_moodle
+    dados
 
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m" && read -r url_moodle
-    echo ""
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m" && read -r url_moodle
+        echo ""
+        
+        clear
+        msg_moodle
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Moodle:\e[97m $url_moodle\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_moodle; fi
+    done
 
     clear
-    msg_moodle
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Moodle:\e[97m $url_moodle\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_moodle; fi
-  done
+    echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
+    telemetria Moodle iniciado
 
-  clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
-  senha_db_moodle=$(openssl rand -hex 16)
-
-  cat > moodle.yaml <<EOL
+    senha_db_moodle=$(openssl rand -hex 16)
+    
+    cat > moodle.yaml <<EOL
 version: '3.9'
 volumes:
   moodle_data:
   moodledata_data:
   mariadb_data:
 services:
+  moodle:
+    image: bitnami/moodle:latest
+    volumes:
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
+    networks:
+      - $nome_rede_interna
+    environment:
+      - MOODLE_DATABASE_HOST=mariadb
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=bn_moodle
+      - MOODLE_DATABASE_PASSWORD=$senha_db_moodle
+      - MOODLE_DATABASE_NAME=bitnami_moodle
+      - ALLOW_EMPTY_PASSWORD=no
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      # --- CORREÇÃO APLICADA: Aumentando a memória ---
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2048M
+      # --- FIM DA CORREÇÃO ---
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.moodle.rule=Host(\`$url_moodle\`)"
+        - "traefik.http.services.moodle.loadbalancer.server.port=8080"
+        - "traefik.http.routers.moodle.service=moodle"
+        - "traefik.http.routers.moodle.entrypoints=websecure"
+        - "traefik.http.routers.moodle.tls.certresolver=letsencryptresolver"
   mariadb:
     image: bitnami/mariadb:latest
     environment:
@@ -8068,52 +8104,125 @@ services:
       - mariadb_data:/bitnami/mariadb
     networks:
       - $nome_rede_interna
-  moodle:
-    image: bitnami/moodle:latest
-    environment:
-      - MOODLE_DATABASE_HOST=mariadb
-      - MOODLE_DATABASE_PORT_NUMBER=3306
-      - MOODLE_DATABASE_USER=bn_moodle
-      - MOODLE_DATABASE_PASSWORD=$senha_db_moodle
-      - MOODLE_DATABASE_NAME=bitnami_moodle
-      - ALLOW_EMPTY_PASSWORD=no
-    volumes:
-      - moodle_data:/bitnami/moodle
-      - moodledata_data:/bitnami/moodledata
-    networks:
-      - $nome_rede_interna
     deploy:
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.moodle.rule=Host(\`$url_moodle\`)"
-        - "traefik.http.services.moodle.loadbalancer.server.port=8080"
-        - "traefik.http.routers.moodle.service=moodle"
-        - "traefik.http.routers.moodle.entrypoints=websecure"
-        - "traefik.http.routers.moodle.tls.certresolver=letsencryptresolver"
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      # --- CORREÇÃO APLICADA: Aumentando a memória ---
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+      # --- FIM DA CORREÇÃO ---
 networks:
   $nome_rede_interna:
     external: true
 EOL
-
-  STACK_NAME="moodle"
-  stack_editavel
-  wait_stack moodle_moodle moodle_mariadb
-
-  cd /root/dados_vps <<EOL
+    
+    STACK_NAME="moodle"
+    stack_editavel
+    wait_stack "moodle_moodle" "moodle_mariadb"
+    telemetria Moodle finalizado
+    
+    cd /root/dados_vps
+    cat > dados_moodle <<EOL
 [ MOODLE ]
 Dominio: https://$url_moodle
 Usuario: user
 Senha: (Será exibida nos logs da primeira inicialização)
 EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ MOODLE ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_moodle\e[0m"
+    echo -e "\n\e[33m⚠️ IMPORTANTE: A senha do usuário 'user' é gerada na primeira inicialização.\e[0m"
+    echo -e "Para encontrá-la, execute o comando: \e[97mdocker service logs moodle_moodle\e[0m"
+    msg_retorno_menu
+}
 
-  cd
-  msg_resumo_informacoes
-  echo -e "\e[32m[ MOODLE ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_moodle\e[0m"
-  echo -e "\n\e[33m⚠️ IMPORTANTE: A senha do usuário 'user' é gerada na primeira inicialização.\e[0m"
-  echo -e "Para encontrá-la, execute o comando: \e[97mdocker service logs moodle_moodle\e[0m"
-  msg_retorno_menu
-        
+ferramenta_humhub() {
+    recursos 1 1 && continue || return
+    msg_humhub
+    dados
+
+    while true; do
+        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+        echo -en "🔗 \e[33mDigite o domínio para o HumHub (ex: social.encha.ai): \e[0m" && read -r url_humhub
+        echo ""
+
+        clear
+        msg_humhub
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio HumHub:\e[97m $url_humhub\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_humhub; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do HumHub...\e[0m"
+    telemetria HumHub iniciado
+
+    verificar_e_instalar_mysql || return
+    pegar_senha_mysql_da_stack
+    criar_banco_mysql_da_stack "humhub"
+    
+    cat > humhub.yaml <<EOL
+version: '3.7'
+services:
+  humhub:
+    image: mriedmann/humhub:latest
+    volumes:
+      - humhub_uploads:/var/www/localhost/htdocs/uploads
+    networks:
+      - $nome_rede_interna
+    environment:
+      - HUMHUB_DB_HOST=mysql
+      - HUMHUB_DB_USER=root
+      - HUMHUB_DB_PASSWORD=$senha_mysql
+      - HUMHUB_DB_NAME=humhub
+      - HUMHUB_AUTO_INSTALL=false
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.humhub.rule=Host(\`$url_humhub\`)"
+        - "traefik.http.services.humhub.loadbalancer.server.port=80"
+        - "traefik.http.routers.humhub.service=humhub"
+        - "traefik.http.routers.humhub.entrypoints=websecure"
+        - "traefik.http.routers.humhub.tls.certresolver=letsencryptresolver"
+volumes:
+  humhub_uploads:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+    
+    STACK_NAME="humhub"
+    stack_editavel
+    wait_stack "humhub_humhub"
+    telemetria HumHub finalizado
+
+    cd /root/dados_vps
+    cat > dados_humhub <<EOL
+[ HUMHUB ]
+Dominio: https://$url_humhub
+Usuario: (criado na tela de setup)
+Senha: (criada na tela de setup)
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ HUMHUB ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_humhub\e[0m"
+    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
