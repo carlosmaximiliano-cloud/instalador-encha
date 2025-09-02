@@ -9438,6 +9438,7 @@ ferramenta_nextcloud() {
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo -e "🌐 \e[33mDomínio Nextcloud:\e[97m $url_nextcloud\e[0m"
         echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
+        echo -e "\e[33mSenha do NextCloud:\e[97m $pass_nextcloud\e[0m"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
@@ -9447,84 +9448,125 @@ ferramenta_nextcloud() {
     echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
-    criar_banco_postgres_da_stack "nextcloud"
+    criar_banco_postgres_da_stack "nextcloud${1:+_$1}"
     verificar_container_redis || ferramenta_redis
 
-    cat > nextcloud.yaml <<EOL
+    cat > nextcloud${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
-  nextcloud:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  nextcloud${1:+_$1}:
     image: nextcloud:latest
+
     volumes:
-      - nextcloud_data:/var/www/html
+      - nextcloud${1:+_$1}_data:/var/www/html
+
     networks:
       - $nome_rede_interna
+
+    #ports:
+    #  - 8282:80
+
     environment:
+      ## Dados de acesso:
       - NEXTCLOUD_ADMIN_USER=$user_nextcloud
       - NEXTCLOUD_ADMIN_PASSWORD=$pass_nextcloud
+
+      ## Dados do Postgres
       - POSTGRES_HOST=postgres
-      - POSTGRES_DB=nextcloud
+      - POSTGRES_DB=nextcloud${1:+_$1}
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=$senha_postgres
+
+      ## Dados do Redis
       - REDIS_HOST=redis
+
+      ## Configurações para HTTPS
       - OVERWRITEPROTOCOL=https
-      - TRUSTED_PROXIES=0.0.0.0/0
+      - TRUSTED_PROXIES=127.0.0.1
+
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.nextcloud.rule=Host(\`$url_nextcloud\`)"
-        - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-        - "traefik.http.routers.nextcloud.service=nextcloud"
-        - "traefik.http.routers.nextcloud.entrypoints=websecure"
-        - "traefik.http.routers.nextcloud.tls.certresolver=letsencryptresolver"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
-        - "traefik.http.middlewares.nextcloud-redirect.redirectregex.replacement=https://\${1}/remote.php/dav/"
-        - "traefik.http.routers.nextcloud.middlewares=nextcloud-redirect"
+        - traefik.enable=true
+        - traefik.http.routers.nextcloud${1:+_$1}.rule=Host(\`$url_nextcloud\`)
+        - traefik.http.services.nextcloud${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.nextcloud${1:+_$1}.service=nextcloud${1:+_$1}
+        - traefik.http.routers.nextcloud${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.nextcloud${1:+_$1}.entrypoints=web,websecure
+        - traefik.http.routers.nextcloud${1:+_$1}.tls=true
+        - traefik.http.routers.nextcloud${1:+_$1}.middlewares=nextcloud_redirectregex
+        - traefik.http.middlewares.nextcloud${1:+_$1}_redirectregex.redirectregex.permanent=true
+        - traefik.http.middlewares.nextcloud${1:+_$1}_redirectregex.redirectregex.regex=https://(.*)/.well-known/(?:card|cal)dav
+        - traefik.http.middlewares.nextcloud${1:+_$1}_redirectregex.redirectregex.replacement=https://$$1/remote.php/dav
 
-  nextcloud_cron:
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  nextcloud${1:+_$1}_cron:
     image: nextcloud:latest
     entrypoint: /cron.sh
+
     volumes:
-      - nextcloud_data:/var/www/html
-    networks:
-      - $nome_rede_interna
+      - nextcloud${1:+_$1}_data:/var/www/html
+
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
-  nextcloud_data:
-    name: nextcloud_data
+  nextcloud${1:+_$1}_data:
     external: true
+    name: nextcloud${1:+_$1}_data
+
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
 
-    STACK_NAME="nextcloud"
+    STACK_NAME="nextcloud${1:+_$1}"
     stack_editavel
-    wait_stack "nextcloud_nextcloud" "nextcloud_nextcloud_cron"
 
-    echo "Aguardando para aplicar configurações adicionais..."
-    sleep 30
+    ## Mensagem de Passo
+    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+    echo ""
+
+    ## Baixando imagens:
+    pull nextcloud:latest
+
+    wait_stack nextcloud${1:+_$1}_nextcloud${1:+_$1} nextcloud${1:+_$1}_nextcloud${1:+_$1}_cron
     
-    local config_path="/var/lib/docker/volumes/nextcloud_data/_data/config/config.php"
-    if [ -f "$config_path" ]; then
-        # Adiciona o domínio à lista de trusted_domains
-        docker exec $(docker ps -q --filter "name=nextcloud_nextcloud") sed -i "/'trusted_domains' =>/a \    1 => '$url_nextcloud'," "$config_path"
-        echo "✅ Domínio adicionado aos trusted_domains do Nextcloud."
-    else
-        echo "⚠️  Arquivo de configuração do Nextcloud não encontrado. A configuração de trusted_domains pode precisar ser feita manualmente."
-    fi
-
     cd /root/dados_vps
-    cat > dados_nextcloud <<EOL
+
+    wait_30_sec
+    arquivo_next_cloud="/var/lib/docker/volumes/nextcloud${1:+_$1}_data/_data/config/config.php"
+    # Comando sed para substituir a linha, utilizando a variável
+    sed -i "s/0 => 'localhost'/0 => '$url_nextcloud'/" "$arquivo_next_cloud"
+    sleep 5
+    ## Só por garantia
+    sed -i "s/0 => 'localhost'/0 => '$url_nextcloud'/" "$arquivo_next_cloud"
+    sleep 5
+    sed -i "/'maintenance' => false,/a \  'overwriteprotocol' => 'https',\n  'trusted_proxies' => ['127.0.0.1']," "$arquivo_next_cloud"
+    sleep 5
+
+    cat > dados_nextcloud${1:+_$1} <<EOL
 [ NEXTCLOUD ]
 Dominio: https://$url_nextcloud
 Usuario: $user_nextcloud
@@ -11247,7 +11289,7 @@ exibir_menu() {
                   fi
                   ;;
             42)
-                verificar_stack "dify{opcao2:+_$opcao2}" && continue || echo ""
+                verificar_stack "dify${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_dify
                   fi
@@ -11265,7 +11307,7 @@ exibir_menu() {
                   fi
                   ;;
             45)
-                verificar_stack "nextcloud" && continue || echo ""
+                verificar_stack "nextcloud${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_nextcloud
                   fi
