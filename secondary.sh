@@ -612,6 +612,19 @@ msg_phpmyadmin(){
     echo ""
 }
 
+msg_supabase(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗   ██╗██████╗  █████╗ ██████╗  █████╗ ███████╗███████╗"
+    centralizar "██╔════╝██║   ██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝"
+    centralizar "███████╗██║   ██║██████╔╝███████║██████╔╝███████║███████╗█████╗"
+    centralizar "╚════██║██║   ██║██╔═══╝ ██╔══██║██╔══██╗██╔══██║╚════██║██╔══╝"
+    centralizar "███████║╚██████╔╝██║     ██║  ██║██████╔╝██║  ██║███████║███████╗"
+    centralizar "╚══════╝ ╚═════╝ ╚═╝     ╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -9113,7 +9126,7 @@ ferramenta_phpmyadmin(){
   while true; do
     ##Pergunta o Dominio para a ferramenta
     echo -e "\e[97mPasso$amarelo 1/2\e[0m"
-    echo -en "\e[33mDigite o dominio para o PhpMyAdmin (ex: phpmyadmin.oriondesign.art.br): \e[0m" && read -r url_phpmyadmin
+    echo -en "\e[33mDigite o dominio para o PhpMyAdmin (ex: phpmyadmin.encha.ai): \e[0m" && read -r url_phpmyadmin
     echo ""
 
     ##Pergunta o Dominio para a ferramenta
@@ -9140,7 +9153,9 @@ ferramenta_phpmyadmin(){
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   phpmyadmin${1:+_$1}:
     image: phpmyadmin/phpmyadmin:latest
@@ -9180,7 +9195,9 @@ services:
         - traefik.http.services.phpmyadmin${1:+_$1}.loadbalancer.server.port=80
         - traefik.http.routers.phpmyadmin${1:+_$1}.service=phpmyadmin${1:+_$1}
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 networks:
   $nome_rede_interna:
@@ -9216,6 +9233,263 @@ EOL
   echo -e "\e[33m⚠️  Use as credenciais do seu banco de dados MySQL para fazer login.\e[0m"
   msg_retorno_menu
 
+}
+
+ferramenta_supabase() {
+    msg_supabase
+    dados
+
+    # Função para gerar chaves JWT
+    generate_jwt_tokens() {
+        if ! command -v openssl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+            echo "openssl e jq precisam estar instalados." >&2
+            return 1
+        fi
+        
+        local secret=$(openssl rand -hex 32)
+        local payload_service_key='{"role":"service_role","iss":"supabase","iat":1715050800,"exp":1872817200}'
+        local payload_anon_key='{"role":"anon","iss":"supabase","iat":1715050800,"exp":1872817200}'
+        local header=$(echo -n '{"alg":"HS256","typ":"JWT"}' | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+        
+        local payload_service_b64=$(echo -n "$payload_service_key" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+        local payload_anon_b64=$(echo -n "$payload_anon_key" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+        
+        local sig_service=$(echo -n "$header.$payload_service_b64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+        local sig_anon=$(echo -n "$header.$payload_anon_b64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+        
+        local token_service="$header.$payload_service_b64.$sig_service"
+        local token_anon="$header.$payload_anon_b64.$sig_anon"
+        
+        echo "$secret $token_service $token_anon"
+    }
+
+    # Gerar chaves antes do loop para exibição
+    read JWT_Key SERVICE_KEY ANON_KEY < <(generate_jwt_tokens)
+
+    while true; do
+        echo -e "\n📍 Passo 1/3"
+        echo -en "🔗 \e[33mDigite o domínio para o Supabase (ex: supabase.encha.ai): \e[0m" && read -r url_supabase
+        echo ""
+        echo -e "\n📍 Passo 2/3"
+        echo -en "👤 \e[33mDigite o usuário para o painel do Supabase: \e[0m" && read -r user_supabase
+        echo ""
+        echo -e "\n📍 Passo 3/3"
+        echo -e "🔑 \e[33mDigite a senha para o usuário (sem caracteres especiais): \e[0m" && read -r pass_supabase
+        echo ""
+        
+        clear
+        msg_supabase
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Supabase:\e[97m $url_supabase\e[0m"
+        echo -e "👤 \e[33mUsuário do Painel:\e[97m $user_supabase\e[0m"
+        echo -e "🔑 \e[33mSenha do Painel:\e[97m *********\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "\e[33mAs seguintes chaves serão geradas automaticamente:\e[0m"
+        echo -e "🔑 \e[33mJWT Secret:\e[97m ${JWT_Key:0:15}...\e[0m"
+        echo -e "🔑 \e[33mAnon Key:\e[97m ${ANON_KEY:0:15}...\e[0m"
+        echo -e "🔑 \e[33mService Role Key:\e[97m ${SERVICE_KEY:0:15}...\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_supabase; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Supabase...\e[0m"
+    verificar_minio || ferramenta_minio
+    pegar_senha_minio
+    criar_bucket.minio "supabase"
+
+    echo "Baixando e configurando arquivos do Supabase..."
+    {
+      rm -rf /tmp/supabase_setup && mkdir -p /tmp/supabase_setup
+      cd /tmp/supabase_setup
+      git clone --depth 1 https://github.com/supabase/supabase.git . > /dev/null 2>&1
+      cd docker
+      rm -f .env.example .gitignore README.md docker-compose.s3.yml docker-compose.yml reset.sh
+      mkdir -p volumes/db/data volumes/storage
+      mv volumes /root/supabase_volumes
+      cd /root
+      rm -rf /tmp/supabase_setup
+    } &> /dev/null
+    echo "Arquivos de configuração preparados."
+
+    Senha_Postgres=$(openssl rand -hex 16)
+    Logflare_key=$(openssl rand -hex 16)
+    SECRET_KEY_BASE=$(openssl rand -hex 32)
+    VAULT_ENC_KEY=$(openssl rand -base64 32 | tr -d '\n' | cut -c1-32)
+    
+    cat > supabase.yaml <<EOL
+version: "3.7"
+services:
+  studio:
+    image: supabase/studio:20240726-061008-0524c52
+    networks:
+      - $nome_rede_interna
+    environment:
+      - SUPABASE_PUBLIC_URL=https://$url_supabase
+      - SUPABASE_ANON_KEY=$ANON_KEY
+      - SUPABASE_SERVICE_KEY=$SERVICE_KEY
+      - STUDIO_PG_META_URL=http://meta:8080
+      - POSTGRES_PASSWORD=$Senha_Postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  kong:
+    image: kong:2.8.1
+    volumes:
+      - ./supabase_volumes/api/kong.yml:/etc/kong/kong.yml:ro
+    networks:
+      - $nome_rede_interna
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
+      - KONG_DNS_ORDER=LAST,A,CNAME
+      - KONG_PLUGINS=request-transformer,cors,key-auth,acl
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.supabase.rule=Host(\`$url_supabase\`)"
+        - "traefik.http.services.supabase.loadbalancer.server.port=8000"
+        - "traefik.http.routers.supabase.service=supabase"
+        - "traefik.http.routers.supabase.entrypoints=websecure"
+        - "traefik.http.routers.supabase.tls.certresolver=letsencryptresolver"
+  auth:
+    image: supabase/gotrue:v2.176.1
+    networks:
+      - $nome_rede_interna
+    environment:
+      - API_EXTERNAL_URL=https://$url_supabase
+      - GOTRUE_DB_DRIVER=postgres
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:$Senha_Postgres@db:5432/postgres
+      - GOTRUE_SITE_URL=https://$url_supabase
+      - GOTRUE_JWT_SECRET=$JWT_Key
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  rest:
+    image: postgrest/postgrest:v12.2.12
+    networks:
+      - $nome_rede_interna
+    environment:
+      - PGRST_DB_URI=postgres://authenticator:$Senha_Postgres@db:5432/postgres
+      - PGRST_DB_SCHEMAS=public,storage,graphql_public
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=$JWT_Key
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  realtime:
+    image: supabase/realtime:v2.34.47
+    networks:
+      - $nome_rede_interna
+    environment:
+      - PORT=4000
+      - API_JWT_SECRET=$JWT_Key
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=supabase_admin
+      - DB_PASSWORD=$Senha_Postgres
+      - DB_NAME=postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  storage:
+    image: supabase/storage-api:v1.22.17
+    volumes:
+      - /root/supabase_volumes/storage:/var/lib/storage
+    networks:
+      - $nome_rede_interna
+    environment:
+      - ANON_KEY=$ANON_KEY
+      - SERVICE_KEY=$SERVICE_KEY
+      - POSTGREST_URL=http://rest:3000
+      - PGRST_JWT_SECRET=$JWT_Key
+      - DATABASE_URL=postgres://supabase_storage_admin:$Senha_Postgres@db:5432/postgres
+      - FILE_SIZE_LIMIT=52428800
+      - STORAGE_BACKEND=s3
+      - GLOBAL_S3_BUCKET=supabase
+      - GLOBAL_S3_ENDPOINT=https://$url_s3
+      - AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - AWS_DEFAULT_REGION=us-east-1
+      - TENANT_ID=stub
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  meta:
+    image: supabase/postgres-meta:v0.89.3
+    networks:
+      - $nome_rede_interna
+    environment:
+      - PG_META_PORT=8080
+      - PG_META_DB_HOST=db
+      - PG_META_DB_PORT=5432
+      - PG_META_DB_NAME=postgres
+      - PG_META_DB_USER=supabase_admin
+      - PG_META_DB_PASSWORD=$Senha_Postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  db:
+    image: supabase/postgres:15.8.1.060
+    volumes:
+      - /root/supabase_volumes/db/data:/var/lib/postgresql/data
+    networks:
+      - $nome_rede_interna
+    environment:
+      - POSTGRES_PASSWORD=$Senha_Postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+    STACK_NAME="supabase"
+    stack_editavel
+    wait_stack "supabase_studio" "supabase_kong" "supabase_auth" "supabase_rest" "supabase_realtime" "supabase_storage" "supabase_meta" "supabase_db"
+
+    cd /root/dados_vps
+    cat > dados_supabase <<EOL
+[ SUPABASE ]
+Dominio: https://$url_supabase
+Usuario Painel: $user_supabase
+Senha Painel: $pass_supabase
+JWT Secret: $JWT_Key
+Anon Key: $ANON_KEY
+Service Role Key: $SERVICE_KEY
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ SUPABASE ]\e[0m\n"
+    echo -e "🌐 \e[33mDomínio:\e[97m https://$url_supabase\e[0m"
+    echo -e "👤 \e[33mUsuário Painel:\e[97m $user_supabase\e[0m"
+    echo -e "🔑 \e[33mSenha Painel:\e[97m $pass_supabase\e[0m"
+    echo -e "🔑 \e[33mJWT Secret:\e[97m $JWT_Key\e[0m"
+    echo -e "🔑 \e[33mAnon Key:\e[97m $ANON_KEY\e[0m"
+    echo -e "🔑 \e[33mService Role Key:\e[97m $SERVICE_KEY\e[0m"
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
@@ -9266,15 +9540,15 @@ exibir_menu() {
         echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}44.${reset} Instalar Vaultwarden"
         echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}45.${reset} Instalar Nextcloud"
         echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}46.${reset} Instalar Strapi"
-        echo -e "${azul}20.${reset} Instalar calcom"
-        echo -e "${azul}21.${reset} Instalar mautic"
+        echo -e "${azul}20.${reset} Instalar calcom                  ${azul}47.${reset} Instalar MyphpAdmin"
+        echo -e "${azul}21.${reset} Instalar mautic                  ${azul}48.${reset} Instalar Supabase"
         echo -e "${azul}22.${reset} Instalar appsmith"
         echo -e "${azul}23.${reset} Instalar qdrant"
         echo -e "${azul}24.${reset} Instalar woofedcrm"
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-45): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-47): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -9615,6 +9889,12 @@ exibir_menu() {
                 verificar_stack "phpmyadmin${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_phpmyadmin
+                  fi
+                  ;;
+            48)
+                verificar_stack "supabase" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_supabase
                   fi
                   ;;
             *)
