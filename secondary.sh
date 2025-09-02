@@ -7504,6 +7504,7 @@ ferramenta_dify() {
 
   clear
   echo -e "\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
   verificar_docker_e_portainer_traefik || return
   verificar_minio || return
 
