@@ -7848,9 +7848,9 @@ exibir_menu() {
                 fi
                 ;;
             40)
-                verificar_stack "hubhub" && continue || echo "" # Corrigido de 'moodle' para 'hubhub'
+                verificar_stack "humhub" && continue || echo "" 
                 if verificar_docker_e_portainer_traefik; then
-                    ferramenta_hubhub # Assumindo que a função se chame assim
+                    ferramenta_humhub 
                 fi
                 ;;
             *)
