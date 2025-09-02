@@ -7414,7 +7414,12 @@ services:
       - $nome_rede_interna
     environment: 
       - NC_PUBLIC_URL=https://$url_nocodb
-      - NC_DB=pg://postgres:$senha_postgres@postgres:5432/nocodb
+      - NC_DB_TYPE=pg
+      - NC_DB_HOST=postgres
+      - NC_DB_PORT=5432
+      - NC_DB_DATABASE=nocodb
+      - NC_DB_USER=postgres
+      - NC_DB_PASSWORD=$senha_postgres
       - NC_DISABLE_TELE=true
     deploy:
       mode: replicated
