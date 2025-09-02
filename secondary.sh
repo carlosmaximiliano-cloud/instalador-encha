@@ -391,19 +391,6 @@ centralizar "     ╚═════╝ ╚══════╝╚═╝     �
     echo ""
 }
 
-msg_strapi(){
-    clear
-    echo -e "${roxo}"
-centralizar " ███████╗████████╗██████╗  █████╗ ██████╗ ██╗"
-centralizar " ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██║"
-centralizar " ███████╗   ██║   ██████╔╝███████║██████╔╝██║"
-centralizar " ╚════██║   ██║   ██╔══██╗██╔══██║██╔═══╝ ██║"
-centralizar " ███████║   ██║   ██║  ██║██║  ██║██║     ██║"
-centralizar " ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝"
-    echo -e "${reset}"
-    echo ""
-}
-
 msg_flowise() {
     clear
     echo -e "${roxo}"
@@ -491,6 +478,19 @@ msg_wordpress() {
     centralizar "██║███╗██║██║   ██║██╔══██╗██║  ██║██╔═══╝ ██╔══██╗██╔══╝  ╚════██║╚════██║"
     centralizar "╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝██║     ██║  ██║███████╗███████║███████║"
     centralizar " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_formbricks() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ ██╗ ██████╗██╗  ██╗███████╗"
+    centralizar "██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔══██╗██╔══██╗██║██╔════╝██║ ██╔╝██╔════╝"
+    centralizar "█████╗  ██║   ██║██████╔╝██╔████╔██║██████╔╝██████╔╝██║██║     █████╔╝ ███████╗"
+    centralizar "██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔══██╗██╔══██╗██║██║     ██╔═██╗ ╚════██║"
+    centralizar "██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██║  ██║██║╚██████╗██║  ██╗███████║"
+    centralizar "╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝"
     echo -e "${reset}"
     echo ""
 }
@@ -7568,6 +7568,11 @@ ferramenta_wordpress() {
     cat > wordpress_${nome_site_wordpress}.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   wordpress_${nome_site_wordpress}:
     image: wordpress:latest
     volumes:
@@ -7654,6 +7659,119 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_formbricks() {
+  msg_formbricks
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/6"
+    echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
+    echo -e "\n📍 Passo 2/6"
+    echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
+    echo -e "\n📍 Passo 3/6"
+    echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
+    echo -e "\n📍 Passo 4/6"
+    echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
+    echo ""
+    echo -e "\n📍 Passo 5/6"
+    echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
+    echo -e "\n📍 Passo 6/6"
+    echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_formbricks
+
+    if [ "$porta_formbricks" -eq 465 ] || [ "$porta_formbricks" -eq 25 ]; then
+      ssl_formbricks=1
+    else
+      ssl_formbricks=0
+    fi
+
+    clear
+    msg_formbricks
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
+    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
+  verificar_container_pgvector || ferramenta_pgvector
+  pegar_senha_pgvector
+  criar_banco_pgvector_da_stack "formbricks"
+
+  encryption_key_form=$(openssl rand -hex 32)
+  next_key_form=$(openssl rand -hex 32)
+  cron_key_form=$(openssl rand -hex 32)
+
+  cat > formbricks.yaml <<EOL
+version: "3.7"
+services:
+  formbricks:
+    image: ghcr.io/formbricks/formbricks:latest
+    volumes:
+      - formbricks_data:/home/nextjs/apps/web/uploads/
+    networks:
+      - $nome_rede_interna
+    environment:
+      - WEBAPP_URL=https://$url_formbricks
+      - NEXTAUTH_URL=https://$url_formbricks
+      - DATABASE_URL=postgresql://postgres:$senha_pgvector@pgvector:5432/formbricks?schema=public
+      - ENCRYPTION_KEY=$encryption_key_form
+      - NEXTAUTH_SECRET=$next_key_form
+      - CRON_SECRET=$cron_key_form
+      - MAIL_FROM=$email_formbricks
+      - SMTP_HOST=$host_formbricks
+      - SMTP_PORT=$porta_formbricks
+      - SMTP_SECURE_ENABLED=$ssl_formbricks
+      - SMTP_USER=$user_smtp_formbricks
+      - SMTP_PASSWORD=$senha_formbricks
+      - SIGNUP_DISABLED=0
+      - INVITE_DISABLED=0
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.formbricks.rule=Host(\`$url_formbricks\`)"
+        - "traefik.http.services.formbricks.loadbalancer.server.port=3000"
+        - "traefik.http.routers.formbricks.service=formbricks"
+        - "traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.formbricks.entrypoints=websecure"
+volumes:
+  formbricks_data:
+    name: formbricks_data
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="formbricks"
+  stack_editavel
+  wait_stack "formbricks_formbricks"
+
+  cd /root/dados_vps
+  cat > dados_formbricks <<EOL
+[ FORMBRICKS ]
+Dominio: https://$url_formbricks
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  
+  msg_resumo_informacoes
+  echo -e "\e[32m[ FORMBRICKS ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_formbricks\e[0m"
+  echo -e "\e[33m⚠️  Aguarde aproximadamente 5 minutos antes de acessar devido à migração do banco de dados.\e[0m"
+  msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7693,7 +7811,7 @@ exibir_menu() {
         echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
         echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
         echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
-        echo -e "${azul}11.${reset} Verificar status dos serviços"
+        echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Frombricks"
         echo -e "${azul}12.${reset} Sair do menu"
         echo -e "${azul}13.${reset} Instalar pgAdmin"
         echo -e "${azul}14.${reset} Instalar nocobase"
@@ -7991,6 +8109,12 @@ exibir_menu() {
                 verificar_stack "wordpress" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_wordpress
+                  fi
+                  ;;
+            38)
+                verificar_stack "formbricks" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_formbricks
                   fi
                   ;;
             *)
