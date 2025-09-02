@@ -9609,7 +9609,7 @@ ferramenta_strapi() {
     app_key=$(openssl rand -hex 16)
     senha_mysql=$(openssl rand -hex 16)
 
-    cat > strapi.yaml <<EOL
+    cat > strapi${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
@@ -9617,68 +9617,122 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  strapi_app:
-    image: strapi/strapi:latest
+  strapi${1:+_$1}_app:
+    image: strapi/strapi
+
     volumes:
-      - strapi_data:/srv/app
+      #- strapi${1:+_$1}_config:/srv/app/config
+      #- strapi${1:+_$1}_src:/srv/app/src
+      #- strapi${1:+_$1}_public_uploads:/srv/app/public/uploads
+      - strapi${1:+_$1}_data:/srv/app
+
     networks:
       - $nome_rede_interna
+
     environment:
+      ## Dados MySQL
       - DATABASE_CLIENT=mysql
-      - DATABASE_HOST=strapi_db
+      - DATABASE_HOST=strapi${1:+_$1}_db
       - DATABASE_NAME=strapi
       - DATABASE_PORT=3306
       - DATABASE_USERNAME=root
       - DATABASE_PASSWORD=$senha_mysql
+
+      ## Secret Keys
       - JWT_SECRET=$jwt_secret
       - ADMIN_JWT_SECRET=$admin_jwt
       - APP_KEYS=$app_key
+
+      ## Outros dados
       - NODE_ENV=production
       - STRAPI_TELEMETRY_DISABLED=true
+
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.strapi.rule=Host(\`$url_strapi\`)"
-        - "traefik.http.services.strapi.loadbalancer.server.port=1337"
-        - "traefik.http.routers.strapi.service=strapi"
-        - "traefik.http.routers.strapi.entrypoints=websecure"
-        - "traefik.http.routers.strapi.tls.certresolver=letsencryptresolver"
+        - traefik.enable=true
+        - traefik.http.routers.strapi${1:+_$1}.rule=Host(\`$url_strapi\`)
+        - traefik.http.routers.strapi${1:+_$1}.entrypoints=web,websecure
+        - traefik.http.routers.strapi${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.strapi${1:+_$1}.service=strapi${1:+_$1}
+        - traefik.http.services.strapi${1:+_$1}.loadbalancer.server.port=1337
+        - traefik.http.services.strapi${1:+_$1}.loadbalancer.passHostHeader=true
 
-  strapi_db:
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  strapi${1:+_$1}_db:
     image: percona/percona-server:8.0
     command:
-      - "--character-set-server=utf8mb4"
-      - "--collation-server=utf8mb4_general_ci"
+      [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_general_ci",
+        "--sql-mode=",
+        "--default-authentication-plugin=mysql_native_password",
+        "--max-allowed-packet=512MB"
+      ]
+
     volumes:
-      - strapi_db_data:/var/lib/mysql
+      - strapi${1:+_$1}_db:/var/lib/mysql
+
     networks:
       - $nome_rede_interna
+
     environment:
       - MYSQL_ROOT_PASSWORD=$senha_mysql
       - MYSQL_DATABASE=strapi
+      - TZ=America/Sao_Paulo
+
     deploy:
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
-  strapi_data:
-    name: strapi_data
+  #strapi${1:+_$1}_config:
+  #  external: true
+  #  name: strapi${1:+_$1}_config
+  #strapi${1:+_$1}_src:
+  #  external: true
+  #  name: strapi${1:+_$1}_src
+  #strapi${1:+_$1}_public_uploads:
+  #  external: true
+  #  name: strapi${1:+_$1}_public_uploads
+  strapi${1:+_$1}_data:
     external: true
-  strapi_db_data:
-    name: strapi_db_data
+    name: strapi${1:+_$1}_data
+  strapi${1:+_$1}_db:
     external: true
+    name: strapi${1:+_$1}_db
+
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
     
-    STACK_NAME="strapi"
+    STACK_NAME="strapi${1:+_$1}"
     stack_editavel
-    wait_stack "strapi_strapi_app" "strapi_strapi_db"
+
+    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+    echo ""
+
+    pull strapi/strapi percona/percona-server:8.0
+
+    wait_stack strapi${1:+_$1}_strapi${1:+_$1}_app strapi${1:+_$1}_strapi${1:+_$1}_db
 
     cd /root/dados_vps
     cat > dados_strapi <<EOL
@@ -11313,7 +11367,7 @@ exibir_menu() {
                   fi
                   ;;
             46)
-                verificar_stack "strapi" && continue || echo ""
+                verificar_stack "strapi${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_strapi
                   fi
