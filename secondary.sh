@@ -495,6 +495,19 @@ msg_formbricks() {
     echo ""
 }
 
+msg_metabase() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ███╗███████╗████████╗ █████╗ ██████╗  █████╗ ███████╗███████╗"
+    centralizar "████╗ ████║██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝"
+    centralizar "██╔████╔██║█████╗     ██║   ███████║██████╔╝███████║███████╗█████╗"
+    centralizar "██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══██╗██╔══██║╚════██║██╔══╝"
+    centralizar "██║ ╚═╝ ██║███████╗   ██║   ██║  ██║██████╔╝██║  ██║███████║███████╗"
+    centralizar "╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7708,6 +7721,11 @@ ferramenta_formbricks() {
   cat > formbricks.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   formbricks:
     image: ghcr.io/formbricks/formbricks:latest
     volumes:
@@ -7732,10 +7750,10 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      restart_policy:         ### ADICIONE AQUI ###
-        condition: on-failure ### ADICIONE AQUI ###
-        delay: 10s            ### ADICIONE AQUI ###
-        max_attempts: 3       ### ADICIONE AQUI ###
+      restart_policy:         
+        condition: on-failure 
+        delay: 10s            
+        max_attempts: 3       
       placement:
         constraints:
           - node.role == manager
@@ -7774,6 +7792,90 @@ EOL
   echo -e "\e[33m🌐 Domínio:\e[97m https://$url_formbricks\e[0m"
   echo -e "\e[33m⚠️  Aguarde aproximadamente 5 minutos antes de acessar devido à migração do banco de dados.\e[0m"
   msg_retorno_menu
+}
+
+ferramenta_metabase() {
+    msg_metabase
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/1"
+        echo -en "🔗 \e[33mDigite o domínio para o Metabase (ex: bi.encha.ai): \e[0m" && read -r url_metabase
+        echo ""
+
+        clear
+        msg_metabase
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio Metabase:\e[97m $url_metabase\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_metabase; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Metabase...\e[0m"
+    verificar_container_postgres || ferramenta_postgres
+    pegar_senha_postgres
+    criar_banco_postgres_da_stack "metabase"
+
+    cat > metabase.yaml <<EOL
+version: "3.7"
+services:
+  metabase:
+    image: metabase/metabase:latest
+    volumes:
+      - metabase_data:/metabase-data
+    networks:
+      - $nome_rede_interna
+    environment:
+      - MB_SITE_URL=https://$url_metabase
+      - MB_DB_TYPE=postgres
+      - MB_DB_DBNAME=metabase
+      - MB_DB_PORT=5432
+      - MB_DB_USER=postgres
+      - MB_DB_PASS=$senha_postgres
+      - MB_DB_HOST=postgres
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.metabase.rule=Host(\`$url_metabase\`)"
+        - "traefik.http.services.metabase.loadbalancer.server.port=3000"
+        - "traefik.http.routers.metabase.service=metabase"
+        - "traefik.http.routers.metabase.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.metabase.entrypoints=websecure"
+volumes:
+  metabase_data:
+    name: metabase_data
+    external: true
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+    
+    STACK_NAME="metabase"
+    stack_editavel
+    wait_stack "metabase_metabase"
+
+    cd /root/dados_vps
+    cat > dados_metabase <<EOL
+[ METABASE ]
+Dominio: https://$url_metabase
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+    cd
+    
+    msg_resumo_informacoes
+    echo -e "\e[32m[ METABASE ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_metabase\e[0m"
+    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    msg_retorno_menu
 }
 
 verificar_status_servicos() {
@@ -8119,6 +8221,12 @@ exibir_menu() {
                 verificar_stack "formbricks" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_formbricks
+                  fi
+                  ;;
+            39)
+                verificar_stack "metabase" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_metabase
                   fi
                   ;;
             *)
