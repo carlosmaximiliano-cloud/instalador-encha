@@ -9015,7 +9015,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   strapi_app:
-    image: strapi/strapi:4.25.3
+    image: strapi/strapi:latest
     volumes:
       - strapi_data:/srv/app
     networks:
