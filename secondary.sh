@@ -9010,10 +9010,12 @@ ferramenta_strapi(){
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   strapi_app:
-    image: strapi/strapi
+    image: strapi/strapi:4
 
     volumes:
       #- strapi_config:/srv/app/config
@@ -9057,7 +9059,11 @@ services:
         - traefik.http.services.strapi.loadbalancer.server.port=1337
         - traefik.http.services.strapi.loadbalancer.passHostHeader=true
 
-## --------------------------- ORION --------------------------- ##
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
 
   strapi_db:
     image: percona/percona-server:8.0
@@ -9090,7 +9096,9 @@ services:
           cpus: "1"
           memory: 1024M
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
   #strapi_config:
