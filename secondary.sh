@@ -7968,6 +7968,7 @@ services:
       - $nome_rede_interna
     environment:
       - REDIS_SOCKETIO=redis://erpnext_socketio:6379
+      - FRAPPE_SITE_NAME_HEADER=$url_frappe
   erpnext_socketio:
     image: redis:latest
     volumes:
