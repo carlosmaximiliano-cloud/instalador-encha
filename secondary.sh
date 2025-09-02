@@ -7461,6 +7461,229 @@ EOL
 
 }
 
+ferramenta_dify() {
+  msg_dify
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/7\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para a interface web do Dify AI (ex: dify.encha.ai): \e[0m" && read -r url_dify
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/7\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para a API do Dify AI (ex: api-dify.encha.ai): \e[0m" && read -r url_dify_api
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/7\e[0m"
+    echo -en "📧 \e[33mDigite o email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_dify
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
+    echo -en "👤 \e[33mDigite o Usuário para SMTP: \e[0m" && read -r user_email_dify
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
+    echo -en "🔑 \e[33mDigite a Senha SMTP do Email: \e[0m" && read -s -r senha_email_dify
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
+    echo -en "🏠 \e[33mDigite o Host SMTP do Email: \e[0m" && read -r smtp_email_dify
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
+    echo -en "🔌 \e[33mDigite a porta SMTP do Email: \e[0m" && read -r porta_smtp_dify
+    echo ""
+
+    clear
+    msg_dify
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Web:\e[97m $url_dify\e[0m"
+    echo -e "🔗 \e[33mDomínio API:\e[97m $url_dify_api\e[0m"
+    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_dify\e[0m"
+    echo -e "🏠 \e[33mHost SMTP:\e[97m $smtp_email_dify\e[0m"
+    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_dify\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_dify; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
+  verificar_docker_e_portainer_traefik || return
+  verificar_minio || return
+
+  echo -e "\e[97m🗄️ Configurando bancos de dados...\e[0m"
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "dify"
+  criar_banco_postgres_da_stack "dify_plugin"
+
+  echo -e "\e[97m🪣 Configurando bucket de armazenamento...\e[0m"
+  pegar_senha_minio
+  criar_bucket.minio dify
+
+  secret_key=$(openssl rand -hex 16)
+  token_weaviate=$(openssl rand -hex 16)
+  token_apikey_plugins=$(openssl rand -hex 16)
+  token_deamon=$(openssl rand -hex 16)
+  sandbox_key=$(openssl rand -hex 16)
+
+  cat > dify.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  dify_api:
+    image: langgenius/dify-api:latest
+    environment:
+      - MODE=api
+      - CONSOLE_WEB_URL=https://$url_dify
+      - APP_WEB_URL=https://$url_dify
+      - CONSOLE_API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - FILES_URL=https://$url_dify_api
+      - MAIL_TYPE=smtp
+      - MAIL_DEFAULT_SEND_FROM=$email_dify
+      - SMTP_SERVER=$smtp_email_dify
+      - SMTP_PORT=$porta_smtp_dify
+      - SMTP_USERNAME=$user_email_dify
+      - SMTP_PASSWORD=$senha_email_dify
+      - SMTP_USE_TLS=true
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=dify
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_TYPE=s3
+      - S3_ENDPOINT=https://$url_s3
+      - S3_BUCKET_NAME=dify
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - S3_REGION=us-east-1
+      - VECTOR_STORE=weaviate
+      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
+      - WEAVIATE_API_KEY=$token_weaviate
+      - SECRET_KEY=$secret_key
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dify_api.rule=Host(\`$url_dify_api\`)"
+        - "traefik.http.services.dify_api.loadbalancer.server.port=5001"
+        - "traefik.http.routers.dify_api.service=dify_api"
+        - "traefik.http.routers.dify_api.entrypoints=websecure"
+        - "traefik.http.routers.dify_api.tls.certresolver=letsencryptresolver"
+  dify_worker:
+    image: langgenius/dify-api:latest
+    command: worker
+    environment:
+      - CONSOLE_WEB_URL=https://$url_dify
+      - APP_WEB_URL=https://$url_dify
+      - CONSOLE_API_URL=https://$url_dify_api
+      - SERVICE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - FILES_URL=https://$url_dify_api
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=dify
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - STORAGE_TYPE=s3
+      - S3_ENDPOINT=https://$url_s3
+      - S3_BUCKET_NAME=dify
+      - S3_ACCESS_KEY=$S3_ACCESS_KEY
+      - S3_SECRET_KEY=$S3_SECRET_KEY
+      - S3_REGION=us-east-1
+      - VECTOR_STORE=weaviate
+      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
+      - WEAVIATE_API_KEY=$token_weaviate
+      - SECRET_KEY=$secret_key
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  dify_web:
+    image: langgenius/dify-web:latest
+    environment:
+      - CONSOLE_API_URL=https://$url_dify_api
+      - APP_API_URL=https://$url_dify_api
+      - NEXT_TELEMETRY_DISABLED=1
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dify_web.rule=Host(\`$url_dify\`)"
+        - "traefik.http.services.dify_web.loadbalancer.server.port=3000"
+        - "traefik.http.routers.dify_web.service=dify_web"
+        - "traefik.http.routers.dify_web.entrypoints=websecure"
+        - "traefik.http.routers.dify_web.tls.certresolver=letsencryptresolver"
+  dify_weaviate:
+    image: semitechnologies/weaviate:1.23.7
+    volumes:
+      - dify_weaviate:/var/lib/weaviate
+    networks:
+      - $nome_rede_interna
+    environment:
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=false
+      - AUTHENTICATION_APIKEY_ENABLED=true
+      - AUTHENTICATION_APIKEY_ALLOWED_KEYS=$token_weaviate
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - CLUSTER_HOSTNAME=node1
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+volumes:
+  dify_storage:
+  dify_weaviate:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="dify"
+  stack_editavel
+
+  echo -e "\e[97m🔍 Verificando serviços...\e[0m"
+  pull langgenius/dify-api:latest langgenius/dify-web:latest semitechnologies/weaviate:1.23.7
+  wait_stack dify_dify_api dify_dify_worker dify_dify_web dify_dify_weaviate
+
+  cd /root/dados_vps
+  cat > dados_dify <<EOL
+[ DIFY AI ]
+Dominio: https://$url_dify
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ DIFY AI ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_dify\e[0m"
+  echo -e "\e[33m🔗 API:\e[97m https://$url_dify_api\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7518,6 +7741,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}34.${reset} Instalar Ollama"
         echo -e "                                                                           ${azul}35.${reset} Instalar Anythingllm"
         echo -e "                                                                           ${azul}36.${reset} Instalar Nocodb"
+        echo -e "                                                                           ${azul}37.${reset} Instalar Dify"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7810,6 +8034,12 @@ exibir_menu() {
               verificar_stack "nocodb" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_nocodb
+                fi
+                ;;
+            37)
+              verificar_stack "dify" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_dify
                 fi
                 ;;
             *)
