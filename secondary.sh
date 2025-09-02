@@ -7823,7 +7823,7 @@ ferramenta_metabase() {
     key_secret=$(openssl rand -hex 32)
 
     ## Criando key Aleatória 32caracteres
-    key_salt=$(openssl rand -hex 16
+    key_salt=$(openssl rand -hex 16)
 
     cat > metabase.yaml <<EOL
 version: "3.7"
