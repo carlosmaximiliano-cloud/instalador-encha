@@ -482,6 +482,19 @@ msg_humhub(){
     echo ""
 }
 
+msg_wordpress() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗ ██████╗ ██████╗ ██████╗ ██████╗ ██████╗ ███████╗███████╗███████╗"
+    centralizar "██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝"
+    centralizar "██║ █╗ ██║██║   ██║██████╔╝██║  ██║██████╔╝██████╔╝█████╗  ███████╗███████╗"
+    centralizar "██║███╗██║██║   ██║██╔══██╗██║  ██║██╔═══╝ ██╔══██╗██╔══╝  ╚════██║╚════██║"
+    centralizar "╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝██║     ██║  ██║███████╗███████║███████║"
+    centralizar " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -7520,6 +7533,127 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_wordpress() {
+    msg_wordpress
+    dados
+
+    while true; do
+        echo -e "\n📍 Passo 1/2"
+        echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: loja.encha.ai): \e[0m" && read -r url_wordpress
+        echo ""
+
+        echo -e "\n📍 Passo 2/2"
+        echo -e "\e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
+        echo -en "🔗 \e[33mDigite o nome do Site para os arquivos (ex: lojaencha): \e[0m" && read -r nome_site_wordpress
+        echo ""
+
+        clear
+        msg_wordpress
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
+        echo -e "📁 \e[33mNome do Site:\e[97m $nome_site_wordpress\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
+    done
+
+    clear
+    echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
+    verificar_container_mysql || ferramenta_mysql
+    pegar_senha_mysql_da_stack
+    criar_banco_mysql_da_stack "$nome_site_wordpress"
+    verificar_container_redis || ferramenta_redis
+
+    cat > wordpress_${nome_site_wordpress}.yaml <<EOL
+version: "3.7"
+services:
+  wordpress_${nome_site_wordpress}:
+    image: wordpress:latest
+    volumes:
+      - wordpress_${nome_site_wordpress}:/var/www/html
+      - wordpress_${nome_site_wordpress}_php:/usr/local/etc/php
+    networks:
+      - $nome_rede_interna
+    environment:
+      - WORDPRESS_DB_NAME=${nome_site_wordpress}
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_PORT=3306
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=${senha_mysql}
+      - WP_REDIS_HOST=redis
+      - WP_REDIS_PORT=6379
+      - WP_REDIS_DATABASE=6
+      - VIRTUAL_HOST=${url_wordpress}
+      - WP_LOCALE=pt_BR
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.wordpress_${nome_site_wordpress}.rule=Host(\`${url_wordpress}\`)"
+        - "traefik.http.routers.wordpress_${nome_site_wordpress}.entrypoints=websecure"
+        - "traefik.http.routers.wordpress_${nome_site_wordpress}.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.wordpress_${nome_site_wordpress}.service=wordpress_${nome_site_wordpress}"
+        - "traefik.http.services.wordpress_${nome_site_wordpress}.loadbalancer.server.port=80"
+        - "traefik.http.services.wordpress_${nome_site_wordpress}.loadbalancer.passHostHeader=true"
+volumes:
+  wordpress_${nome_site_wordpress}:
+    name: wordpress_${nome_site_wordpress}
+    external: true
+  wordpress_${nome_site_wordpress}_php:
+    name: wordpress_${nome_site_wordpress}_php
+    external: true
+networks:
+  ${nome_rede_interna}:
+    external: true
+EOL
+
+    STACK_NAME="wordpress_${nome_site_wordpress}"
+    stack_editavel
+    wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
+
+    echo "Aguardando para configurar o php.ini..."
+    sleep 20
+    
+    cp /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini
+    caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
+    sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
+    sed -i "s/^max_execution_time =.*/max_execution_time = 450/" "$caminho_php_ini"
+    sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
+    
+    echo "Aguardando para configurar o wp-config.php..."
+    sleep 20
+
+    caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data/wp-config.php"
+    if [ -f "$caminho_wp_config" ]; then
+        sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \
+define( 'WP_REDIS_HOST', 'redis' );\n\
+define( 'WP_REDIS_PORT', 6379 );\n" "$caminho_wp_config"
+        docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
+    else
+        echo "Arquivo wp-config.php não encontrado, pule a configuração do Redis."
+    fi
+
+    cd /root/dados_vps
+    cat > dados_wordpress_${nome_site_wordpress} <<EOL
+[ WORDPRESS ]
+Dominio: https://${url_wordpress}
+Arquivos do site: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data
+Arquivos do php: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data
+EOL
+    cd
+
+    msg_resumo_informacoes
+    echo -e "\e[32m[ WORDPRESS ]\e[0m\n"
+    echo -e "\e[33m🌐 Domínio:\e[97m https://${url_wordpress}\e[0m"
+    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7558,7 +7692,7 @@ exibir_menu() {
         echo -e "${azul}07.${reset} Instalar Minio                   ${azul}34.${reset} Instalar Anythingllm"
         echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
         echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
-        echo -e "${azul}10.${reset} Instalar Odoo"
+        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
         echo -e "${azul}11.${reset} Verificar status dos serviços"
         echo -e "${azul}12.${reset} Sair do menu"
         echo -e "${azul}13.${reset} Instalar pgAdmin"
@@ -7853,6 +7987,12 @@ exibir_menu() {
                     ferramenta_humhub 
                 fi
                 ;;
+            37)
+                verificar_stack "wordpress" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_wordpress
+                  fi
+                  ;;
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
