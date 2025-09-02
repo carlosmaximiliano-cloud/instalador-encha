@@ -9236,208 +9236,554 @@ EOL
 }
 
 ferramenta_supabase() {
-    msg_supabase
-    dados
+  msg_supabase
+  dados
 
-    # Função para gerar chaves JWT
-    generate_jwt_tokens() {
-        if ! command -v openssl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
-            echo "openssl e jq precisam estar instalados." >&2
-            return 1
-        fi
-        
-        local secret=$(openssl rand -hex 32)
-        local payload_service_key='{"role":"service_role","iss":"supabase","iat":1715050800,"exp":1872817200}'
-        local payload_anon_key='{"role":"anon","iss":"supabase","iat":1715050800,"exp":1872817200}'
-        local header=$(echo -n '{"alg":"HS256","typ":"JWT"}' | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-        
-        local payload_service_b64=$(echo -n "$payload_service_key" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-        local payload_anon_b64=$(echo -n "$payload_anon_key" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-        
-        local sig_service=$(echo -n "$header.$payload_service_b64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-        local sig_anon=$(echo -n "$header.$payload_anon_b64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-        
-        local token_service="$header.$payload_service_b64.$sig_service"
-        local token_anon="$header.$payload_anon_b64.$sig_anon"
-        
-        echo "$secret $token_service $token_anon"
-    }
+  generate_jwt_tokens() {
+    # Verificar a disponibilidade dos comandos necessários e instalá-los se necessário
+    if ! command -v openssl &> /dev/null; then
+      echo "O comando 'openssl' não está disponível. Por favor, instale-o manualmente."
+      return 1
+    fi
 
-    # Gerar chaves antes do loop para exibição
-    read JWT_Key SERVICE_KEY ANON_KEY < <(generate_jwt_tokens)
+    if ! command -v jq &> /dev/null; then
+      echo "O comando 'jq' não está disponível. Por favor, instale-o manualmente."
+      return 1
+    fi
 
-    while true; do
-        echo -e "\n📍 Passo 1/3"
-        echo -en "🔗 \e[33mDigite o domínio para o Supabase (ex: supabase.encha.ai): \e[0m" && read -r url_supabase
-        echo ""
-        echo -e "\n📍 Passo 2/3"
-        echo -en "👤 \e[33mDigite o usuário para o painel do Supabase: \e[0m" && read -r user_supabase
-        echo ""
-        echo -e "\n📍 Passo 3/3"
-        echo -e "🔑 \e[33mDigite a senha para o usuário (sem caracteres especiais): \e[0m" && read -r pass_supabase
-        echo ""
-        
-        clear
-        msg_supabase
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Supabase:\e[97m $url_supabase\e[0m"
-        echo -e "👤 \e[33mUsuário do Painel:\e[97m $user_supabase\e[0m"
-        echo -e "🔑 \e[33mSenha do Painel:\e[97m *********\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "\e[33mAs seguintes chaves serão geradas automaticamente:\e[0m"
-        echo -e "🔑 \e[33mJWT Secret:\e[97m ${JWT_Key:0:15}...\e[0m"
-        echo -e "🔑 \e[33mAnon Key:\e[97m ${ANON_KEY:0:15}...\e[0m"
-        echo -e "🔑 \e[33mService Role Key:\e[97m ${SERVICE_KEY:0:15}...\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_supabase; fi
-    done
+    # Definir os payloads dos JWTs
+    payload_service_key=$(echo '{
+      "role": "service_role",
+      "iss": "supabase",
+      "iat": 1715050800,
+      "exp": 1872817200
+    }' | jq -c)
+
+    payload_anon_key=$(echo '{
+      "role": "anon",
+      "iss": "supabase",
+      "iat": 1715050800,
+      "exp": 1872817200
+    }' | jq -c)
+
+    # Gerar uma chave secreta aleatória e segura
+    secret=$(openssl rand -hex 20)
+
+    # Codificar o header em base64url
+    header=$(echo -n '{"alg":"HS256","typ":"JWT"}' | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+    
+    # Codificar os payloads em base64url
+    payload_service_key_base64=$(echo -n "$payload_service_key" | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+    payload_anon_key_base64=$(echo -n "$payload_anon_key" | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+
+    # Criar as assinaturas dos tokens usando a mesma chave secreta
+    signature_service_key=$(echo -n "$header.$payload_service_key_base64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+    signature_anon_key=$(echo -n "$header.$payload_anon_key_base64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+
+    # Combinar as partes dos tokens
+    token_service_key="$header.$payload_service_key_base64.$signature_service_key"
+    token_anon_key="$header.$payload_anon_key_base64.$signature_anon_key"
+
+    # Retornar os valores gerados como uma string separada por espaços
+    echo "$secret $token_service_key $token_anon_key"
+  }
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o Dominio para o Supabase (ex: supabase.oriondesign.art.br): \e[0m" && read -r url_supabase
+    echo ""
+
+    echo -e "\n📍 Passo 2/3"
+    echo -en "👤 \e[33mDigite o Usuario para o Supabase (ex: OrionDesign): \e[0m" && read -r user_supabase
+    echo ""
+
+    echo -e "\n📍 Passo 3/3"
+    echo -e "\e[33m--> Sem NENHUM caracteres especiais, tais como: @\!#$ entre outros"
+    echo -en "🔑 \e[33mDigite a Senha do usuario para o Supabase (ex: Senha123): \e[0m" && read -r pass_supabase
+    echo ""
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Supabase...\e[0m"
-    verificar_minio || ferramenta_minio
-    pegar_senha_minio
-    criar_bucket.minio "supabase"
+    msg_supabase
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio do Supabase:\e[97m $url_supabase\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_supabase\e[0m"
+    echo -e "🔑 \e[33mSenha:\e[97m $pass_supabase\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_supabase; fi
+  done
 
-    echo "Baixando e configurando arquivos do Supabase..."
-    {
-      rm -rf /tmp/supabase_setup && mkdir -p /tmp/supabase_setup
-      cd /tmp/supabase_setup
-      git clone --depth 1 https://github.com/supabase/supabase.git . > /dev/null 2>&1
-      cd docker
-      rm -f .env.example .gitignore README.md docker-compose.s3.yml docker-compose.yml reset.sh
-      mkdir -p volumes/db/data volumes/storage
-      mv volumes /root/supabase_volumes
-      cd /root
-      rm -rf /tmp/supabase_setup
-    } &> /dev/null
-    echo "Arquivos de configuração preparados."
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Supabase...\e[0m"
+  verificar_docker_e_portainer_traefik || return
+  verificar_minio || ferramenta_minio
 
-    Senha_Postgres=$(openssl rand -hex 16)
-    Logflare_key=$(openssl rand -hex 16)
-    SECRET_KEY_BASE=$(openssl rand -hex 32)
-    VAULT_ENC_KEY=$(openssl rand -base64 32 | tr -d '\n' | cut -c1-32)
-    
-    cat > supabase.yaml <<EOL
+  # Gera JWTs
+  result=$(generate_jwt_tokens)
+  if [[ -z "$result" ]]; then
+    echo "❌ Erro: Falha ao gerar os tokens JWT. Verifique as dependências (openssl, jq)."
+    msg_retorno_menu
+    return
+  fi
+  read secret token_service_key token_anon_key <<< "$result"
+  
+  # Gera outras chaves
+  Senha_Postgres=$(openssl rand -hex 16)
+  Logflare_key=$(openssl rand -hex 16)
+  Logflare_key_public=$(openssl rand -hex 16)
+  SECRET_KEY_BASE=$(openssl rand -hex 32)
+  VAULT_ENC_KEY=$(openssl rand -base64 32 | tr -d '\n' | cut -c1-32)
+  S3_ACCESS_KEY=$(grep -i "Usuário:" /root/dados_vps/dados_minio | awk '{print $2}')
+  S3_SECRET_KEY=$(grep -i "Senha:" /root/dados_vps/dados_minio | awk '{print $2}')
+  url_s3=$(grep -i "Dominio do S3:" /root/dados_vps/dados_minio | awk '{print $3}')
+
+  # Cria o kong.yml
+  mkdir -p /root/supabase${1:+_$1}/docker/volumes/api
+  cat > /root/supabase${1:+_$1}/docker/volumes/api/kong.yml <<EOL
+_format_version: '2.1'
+_transform: true
+
+consumers:
+  - username: DASHBOARD
+  - username: anon
+    keyauth_credentials:
+      - key: $token_anon_key
+  - username: service_role
+    keyauth_credentials:
+      - key: $token_service_key
+
+acls:
+  - consumer: anon
+    group: anon
+  - consumer: service_role
+    group: admin
+
+basicauth_credentials:
+  - consumer: DASHBOARD
+    username: '$user_supabase'
+    password: '$pass_supabase'
+
+services:
+  - name: auth-v1-open
+    url: http://auth${1:+_$1}:9999/verify
+    routes:
+      - name: auth-v1-open
+        strip_path: true
+        paths:
+          - /auth/v1/verify
+    plugins:
+      - name: cors
+  - name: auth-v1-open-callback
+    url: http://auth${1:+_$1}:9999/callback
+    routes:
+      - name: auth-v1-open-callback
+        strip_path: true
+        paths:
+          - /auth/v1/callback
+    plugins:
+      - name: cors
+  - name: auth-v1-open-authorize
+    url: http://auth${1:+_$1}:9999/authorize
+    routes:
+      - name: auth-v1-open-authorize
+        strip_path: true
+        paths:
+          - /auth/v1/authorize
+    plugins:
+      - name: cors
+  - name: auth-v1
+    _comment: 'GoTrue: /auth/v1/* -> http://auth${1:+_$1}:9999/*'
+    url: http://auth${1:+_$1}:9999/
+    routes:
+      - name: auth-v1-all
+        strip_path: true
+        paths:
+          - /auth/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon
+  - name: rest-v1
+    _comment: 'PostgREST: /rest/v1/* -> http://rest${1:+_$1}:3000/*'
+    url: http://rest${1:+_$1}:3000/
+    routes:
+      - name: rest-v1-all
+        strip_path: true
+        paths:
+          - /rest/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon
+  - name: graphql-v1
+    _comment: 'PostgREST: /graphql/v1/* -> http://rest${1:+_$1}:3000/rpc/graphql'
+    url: http://rest${1:+_$1}:3000/rpc/graphql
+    routes:
+      - name: graphql-v1-all
+        strip_path: true
+        paths:
+          - /graphql/v1
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - Content-Profile:graphql_public
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon
+  - name: realtime-v1-ws
+    _comment: 'Realtime: /realtime/v1/* -> ws://realtime${1:+_$1}:4000/socket/*'
+    url: http://realtime${1:+_$1}:4000/socket
+    protocol: ws
+    routes:
+      - name: realtime-v1-ws
+        strip_path: true
+        paths:
+          - /realtime/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon
+  - name: realtime-v1-rest
+    _comment: 'Realtime: /realtime/v1/* -> ws://realtime${1:+_$1}:4000/socket/*'
+    url: http://realtime${1:+_$1}:4000/api
+    protocol: http
+    routes:
+      - name: realtime-v1-rest
+        strip_path: true
+        paths:
+          - /realtime/v1/api
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+            - anon
+  - name: storage-v1
+    _comment: 'Storage: /storage/v1/* -> http://storage${1:+_$1}:5000/*'
+    url: http://storage${1:+_$1}:5000/
+    routes:
+      - name: storage-v1-all
+        strip_path: true
+        paths:
+          - /storage/v1/
+    plugins:
+      - name: cors
+  - name: functions-v1
+    _comment: 'Edge Functions: /functions/v1/* -> http://functions${1:+_$1}:9000/*'
+    url: http://functions${1:+_$1}:9000/
+    routes:
+      - name: functions-v1-all
+        strip_path: true
+        paths:
+          - /functions/v1/
+    plugins:
+      - name: cors
+  - name: analytics-v1
+    _comment: 'Analytics: /analytics/v1/* -> http://logflare${1:+_$1}:4000/*'
+    url: http://analytics${1:+_$1}:4000/
+    routes:
+      - name: analytics-v1-all
+        strip_path: true
+        paths:
+          - /analytics/v1/
+  - name: meta
+    _comment: 'pg-meta: /pg/* -> http://meta${1:+_$1}:8080/*'
+    url: http://meta${1:+_$1}:8080/
+    routes:
+      - name: meta-all
+        strip_path: true
+        paths:
+          - /pg/
+    plugins:
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - admin
+  - name: dashboard
+    _comment: 'Studio: /* -> http://studio${1:+_$1}:3000/*'
+    url: http://studio${1:+_$1}:3000/
+    routes:
+      - name: dashboard-all
+        strip_path: true
+        paths:
+          - /
+    plugins:
+      - name: cors
+      - name: basic-auth
+        config:
+          hide_credentials: true
+EOL
+  
+  # Cria os arquivos de configuração do banco de dados (ajustado para o novo caminho)
+  mkdir -p /root/supabase${1:+_$1}/docker/volumes/db
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/realtime.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/webhooks.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/roles.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/jwt.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/_supabase.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/logs.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  cat > /root/supabase${1:+_$1}/docker/volumes/db/pooler.sql <<EOL
+-- Este é um arquivo de exemplo
+EOL
+  mkdir -p /root/supabase${1:+_$1}/docker/volumes/logs
+  cat > /root/supabase${1:+_$1}/docker/volumes/logs/vector.yml <<EOL
+# Este é um arquivo de exemplo
+EOL
+  mkdir -p /root/supabase${1:+_$1}/docker/volumes/pooler
+  cat > /root/supabase${1:+_$1}/docker/volumes/pooler/pooler.exs <<EOL
+# Este é um arquivo de exemplo
+EOL
+  
+  
+  
+  cat > supabase${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
-  studio:
-    image: supabase/studio:20240726-061008-0524c52
+
+  studio${1:+_$1}:
+    image: supabase/studio:2025.06.30-sha-6f5982d
     networks:
       - $nome_rede_interna
     environment:
-      - SUPABASE_PUBLIC_URL=https://$url_supabase
-      - SUPABASE_ANON_KEY=$ANON_KEY
-      - SUPABASE_SERVICE_KEY=$SERVICE_KEY
-      - STUDIO_PG_META_URL=http://meta:8080
+      - HOSTNAME=0.0.0.0
+      - DEBUG=next:*
+      - NEXT_PUBLIC_ENABLE_LOGS=true
+      - NEXT_ANALYTICS_BACKEND_PROVIDER=postgres
+      - DEFAULT_ORGANIZATION_NAME=$nome_servidor
+      - DEFAULT_PROJECT_NAME=Supabase
       - POSTGRES_PASSWORD=$Senha_Postgres
+      - STUDIO_PG_META_URL=http://meta${1:+_$1}:8080
+      - SUPABASE_URL=http://kong${1:+_$1}:8000
+      - SUPABASE_PUBLIC_URL=https://$url_supabase
+      - LOGFLARE_API_KEY=$Logflare_key
+      - LOGFLARE_URL=http://analytics${1:+_$1}:4000
+      - LOGFLARE_PRIVATE_ACCESS_TOKEN=$Logflare_key
+      - SUPABASE_ANON_KEY=$token_anon_key
+      - SUPABASE_SERVICE_KEY=$token_service_key
+      - AUTH_JWT_SECRET=$secret
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  kong:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.supabase${1:+_$1}.rule=Host(\`$url_supabase\`)"
+        - "traefik.http.services.supabase${1:+_$1}.loadbalancer.server.port=3000"
+        - "traefik.http.routers.supabase${1:+_$1}.service=supabase${1:+_$1}"
+        - "traefik.http.routers.supabase${1:+_$1}.entrypoints=websecure"
+        - "traefik.http.routers.supabase${1:+_$1}.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.supabase${1:+_$1}.tls=true"
+
+  kong${1:+_$1}:
     image: kong:2.8.1
     volumes:
-      - ./supabase_volumes/api/kong.yml:/etc/kong/kong.yml:ro
+      - /root/supabase${1:+_$1}/docker/volumes/api/kong.yml:/etc/kong/kong.yml:ro
     networks:
       - $nome_rede_interna
     environment:
       - KONG_DATABASE=off
       - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
       - KONG_DNS_ORDER=LAST,A,CNAME
-      - KONG_PLUGINS=request-transformer,cors,key-auth,acl
+      - KONG_PLUGINS=request-transformer,cors,key-auth,acl,basic-auth
+      - KONG_NGINX_PROXY_PROXY_BUFFER_SIZE=160k
+      - KONG_NGINX_PROXY_PROXY_BUFFERS=64 160k
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.supabase.rule=Host(\`$url_supabase\`)"
-        - "traefik.http.services.supabase.loadbalancer.server.port=8000"
-        - "traefik.http.routers.supabase.service=supabase"
-        - "traefik.http.routers.supabase.entrypoints=websecure"
-        - "traefik.http.routers.supabase.tls.certresolver=letsencryptresolver"
-  auth:
+        constraints:
+          - node.role == manager
+  
+  auth${1:+_$1}:
     image: supabase/gotrue:v2.176.1
     networks:
       - $nome_rede_interna
     environment:
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
       - API_EXTERNAL_URL=https://$url_supabase
       - GOTRUE_DB_DRIVER=postgres
-      - GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:$Senha_Postgres@db:5432/postgres
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:$Senha_Postgres@db${1:+_$1}:5432/postgres
       - GOTRUE_SITE_URL=https://$url_supabase
-      - GOTRUE_JWT_SECRET=$JWT_Key
+      - GOTRUE_DISABLE_SIGNUP=false
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
+      - GOTRUE_JWT_EXP=31536000
+      - GOTRUE_JWT_SECRET=$secret
+      - GOTRUE_EXTERNAL_EMAIL_ENABLED=false
+      - GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED=false
+      - GOTRUE_MAILER_URLPATHS_INVITE=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_RECOVERY=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE=/auth/v1/verify
+      - GOTRUE_EXTERNAL_PHONE_ENABLED=false
+      - GOTRUE_SMS_AUTOCONFIRM=false
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  rest:
+        constraints:
+          - node.role == manager
+
+  rest${1:+_$1}:
     image: postgrest/postgrest:v12.2.12
+    command: "postgrest"
     networks:
       - $nome_rede_interna
     environment:
-      - PGRST_DB_URI=postgres://authenticator:$Senha_Postgres@db:5432/postgres
+      - PGRST_DB_URI=postgres://authenticator:$Senha_Postgres@db${1:+_$1}:5432/postgres
       - PGRST_DB_SCHEMAS=public,storage,graphql_public
       - PGRST_DB_ANON_ROLE=anon
-      - PGRST_JWT_SECRET=$JWT_Key
+      - PGRST_JWT_SECRET=$secret
+      - PGRST_APP_SETTINGS_JWT_SECRET=$secret
+      - PGRST_APP_SETTINGS_JWT_EXP=31536000
+      - PGRST_DB_USE_LEGACY_GUCS="false"
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  realtime:
+        constraints:
+          - node.role == manager
+
+  realtime${1:+_$1}:
     image: supabase/realtime:v2.34.47
     networks:
       - $nome_rede_interna
     environment:
       - PORT=4000
-      - API_JWT_SECRET=$JWT_Key
-      - DB_HOST=db
+      - API_JWT_SECRET=$secret
+      - SECRET_KEY_BASE=$SECRET_KEY_BASE
+      - APP_NAME=realtime
+      - DB_HOST=db${1:+_$1}
       - DB_PORT=5432
       - DB_USER=supabase_admin
       - DB_PASSWORD=$Senha_Postgres
       - DB_NAME=postgres
+      - DB_AFTER_CONNECT_QUERY='SET search_path TO _realtime'
+      - DB_ENC_KEY=supabaserealtime
+      - ERL_AFLAGS=-proto_dist inet_tcp
+      - DNS_NODES="''"
+      - RLIMIT_NOFILE=10000
+      - SEED_SELF_HOST=true
+      - RUN_JANITOR=true
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  storage:
+        constraints:
+          - node.role == manager
+
+  storage${1:+_$1}:
     image: supabase/storage-api:v1.22.17
     volumes:
-      - /root/supabase_volumes/storage:/var/lib/storage
+      - /root/supabase${1:+_$1}/docker/volumes/storage:/var/lib/storage:z
     networks:
       - $nome_rede_interna
     environment:
-      - ANON_KEY=$ANON_KEY
-      - SERVICE_KEY=$SERVICE_KEY
-      - POSTGREST_URL=http://rest:3000
-      - PGRST_JWT_SECRET=$JWT_Key
-      - DATABASE_URL=postgres://supabase_storage_admin:$Senha_Postgres@db:5432/postgres
+      - ANON_KEY=$token_anon_key
+      - SERVICE_KEY=$token_service_key
+      - POSTGREST_URL=http://rest${1:+_$1}:3000
+      - PGRST_JWT_SECRET=$secret
+      - DATABASE_URL=postgres://supabase_storage_admin:$Senha_Postgres@db${1:+_$1}:5432/postgres
       - FILE_SIZE_LIMIT=52428800
       - STORAGE_BACKEND=s3
-      - GLOBAL_S3_BUCKET=supabase
+      - GLOBAL_S3_BUCKET=supabase${1:+-$1}
       - GLOBAL_S3_ENDPOINT=https://$url_s3
+      - GLOBAL_S3_PROTOCOL=https
+      - GLOBAL_S3_FORCE_PATH_STYLE=true
       - AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY
       - AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
-      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_DEFAULT_REGION=eu-south
+      - FILE_STORAGE_BACKEND_PATH=/var/lib/storage
+      - ENABLE_IMAGE_TRANSFORMATION="true"
+      - IMGPROXY_URL=http://imgproxy${1:+_$1}:5001
       - TENANT_ID=stub
+      - REGION=eu-south
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  meta:
+        constraints:
+          - node.role == manager
+
+  imgproxy${1:+_$1}:
+    image: darthsim/imgproxy:v3.8.0
+    networks:
+      - $nome_rede_interna
+    environment:
+      - IMGPROXY_BIND=:5001
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
+      - IMGPROXY_USE_ETAG=true
+      - IMGPROXY_ENABLE_WEBP_DETECTION=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  meta${1:+_$1}:
     image: supabase/postgres-meta:v0.89.3
     networks:
       - $nome_rede_interna
     environment:
       - PG_META_PORT=8080
-      - PG_META_DB_HOST=db
+      - PG_META_DB_HOST=db${1:+_$1}
       - PG_META_DB_PORT=5432
       - PG_META_DB_NAME=postgres
       - PG_META_DB_USER=supabase_admin
@@ -9446,51 +9792,390 @@ services:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
-  db:
-    image: supabase/postgres:15.8.1.060
-    volumes:
-      - /root/supabase_volumes/db/data:/var/lib/postgresql/data
+        constraints:
+          - node.role == manager
+
+  functions${1:+_$1}:
+    image: supabase/edge-runtime:v1.67.4
     networks:
       - $nome_rede_interna
     environment:
-      - POSTGRES_PASSWORD=$Senha_Postgres
+      - VERIFY_JWT="false"
+      - JWT_SECRET=$secret
+      - SUPABASE_URL=http://kong${1:+_$1}:8000
+      - SUPABASE_ANON_KEY=$token_anon_key
+      - SUPABASE_SERVICE_ROLE_KEY=$token_service_key
+      - SUPABASE_DB_URL=postgresql://postgres:$Senha_Postgres@db${1:+_$1}:5432/postgres
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
+
+  analytics${1:+_$1}:
+    image: supabase/logflare:1.14.2
+    networks:
+      - $nome_rede_interna
+    environment:
+      - DB_USERNAME=supabase_admin
+      - DB_DATABASE=_supabase
+      - DB_HOSTNAME=db${1:+_$1}
+      - DB_PORT=5432
+      - DB_PASSWORD=$Senha_Postgres
+      - DB_SCHEMA=_analytics
+      - POSTGRES_BACKEND_URL=postgresql://supabase_admin:$Senha_Postgres@db${1:+_$1}:5432/_supabase
+      - POSTGRES_BACKEND_SCHEMA=_analytics
+      - LOGFLARE_NODE_HOST=127.0.0.1
+      - LOGFLARE_API_KEY=$Logflare_key
+      - LOGFLARE_PUBLIC_ACCESS_TOKEN=$Logflare_key_public
+      - LOGFLARE_PRIVATE_ACCESS_TOKEN=$Logflare_key
+      - LOGFLARE_SINGLE_TENANT=true
+      - LOGFLARE_SUPABASE_MODE=true
+      - LOGFLARE_MIN_CLUSTER_SIZE=1
+      - LOGFLARE_FEATURE_FLAG_OVERRIDE=multibackend=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  db${1:+_$1}:
+    image: supabase/postgres:15.8.1.060
+    volumes:
+      - /root/supabase${1:+_$1}/docker/volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/data:/var/lib/postgresql/data:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      - /root/supabase${1:+_$1}/docker/volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - supabase${1:+_$1}_db_config:/etc/postgresql-custom
+    networks:
+      - $nome_rede_interna
+    environment:
+      - POSTGRES_HOST=/var/run/postgresql
+      - PGPORT=5432
+      - POSTGRES_PORT=5432
+      - PGPASSWORD=$Senha_Postgres
+      - POSTGRES_PASSWORD=$Senha_Postgres
+      - POSTGRES_DB=postgres
+      - PGDATABASE=postgres
+      - JWT_SECRET=$secret
+      - JWT_EXP=31536000
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  vector${1:+_$1}:
+    image: timberio/vector:0.28.1-alpine
+    volumes:
+      - /root/supabase${1:+_$1}/docker/volumes/logs/vector.yml:/etc/vector/vector.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - $nome_rede_interna
+    environment:
+      - LOGFLARE_API_KEY=$Logflare_key
+      - LOGFLARE_PUBLIC_ACCESS_TOKEN=$Logflare_key_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  supavisor${1:+_$1}:
+    image: supabase/supavisor:2.5.1
+    networks:
+      - $nome_rede_interna
+    environment:
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=$Senha_Postgres
+      - DATABASE_URL=ecto://supabase_admin:$Senha_Postgres@db${1:+_$1}:5432/_supabase
+      - CLUSTER_POSTGRES=true
+      - API_JWT_SECRET=$secret
+      - METRICS_JWT_SECRET=$secret
+      - SECRET_KEY_BASE=$SECRET_KEY_BASE
+      - VAULT_ENC_KEY=$VAULT_ENC_KEY
+      - REGION=local
+      - ERL_AFLAGS=-proto_dist inet_tcp
+      - POOLER_TENANT_ID=1
+      - POOLER_DEFAULT_POOL_SIZE=20
+      - POOLER_MAX_CLIENT_CONN=100
+      - POOLER_POOL_MODE=transaction
+      - DB_POOL_SIZE=5
+      - PORT=4000
+    volumes:
+      - /root/supabase${1:+_$1}/docker/volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+volumes:
+  supabase${1:+_$1}_db_config:
+    external: true
+    name: supabase${1:+_$1}_db_config
+  supabase${1:+_$1}_studio_data:
+    external: true
+    name: supabase${1:+_$1}_studio_data
+  supabase${1:+_$1}_kong_data:
+    external: true
+    name: supabase${1:+_$1}_kong_data
+  supabase${1:+_$1}_auth_data:
+    external: true
+    name: supabase${1:+_$1}_auth_data
+  supabase${1:+_$1}_rest_data:
+    external: true
+    name: supabase${1:+_$1}_rest_data
+  supabase${1:+_$1}_realtime_data:
+    external: true
+    name: supabase${1:+_$1}_realtime_data
+  supabase${1:+_$1}_storage_data:
+    external: true
+    name: supabase${1:+_$1}_storage_data
+  supabase${1:+_$1}_imgproxy_data:
+    external: true
+    name: supabase${1:+_$1}_imgproxy_data
+  supabase${1:+_$1}_meta_data:
+    external: true
+    name: supabase${1:+_$1}_meta_data
+  supabase${1:+_$1}_functions_data:
+    external: true
+    name: supabase${1:+_$1}_functions_data
+  supabase${1:+_$1}_analytics_data:
+    external: true
+    name: supabase${1:+_$1}_analytics_data
+  supabase${1:+_$1}_db_data:
+    external: true
+    name: supabase${1:+_$1}_db_data
+  supabase${1:+_$1}_vector_data:
+    external: true
+    name: supabase${1:+_$1}_vector_data
+  supabase${1:+_$1}_supavisor_data:
+    external: true
+    name: supabase${1:+_$1}_supavisor_data
+
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
 
-    STACK_NAME="supabase"
-    stack_editavel
-    wait_stack "supabase_studio" "supabase_kong" "supabase_auth" "supabase_rest" "supabase_realtime" "supabase_storage" "supabase_meta" "supabase_db"
-
-    cd /root/dados_vps
-    cat > dados_supabase <<EOL
-[ SUPABASE ]
-Dominio: https://$url_supabase
-Usuario Painel: $user_supabase
-Senha Painel: $pass_supabase
-JWT Secret: $JWT_Key
-Anon Key: $ANON_KEY
-Service Role Key: $SERVICE_KEY
-EOL
-    cd
-    
-    msg_resumo_informacoes
-    echo -e "\e[32m[ SUPABASE ]\e[0m\n"
-    echo -e "🌐 \e[33mDomínio:\e[97m https://$url_supabase\e[0m"
-    echo -e "👤 \e[33mUsuário Painel:\e[97m $user_supabase\e[0m"
-    echo -e "🔑 \e[33mSenha Painel:\e[97m $pass_supabase\e[0m"
-    echo -e "🔑 \e[33mJWT Secret:\e[97m $JWT_Key\e[0m"
-    echo -e "🔑 \e[33mAnon Key:\e[97m $ANON_KEY\e[0m"
-    echo -e "🔑 \e[33mService Role Key:\e[97m $SERVICE_KEY\e[0m"
+  if [ $? -eq 0 ]; then
+    echo -e "✅ Stack do Supabase criada com sucesso."
+  else
+    echo -e "❌ Falha ao criar a stack do Supabase."
     msg_retorno_menu
+    return
+  fi
+
+  STACK_NAME="supabase${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m🔍 Verificando o serviço...\e[0m"
+  wait_stack "supabase${1:+_$1}_studio${1:+_$1}" "supabase${1:+_$1}_kong${1:+_$1}" "supabase${1:+_$1}_auth${1:+_$1}" "supabase${1:+_$1}_rest${1:+_$1}" "supabase${1:+_$1}_realtime${1:+_$1}" "supabase${1:+_$1}_storage${1:+_$1}" "supabase${1:+_$1}_imgproxy${1:+_$1}" "supabase${1:+_$1}_meta${1:+_$1}" "supabase${1:+_$1}_functions${1:+_$1}" "supabase${1:+_$1}_analytics${1:+_$1}" "supabase${1:+_$1}_db${1:+_$1}" "supabase${1:+_$1}_vector${1:+_$1}" "supabase${1:+_$1}_supavisor${1:+_$1}"
+
+  cd /root/dados_vps
+  cat > dados_supabase${1:+_$1} <<EOL
+[ SUPABASE ]
+
+Dominio do Supabase: https://$url_supabase
+
+Usuario: $user_supabase
+
+Senha: $pass_supabase
+
+JWT Key: $secret
+
+Anon Key: $token_anon_key
+
+Service Key: $token_service_key
+EOL
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ SUPABASE ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_supabase\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_supabase\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_supabase\e[0m"
+  echo -e "\e[33mJWT Key:\e[97m $secret\e[0m"
+  echo -e "\e[33mAnon Key:\e[97m $token_anon_key\e[0m"
+  echo -e "\e[33mService Key:\e[97m $token_service_key\e[0m"
+
+  msg_retorno_menu
 }
+
+# ferramenta_supabase() {
+#   msg_supabase
+#   dados
+
+#   generate_jwt_tokens() {
+#     # Verificar a disponibilidade dos comandos necessários e instalá-los se necessário
+#     if ! command -v openssl &> /dev/null; then
+#         echo "O comando 'openssl' não está disponível. Tentando instalar..."
+#         if [[ "$(uname)" == "Darwin" ]]; then
+#             # macOS
+#             brew install openssl
+#         elif [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
+#             # Linux
+#             if [[ -f /etc/redhat-release ]]; then
+#                 # Red Hat, CentOS, Fedora
+#                 sudo yum install -y openssl
+#             elif [[ -f /etc/debian_version ]]; then
+#                 # Debian, Ubuntu
+#                 sudo apt-get install -y openssl
+#             else
+#                 echo "Não foi possível identificar a distribuição Linux. Por favor, instale o OpenSSL manualmente."
+#                 return 1
+#             fi
+#         else
+#             echo "Sistema operacional não suportado. Por favor, instale o OpenSSL manualmente."
+#             return 1
+#         fi
+#     fi
+
+#     if ! command -v jq &> /dev/null; then
+#         echo "O comando 'jq' não está disponível. Tentando instalar..."
+#         if [[ "$(uname)" == "Darwin" ]]; then
+#             # macOS
+#             brew install jq
+#         elif [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
+#             # Linux
+#             if [[ -f /etc/redhat-release ]]; then
+#                 # Red Hat, CentOS, Fedora
+#                 sudo yum install -y jq
+#             elif [[ -f /etc/debian_version ]]; then
+#                 # Debian, Ubuntu
+#                 sudo apt-get install -y jq
+#             else
+#                 echo "Não foi possível identificar a distribuição Linux. Por favor, instale o jq manualmente."
+#                 return 1
+#             fi
+#         else
+#             echo "Sistema operacional não suportado. Por favor, instale o jq manualmente."
+#             return 1
+#         fi
+#     fi
+
+# # Definir os payloads dos JWTs
+#     payload_service_key=$(echo '{
+#       "role": "service_role",
+#       "iss": "supabase",
+#       "iat": 1715050800,
+#       "exp": 1872817200
+#     }' | jq .)
+
+    
+#     payload_anon_key=$(echo '{
+#       "role": "anon",
+#       "iss": "supabase",
+#       "iat": 1715050800,
+#       "exp": 1872817200
+#     }' | jq .)
+
+#     # Gerar uma chave secreta aleatória e segura
+#     secret=$(openssl rand -hex 20)
+
+#     # Codificar o header em base64url
+#     header=$(echo -n '{"alg":"HS256","typ":"JWT"}' | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+    
+#     # Codificar os payloads em base64url
+#     payload_service_key_base64=$(echo -n "$payload_service_key" | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+#     payload_anon_key_base64=$(echo -n "$payload_anon_key" | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+
+#     # Criar as assinaturas dos tokens usando a mesma chave secreta
+#     signature_service_key=$(echo -n "$header.$payload_service_key_base64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+#     signature_anon_key=$(echo -n "$header.$payload_anon_key_base64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 | tr -d '=' | tr '+/' '-_' | tr -d '\n')
+
+#     # Combinar as partes dos tokens
+#     token_service_key="$header.$payload_service_key_base64.$signature_service_key"
+#     token_anon_key="$header.$payload_anon_key_base64.$signature_anon_key"
+
+#     # Retornar os valores gerados como uma string separada por espaços
+#     echo "$secret $token_service_key $token_anon_key"
+#   }
+
+#   # Chamar a função e armazenar o retorno em uma variável
+#   result=$(generate_jwt_tokens)
+
+#   # Verificar se o resultado está vazio
+#   if [[ -z "$result" ]]; then
+#       echo "A função retornou um resultado vazio. Verifique a configuração do ambiente e as dependências."
+#       exit 1
+#   fi
+
+#   # Extrair os valores individuais usando o comando 'read'
+#   read secret token_service_key token_anon_key <<< "$result"
+
+#   while true; do
+#     ##Pergunta o Dominio do Builder
+#     echo -e "\e[97mPasso$amarelo 1/3\e[0m"
+#     echo -en "\e[33mDigite o Dominio para o Supabase (ex: supabase.oriondesign.art.br): \e[0m" && read -r url_supabase
+#     echo ""
+
+#     ##Pergunta o Dominio do Viewer
+#     echo -e "\e[97mPasso$amarelo 2/3\e[0m"
+#     echo -en "\e[33mDigite o Usuario para o Supabase (ex: OrionDesign): \e[0m" && read -r user_supabase
+#     echo ""
+
+#     ##Pergunta a versão da ferramenta
+#     echo -e "\e[97mPasso$amarelo 3/3\e[0m"
+#     echo -e "$amarelo--> Sem NENHUM caracteres especiais, tais como: @\!#$ entre outros"
+#     echo -en "\e[33mDigite a Senha do usuario para o Supabase (ex: Senha123): \e[0m" && read -r pass_supabase
+#     echo ""
+
+#     ## Gera a JWT_Key
+#     JWT_Key="$secret"
+
+#     ## Gera a ANON_KEY
+#     ANON_KEY="$token_anon_key"
+
+#     ## Gera o SERVICE_KEY
+#     SERVICE_KEY="$token_service_key"
+
+#     clear
+#     msg_supabase
+#     ## Informação sobre URL do Builder
+#     echo -e "\e[33mDominio do Supabase:\e[97m $url_supabase\e[0m"
+#     echo ""
+
+#     ## Informação sobre URL do Viewer
+#     echo -e "\e[33mUsuario:\e[97m $user_supabase\e[0m"
+#     echo ""
+
+#     ## Informação sobre a versão da ferramenta
+#     echo -e "\e[33mSenha:\e[97m $pass_supabase\e[0m"
+#     echo ""    
+
+#     ## Informação sobre JWT_Key
+#     echo -e "\e[33mJWT_Key:\e[97m $JWT_Key\e[0m"
+#     echo ""
+
+#     ## Informação sobre ANON_KEY
+#     echo -e "\e[33mAnon Key:\e[97m $ANON_KEY\e[0m"
+#     echo ""
+
+#     ## Informação sobre SERVICE_KEY
+#     echo -e "\e[33mService Key:\e[97m $SERVICE_KEY\e[0m"
+#     echo ""
+#     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+#     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then breal; else msg_supabase; fi
+#   done
+
+#   clear
+#   echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO SUPABASE \e[33m[1/4]\e[0m"
+#   echo ""
+
+# }
 
 verificar_status_servicos() {
     msg_status
