@@ -10720,7 +10720,7 @@ exibir_menu() {
                   fi
                   ;;
             48)
-                verificar_stack "supabase" && continue || echo ""
+                verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_supabase
                   fi
