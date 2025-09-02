@@ -8572,9 +8572,10 @@ ferramenta_affine() {
     echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres_formatada
-    echo "A senha do Postgres capturada é: [$senha_postgres]"
     criar_banco_postgres_da_stack "affine"
     verificar_container_redis || ferramenta_redis
+
+    echo "DEBUG: A senha que será usada no YAML é: '[$senha_postgres]'"
 
     cat > affine.yaml <<EOL
 version: "3.7"
