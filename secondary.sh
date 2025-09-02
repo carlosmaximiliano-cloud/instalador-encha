@@ -7771,11 +7771,6 @@ ferramenta_wordpress() {
   cat > wordpress_$nome_site_wordpress.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   wordpress_$nome_site_wordpress:
     image: wordpress:latest
     volumes:
@@ -7814,11 +7809,52 @@ EOL
   stack_editavel
   wait_stack "wordpress_${nome_site_wordpress}_wordpress_$nome_site_wordpress"
 
+  echo -e "\n\e[97m🔧 Aplicando configurações de performance (PHP e Redis)...\e[0m"
+  caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
+  caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_data/wp-config.php"
+    
+  # Aguarda wp-config.php ser criado
+  echo -n "   Aguardando criação do wp-config.php..."
+  for i in {1..20}; do
+    if [ -f "$caminho_wp_config" ]; then
+      echo -e " \e[32m[OK]\e[0m"
+        break
+    fi
+      sleep 3
+      echo -n "."
+  done
+  if [ ! -f "$caminho_wp_config" ]; then
+    echo -e " \e[31m[FALHOU]\e[0m Arquivo não encontrado após 60 segundos."
+    return 1
+  fi
+    
+  # Edita php.ini
+  cp "/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production" "$caminho_php_ini"
+  sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
+  sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
+  sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
+  sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
+  echo -e "   Configurações do PHP ajustadas com sucesso. \e[32m[OK]\e[0m"
+    
+  # Edita wp-config.php
+  if ! grep -q "WP_REDIS_HOST" "$caminho_wp_config"; then
+    sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
+    echo -e "   Configurações do Redis injetadas no wp-config.php. \e[32m[OK]\e[0m"
+  else
+    echo -e "   Configurações do Redis já presentes no wp-config.php. \e[33m[IGNORADO]\e[0m"
+  fi
+    
+  # Força a atualização do serviço
+  echo -e "   Reiniciando o serviço para aplicar as novas configurações..."
+  docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
+
   cd /root/dados_vps
   cat > dados_wordpress_$nome_site_wordpress <<EOL
 [ WORDPRESS - $nome_site_wordpress ]
 Dominio: https://$url_wordpress
 Arquivos do site: /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data
+Arquivos do php: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data
 EOL
 
   cd
