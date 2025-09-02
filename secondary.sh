@@ -9745,7 +9745,7 @@ services:
       - GLOBAL_S3_BUCKET=supabase${1:+-$1}
       - GLOBAL_S3_ENDPOINT=https://$url_s3
       - GLOBAL_S3_PROTOCOL=https
-      - GLOBAL_S3_FORCE_PATH_STYLE=true
+      - GLOBAL_S3_FORCE_PATH_STYLE="true"
       - AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY
       - AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
       - AWS_DEFAULT_REGION=eu-south
