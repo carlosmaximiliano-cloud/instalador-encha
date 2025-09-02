@@ -7852,17 +7852,17 @@ ferramenta_formbricks() {
   next_key_form=$(openssl rand -hex 32)
   cron_key_form=$(openssl rand -hex 32)
 
-  cat > formbricks.yaml <<EOL
+  cat > formbricks${1:+_$1}.yaml <<-EOF
 version: "3.7"
 services:
 
 ## --------------------------- ORION --------------------------- ##
 
-  formbricks:
+  formbricks${1:+_$1}:
     image: ghcr.io/formbricks/formbricks:latest
 
     volumes:
-      - formbricks_data:/home/nextjs/apps/web/uploads/
+      - formbricks${1:+_$1}_data:/home/nextjs/apps/web/uploads/
 
     networks:
       - $nome_rede_interna
@@ -7873,7 +7873,7 @@ services:
       - NEXTAUTH_URL=https://$url_formbricks
 
       ## Banco de dados Postgres
-      - DATABASE_URL=postgresql://postgres:$senha_pgvector@pgvector:5432/formbricks?schema=public
+      - DATABASE_URL=postgresql://postgres:$senha_pgvector@pgvector:5432/formbricks${1:+_$1}?schema=public
 
       ## Licença Enterprise ou Self-hosting
       ## Solicitar licenta Self-hosting --> https://oriondesign.art.br/formbricks_licence/ <-- ##
@@ -7942,36 +7942,47 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.formbricks.rule=Host(\`$url_formbricks\`)
-        - traefik.http.services.formbricks.loadbalancer.server.port=3000
-        - traefik.http.routers.formbricks.service=formbricks
-        - traefik.http.routers.formbricks.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.formbricks.entrypoints=websecure
-        - traefik.http.routers.formbricks.tls=true
+        - traefik.http.routers.formbricks${1:+_$1}.rule=Host(\`$url_formbricks\`)
+        - traefik.http.services.formbricks${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.formbricks${1:+_$1}.service=formbricks${1:+_$1}
+        - traefik.http.routers.formbricks${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.formbricks${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.formbricks${1:+_$1}.tls=true
 
 ## --------------------------- ORION --------------------------- ##
 
 volumes:
-  formbricks_data:
+  formbricks${1:+_$1}_data:
     external: true
-    name: formbricks_data
+    name: formbricks${1:+_$1}_data
 
 networks:
   $nome_rede_interna:
     name: $nome_rede_interna
     external: true
-EOL
+EOF
 
-  STACK_NAME="formbricks"
+  STACK_NAME="formbricks${1:+_$1}"
   stack_editavel
-  wait_stack "formbricks_formbricks"
+
+  ## Mensagem de Passo
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+ 
+  ## Baixando imagens:
+  pull ghcr.io/formbricks/formbricks:latest
+
+  wait_stack formbricks${1:+_$1}_formbricks${1:+_$1}
 
   cd /root/dados_vps
-  cat > dados_formbricks <<EOL
+  cat > dados_formbricks${1:+_$1} <<EOL
 [ FORMBRICKS ]
-Dominio: https://$url_formbricks
-Usuario: (criado no primeiro acesso)
-Senha: (criada no primeiro acesso)
+
+Dominio do Formbricks: https://$url_formbricks
+
+Email: Precisa de criar dentro do Formbricks
+
+Senha: Precisa de criar dentro do Formbricks
 EOL
 
   cd
@@ -9340,12 +9351,12 @@ ferramenta_supabase() {
   while true; do
     ##Pergunta o Dominio do Builder
     echo -e "\e[97mPasso$amarelo 1/3\e[0m"
-    echo -en "\e[33mDigite o Dominio para o Supabase (ex: supabase.oriondesign.art.br): \e[0m" && read -r url_supabase
+    echo -en "\e[33mDigite o Dominio para o Supabase (ex: supabase.encha.ai): \e[0m" && read -r url_supabase
     echo ""
 
     ##Pergunta o Dominio do Viewer
     echo -e "\e[97mPasso$amarelo 2/3\e[0m"
-    echo -en "\e[33mDigite o Usuario para o Supabase (ex: OrionDesign): \e[0m" && read -r user_supabase
+    echo -en "\e[33mDigite o Usuario para o Supabase (ex: Encha || Admin): \e[0m" && read -r user_supabase
     echo ""
 
     ##Pergunta a versão da ferramenta
@@ -9730,7 +9741,9 @@ EOL
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   studio${1:+_$1}:
     image: supabase/studio:2025.06.30-sha-6f5982d ## Versão do Supabase Studio
@@ -9779,7 +9792,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   kong${1:+_$1}:
     image: kong:2.8.1 ## Versão do Supabase Kong
@@ -9830,7 +9845,9 @@ services:
         - traefik.http.routers.kong${1:+_$1}.tls.certresolver=letsencryptresolver
         - traefik.http.routers.kong${1:+_$1}.tls=true
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   auth${1:+_$1}:
     image: supabase/gotrue:v2.176.1 ## Versão do Supabase Auth
@@ -9888,7 +9905,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   rest${1:+_$1}:
     image: postgrest/postgrest:v12.2.12 ## Versão do Supabase Rest
@@ -9918,7 +9937,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   realtime${1:+_$1}:
     image: supabase/realtime:v2.34.47 ## Versão do Supabase Realtime
@@ -9958,7 +9979,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   storage${1:+_$1}:
     image: supabase/storage-api:v1.22.17 ## Versão do Supabase Storage
@@ -10004,7 +10027,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   imgproxy${1:+_$1}:
     image: darthsim/imgproxy:v3.8.0 ## Versão do Supabase Imgproxy
@@ -10029,7 +10054,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   meta${1:+_$1}:
     image: supabase/postgres-meta:v0.89.3 ## Versão do Meta 
@@ -10053,7 +10080,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   functions${1:+_$1}:
     image: supabase/edge-runtime:v1.67.4 ## Versão do Supabase Functions
@@ -10084,7 +10113,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   analytics${1:+_$1}:
     image: supabase/logflare:1.14.2 ## Versão do Supabase Analytics
@@ -10122,7 +10153,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   db${1:+_$1}:
     image: supabase/postgres:15.8.1.060 ## Versão do Supabase Db
@@ -10168,7 +10201,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   vector${1:+_$1}:
     image: timberio/vector:0.28.1-alpine ## Versão do Supabase Vector
@@ -10195,7 +10230,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   supavisor${1:+_$1}:
     image: supabase/supavisor:2.5.1 ## Versão do Supabase Supavisor
@@ -10252,7 +10289,9 @@ services:
         constraints:
           - node.role == manager
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
   supabase${1:+_$1}_db_config:
@@ -10376,7 +10415,7 @@ exibir_menu() {
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-47): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-48): ${reset}"
         read -r opcao
 
         case $opcao in
