@@ -7918,7 +7918,7 @@ exibir_menu() {
         echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
         echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
         echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Frombricks"
-        echo -e "${azul}12.${reset} Sair do menu"
+        echo -e "${azul}12.${reset} Sair do menu                     ${azul}38.${reset} Instalar MetaBase"
         echo -e "${azul}13.${reset} Instalar pgAdmin"
         echo -e "${azul}14.${reset} Instalar nocobase"
         echo -e "${azul}15.${reset} Instalar botpress"
