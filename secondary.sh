@@ -8580,50 +8580,87 @@ ferramenta_affine() {
     cat > affine.yaml <<EOL
 version: "3.7"
 services:
+
+## --------------------------- ORION --------------------------- ##
+
   affine:
-    image: ghcr.io/toeverything/affine-graphql:stable
-    command: ['sh', '-c', 'echo "Aguardando 15 segundos..." && sleep 15 && node ./scripts/self-host-predeploy && node ./packages/server/dist/index.js']
+    image: ghcr.io/toeverything/affine-graphql:stable-39476d1
+    command:
+      ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
+
     volumes:
       - affine_config:/root/.affine/config:rw
       - affine_storage:/root/.affine/storage:rw
+
     networks:
       - $nome_rede_interna
+
+    #ports:
+    #  - 3010:3010
+    #  - 5555:5555
+
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '1000m'
+    restart: on-failure:5
+
     environment:
+      ## Dados de acesso
       - AFFINE_ADMIN_EMAIL=$email_affine
       - AFFINE_ADMIN_PASSWORD=$senha_affine
       - AFFINE_SERVER_HOST=$url_affine
+
+      ## Dados do SMTP
       - MAILER_USER=$email_smtp_affine
       - MAILER_PASSWORD=$senha_smtp_affine
       - MAILER_HOST=$host_smtp_affine
       - MAILER_PORT=$porta_smtp_affine
+
+      ## Dados do Postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=$senha_postgres
       - POSTGRES_DB=affine
       - DATABASE_URL=postgres://postgres:$senha_postgres@postgres:5432/affine?sslmode=disable
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+      ## Outras configurações
+      - NODE_OPTIONS="--import=./scripts/register.js"
+      - AFFINE_CONFIG_PATH=/root/.affine/config
       - REDIS_SERVER_HOST=redis
       - NODE_ENV=production
+      
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.affine.rule=Host(\`$url_affine\`)"
-        - "traefik.http.services.affine.loadbalancer.server.port=3010"
-        - "traefik.http.routers.affine.service=affine"
-        - "traefik.http.routers.affine.entrypoints=websecure"
-        - "traefik.http.routers.affine.tls.certresolver=letsencryptresolver"
+        - traefik.enable=true
+        - traefik.http.routers.affine.rule=Host(\`$url_affine\`)
+        - traefik.http.services.affine.loadbalancer.server.port=3010
+        - traefik.http.routers.affine.service=affine
+        - traefik.http.routers.affine.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.affine.entrypoints=websecure
+        - traefik.http.routers.affine.tls=true
+        - traefik.frontend.headers.STSPreload=true
+        - traefik.frontend.headers.STSSeconds=31536000
+
+## --------------------------- ORION --------------------------- ##
+
 volumes:
   affine_config:
+    external: true
     name: affine_config
-    external: true
   affine_storage:
-    name: affine_storage
     external: true
+    name: affine_storage
+
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
 
     STACK_NAME="affine"
