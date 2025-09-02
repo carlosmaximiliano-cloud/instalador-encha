@@ -7540,126 +7540,308 @@ verificar_status_servicos() {
 }
 
 exibir_menu() {
-    while true; do
-        clear
-        banner
-        echo -e "${branco}"
-        centralizar "📋 === MENU PRINCIPAL ==="
-        echo -e "${reset}"
-        echo ""
+  while true; do
+    clear
+    banner
+    echo -e "${branco}"
+    centralizar "📋 === MENU PRINCIPAL ==="
+    echo -e "${reset}"
+    echo ""
 
-        # Lista de todas as ferramentas disponíveis
-        opcoes=(
-            "Traefik + Portainer" "Evolution API" "N8N" "Chatwoot" "Liberar Chatwoot"
-            "N8N Formação Encha" "Minio" "Typebot" "Directus" "Odoo" "pgAdmin"
-            "Nocobase" "Botpress" "Baserow" "MongoDB" "RabbitMQ" "Uptime Kuma"
-            "Cal.com" "Mautic" "Appsmith" "Qdrant" "Woofed CRM" "Formbricks"
-            "Twenty CRM" "Mattermost" "Outline" "Focalboard" "GLPI" "Nextcloud"
-            "Strapi" "Flowise" "Langflow" "Ollama" "AnythingLLM" "NocoDB"
-            "Dify" "Wordpress" "Moodle" "HumHub" "Yourls" "Shlink" "Krayin CRM"
-            # --- Adicione novas ferramentas aqui ---
-        )
+    # Menu principal organizado por grupos de aplicações
+    echo -e "${azul}01.${reset} Instalar Traefik + Portainer        ${azul}30.${reset} Instalar GLPI"
+    echo -e "${azul}02.${reset} Instalar Evolution API              ${azul}31.${reset} Instalar Flowise"
+    echo -e "${azul}03.${reset} Instalar N8N                        ${azul}32.${reset} Instalar Langflow"
+    echo -e "${azul}04.${reset} Instalar Chatwoot                   ${azul}34.${reset} Instalar Ollama"
+    echo -e "${azul}05.${reset} Liberar Chatwoot                    ${azul}35.${reset} Instalar Anythingllm"
+    echo -e "${azul}06.${reset} Instalar N8N Formação Encha         ${azul}36.${reset} Instalar Nocodb"
+    echo -e "${azul}07.${reset} Instalar Minio                      ${azul}37.${reset} Instalar humhub"
+    echo -e "${azul}08.${reset} Instalar Typebot"
+    echo -e "${azul}09.${reset} Instalar Directus"
+    echo -e "${azul}10.${reset} Instalar Odoo"
+    echo -e "${azul}11.${reset} Verificar status dos serviços"
+    echo -e "${azul}12.${reset} Sair do menu"
+    echo -e "${azul}13.${reset} Instalar pgAdmin"
+    echo -e "${azul}14.${reset} Instalar nocobase"
+    echo -e "${azul}15.${reset} Instalar botpress"
+    echo -e "${azul}16.${reset} Instalar baserow"
+    echo -e "${azul}17.${reset} Instalar mongoDB"
+    echo -e "${azul}18.${reset} Instalar rabbitMQ"
+    echo -e "${azul}19.${reset} Instalar uptimeKuma"
+    echo -e "${azul}20.${reset} Instalar calcom"
+    echo -e "${azul}21.${reset} Instalar mautic"
+    echo -e "${azul}22.${reset} Instalar appsmith"
+    echo -e "${azul}23.${reset} Instalar qdrant"
+    echo -e "${azul}24.${reset} Instalar woofedcrm"
+    echo -e "${azul}26.${reset} Instalar twentyCRM"
+    echo -e "${azul}27.${reset} Instalar Mattermost"
+    echo -e "${azul}28.${reset} Instalar outline"
+    echo -e "${azul}29.${reset} Instalar focalboard"
+    echo ""
+    echo -en "${amarelo}👉 Escolha uma opção (1-37): ${reset}"
+    read -r opcao
 
-        # Itens de controle do menu
-        itens_controle=(
-            "Verificar status dos serviços"
-            "Sair do menu"
-        )
-        
-        num_opcoes=${#opcoes[@]}
-        num_colunas=2
-        num_linhas=$(( (num_opcoes + num_colunas - 1) / num_colunas ))
-
-        for i in $(seq 0 $((num_linhas - 1))); do
-            # Coluna 1
-            idx1=$i
-            if [ $idx1 -lt $num_opcoes ]; then
-                num_opcao1=$(printf "%02d" $((idx1 + 1)))
-                item1="${opcoes[idx1]}"
-                printf "${azul}%s.${reset} %-45s" "$num_opcao1" "$item1"
-            else
-                printf "%-50s" ""
-            fi
-
-            # Coluna 2
-            idx2=$((i + num_linhas))
-            if [ $idx2 -lt $num_opcoes ]; then
-                num_opcao2=$(printf "%02d" $((idx2 + 1)))
-                item2="${opcoes[idx2]}"
-                printf "| ${azul}%s.${reset} %s\n" "$num_opcao2" "$item2"
-            else
-                printf "\n"
-            fi
-        done
-        
-        echo ""
-        echo -e "--- Opções do Sistema ---"
-        echo -e "${azul}98.${reset} ${itens_controle[0]}"
-        echo -e "${vermelho}0.${reset}  ${itens_controle[1]}"
-        echo ""
-        echo -en "${amarelo}👉 Escolha uma opção: ${reset}"
-        read -r opcao
-
-        case $opcao in
-            1 | 01) ferramenta_traefik_e_portainer ;;
-            2 | 02) ferramenta_evolution ;;
-            3 | 03) ferramenta_n8n ;;
-            4 | 04) ferramenta_chatwoot ;;
-            5 | 05) liberar_chatwoot ;;
-            6 | 06) ferramenta_n8n_formacao_encha ;;
-            7 | 07) ferramenta_minio ;;
-            8 | 08) ferramenta_typebot ;;
-            9 | 09) ferramenta_directus ;;
-            10) ferramenta_odoo ;;
-            11) ferramenta_pgadmin ;;
-            12) ferramenta_nocobase ;;
-            13) ferramenta_botpress ;;
-            14) ferramenta_baserow ;;
-            15) ferramenta_mongodb ;;
-            16) ferramenta_rabbitmq ;;
-            17) ferramenta_uptimekuma ;;
-            18) ferramenta_calcom ;;
-            19) ferramenta_mautic ;;
-            20) ferramenta_appsmith ;;
-            21) ferramenta_qdrant ;;
-            22) ferramenta_woofedcrm ;;
-            23) ferramenta_formbricks ;;
-            24) ferramenta_twentycrm ;;
-            25) ferramenta_mattermost ;;
-            26) ferramenta_outline ;;
-            27) ferramenta_focalboard ;;
-            28) ferramenta_glpi ;;
-            29) ferramenta_nextcloud ;;
-            30) ferramenta_strapi ;;
-            31) ferramenta_flowise ;;
-            32) ferramenta_langflow ;;
-            33) ferramenta_ollama ;;
-            34) ferramenta_anythingllm ;;
-            35) ferramenta_nocodb ;;
-            36) ferramenta_dify ;;
-            37) ferramenta_wordpress ;;
-            38) ferramenta_moodle ;;
-            39) ferramenta_humhub ;;
-            40) ferramenta_yourls ;;
-            41) ferramenta_shlink ;;
-            42) ferramenta_krayincrm ;;
-            # Adicione os próximos números aqui...
-
-            98)
-                verificar_status_servicos
-                read -p $'\n\e[33mPressione ENTER para voltar ao menu...\e[0m'
-                ;;
-            0)
-                echo -e "${verde}Saindo... Até logo!${reset}"
-                sleep 1
-                exit 0
-                ;;
-            *)
-                echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
-                sleep 2
-                ;;
-        esac
-    done
+    case $opcao in
+      01|1)
+        verificar_stack "portainer${opcao2:+_$opcao2}" && continue
+        ferramenta_traefik_e_portainer
+        ;;
+      02|2)
+        verificar_stack "evolution${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="evolution${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_evolution "$opcao2"
+          else
+            APP_ENCHA="ferramenta_evolution"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      03|3)
+        verificar_stack "n8n${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="n8n${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_n8n "$opcao2"
+          else
+            APP_ENCHA="ferramenta_n8n"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      04|4)
+        verificar_stack "chatwoot${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="chatwoot${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_chatwoot "$opcao2"
+          else
+            APP_ENCHA="ferramenta_chatwoot"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      05|5)
+        if verificar_docker_e_portainer_traefik; then
+          liberar_chatwoot
+        fi
+        ;;
+      06|6)
+        verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_n8n_formacao_encha "$opcao2"
+          else
+            APP_ENCHA="ferramenta_n8n_formacao_encha"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+        liberar_chatwoot
+        verificar_stack "minio${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="minio${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_minio "$opcao2"
+          else
+            APP_ENCHA="ferramenta_minio"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      08|8)
+        verificar_stack "typebot${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik && verificar_minio; then
+          STACK_NAME="typebot${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_typebot "$opcao2"
+          else
+            APP_ENCHA="ferramenta_typebot"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      09|9)
+        verificar_stack "directus${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik && verificar_minio; then
+          STACK_NAME="directus${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_directus "$opcao2"
+          else
+            APP_ENCHA="ferramenta_directus"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      10)
+        verificar_stack "odoo${opcao2:+_$opcao2}" && continue
+        if verificar_docker_e_portainer_traefik; then
+          STACK_NAME="odoo${opcao2:+_$opcao2}"
+          if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+            ferramenta_odoo "$opcao2"
+          else
+            APP_ENCHA="ferramenta_odoo"
+            verificar_arquivo
+          fi
+        fi
+        ;;
+      11)
+        verificar_status_servicos
+        echo "Aperte ENTER para retornar ao menu de ferramentas"
+        read
+        sleep 2
+        ;;
+      12)
+        echo -e "${verde}Saindo do menu...${reset}"
+        sleep 1
+        exit 0
+        ;;
+      13)
+        verificar_stack "pgadmin" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_pgadmin
+        fi
+        ;;
+      14)
+        verificar_stack "nocobase" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_nocobase
+        fi
+        ;;
+      15)
+        verificar_stack "botpress" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_botpress
+        fi
+        ;;
+      16)
+        verificar_stack "baserow" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_baserow
+        fi
+        ;;
+      17)
+        verificar_stack "mongodb" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_mongodb
+        fi
+        ;;
+      18)
+        verificar_stack "rabbitmq" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_rabbitmq
+        fi
+        ;;
+      19)
+        verificar_stack "uptimekuma" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_uptimekuma
+        fi
+        ;;
+      20)
+        verificar_stack "calcom" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_calcom
+        fi
+        ;;
+      21)
+        verificar_stack "mautic" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_mautic
+        fi
+        ;;
+      22)
+        verificar_stack "appsmith" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_appsmith
+        fi
+        ;;
+      23)
+        verificar_stack "qdrant" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_qdrant
+        fi
+        ;;
+      24)
+        verificar_stack "woofedcrm" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_woofedcrm
+        fi
+        ;;
+      26)
+        verificar_stack "twentycrm" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_twentycrm
+        fi
+        ;;
+      27)
+        verificar_stack "mattermost" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_mattermost
+        fi
+        ;;
+      28)
+        verificar_stack "outline" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_outline
+        fi
+        ;;
+      29)
+        verificar_stack "focalboard" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_focalboard
+        fi
+        ;;
+      30)
+        verificar_stack "glpi" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_glpi
+        fi
+        ;;
+      31)
+        verificar_stack "flowise" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_flowise
+        fi
+        ;;
+      32)
+        verificar_stack "langflow" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_langflow
+        fi
+        ;;
+      33)
+        verificar_stack "ollama" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_ollama
+        fi
+        ;;
+      34)
+        verificar_stack "anythingllm" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_anythingllm
+        fi
+        ;;
+      35)
+        verificar_stack "nocodb" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_nocodb
+        fi
+        ;;
+      46)
+        verificar_stack "humhub" && continue
+        if verificar_docker_e_portainer_traefik; then
+          ferramenta_humhub
+        fi
+        ;;
+      *)
+        echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
+        sleep 2
+        ;;
+    esac
+  done
 }
 
 
