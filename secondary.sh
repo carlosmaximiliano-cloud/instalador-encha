@@ -8027,9 +8027,7 @@ EOL
 
 }
 
-# SUBSTITUA A SUA FUNÇÃO EXISTENTE POR ESTA
 ferramenta_moodle() {
-    recursos 2 2 && continue || return
     msg_moodle
     dados
 
@@ -8050,8 +8048,6 @@ ferramenta_moodle() {
 
     clear
     echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
-    telemetria Moodle iniciado
-
     senha_db_moodle=$(openssl rand -hex 16)
     
     cat > moodle.yaml <<EOL
