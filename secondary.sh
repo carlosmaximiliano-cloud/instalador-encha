@@ -7373,6 +7373,89 @@ EOL
 
 }
 
+ferramenta_nocodb() {
+  msg_nocodb
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o NocoDB (ex: nocodb.encha.ai): \e[0m" && read -r url_nocodb
+    echo ""
+
+    clear
+    msg_nocodb
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio NocoDB:\e[97m $url_nocodb\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nocodb; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do NocoDB...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "nocodb"
+
+  cat > nocodb.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  nocodb: 
+    image: nocodb/nocodb:latest
+    volumes: 
+      - nocodb_data:/usr/app/data
+    networks:
+      - $nome_rede_interna
+    environment: 
+      - NC_PUBLIC_URL=https://$url_nocodb
+      - NC_DB=pg://postgres:$senha_postgres@postgres:5432/nocodb
+      - NC_DISABLE_TELE=true
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nocodb.rule=Host(\`$url_nocodb\`)"
+        - "traefik.http.services.nocodb.loadbalancer.server.port=8080"
+        - "traefik.http.routers.nocodb.service=nocodb"
+        - "traefik.http.routers.nocodb.entrypoints=websecure"
+        - "traefik.http.routers.nocodb.tls.certresolver=letsencryptresolver"
+volumes:
+  nocodb_data:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="nocodb"
+  stack_editavel
+  wait_stack "nocodb_nocodb"
+
+  cd /root/dados_vps
+  cat > dados_nocodb <<EOL
+[ NOCODB ]
+Dominio: https://$url_nocodb
+Usuario: (criado no primeiro acesso)
+Senha: (criada no primeiro acesso)
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ NOCODB ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_nocodb\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -7429,6 +7512,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}33.${reset} Instalar Langflow"
         echo -e "                                                                           ${azul}34.${reset} Instalar Ollama"
         echo -e "                                                                           ${azul}35.${reset} Instalar Anythingllm"
+        echo -e "                                                                           ${azul}36.${reset} Instalar Nocodb"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -7715,6 +7799,12 @@ exibir_menu() {
               verificar_stack "anythingllm" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_anythingllm
+                fi
+                ;;
+            36)
+              verificar_stack "nocodb" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_nocodb
                 fi
                 ;;
             *)
