@@ -599,6 +599,19 @@ msg_strapi() {
     echo ""
 }
 
+msg_phpmyadmin(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗  ██╗██████╗     ███╗   ███╗██╗   ██╗     █████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗"
+    centralizar "██╔══██╗██║  ██║██╔══██╗    ████╗ ████║╚██╗ ██╔╝    ██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║"
+    centralizar "██████╔╝███████║██████╔╝    ██╔████╔██║ ╚████╔╝     ███████║██║  ██║██╔████╔██║██║██╔██╗ ██║"
+    centralizar "██╔═══╝ ██╔══██║██╔═══╝     ██║╚██╔╝██║  ╚██╔╝      ██╔══██║██║  ██║██║╚██╔╝██║██║██║╚██╗██║"
+    centralizar "██║     ██║  ██║██║         ██║ ╚═╝ ██║   ██║       ██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║"
+    centralizar "╚═╝     ╚═╝  ╚═╝╚═╝         ╚═╝     ╚═╝   ╚═╝       ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -9093,6 +9106,117 @@ EOL
     msg_retorno_menu
 }
 
+ferramenta_phpmyadmin(){
+  msg_phpmyadmin
+  dados
+
+  while true; do
+    ##Pergunta o Dominio para a ferramenta
+    echo -e "\e[97mPasso$amarelo 1/2\e[0m"
+    echo -en "\e[33mDigite o dominio para o PhpMyAdmin (ex: phpmyadmin.oriondesign.art.br): \e[0m" && read -r url_phpmyadmin
+    echo ""
+
+    ##Pergunta o Dominio para a ferramenta
+    echo -e "\e[97mPasso$amarelo 2/2\e[0m"
+    echo -en "\e[33mDigite o Host MySQL (ex: mysql ou 1.111.111.11:3306): \e[0m" && read -r host_phpmyadmin
+    echo ""
+    
+    ## Limpa o terminal
+    clear
+    msg_pgAdmin
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio PhpMyAdmin:\e[97m $url_phpmyadmin\e[0m"
+    echo -e "🏠 \e[33mHost MySQL:\e[97m $host_phpmyadmin\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_phpmyadmin; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do PhpMyAdmin...\e[0m"
+
+  cat > phpmyadmin${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+## --------------------------- ORION --------------------------- ##
+
+  phpmyadmin${1:+_$1}:
+    image: phpmyadmin/phpmyadmin:latest
+    command: ["apache2-foreground"]
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados do MySQL
+      - PMA_HOSTS=$host_phpmyadmin
+      - PMA_PORT=3306
+      
+      ## Dado de acesso
+      #- PMA_USER=
+      #- PMA_PASSWORD=
+      - PMA_ABSOLUTE_URI=https://$url_phpmyadmin
+      
+      ## Limite de Upload
+      - UPLOAD_LIMIT=10M
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.phpmyadmin${1:+_$1}.rule=Host(\`$url_phpmyadmin\`)
+        - traefik.http.routers.phpmyadmin${1:+_$1}.entrypoints=web,websecure
+        - traefik.http.routers.phpmyadmin${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.phpmyadmin${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.phpmyadmin${1:+_$1}.service=phpmyadmin${1:+_$1}
+
+## --------------------------- ORION --------------------------- ##
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="phpmyadmin${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull phpmyadmin/phpmyadmin:latest
+  wait_stack phpmyadmin${1:+_$1}_phpmyadmin${1:+_$1}
+
+  cd /root/dados_vps
+  dados_phpmyadmin${1:+_$1} <<EOL
+[ PHPMYADMIN ]
+
+Dominio do phpmyadmin: https://$url_phpmyadmin
+
+Usuario: Os mesmos do seu MySQL
+
+Senha: Os mesmos do seu MySQL
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ PHPMYADMIN ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_phpmyadmin\e[0m"
+  echo -e "\e[33m⚠️  Use as credenciais do seu banco de dados MySQL para fazer login.\e[0m"
+  msg_retorno_menu
+
+}
 
 verificar_status_servicos() {
     msg_status
@@ -9485,6 +9609,12 @@ exibir_menu() {
                 verificar_stack "strapi" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_strapi
+                  fi
+                  ;;
+            47)
+                verificar_stack "phpmyadmin${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_phpmyadmin
                   fi
                   ;;
             *)
