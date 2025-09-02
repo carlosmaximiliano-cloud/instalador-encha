@@ -7740,10 +7740,10 @@ ferramenta_wordpress() {
   msg_wordpress
   dados
 
-  # Pega as informações do banco de dados (se necessário, caso não venham de `pegar_senha_mysql_da_stack`)
-  # DB_NAME=$(grep "Database:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
-  # DB_USER=$(grep "Usuario:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
-  # DB_PASS=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  # Pega as informações do banco de dados já existente
+  DB_NAME=$(grep "Database:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_USER=$(grep "Usuario:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_PASS=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
 
   while true; do
     echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
@@ -7772,21 +7772,20 @@ ferramenta_wordpress() {
   pegar_senha_mysql_da_stack
   criar_banco_mysql_da_stack "$nome_site_wordpress"
 
-  # Define o nome da stack e o nome do arquivo .yaml
-  STACK_NAME="wordpress_$nome_site_wordpress"
-  YAML_FILE="${STACK_NAME}.yaml"
-  
-  echo -e "\e[97m⚙️  Gerando o arquivo de configuração (${YAML_FILE})...\e[0m"
-  cat > $YAML_FILE <<EOL
+  echo -e "\e[97m⚙️ Instalando o Wordpress...\e[0m"
+  cat > wordpress_$nome_site_wordpress.yaml <<EOL
 version: "3.7"
 services:
-  # O nome do serviço foi simplificado para 'app'.
-  # Isto é crucial para o resto do script funcionar.
-  app:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wordpress_$nome_site_wordpress:
     image: wordpress:latest
     volumes:
-      - wordpress_data:/var/www/html
-      - wordpress_php:/usr/local/etc/php
+      - wordpress_$nome_site_wordpress:/var/www/html
+      - wordpress_${nome_site_wordpress}_php:/usr/local/etc/php
     networks:
       - $nome_rede_interna
     environment:
@@ -7802,100 +7801,224 @@ services:
       placement:
         constraints: [node.role == manager]
       labels:
-        # As labels também usam a combinação de STACK_NAME e 'app'
         - "traefik.enable=true"
-        - "traefik.http.routers.${STACK_NAME}.rule=Host(\`${url_wordpress}\`)"
-        - "traefik.http.routers.${STACK_NAME}.service=${STACK_NAME}_app"
-        - "traefik.http.services.${STACK_NAME}_app.loadbalancer.server.port=80"
-        - "traefik.http.services.${STACK_NAME}_app.loadbalancer.passHostHeader=true"
-        - "traefik.http.routers.${STACK_NAME}.entrypoints=websecure"
-        - "traefik.http.routers.${STACK_NAME}.tls.certresolver=letsencryptresolver"
-
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.rule=Host(\`$url_wordpress\`)"
+        - "traefik.http.services.wordpress_$nome_site_wordpress.loadbalancer.server.port=80"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.service=wordpress_$nome_site_wordpress"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.entrypoints=websecure"
+        - "traefik.http.routers.wordpress_$nome_site_wordpress.tls.certresolver=letsencryptresolver"
 volumes:
-  wordpress_data:
-    name: ${STACK_NAME}_data
-  wordpress_php:
-    name: ${STACK_NAME}_php
-
+  wordpress_$nome_site_wordpress:
+    external: true
+  wordpress_${nome_site_wordpress}_php:
+    external: true
 networks:
   $nome_rede_interna:
     external: true
 EOL
 
-  echo -e "\e[97m⬆️  Fazendo o deploy da stack Docker ($STACK_NAME)...\e[0m"
-  stack_editavel # Assumindo que esta função usa a variável STACK_NAME e YAML_FILE
-  
-  # Nome completo do serviço para monitorar
-  FULL_SERVICE_NAME="${STACK_NAME}_app"
-  wait_stack "$FULL_SERVICE_NAME"
+  STACK_NAME="wordpress_$nome_site_wordpress"
+  stack_editavel
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_$nome_site_wordpress"
 
   echo -e "\n\e[97m🔧 Aplicando configurações de performance (PHP e Redis)...\e[0m"
+  caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
+  caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data/wp-config.php"
 
-  # --- CORREÇÃO PRINCIPAL AQUI ---
-  # Caminhos corretos para os volumes, usando os nomes explícitos definidos no YAML
-  caminho_php_ini="/var/lib/docker/volumes/${STACK_NAME}_php/_data/php.ini"
-  caminho_wp_config="/var/lib/docker/volumes/${STACK_NAME}_data/_data/wp-config.php"
-    
   # Aguarda wp-config.php ser criado
   echo -n "   Aguardando criação do wp-config.php..."
   for i in {1..20}; do
     if [ -f "$caminho_wp_config" ]; then
       echo -e " \e[32m[OK]\e[0m"
-      break
+        break
     fi
-    sleep 3
-    echo -n "."
+      sleep 3
+      echo -n "."
   done
-
-  # Verifica se o arquivo foi realmente criado
   if [ ! -f "$caminho_wp_config" ]; then
     echo -e " \e[31m[FALHOU]\e[0m Arquivo não encontrado após 60 segundos."
-    echo -e "   Verifique os logs do serviço: docker service logs ${FULL_SERVICE_NAME}"
     return 1
   fi
     
   # Edita php.ini
-  if [ -f "/var/lib/docker/volumes/${STACK_NAME}_php/_data/php.ini-production" ]; then
-    cp "/var/lib/docker/volumes/${STACK_NAME}_php/_data/php.ini-production" "$caminho_php_ini"
-    sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
-    sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
-    sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
-    sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
-    echo -e "   Configurações do PHP ajustadas com sucesso. \e[32m[OK]\e[0m"
-  else
-    echo -e "   Arquivo php.ini-production não encontrado. \e[33m[IGNORADO]\e[0m"
-  fi
+  cp "/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production" "$caminho_php_ini"
+  sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
+  sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
+  sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
+  sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
+  echo -e "Configurações do PHP ajustadas com sucesso. \e[32m[OK]\e[0m"
     
-  # Edita wp-config.php para adicionar Redis
+  # Edita wp-config.php
   if ! grep -q "WP_REDIS_HOST" "$caminho_wp_config"; then
-    sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
+    sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
     echo -e "   Configurações do Redis injetadas no wp-config.php. \e[32m[OK]\e[0m"
   else
     echo -e "   Configurações do Redis já presentes no wp-config.php. \e[33m[IGNORADO]\e[0m"
   fi
     
-  # Força a atualização do serviço para aplicar as novas configurações
+  # Força a atualização do serviço
   echo -e "   Reiniciando o serviço para aplicar as novas configurações..."
-  docker service update --force "$FULL_SERVICE_NAME" > /dev/null 2>&1
-  wait_stack "$FULL_SERVICE_NAME"
+  docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
 
-  # Salva os dados
   cd /root/dados_vps
   cat > dados_wordpress_$nome_site_wordpress <<EOL
 [ WORDPRESS - $nome_site_wordpress ]
 Dominio: https://$url_wordpress
-Arquivos do site: /var/lib/docker/volumes/${STACK_NAME}_data/_data
-Arquivos do php: /var/lib/docker/volumes/${STACK_NAME}_php/_data
+Arquivos do site: /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data
+Arquivos do php: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data
 EOL
 
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ WORDPRESS - $nome_site_wordpress ]\e[0m\n"
   echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wordpress\e[0m"
-  echo -e "\e[33m📂 Arquivos do Site:\e[97m /var/lib/docker/volumes/${STACK_NAME}_data/_data\e[0m"
-  echo -e "\e[33m📂 Arquivos do PHP:\e[97m /var/lib/docker/volumes/${STACK_NAME}_php/_data\e[0m"
+  echo -e "\e[33m📂 Arquivos:\e[97m /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data\e[0m"
   echo -e "\n\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
   msg_retorno_menu
+        
+}
+
+ferramenta_frappe(){
+  msg_frappe
+  dados
+
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m" && read -r url_frappe
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    echo -en "🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m" && read -s -r senha_frappe
+    echo ""
+
+    clear
+    msg_frappe
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Frappe:\e[97m $url_frappe\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m Administrator\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_frappe; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Frappe/ERPNext...\e[0m"
+
+  DB_PASSWORD=$(openssl rand -hex 16)
+
+  cat > erpnext.yaml <<EOL
+version: "3.7"
+services:
+  erpnext_frontend:
+    image: frappe/erpnext:v15.24.1
+    environment:
+      - BACKEND=erpnext_backend:8000
+      - FRAPPE_SITE_NAME_HEADER=$url_frappe
+      - SOCKETIO=erpnext_websocket:9000
+    networks:
+      - $nome_rede_interna
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.erpnext_frontend.rule=Host(\`$url_frappe\`)"
+        - "traefik.http.services.erpnext_frontend.loadbalancer.server.port=8080"
+        - "traefik.http.routers.erpnext_frontend.service=erpnext_frontend"
+        - "traefik.http.routers.erpnext_frontend.entrypoints=websecure"
+        - "traefik.http.routers.erpnext_frontend.tls.certresolver=letsencryptresolver"
+  erpnext_backend:
+    image: frappe/erpnext:v15.24.1
+    volumes:
+      - erpnext_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - $nome_rede_interna
+    environment:
+      - DB_HOST=erpnext_db
+      - DB_PORT=3306
+      - REDIS_CACHE=redis://erpnext_cache:6379
+      - REDIS_QUEUE=redis://erpnext_queue:6379
+      - SOCKETIO_PORT=9000
+      - DB_PASSWORD=$DB_PASSWORD
+  erpnext_db:
+    image: mariadb:10.6
+    volumes:
+      - erpnext_db:/var/lib/mysql
+    networks:
+      - $nome_rede_interna
+    environment:
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+  erpnext_cache:
+    image: redis:latest
+    volumes:
+      - erpnext_cache:/data
+    networks:
+      - $nome_rede_interna
+  erpnext_queue:
+    image: redis:latest
+    volumes:
+      - erpnext_queue:/data
+    networks:
+      - $nome_rede_interna
+  erpnext_websocket:
+    image: frappe/erpnext:v15.24.1
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    volumes:
+      - erpnext_sites:/home/frappe/frappe-bench/sites
+    networks:
+      - $nome_rede_interna
+    environment:
+      - REDIS_SOCKETIO=redis://erpnext_socketio:6379
+  erpnext_socketio:
+    image: redis:latest
+    volumes:
+      - erpnext_socketio:/data
+    networks:
+      - $nome_rede_interna
+volumes:
+  erpnext_sites:
+  erpnext_logs:
+  erpnext_db:
+  erpnext_cache:
+  erpnext_queue:
+  erpnext_socketio:
+networks:
+  $nome_rede_interna:
+    external: true
+EOL
+
+  STACK_NAME="erpnext"
+  stack_editavel
+
+  echo -e "\e[97m🔍 Verificando serviços (isso pode levar alguns minutos)...\e[0m"
+  wait_stack erpnext_erpnext_db
+
+  echo -e "\e[97m⚙️ Configurando o site do ERPNext...\e[0m"
+  docker run -it --rm \
+    --network ${nome_rede_interna} \
+    -v erpnext_sites:/home/frappe/frappe-bench/sites \
+    -e DB_HOST=erpnext_db \
+    -e DB_PORT=3306 \
+    -e DB_PASSWORD=$DB_PASSWORD \
+    -e "FRAPPE_SITE_NAME_HEADER=$url_frappe" \
+    frappe/erpnext:v15.24.1 bench new-site "$url_frappe" --no-mariadb-socket --admin-password "$senha_frappe" --install-app erpnext
+
+  wait_stack erpnext_erpnext_frontend erpnext_erpnext_backend
+  cd /root/dados_vps
+  cat > dados_erpnext <<EOL
+[ FRAPPE / ERPNEXT ]
+Dominio: https://$url_frappe
+Usuario: administrator
+Senha: $senha_frappe
+EOL
+  
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ FRAPPE / ERPNEXT ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_frappe\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m administrator\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $senha_frappe\e[0m"
+  msg_retorno_menu
+
 }
 
 verificar_status_servicos() {
@@ -7957,6 +8080,7 @@ exibir_menu() {
         echo -e "                                                                           ${azul}36.${reset} Instalar Nocodb"
         echo -e "                                                                           ${azul}37.${reset} Instalar Dify"
         echo -e "                                                                           ${azul}38.${reset} Instalar Wordpress"
+        echo -e "                                                                           ${azul}39.${reset} Instalar Frappe"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
         read -r opcao
@@ -8260,6 +8384,12 @@ exibir_menu() {
             38)
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_wordpress
+                fi
+                ;;
+            39) 
+              verificar_stack "erpnext" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_frappe
                 fi
                 ;;
             *)
