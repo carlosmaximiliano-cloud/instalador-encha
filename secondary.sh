@@ -8034,7 +8034,9 @@ ferramenta_metabase() {
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   metabase${1:+_$1}:
     image: metabase/metabase:latest
@@ -8077,7 +8079,9 @@ services:
         - traefik.http.routers.metabase${1:+_$1}.tls=true
         - traefik.http.routers.metabase${1:+_$1}.tls.certresolver=letsencryptresolver
 
-## --------------------------- ORION --------------------------- ##
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
   metabase${1:+_$1}_data:
@@ -8148,6 +8152,10 @@ ferramenta_docuseal() {
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo -e "🌐 \e[33mDomínio Docuseal:\e[97m $url_docuseal\e[0m"
         echo -e "📧 \e[33mEmail SMTP:\e[97m $email_smtp_docuseal\e[0m"
+        echo -e "\e[33mUser SMTP:\e[97m $user_smtp_docuseal\e[0m"
+        echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_docuseal\e[0m"
+        echo -e "\e[33mHost SMTP:\e[97m $host_smtp_docuseal\e[0m"
+        echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_docuseal\e[0m"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_docuseal; fi
@@ -8157,14 +8165,15 @@ ferramenta_docuseal() {
     echo -e "\e[97m🚀 Iniciando a instalação do Docuseal...\e[0m"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
-    criar_banco_postgres_da_stack "docuseal"
-    verificar_minio || ferramenta_minio
-    pegar_senha_minio
-    criar_bucket.minio "docuseal"
+    criar_banco_postgres_da_stack "ddocuseal${1:+_$1}"
     
-    key_docuseal=$(openssl rand -hex 32)
+    ## Pegar o dominio do email
+    dominio_smtp_docuseal="${email_smtp_docuseal}"
+    key_docuseal=$(openssl rand -hex 16)
+    key_docuseal2=$(openssl rand -hex 16)
+
     
-    cat > docuseal.yaml <<EOL
+    cat > docuseal${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
@@ -8172,54 +8181,77 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  docuseal:
+  docuseal${1:+_$1}:
     image: docuseal/docuseal:latest
+
     volumes:
-      - docuseal_data:/data
+      - docuseal${1:+_$1}_data:/data
+
     networks:
       - $nome_rede_interna
+
     environment:
+      ## Dados de Acesso
       - HOST=$url_docuseal
       - FORCE_SSL=true
+
+      ## Secret Key
       - SECRET_KEY_BASE=$key_docuseal
-      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/docuseal
+
+      ## Dados do Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/docuseal${1:+_$1}
+
+      ## Dados SMTP
       - SMTP_USERNAME=$user_smtp_docuseal
       - SMTP_PASSWORD=$senha_smtp_docuseal
       - SMTP_ADDRESS=$host_smtp_docuseal
       - SMTP_PORT=$porta_smtp_docuseal
       - SMTP_FROM=$email_smtp_docuseal
-      - SMTP_DOMAIN=$(echo "$email_smtp_docuseal" | cut -d'@' -f2)
+      - SMTP_DOMAIN=$dominio_smtp_docuseal
       - SMTP_AUTHENTICATION=login
-      - AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY
-      - AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
-      - S3_ATTACHMENTS_BUCKET=docuseal
-      - S3_ATTACHMENTS_ENDPOINT=https://$url_s3
-      - S3_ATTACHMENTS_REGION=us-east-1
-      - S3_FORCE_PATH_STYLE=true
+
+      ## Dados do S3
+      ##- AWS_ACCESS_KEY_ID=
+      ##- AWS_SECRET_ACCESS_KEY=
+      ##- S3_ATTACHMENTS_BUCKET=
+      
     deploy:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.docuseal.rule=Host(\`$url_docuseal\`)"
-        - "traefik.http.services.docuseal.loadbalancer.server.port=3000"
-        - "traefik.http.routers.docuseal.service=docuseal"
-        - "traefik.http.routers.docuseal.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.docuseal.entrypoints=websecure"
+        - traefik.enable=true
+        - traefik.http.routers.docuseal${1:+_$1}.rule=Host(\`$url_docuseal\`)
+        - traefik.http.services.docuseal${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.docuseal${1:+_$1}.service=docuseal${1:+_$1}
+        - traefik.http.routers.docuseal${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.docuseal${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.docuseal${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
 volumes:
-  docuseal_data:
-    name: docuseal_data
+  docuseal${1:+_$1}_data:
     external: true
+    name: docuseal${1:+_$1}_data
+
 networks:
   $nome_rede_interna:
     external: true
+    name: $nome_rede_interna
 EOL
     
-    STACK_NAME="docuseal"
+    STACK_NAME="docuseal${1:+_$1}"
     stack_editavel
-    wait_stack "docuseal_docuseal"
+
+    ## Baixando imagens:
+    pull docuseal/docuseal:latest
+
+    wait_stack docuseal${1:+_$1}_docuseal${1:+_$1}
 
     cd /root/dados_vps
     cat > dados_docuseal <<EOL
@@ -10733,7 +10765,7 @@ exibir_menu() {
                   fi
                   ;;
             40)
-                verificar_stack "docuseal" && continue || echo ""
+                verificar_stack "docuseal${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_docuseal
                   fi
