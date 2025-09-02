@@ -7525,21 +7525,11 @@ ferramenta_dify() {
   cat > dify.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   dify_api:
     image: langgenius/dify-api:latest
     environment:
-      - MODE=api
       - CONSOLE_WEB_URL=https://$url_dify
-      - APP_WEB_URL=https://$url_dify
-      - CONSOLE_API_URL=https://$url_dify_api
-      - SERVICE_API_URL=https://$url_dify_api
-      - APP_API_URL=https://$url_dify_api
-      - FILES_URL=https://$url_dify_api
+      - API_URL=https://$url_dify_api
       - MAIL_TYPE=smtp
       - MAIL_DEFAULT_SEND_FROM=$email_dify
       - SMTP_SERVER=$smtp_email_dify
@@ -7550,10 +7540,8 @@ services:
       - DB_USERNAME=postgres
       - DB_PASSWORD=$senha_postgres
       - DB_HOST=postgres
-      - DB_PORT=5432
       - DB_DATABASE=dify
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/1
       - STORAGE_TYPE=s3
       - S3_ENDPOINT=https://$url_s3
@@ -7565,9 +7553,9 @@ services:
       - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
       - WEAVIATE_API_KEY=$token_weaviate
       - SECRET_KEY=$secret_key
-    networks:
+    networks: # <-- CORREÇÃO: Indentação ajustada
       - $nome_rede_interna
-    deploy:
+    deploy: # <-- CORREÇÃO: Indentação ajustada
       mode: replicated
       replicas: 1
       placement:
@@ -7579,23 +7567,18 @@ services:
         - "traefik.http.routers.dify_api.service=dify_api"
         - "traefik.http.routers.dify_api.entrypoints=websecure"
         - "traefik.http.routers.dify_api.tls.certresolver=letsencryptresolver"
+
   dify_worker:
     image: langgenius/dify-api:latest
     command: worker
     environment:
       - CONSOLE_WEB_URL=https://$url_dify
-      - APP_WEB_URL=https://$url_dify
-      - CONSOLE_API_URL=https://$url_dify_api
-      - SERVICE_API_URL=https://$url_dify_api
-      - APP_API_URL=https://$url_dify_api
-      - FILES_URL=https://$url_dify_api
+      - API_URL=https://$url_dify_api
       - DB_USERNAME=postgres
       - DB_PASSWORD=$senha_postgres
       - DB_HOST=postgres
-      - DB_PORT=5432
       - DB_DATABASE=dify
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/1
       - STORAGE_TYPE=s3
       - S3_ENDPOINT=https://$url_s3
@@ -7607,22 +7590,24 @@ services:
       - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
       - WEAVIATE_API_KEY=$token_weaviate
       - SECRET_KEY=$secret_key
-    networks:
+    networks: # <-- CORREÇÃO: Indentação ajustada
       - $nome_rede_interna
-    deploy:
+    deploy: # <-- CORREÇÃO: Indentação ajustada
       mode: replicated
       replicas: 1
       placement:
         constraints: [node.role == manager]
+
   dify_web:
     image: langgenius/dify-web:latest
     environment:
-      - CONSOLE_API_URL=https://$url_dify_api
-      - APP_API_URL=https://$url_dify_api
+      - API_URL=https://$url_dify_api
+      - CONSOLE_URL=https://$url_dify
+      - APP_URL=https://$url_dify
       - NEXT_TELEMETRY_DISABLED=1
-    networks:
+    networks: # <-- CORREÇÃO: Indentação ajustada
       - $nome_rede_interna
-    deploy:
+    deploy: # <-- CORREÇÃO: Indentação ajustada
       mode: replicated
       replicas: 1
       placement:
@@ -7634,12 +7619,11 @@ services:
         - "traefik.http.routers.dify_web.service=dify_web"
         - "traefik.http.routers.dify_web.entrypoints=websecure"
         - "traefik.http.routers.dify_web.tls.certresolver=letsencryptresolver"
+
   dify_weaviate:
     image: semitechnologies/weaviate:1.23.7
     volumes:
       - dify_weaviate:/var/lib/weaviate
-    networks:
-      - $nome_rede_interna
     environment:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=false
       - AUTHENTICATION_APIKEY_ENABLED=true
@@ -7648,14 +7632,18 @@ services:
       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
       - DEFAULT_VECTORIZER_MODULE=none
       - CLUSTER_HOSTNAME=node1
-    deploy:
+    networks: # <-- CORREÇÃO: Indentação ajustada
+      - $nome_rede_interna
+    deploy: # <-- CORREÇÃO: Indentação ajustada
       mode: replicated
       replicas: 1
       placement:
         constraints: [node.role == manager]
+
 volumes:
   dify_storage:
   dify_weaviate:
+
 networks:
   $nome_rede_interna:
     external: true
