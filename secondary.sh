@@ -7737,46 +7737,50 @@ EOL
 }
 
 ferramenta_wordpress() {
-    msg_wordpress
-    dados
+  msg_wordpress
+  dados
 
-    while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: blog.encha.ai): \e[0m" && read -r url_wordpress
-        echo ""
-        echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-        echo -e "📦 \e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
-        echo -en "📝 \e[33mDigite um nome para o site (para identificar os volumes, ex: enchasite): \e[0m" && read -r nome_site_wordpress
-        echo ""  
+  # Pega as informações do banco de dados já existente
+  DB_NAME=$(grep "Database:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_USER=$(grep "Usuario:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+  DB_PASS=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
 
-        clear
-        msg_wordpress
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
-        echo -e "📝 \e[33mNome do Site (identificador):\e[97m $nome_site_wordpress\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
-    done
+  while true; do
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: blog.encha.ai): \e[0m" && read -r url_wordpress
+    echo ""
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    echo -e "📦 \e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
+    echo -en "📝 \e[33mDigite um nome para o site (para identificar os volumes, ex: enchasite): \e[0m" && read -r nome_site_wordpress
+    echo ""  
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
-    verificar_e_instalar_mysql || return
-    verificar_e_instalar_redis || return
-    
-    echo -e "\e[97m🗄️ Configurando banco de dados...\e[0m"
-    # --- CORREÇÃO APLICADA: Lendo as credenciais do usuário de aplicação ---
-    DB_USER=$(grep -A 3 "\[ Default App User \]" /root/dados_vps/dados_mysql | grep "Usuario:" | awk -F': ' '{print $2}')
-    DB_PASS=$(grep -A 3 "\[ Default App User \]" /root/dados_vps/dados_mysql | grep "Senha:" | awk -F': ' '{print $2}')
-    
-    # Cria um banco de dados específico para este site Wordpress
-    criar_banco_mysql_da_stack "$nome_site_wordpress"
+    msg_wordpress
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
+    echo -e "📝 \e[33mNome do Site (identificador):\e[97m $nome_site_wordpress\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
+  done
 
-    echo -e "\e[97m⚙️ Instalando o Wordpress...\e[0m"
-    cat > wordpress_$nome_site_wordpress.yaml <<EOL
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  verificar_container_redis || ferramenta_redis
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "$nome_site_wordpress"
+
+  echo -e "\e[97m⚙️ Instalando o Wordpress...\e[0m"
+  cat > wordpress_$nome_site_wordpress.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   wordpress_$nome_site_wordpress:
     image: wordpress:latest
     volumes:
@@ -7785,11 +7789,10 @@ services:
     networks:
       - $nome_rede_interna
     environment:
-      # --- CORREÇÃO APLICADA: Usando as credenciais corretas ---
-      - WORDPRESS_DB_HOST=mysql
-      - WORDPRESS_DB_USER=$DB_USER
-      - WORDPRESS_DB_PASSWORD=$DB_PASS
       - WORDPRESS_DB_NAME=$nome_site_wordpress
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=$senha_mysql
       - WP_REDIS_HOST=redis
       - WP_REDIS_PORT=6379
     deploy:
@@ -7806,57 +7809,74 @@ services:
         - "traefik.http.routers.wordpress_$nome_site_wordpress.tls.certresolver=letsencryptresolver"
 volumes:
   wordpress_$nome_site_wordpress:
+    external: true
   wordpress_${nome_site_wordpress}_php:
+    external: true
 networks:
   $nome_rede_interna:
     external: true
 EOL
-    
-    STACK_NAME="wordpress_$nome_site_wordpress"
-    stack_editavel
-    wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
-    
-    # ... (O restante da função para editar php.ini e wp-config.php continua o mesmo) ...
-    echo -e "\n\e[97m🔧 Aplicando configurações de performance (PHP e Redis)...\e[0m"
-    caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_data/_data/wp-config.php"
-    echo -n "   Aguardando criação do wp-config.php..."
-    for i in {1..20}; do
-        if [ -f "$caminho_wp_config" ]; then
-            echo -e " \e[32m[OK]\e[0m"
-            break
-        fi
-        sleep 3
-        echo -n "."
-    done
-    if [ ! -f "$caminho_wp_config" ]; then
-        echo -e " \e[31m[FALHOU]\e[0m Arquivo não encontrado após 60 segundos."
-        return 1
-    fi
-    caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
-    cp "/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production" "$caminho_php_ini"
-    sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
-    sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
-    sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
-    sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
-    if ! grep -q "WP_REDIS_HOST" "$caminho_wp_config"; then
-        sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
-    fi
-    docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
-    wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
 
-    cd /root/dados_vps
-    cat > "dados_wordpress_$nome_site_wordpress" <<EOL
+  STACK_NAME="wordpress_$nome_site_wordpress"
+  stack_editavel
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_$nome_site_wordpress"
+
+  echo -e "\n\e[97m🔧 Aplicando configurações de performance (PHP e Redis)...\e[0m"
+  caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
+  caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data/wp-config.php"
+
+  # Aguarda wp-config.php ser criado
+  echo -n "   Aguardando criação do wp-config.php..."
+  for i in {1..20}; do
+    if [ -f "$caminho_wp_config" ]; then
+      echo -e " \e[32m[OK]\e[0m"
+        break
+    fi
+      sleep 3
+      echo -n "."
+  done
+  if [ ! -f "$caminho_wp_config" ]; then
+    echo -e " \e[31m[FALHOU]\e[0m Arquivo não encontrado após 60 segundos."
+    return 1
+  fi
+    
+  # Edita php.ini
+  cp "/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production" "$caminho_php_ini"
+  sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
+  sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
+  sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
+  sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
+  echo -e "Configurações do PHP ajustadas com sucesso. \e[32m[OK]\e[0m"
+    
+  # Edita wp-config.php
+  if ! grep -q "WP_REDIS_HOST" "$caminho_wp_config"; then
+    sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
+    echo -e "   Configurações do Redis injetadas no wp-config.php. \e[32m[OK]\e[0m"
+  else
+    echo -e "   Configurações do Redis já presentes no wp-config.php. \e[33m[IGNORADO]\e[0m"
+  fi
+    
+  # Força a atualização do serviço
+  echo -e "   Reiniciando o serviço para aplicar as novas configurações..."
+  docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
+  wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
+
+  cd /root/dados_vps
+  cat > dados_wordpress_$nome_site_wordpress <<EOL
 [ WORDPRESS - $nome_site_wordpress ]
 Dominio: https://$url_wordpress
 Arquivos do site: /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data
+Arquivos do php: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data
 EOL
-    cd
-    
-    msg_resumo_informacoes
-    echo -e "\e[32m[ WORDPRESS - $nome_site_wordpress ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wordpress\e[0m"
-    echo -e "\n\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
-    msg_retorno_menu
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WORDPRESS - $nome_site_wordpress ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wordpress\e[0m"
+  echo -e "\e[33m📂 Arquivos:\e[97m /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data\e[0m"
+  echo -e "\n\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+  msg_retorno_menu
+        
 }
 
 verificar_status_servicos() {
