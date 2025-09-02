@@ -326,19 +326,6 @@ centralizar " ╚══╝╚══╝  ╚═════╝  ╚════�
     echo ""
 }
 
-msg_formbricks(){
-    clear
-    echo -e "${roxo}"
-centralizar "███████╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ ██╗ ██████╗██╗  ██╗███████╗"
-centralizar "██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔══██╗██╔══██╗██║██╔════╝██║ ██╔╝██╔════╝"
-centralizar "█████╗  ██║   ██║██████╔╝██╔████╔██║██████╔╝██████╔╝██║██║     █████╔╝ ███████╗"
-centralizar "██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔══██╗██╔══██╗██║██║     ██╔═██╗ ╚════██║"
-centralizar "██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██║  ██║██║╚██████╗██║  ██╗███████║"
-centralizar "╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝"
-    echo -e "${reset}"
-    echo ""
-}
-
 msg_twentycrm() {
     clear
     echo -e "${roxo}"
@@ -404,19 +391,6 @@ centralizar "     ╚═════╝ ╚══════╝╚═╝     �
     echo ""
 }
 
-msg_nextcloud(){
-    clear
-    echo -e "${roxo}"
-centralizar "███╗   ██╗███████╗██╗  ██╗████████╗ ██████╗██╗      ██████╗ ██╗   ██╗██████╗"
-centralizar "████╗  ██║██╔════╝╚██╗██╔╝╚══██╔══╝██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗"
-centralizar "██╔██╗ ██║█████╗   ╚███╔╝    ██║   ██║     ██║     ██║   ██║██║   ██║██║  ██║"
-centralizar "██║╚██╗██║██╔══╝   ██╔██╗    ██║   ██║     ██║     ██║   ██║██║   ██║██║  ██║"
-centralizar "██║ ╚████║███████╗██╔╝ ██╗   ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝"
-centralizar "╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝"
-    echo -e "${reset}"
-    echo ""
-}
-
 msg_strapi(){
     clear
     echo -e "${roxo}"
@@ -456,19 +430,6 @@ msg_langflow() {
     echo ""
 }
 
-msg_dify(){
-    clear
-    echo -e "${roxo}"
-    centralizar "██████╗ ██╗███████╗██╗   ██╗ █████╗ ██╗"
-    centralizar "██╔══██╗██║██╔════╝╚██╗ ██╔╝██╔══██╗██║"
-    centralizar "██║  ██║██║█████╗   ╚████╔╝ ███████║██║"
-    centralizar "██║  ██║██║██╔══╝    ╚██╔╝  ██╔══██║██║"
-    centralizar "██████╔╝██║██║        ██║██╗██║  ██║██║"
-    centralizar "╚═════╝ ╚═╝╚═╝        ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
-    echo -e "${reset}"
-    echo ""
-}
-
 msg_ollama(){
     clear
     echo -e "${roxo}"
@@ -504,45 +465,6 @@ msg_nocodb(){
     centralizar "██║╚██╗██║██║   ██║██║     ██║   ██║██║  ██║██╔══██╗"
     centralizar "██║ ╚████║╚██████╔╝╚██████╗╚██████╔╝██████╔╝██████╔╝"
     centralizar "╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝ ╚═════╝"
-    echo -e "${reset}"
-    echo ""
-}
-
-msg_wordpress(){
-    clear
-    echo -e "${roxo}"
-    centralizar "██╗    ██╗ ██████╗ ██████╗ ██████╗ ██████╗ ██████╗ ███████╗███████╗███████╗"
-    centralizar "██║    ██║██╔═══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝"
-    centralizar "██║ █╗ ██║██║   ██║██████╔╝██║  ██║██████╔╝██████╔╝█████╗  ███████╗███████╗"
-    centralizar "██║███╗██║██║   ██║██╔══██╗██║  ██║██╔═══╝ ██╔══██╗██╔══╝  ╚════██║╚════██║"
-    centralizar "╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝██║     ██║  ██║███████╗███████║███████║"
-    centralizar " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝"
-    echo -e "${reset}"
-    echo ""
-}
-
-msg_frappe(){
-    clear
-    echo -e "${roxo}"
-    centralizar "███████╗██████╗  █████╗ ██████╗ ██████╗ ███████╗"
-    centralizar "██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝"
-    centralizar "█████╗  ██████╔╝███████║██████╔╝██████╔╝█████╗"  
-    centralizar "██╔══╝  ██╔══██╗██╔══██║██╔═══╝ ██╔═══╝ ██╔══╝"  
-    centralizar "██║     ██║  ██║██║  ██║██║     ██║     ███████╗"
-    centralizar "╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝"
-    echo -e "${reset}"
-    echo ""
-}
-
-msg_moodle(){
-    clear
-    echo -e "${roxo}"
-    centralizar "███╗   ███╗ ██████╗  ██████╗ ██████╗ ██╗     ███████╗"
-    centralizar "████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗██║     ██╔════╝"
-    centralizar "██╔████╔██║██║   ██║██║   ██║██║  ██║██║     █████╗"  
-    centralizar "██║╚██╔╝██║██║   ██║██║   ██║██║  ██║██║     ██╔══╝"  
-    centralizar "██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██████╔╝███████╗███████╗"
-    centralizar "╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝"
     echo -e "${reset}"
     echo ""
 }
@@ -7513,633 +7435,7 @@ EOL
 
 }
 
-ferramenta_dify() {
-  msg_dify
-  dados
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/7\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para a interface web do Dify AI (ex: dify.encha.ai): \e[0m" && read -r url_dify
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/7\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para a API do Dify AI (ex: api-dify.encha.ai): \e[0m" && read -r url_dify_api
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/7\e[0m"
-    echo -en "📧 \e[33mDigite o email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_dify
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
-    echo -en "👤 \e[33mDigite o Usuário para SMTP (ex: admin || encha): \e[0m" && read -r user_email_dify
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
-    echo -en "🔑 \e[33mDigite a Senha SMTP do Email: \e[0m" && read -s -r senha_email_dify
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
-    echo -en "🏠 \e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_dify
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
-    echo -en "🔌 \e[33mDigite a porta SMTP do Email  (ex: 465): \e[0m" && read -r porta_smtp_dify
-    echo ""
-
-    clear
-    msg_dify
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Web:\e[97m $url_dify\e[0m"
-    echo -e "🔗 \e[33mDomínio API:\e[97m $url_dify_api\e[0m"
-    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_dify\e[0m"
-    echo -e "🏠 \e[33mHost SMTP:\e[97m $smtp_email_dify\e[0m"
-    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_dify\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_dify; fi
-  done
-
-  clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
-  verificar_container_postgres || ferramenta_postgres
-  verificar_docker_e_portainer_traefik || return
-  verificar_minio || return
-
-  echo -e "\e[97m🗄️ Configurando bancos de dados...\e[0m"
-  pegar_senha_postgres
-  criar_banco_postgres_da_stack "dify"
-  criar_banco_postgres_da_stack "dify_plugin"
-
-  echo -e "\e[97m🪣 Configurando bucket de armazenamento...\e[0m"
-  pegar_senha_minio
-  criar_bucket.minio dify
-
-  secret_key=$(openssl rand -hex 16)
-  token_weaviate=$(openssl rand -hex 16)
-  token_apikey_plugins=$(openssl rand -hex 16)
-  token_deamon=$(openssl rand -hex 16)
-  sandbox_key=$(openssl rand -hex 16)
-
-  cat > dify.yaml <<EOL
-version: "3.7"
-services:
-  dify_api:
-    image: langgenius/dify-api:latest
-    environment:
-      # --- SEÇÃO CORRIGIDA ---
-      - CONSOLE_WEB_URL=https://$url_dify
-      - APP_WEB_URL=https://$url_dify
-      - CONSOLE_API_URL=https://$url_dify_api
-      - SERVICE_API_URL=https://$url_dify_api
-      - APP_API_URL=https://$url_dify_api
-      - FILES_URL=https://$url_dify_api
-      # --- FIM DA CORREÇÃO ---
-      - MAIL_TYPE=smtp
-      - MAIL_DEFAULT_SEND_FROM=$email_dify
-      - SMTP_SERVER=$smtp_email_dify
-      - SMTP_PORT=$porta_smtp_dify
-      - SMTP_USERNAME=$user_email_dify
-      - SMTP_PASSWORD=$senha_email_dify
-      - SMTP_USE_TLS=true
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=$senha_postgres
-      - DB_HOST=postgres
-      - DB_DATABASE=dify
-      - REDIS_HOST=redis
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - STORAGE_TYPE=s3
-      - S3_ENDPOINT=https://$url_s3
-      - S3_BUCKET_NAME=dify
-      - S3_ACCESS_KEY=$S3_ACCESS_KEY
-      - S3_SECRET_KEY=$S3_SECRET_KEY
-      - S3_REGION=us-east-1
-      - VECTOR_STORE=weaviate
-      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
-      - WEAVIATE_API_KEY=$token_weaviate
-      - SECRET_KEY=$secret_key
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.dify_api.rule=Host(\`$url_dify_api\`)"
-        - "traefik.http.services.dify_api.loadbalancer.server.port=5001"
-        - "traefik.http.routers.dify_api.service=dify_api"
-        - "traefik.http.routers.dify_api.entrypoints=websecure"
-        - "traefik.http.routers.dify_api.tls.certresolver=letsencryptresolver"
-
-  dify_worker:
-    image: langgenius/dify-api:latest
-    command: worker
-    environment:
-      - CONSOLE_WEB_URL=https://$url_dify
-      - APP_WEB_URL=https://$url_dify
-      - CONSOLE_API_URL=https://$url_dify_api
-      - SERVICE_API_URL=https://$url_dify_api
-      - APP_API_URL=https://$url_dify_api
-      - FILES_URL=https://$url_dify_api
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=$senha_postgres
-      - DB_HOST=postgres
-      - DB_DATABASE=dify
-      - REDIS_HOST=redis
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - STORAGE_TYPE=s3
-      - S3_ENDPOINT=https://$url_s3
-      - S3_BUCKET_NAME=dify
-      - S3_ACCESS_KEY=$S3_ACCESS_KEY
-      - S3_SECRET_KEY=$S3_SECRET_KEY
-      - S3_REGION=us-east-1
-      - VECTOR_STORE=weaviate
-      - WEAVIATE_ENDPOINT=http://dify_weaviate:8080
-      - WEAVIATE_API_KEY=$token_weaviate
-      - SECRET_KEY=$secret_key
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-
-  dify_web:
-    image: langgenius/dify-web:latest
-    environment:
-      - API_URL=https://$url_dify_api
-      - CONSOLE_URL=https://$url_dify
-      - APP_URL=https://$url_dify
-      - NEXT_TELEMETRY_DISABLED=1
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.dify_web.rule=Host(\`$url_dify\`)"
-        - "traefik.http.services.dify_web.loadbalancer.server.port=3000"
-        - "traefik.http.routers.dify_web.service=dify_web"
-        - "traefik.http.routers.dify_web.entrypoints=websecure"
-        - "traefik.http.routers.dify_web.tls.certresolver=letsencryptresolver"
-
-  dify_weaviate:
-    image: semitechnologies/weaviate:1.23.7
-    volumes:
-      - dify_weaviate:/var/lib/weaviate
-    environment:
-      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=false
-      - AUTHENTICATION_APIKEY_ENABLED=true
-      - AUTHENTICATION_APIKEY_ALLOWED_KEYS=$token_weaviate
-      - AUTHENTICATION_APIKEY_USERS=admin@encha.ai
-      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
-      - DEFAULT_VECTORIZER_MODULE=none
-      - CLUSTER_HOSTNAME=node1
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-
-volumes:
-  dify_storage:
-  dify_weaviate:
-
-networks:
-  $nome_rede_interna:
-    external: true
-EOL
-
-  STACK_NAME="dify"
-  stack_editavel
-
-  echo -e "\e[97m🔍 Verificando serviços...\e[0m"
-  pull langgenius/dify-api:latest langgenius/dify-web:latest semitechnologies/weaviate:1.23.7
-  wait_stack dify_dify_api dify_dify_worker dify_dify_web dify_dify_weaviate
-
-  cd /root/dados_vps
-  cat > dados_dify <<EOL
-[ DIFY AI ]
-Dominio: https://$url_dify
-Usuario: (criado no primeiro acesso)
-Senha: (criada no primeiro acesso)
-EOL
-  cd
-
-  msg_resumo_informacoes
-  echo -e "\e[32m[ DIFY AI ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_dify\e[0m"
-  echo -e "\e[33m🔗 API:\e[97m https://$url_dify_api\e[0m"
-  msg_retorno_menu
-
-}
-
-ferramenta_wordpress() {
-  msg_wordpress
-  dados
-
-  # Pega as informações do banco de dados já existente
-  DB_NAME=$(grep "Database:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
-  DB_USER=$(grep "Usuario:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
-  DB_PASS=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: blog.encha.ai): \e[0m" && read -r url_wordpress
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-    echo -e "📦 \e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
-    echo -en "📝 \e[33mDigite um nome para o site (para identificar os volumes, ex: enchasite): \e[0m" && read -r nome_site_wordpress
-    echo ""  
-
-    clear
-    msg_wordpress
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
-    echo -e "📝 \e[33mNome do Site (identificador):\e[97m $nome_site_wordpress\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
-  done
-
-  clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
-  verificar_container_mysql || ferramenta_mysql
-  verificar_container_redis || ferramenta_redis
-  pegar_senha_mysql_da_stack
-  criar_banco_mysql_da_stack "$nome_site_wordpress"
-
-  echo -e "\e[97m⚙️ Instalando o Wordpress...\e[0m"
-  cat > wordpress_$nome_site_wordpress.yaml <<EOL
-version: "3.7"
-services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
-  wordpress_$nome_site_wordpress:
-    image: wordpress:latest
-    volumes:
-      - wordpress_$nome_site_wordpress:/var/www/html
-      - wordpress_${nome_site_wordpress}_php:/usr/local/etc/php
-    networks:
-      - $nome_rede_interna
-    environment:
-      - WORDPRESS_DB_NAME=$nome_site_wordpress
-      - WORDPRESS_DB_HOST=mysql
-      - WORDPRESS_DB_USER=root
-      - WORDPRESS_DB_PASSWORD=$senha_mysql
-      - WP_REDIS_HOST=redis
-      - WP_REDIS_PORT=6379
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.wordpress_$nome_site_wordpress.rule=Host(\`$url_wordpress\`)"
-        - "traefik.http.services.wordpress_$nome_site_wordpress.loadbalancer.server.port=80"
-        - "traefik.http.routers.wordpress_$nome_site_wordpress.service=wordpress_$nome_site_wordpress"
-        - "traefik.http.routers.wordpress_$nome_site_wordpress.entrypoints=websecure"
-        - "traefik.http.routers.wordpress_$nome_site_wordpress.tls.certresolver=letsencryptresolver"
-volumes:
-  wordpress_$nome_site_wordpress:
-    external: true
-  wordpress_${nome_site_wordpress}_php:
-    external: true
-networks:
-  $nome_rede_interna:
-    external: true
-EOL
-
-  STACK_NAME="wordpress_$nome_site_wordpress"
-  stack_editavel
-  wait_stack "wordpress_${nome_site_wordpress}_wordpress_$nome_site_wordpress"
-
-  echo -e "\n\e[97m🔧 Aplicando configurações de performance (PHP e Redis)...\e[0m"
-  caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
-  caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data/wp-config.php"
-
-  # Aguarda wp-config.php ser criado
-  echo -n "   Aguardando criação do wp-config.php..."
-  for i in {1..20}; do
-    if [ -f "$caminho_wp_config" ]; then
-      echo -e " \e[32m[OK]\e[0m"
-        break
-    fi
-      sleep 3
-      echo -n "."
-  done
-  if [ ! -f "$caminho_wp_config" ]; then
-    echo -e " \e[31m[FALHOU]\e[0m Arquivo não encontrado após 60 segundos."
-    return 1
-  fi
-    
-  # Edita php.ini
-  cp "/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production" "$caminho_php_ini"
-  sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
-  sed -i "s/^post_max_size =.*/post_max_size = 1024M/" "$caminho_php_ini"
-  sed -i "s/^max_execution_time =.*/max_execution_time = 300/" "$caminho_php_ini"
-  sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
-  echo -e "Configurações do PHP ajustadas com sucesso. \e[32m[OK]\e[0m"
-    
-  # Edita wp-config.php
-  if ! grep -q "WP_REDIS_HOST" "$caminho_wp_config"; then
-    sed -i "/\/\* Add any custom values between this line and the \"stop editing\" line. \*\//a \define( 'WP_REDIS_HOST', 'redis' );\ndefine( 'WP_REDIS_PORT', 6379 );" "$caminho_wp_config"
-    echo -e "   Configurações do Redis injetadas no wp-config.php. \e[32m[OK]\e[0m"
-  else
-    echo -e "   Configurações do Redis já presentes no wp-config.php. \e[33m[IGNORADO]\e[0m"
-  fi
-    
-  # Força a atualização do serviço
-  echo -e "   Reiniciando o serviço para aplicar as novas configurações..."
-  docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
-  wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
-
-  cd /root/dados_vps
-  cat > dados_wordpress_$nome_site_wordpress <<EOL
-[ WORDPRESS - $nome_site_wordpress ]
-Dominio: https://$url_wordpress
-Arquivos do site: /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data
-Arquivos do php: /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data
-EOL
-
-  cd
-  msg_resumo_informacoes
-  echo -e "\e[32m[ WORDPRESS - $nome_site_wordpress ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wordpress\e[0m"
-  echo -e "\e[33m📂 Arquivos:\e[97m /var/lib/docker/volumes/wordpress_$nome_site_wordpress/_data\e[0m"
-  echo -e "\n\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
-  msg_retorno_menu
-        
-}
-
-ferramenta_frappe(){
-  msg_frappe
-  dados
-
-  while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m" && read -r url_frappe
-    echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-    echo -en "🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m" && read -s -r senha_frappe
-    echo ""
-
-    clear
-    msg_frappe
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Frappe:\e[97m $url_frappe\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m Administrator\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_frappe; fi
-  done
-
-  clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Frappe/ERPNext...\e[0m"
-
-  DB_PASSWORD=$(openssl rand -hex 16)
-
-  cat > erpnext.yaml <<EOL
-version: "3.7"
-services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
-  erpnext_frontend:
-    image: frappe/erpnext:v15.24.1
-    environment:
-      - BACKEND=erpnext_backend:8000
-      - FRAPPE_SITE_NAME_HEADER=$url_frappe
-      - SOCKETIO=erpnext_websocket:9000
-    networks:
-      - $nome_rede_interna
-    deploy:
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.erpnext_frontend.rule=Host(\`$url_frappe\`)"
-        - "traefik.http.services.erpnext_frontend.loadbalancer.server.port=8080"
-        - "traefik.http.routers.erpnext_frontend.service=erpnext_frontend"
-        - "traefik.http.routers.erpnext_frontend.entrypoints=websecure"
-        - "traefik.http.routers.erpnext_frontend.tls.certresolver=letsencryptresolver"
-  erpnext_backend:
-    image: frappe/erpnext:v15.24.1
-    volumes:
-      - erpnext_sites:/home/frappe/frappe-bench/sites
-    networks:
-      - $nome_rede_interna
-    environment:
-      - DB_HOST=erpnext_db
-      - DB_PORT=3306
-      - REDIS_CACHE=redis://erpnext_cache:6379
-      - REDIS_QUEUE=redis://erpnext_queue:6379
-      - SOCKETIO_PORT=9000
-      - DB_PASSWORD=$DB_PASSWORD
-  erpnext_db:
-    image: mariadb:10.6
-    volumes:
-      - erpnext_db:/var/lib/mysql
-    networks:
-      - $nome_rede_interna
-    environment:
-      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
-  erpnext_cache:
-    image: redis:latest
-    volumes:
-      - erpnext_cache:/data
-    networks:
-      - $nome_rede_interna
-  erpnext_queue:
-    image: redis:latest
-    volumes:
-      - erpnext_queue:/data
-    networks:
-      - $nome_rede_interna
-  erpnext_websocket:
-    image: frappe/erpnext:v15.24.1
-    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
-    volumes:
-      - erpnext_sites:/home/frappe/frappe-bench/sites
-    networks:
-      - $nome_rede_interna
-    environment:
-      - REDIS_SOCKETIO=redis://erpnext_socketio:6379
-      - FRAPPE_SITE_NAME_HEADER=$url_frappe
-  erpnext_socketio:
-    image: redis:latest
-    volumes:
-      - erpnext_socketio:/data
-    networks:
-      - $nome_rede_interna
-volumes:
-  erpnext_sites:
-  erpnext_logs:
-  erpnext_db:
-  erpnext_cache:
-  erpnext_queue:
-  erpnext_socketio:
-networks:
-  $nome_rede_interna:
-    external: true
-EOL
-
-  STACK_NAME="erpnext"
-  stack_editavel
-
-  echo -e "\e[97m🔍 Verificando serviços (isso pode levar alguns minutos)...\e[0m"
-  wait_stack erpnext_erpnext_db
-
-  echo -e "\e[97m⚙️ Configurando o site do ERPNext...\e[0m"
-  docker run -it --rm \
-    --network ${nome_rede_interna} \
-    -v erpnext_sites:/home/frappe/frappe-bench/sites \
-    -e DB_HOST=erpnext_db \
-    -e DB_PORT=3306 \
-    -e DB_PASSWORD=$DB_PASSWORD \
-    -e "FRAPPE_SITE_NAME_HEADER=$url_frappe" \
-    frappe/erpnext:v15.24.1 bench new-site "$url_frappe" --no-mariadb-socket --admin-password "$senha_frappe" --install-app erpnext
-
-  wait_stack erpnext_erpnext_frontend erpnext_erpnext_backend
-  cd /root/dados_vps
-  cat > dados_erpnext <<EOL
-[ FRAPPE / ERPNEXT ]
-Dominio: https://$url_frappe
-Usuario: administrator
-Senha: $senha_frappe
-EOL
-  
-  cd
-  msg_resumo_informacoes
-  echo -e "\e[32m[ FRAPPE / ERPNEXT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_frappe\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m administrator\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $senha_frappe\e[0m"
-  msg_retorno_menu
-
-}
-
-ferramenta_moodle() {
-    msg_moodle
-    dados
-
-    while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m" && read -r url_moodle
-        echo ""
-        
-        clear
-        msg_moodle
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Moodle:\e[97m $url_moodle\e[0m"
-        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_moodle; fi
-    done
-
-    clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
-    senha_db_moodle=$(openssl rand -hex 16)
-    
-    cat > moodle.yaml <<EOL
-version: '3.9'
-volumes:
-  moodle_data:
-  moodledata_data:
-  mariadb_data:
-services:
-  moodle:
-    image: bitnami/moodle:latest
-    volumes:
-      - moodle_data:/bitnami/moodle
-      - moodledata_data:/bitnami/moodledata
-    networks:
-      - $nome_rede_interna
-    environment:
-      - MOODLE_DATABASE_HOST=mariadb
-      - MOODLE_DATABASE_PORT_NUMBER=3306
-      - MOODLE_DATABASE_USER=bn_moodle
-      - MOODLE_DATABASE_PASSWORD=$senha_db_moodle
-      - MOODLE_DATABASE_NAME=bitnami_moodle
-      - ALLOW_EMPTY_PASSWORD=no
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      # --- CORREÇÃO APLICADA: Aumentando a memória ---
-      resources:
-        limits:
-          cpus: "2"
-          memory: 2048M
-      # --- FIM DA CORREÇÃO ---
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.moodle.rule=Host(\`$url_moodle\`)"
-        - "traefik.http.services.moodle.loadbalancer.server.port=8080"
-        - "traefik.http.routers.moodle.service=moodle"
-        - "traefik.http.routers.moodle.entrypoints=websecure"
-        - "traefik.http.routers.moodle.tls.certresolver=letsencryptresolver"
-  mariadb:
-    image: bitnami/mariadb:latest
-    environment:
-      - MARIADB_ROOT_PASSWORD=$senha_db_moodle
-      - MARIADB_USER=bn_moodle
-      - MARIADB_PASSWORD=$senha_db_moodle
-      - MARIADB_DATABASE=bitnami_moodle
-    volumes:
-      - mariadb_data:/bitnami/mariadb
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      # --- CORREÇÃO APLICADA: Aumentando a memória ---
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2048M
-      # --- FIM DA CORREÇÃO ---
-networks:
-  $nome_rede_interna:
-    external: true
-EOL
-    
-    STACK_NAME="moodle"
-    stack_editavel
-    wait_stack "moodle_moodle" "moodle_mariadb"
-    telemetria Moodle finalizado
-    
-    cd /root/dados_vps
-    cat > dados_moodle <<EOL
-[ MOODLE ]
-Dominio: https://$url_moodle
-Usuario: user
-Senha: (Será exibida nos logs da primeira inicialização)
-EOL
-    cd
-    
-    msg_resumo_informacoes
-    echo -e "\e[32m[ MOODLE ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_moodle\e[0m"
-    echo -e "\n\e[33m⚠️ IMPORTANTE: A senha do usuário 'user' é gerada na primeira inicialização.\e[0m"
-    echo -e "Para encontrá-la, execute o comando: \e[97mdocker service logs moodle_moodle\e[0m"
-    msg_retorno_menu
-}
-
 ferramenta_humhub() {
-    recursos 1 1 && continue || return
     msg_humhub
     dados
 
@@ -8160,15 +7456,18 @@ ferramenta_humhub() {
 
     clear
     echo -e "\e[97m🚀 Iniciando a instalação do HumHub...\e[0m"
-    telemetria HumHub iniciado
-
-    verificar_e_instalar_mysql || return
+    verificar_container_mysql || ferramenta_mysql 
     pegar_senha_mysql_da_stack
     criar_banco_mysql_da_stack "humhub"
     
     cat > humhub.yaml <<EOL
 version: '3.7'
 services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
   humhub:
     image: mriedmann/humhub:latest
     volumes:
@@ -8249,355 +7548,111 @@ exibir_menu() {
         echo -e "${reset}"
         echo ""
 
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer                            ${azul}08.${reset} Instalar Typebot"
-        echo -e "${azul}02.${reset} Instalar Evolution API                                  ${azul}09.${reset} Instalar Directus"
-        echo -e "${azul}03.${reset} Instalar N8N                                            ${azul}10.${reset} Instalar Odoo "
-        echo -e "${azul}04.${reset} Instalar Chatwoot                                       ${azul}11.${reset} Verificar status dos serviços"
-        echo -e "${azul}05.${reset} Liberar Chatwoot                                        ${azul}12.${reset} Sair do menu"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha                             ${azul}13.${reset} Instalar pgAdmin"
-        echo -e "${azul}07.${reset} Instalar Minio                                          ${azul}14.${reset} Instalar nocobase"
-        echo -e "                                                                           ${azul}15.${reset} Instalar botpress"
-        echo -e "                                                                           ${azul}16.${reset} Instalar baserow"
-        echo -e "                                                                           ${azul}17.${reset} Instalar mongoDB"
-        echo -e "                                                                           ${azul}18.${reset} Instalar rabbitMQ"
-        echo -e "                                                                           ${azul}19.${reset} Instalar uptimeKuma"
-        echo -e "                                                                           ${azul}20.${reset} Instalar calcom"
-        echo -e "                                                                           ${azul}21.${reset} Instalar mautic"
-        echo -e "                                                                           ${azul}22.${reset} Instalar appsmith"
-        echo -e "                                                                           ${azul}23.${reset} Instalar qdrant"
-        echo -e "                                                                           ${azul}24.${reset} Instalar woofedcrm"
-        echo -e "                                                                           ${azul}25.${reset} Instalar formbricks"
-        echo -e "                                                                           ${azul}26.${reset} Instalar twentyCRM"
-        echo -e "                                                                           ${azul}27.${reset} Instalar Mattermost"
-        echo -e "                                                                           ${azul}28.${reset} Instalar outline"
-        echo -e "                                                                           ${azul}29.${reset} Instalar focalboard"
-        echo -e "                                                                           ${azul}30.${reset} Instalar GLPI"
-        echo -e "                                                                           ${azul}31.${reset} Instalar Nextcloud"
-        echo -e "                                                                           ${azul}32.${reset} Instalar Flowise"
-        echo -e "                                                                           ${azul}33.${reset} Instalar Langflow"
-        echo -e "                                                                           ${azul}34.${reset} Instalar Ollama"
-        echo -e "                                                                           ${azul}35.${reset} Instalar Anythingllm"
-        echo -e "                                                                           ${azul}36.${reset} Instalar Nocodb"
-        echo -e "                                                                           ${azul}37.${reset} Instalar Dify"
-        echo -e "                                                                           ${azul}38.${reset} Instalar Wordpress"
-        echo -e "                                                                           ${azul}39.${reset} Instalar Frappe"
-        echo -e "                                                                           ${azul}40.${reset} Instalar Moodle"
+        # Lista de todas as ferramentas disponíveis
+        opcoes=(
+            "Traefik + Portainer" "Evolution API" "N8N" "Chatwoot" "Liberar Chatwoot"
+            "N8N Formação Encha" "Minio" "Typebot" "Directus" "Odoo" "pgAdmin"
+            "Nocobase" "Botpress" "Baserow" "MongoDB" "RabbitMQ" "Uptime Kuma"
+            "Cal.com" "Mautic" "Appsmith" "Qdrant" "Woofed CRM" "Formbricks"
+            "Twenty CRM" "Mattermost" "Outline" "Focalboard" "GLPI" "Nextcloud"
+            "Strapi" "Flowise" "Langflow" "Ollama" "AnythingLLM" "NocoDB"
+            "Dify" "Wordpress" "Moodle" "HumHub" "Yourls" "Shlink" "Krayin CRM"
+            # --- Adicione novas ferramentas aqui ---
+        )
+
+        # Itens de controle do menu
+        itens_controle=(
+            "Verificar status dos serviços"
+            "Sair do menu"
+        )
+        
+        num_opcoes=${#opcoes[@]}
+        num_colunas=2
+        num_linhas=$(( (num_opcoes + num_colunas - 1) / num_colunas ))
+
+        for i in $(seq 0 $((num_linhas - 1))); do
+            # Coluna 1
+            idx1=$i
+            if [ $idx1 -lt $num_opcoes ]; then
+                num_opcao1=$(printf "%02d" $((idx1 + 1)))
+                item1="${opcoes[idx1]}"
+                printf "${azul}%s.${reset} %-45s" "$num_opcao1" "$item1"
+            else
+                printf "%-50s" ""
+            fi
+
+            # Coluna 2
+            idx2=$((i + num_linhas))
+            if [ $idx2 -lt $num_opcoes ]; then
+                num_opcao2=$(printf "%02d" $((idx2 + 1)))
+                item2="${opcoes[idx2]}"
+                printf "| ${azul}%s.${reset} %s\n" "$num_opcao2" "$item2"
+            else
+                printf "\n"
+            fi
+        done
+        
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-28): ${reset}"
+        echo -e "--- Opções do Sistema ---"
+        echo -e "${azul}98.${reset} ${itens_controle[0]}"
+        echo -e "${vermelho}0.${reset}  ${itens_controle[1]}"
+        echo ""
+        echo -en "${amarelo}👉 Escolha uma opção: ${reset}"
         read -r opcao
 
         case $opcao in
-            01|1)
-                verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
-                
-                
-                ferramenta_traefik_e_portainer
-                
-                
-                
-                ;;
-            02|2)
-                 verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
+            1 | 01) ferramenta_traefik_e_portainer ;;
+            2 | 02) ferramenta_evolution ;;
+            3 | 03) ferramenta_n8n ;;
+            4 | 04) ferramenta_chatwoot ;;
+            5 | 05) liberar_chatwoot ;;
+            6 | 06) ferramenta_n8n_formacao_encha ;;
+            7 | 07) ferramenta_minio ;;
+            8 | 08) ferramenta_typebot ;;
+            9 | 09) ferramenta_directus ;;
+            10) ferramenta_odoo ;;
+            11) ferramenta_pgadmin ;;
+            12) ferramenta_nocobase ;;
+            13) ferramenta_botpress ;;
+            14) ferramenta_baserow ;;
+            15) ferramenta_mongodb ;;
+            16) ferramenta_rabbitmq ;;
+            17) ferramenta_uptimekuma ;;
+            18) ferramenta_calcom ;;
+            19) ferramenta_mautic ;;
+            20) ferramenta_appsmith ;;
+            21) ferramenta_qdrant ;;
+            22) ferramenta_woofedcrm ;;
+            23) ferramenta_formbricks ;;
+            24) ferramenta_twentycrm ;;
+            25) ferramenta_mattermost ;;
+            26) ferramenta_outline ;;
+            27) ferramenta_focalboard ;;
+            28) ferramenta_glpi ;;
+            29) ferramenta_nextcloud ;;
+            30) ferramenta_strapi ;;
+            31) ferramenta_flowise ;;
+            32) ferramenta_langflow ;;
+            33) ferramenta_ollama ;;
+            34) ferramenta_anythingllm ;;
+            35) ferramenta_nocodb ;;
+            36) ferramenta_dify ;;
+            37) ferramenta_wordpress ;;
+            38) ferramenta_moodle ;;
+            39) ferramenta_humhub ;;
+            40) ferramenta_yourls ;;
+            41) ferramenta_shlink ;;
+            42) ferramenta_krayincrm ;;
+            # Adicione os próximos números aqui...
 
-                if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
-                    STACK_NAME="evolution${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_evolution "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_evolution"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi
-                ;;
-
-            03|3)
-              verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
-
-              if verificar_docker_e_portainer_traefik; then
-                  ## INICIO TOKEN
-                  STACK_NAME="n8n${opcao2:+_$opcao2}"
-                  if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                      ferramenta_n8n "$opcao2"
-                  else
-                      APP_ENCHA="ferramenta_n8n"
-                      verificar_arquivo
-                  fi
-                  ## FIM TOKEN
-              fi
-                ;; 
-            04|4)
-                verificar_stack "chatwoot${opcao2:+_$opcao2}" && continue || echo ""
-
-                if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
-                    STACK_NAME="chatwoot${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_chatwoot "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_chatwoot"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi
-                ;;
-            
-            05|5)
-                if verificar_docker_e_portainer_traefik; then
-                    liberar_chatwoot
-                fi
-                ;;
-            06|6)
-                verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
-
-                if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
-                    STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_n8n_formacao_encha "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_n8n_formacao_encha"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi
-                ;;
-            07|7)
-                verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
-
-                if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
-                    STACK_NAME="minio${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_minio "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_minio"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi
-                ;;    
-            08|8)
-                verificar_stack "typebot${opcao2:+_$opcao2}" && continue || echo ""
-                 if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    ## INICIO TOKEN
-                    STACK_NAME="typebot${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_typebot "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_typebot"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi
-                ;;
-            
-            09|9)
-                verificar_stack "directus${opcao2:+_$opcao2}" && continue || echo ""
-                 if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    ## INICIO TOKEN
-                    STACK_NAME="directus${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_directus "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_directus"
-                        verificar_arquivo
-                    fi
-                    ## FIM TOKEN 
-                fi        
-                ;;
-            
-            10)
-                verificar_stack "odoo${opcao2:+_$opcao2}" && continue || echo ""
-                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
-                    STACK_NAME="odoo${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_odoo "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_odoo"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            11)
+            98)
                 verificar_status_servicos
-                echo "Aperte ENTER para retornar ao menu de ferramentas"
-                read
-                sleep 2                
+                read -p $'\n\e[33mPressione ENTER para voltar ao menu...\e[0m'
                 ;;
-            12)
-                echo -e "${verde}Saindo do menu...${reset}"
+            0)
+                echo -e "${verde}Saindo... Até logo!${reset}"
                 sleep 1
                 exit 0
-                ;;
-            13)
-              verificar_stack "pgadmin" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_pgadmin
-                fi
-                ;;
-            14)
-              verificar_stack "nocobase" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_nocobase
-                fi
-                ;;
-            15)
-              verificar_stack "botpress" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_botpress
-                fi
-                ;;
-            16)
-              verificar_stack "baserow" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_baserow
-                fi
-                ;;
-            17)
-              verificar_stack "mongodb" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_mongodb
-                fi
-                ;;
-            18)
-              verificar_stack "rabbitmq" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_rabbitmq
-                fi
-                ;;
-            19)
-              verificar_stack "uptimekuma" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_uptimekuma
-                fi
-                ;;
-            20)
-              verificar_stack "calcom" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_calcom
-                fi
-                ;;
-            21)
-              verificar_stack "mautic" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_mautic
-                fi
-                ;;
-            22)
-              verificar_stack "appsmith" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_appsmith
-                fi
-                ;;
-            23)
-              verificar_stack "qdrant" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_qdrant
-                fi
-                ;;
-            24)
-              verificar_stack "woofedcrm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_woofedcrm
-                fi
-                ;;
-            25)
-              verificar_stack "formbricks" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_formbricks
-                fi
-                ;;
-            26)
-              verificar_stack "twentycrm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_twentycrm
-                fi
-                ;;
-            27)
-              verificar_stack "mattermost" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_mattermost
-                fi
-                ;;
-            28)
-              verificar_stack "outline" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_outline
-                fi
-                ;;
-            29)
-              verificar_stack "focalboard" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_focalboard
-                fi
-                ;;
-            30)
-              verificar_stack "glpi" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_glpi
-                fi
-                ;;
-            31)
-              verificar_stack "nextcloud" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_nextcloud
-                fi
-                ;;
-            32)
-              verificar_stack "flowise" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_flowise
-                fi
-                ;;
-            33)
-              verificar_stack "langflow" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_langflow
-                fi
-                ;;
-            34)
-              verificar_stack "ollama" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_ollama
-                fi
-                ;;
-            35)
-              verificar_stack "anythingllm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_anythingllm
-                fi
-                ;;
-            36)
-              verificar_stack "nocodb" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_nocodb
-                fi
-                ;;
-            37)
-              verificar_stack "dify" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_dify
-                fi
-                ;;
-            38)
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_wordpress
-                fi
-                ;;
-            39) 
-              verificar_stack "erpnext" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_frappe
-                fi
-                ;;
-            40) 
-              verificar_stack "moodle" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_moodle
-                fi
                 ;;
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
