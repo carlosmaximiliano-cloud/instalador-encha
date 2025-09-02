@@ -7732,6 +7732,10 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      restart_policy:         ### ADICIONE AQUI ###
+        condition: on-failure ### ADICIONE AQUI ###
+        delay: 10s            ### ADICIONE AQUI ###
+        max_attempts: 3       ### ADICIONE AQUI ###
       placement:
         constraints:
           - node.role == manager
