@@ -9700,7 +9700,7 @@ EOL
   echo ""
 
   pegar_senha_minio
-  minio.bucket supabase${1:+-$1}
+  criar_bucket.minio supabase${1:+-$1}
 
   if [ $? -eq 0 ]; then
     echo -e "1/1 - [ OK ] - Criando Bucket\e[33m $BUCKET\e[0m"
