@@ -12710,7 +12710,17 @@ verificar_status_servicos() {
     fi
 }
 
+
 exibir_menu() {
+    # --- Definição de Cores Corrigida ---
+    # As cores são definidas localmente usando a sintaxe $'...' para garantir
+    # que os códigos de escape sejam interpretados corretamente.
+    local azul=$'\033[34m'
+    local amarelo=$'\033[33m'
+    local verde=$'\033[32m'
+    local vermelho=$'\033[31m'
+    local reset=$'\033[0m'
+
     # --- Configuração do Menu ---
     declare -A OPCOES
     OPCOES[1]="Traefik & Portainer"
@@ -12781,6 +12791,7 @@ exibir_menu() {
         
         printf "\n"
         centralizar "Sistema de Deploy Automatizado"
+        # O 'echo -e' garante a interpretação das cores nas linhas abaixo
         echo -e "${amarelo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
         
         local items_pagina=()
@@ -12799,6 +12810,7 @@ exibir_menu() {
             local idx_esq=${items_pagina[i]}
             local texto_esq="${OPCOES[$idx_esq]}"
             local status_esq="${verde}[ ]${reset}"
+            # A construção do item agora funciona corretamente com as variáveis de cor
             local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
 
             local item_dir=""
@@ -12810,16 +12822,17 @@ exibir_menu() {
                 item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
             fi
             
-            printf "      %s %s\n" "$item_esq" "$item_dir"
+            # O 'echo -e' garante a renderização correta das cores
+            echo -e "      ${item_esq} ${item_dir}"
         done
 
         echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
-        printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
+        # Usando 'echo -e' para a linha de opções fixas
+        echo -e "      [ ${azul}05${reset} ] - ${OPCOES[5]:<22} | [ ${azul}11${reset} ] - ${OPCOES[11]:<22} | [ ${azul}12${reset} ] - ${OPCOES[12]}"
         echo -e "${amarelo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
         
-        local largura=$(tput cols)
-        local padding=$(( (largura - 70) / 2 )) # Ajuste para alinhar o pipe central
-        printf "%s%*s%s\n" "| --- Digite ${amarelo}P1${reset} para ir para pagina 1" "$padding" "" "| Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
+        # Usando 'echo -e' para a linha de paginação
+        echo -e "| --- Digite ${amarelo}P1${reset} para ir para pagina 1 \t\t | Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
 
         echo ""
         read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO oculto: "${reset})" opcao
@@ -13222,6 +13235,7 @@ exibir_menu() {
         esac
     done
 }
+
 
 
 main() {
