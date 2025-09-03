@@ -11733,6 +11733,7 @@ EOL
   pull ghcr.io/getzep/zep-nlp-server:latest ghcr.io/getzep/zep:latest
   wait_stack zep${1:+_$1}_zep${1:+_$1}_nlp zep${1:+_$1}_zep${1:+_$1}_app
 
+  cd /root/dados_vps
   cat > dados_zep${1:+_$1} <<EOL
 [ ZEP ]
 
@@ -11746,6 +11747,121 @@ EOL
   echo -e "\e[32m[ ZEP ]\e[0m\n"
   echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_zep/admin\e[0m"
   echo -e "\e[33m🔑 API Key do Zep:\e[97m $apikey_zep\e[0m"
+  msg_retorno_menu
+
+}
+
+ferramenta_yourls() {
+  msg_yourls
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o domínio para o Yourls (ex: link.encha.ai): \e[0m" && read -r url_yourls
+    echo ""
+    echo -e "\n📍 Passo 2/3"
+    echo -en "👤 \e[33mDigite um nome de usuário para o painel: \e[0m" && read -r user_yourls
+    echo ""
+    echo -e "\n📍 Passo 3/3"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_yourls
+    echo ""
+
+    clear
+    msg_yourls
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Yourls:\e[97m $url_yourls\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_yourls\e[0m"
+    echo -e "\e[33mSenha:\e[97m $pass_yourls\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_yourls; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Yourls...\e[0m"
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "yourls${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO YOURLS \e[33m[3/4]\e[0m"
+  echo ""
+
+  cat > yourls${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  yourls${1:+_$1}:
+    image: yourls:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados de acesso
+      - YOURLS_SITE=https://$url_yourls ## Url da Aplicação
+      - YOURLS_USER=$user_yourls
+      - YOURLS_PASS=$pass_yourls
+      
+      ## Dados do Mysql
+      - YOURLS_DB_HOST=mysql
+      - YOURLS_DB_NAME=yourls${1:+_$1}
+      - YOURLS_DB_USER=root
+      - YOURLS_DB_PASS=$senha_mysql
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.yourls${1:+_$1}.rule=Host(\`$url_yourls\`) ## Url da aplicação
+        - traefik.http.routers.yourls${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.yourls${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.yourls${1:+_$1}.service=yourls${1:+_$1}
+        - traefik.http.services.yourls${1:+_$1}.loadbalancer.server.port=80
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="yourls${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull yourls:latest
+  wait_stack yourls${1:+_$1}_yourls${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_yourls${1:+_$1} <<EOL
+[ YOURLS ]
+
+Dominio do Yourls: https://$url_yourls/admin
+Usuario: $user_yourls
+Senha: $pass_yourls
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ YOURLS ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_yourls/admin\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_yourls\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_yourls\e[0m"
   msg_retorno_menu
 
 }
@@ -11804,9 +11920,9 @@ exibir_menu() {
         echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
         echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}51.${reset} Instalar Openproject"
         echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}52.${reset} Instalar ZEP"
-        echo -e "${azul}27.${reset} Instalar Mattermost" 
+        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-52): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-53): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -12177,6 +12293,12 @@ exibir_menu() {
                 verificar_stack "zep${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_zep
+                  fi
+                  ;;
+            53)
+                verificar_stack "yourls${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_yourls
                   fi
                   ;;
             *)
