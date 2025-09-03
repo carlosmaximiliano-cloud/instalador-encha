@@ -13542,6 +13542,127 @@ EOL
 
 }
 
+ferramenta_bolt() {
+  msg_bolt
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Bolt (ex: bolt.encha.ai): \e[0m" && read -r url_bolt
+    echo ""
+
+    clear
+    msg_bolt
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Bolt:\e[97m $url_bolt\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_bolt; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Bolt...\e[0m"
+  cat > bolt${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  bolt${1:+_$1}:
+    image: docker.io/hipnologo/bolt.diy:latest
+
+    volumes:
+      - bolt${1:+_$1}_data:/app/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Configurações de Ambiente de Desenvolvimento
+      - NODE_ENV=development
+      - VITE_HMR_PROTOCOL=ws
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_PORT=5173
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
+      ## Configurações de Portas e Logs
+      - PORT=5173
+      - VITE_LOG_LEVEL=debug
+      
+      ## Configurações gerais
+      - DEFAULT_NUM_CTX=32768
+      - RUNNING_IN_DOCKER=true
+
+      ## Configurações de Memória
+      - NODE_OPTIONS="--max-old-space-size=4096"
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.bolt${1:+_$1}.rule=Host(\`$url_bolt\`)
+        - traefik.http.services.bolt${1:+_$1}.loadbalancer.server.port=5173
+        - traefik.http.routers.bolt${1:+_$1}.service=bolt${1:+_$1}
+        - traefik.http.routers.bolt${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.bolt${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.bolt${1:+_$1}.tls=true
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  bolt${1:+_$1}_data:
+    external: true
+    name: bolt${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="bolt${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull docker.io/hipnologo/bolt.diy:latest
+  wait_stack bolt${1:+_$1}_bolt${1:+_$1}
+
+  cd /root/dados_vps
+  
+cat > dados_bolt${1:+_$1} <<EOL
+[ BOLT ]
+
+Dominio do bolt: https://$url_bolt
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ BOLT ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_bolt\e[0m"
+  msg_retorno_menu
+
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -13625,9 +13746,10 @@ exibir_menu() {
     OPCOES[60]="Azuracast"
     OPCOES[61]="Rustdesk"
     OPCOES[62]="Hoppscotch"
+    OPCOES[63]="Bolt"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63)
     local pagina_atual=1
 
     while true; do
@@ -14091,6 +14213,12 @@ exibir_menu() {
                 verificar_stack "hoppscotch${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_hoppscotch
+                fi
+                ;;
+            63)
+                verificar_stack "bolt${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_bolt
                 fi
                 ;;
             *)
