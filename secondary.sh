@@ -12966,6 +12966,106 @@ EOL
 
 }
 
+ferramenta_browserless() {
+  msg_browserless
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Browserless (ex: browserless.encha.ai): \e[0m" && read -r url_browserless
+    echo ""
+
+    clear
+    msg_browserless
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Browserless:\e[97m $url_browserless\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_browserless; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Browserless...\e[0m"
+  cat > browserless${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  browserless${1:+_$1}:
+    image: browserless/chrome:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+    - MAX_CONCURRENT_SESSIONS=20
+    - MAX_QUEUE_LENGTH=40
+    - CONNECTION_TIMEOUT=60000
+    - WORKSPACE_DELETE_EXPIRED=1
+    - PREBOOT_CHROME=1
+    - WORKSPACE_EXPIRE_DAYS=1
+    - KEEP_ALIVE=1
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.browserless${1:+_$1}.rule=Host(\`$url_browserless\`)
+        - traefik.http.services.browserless${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.browserless${1:+_$1}.service=browserless${1:+_$1}
+        - traefik.http.routers.browserless${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.browserless${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.browserless${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME= "browserless${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull browserless/chrome:latest
+  wait_stack browserless${1:+_$1}_browserless${1:+_$1}
+
+  cd /root/dados_vps
+
+  cat > dados_browserless${1:+_$1} <<EOL
+[ BROWSERLESS ]
+
+Dominio do browserless: https://$url_browserless
+
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ BROWSERLESS ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_browserless\e[0m"
+  echo -e "\e[33mℹ️  Serviço de automação de navegador pronto para uso.\e[0m"  
+  msg_retorno_menu
+
+}
+
 
 ferramenta_gotenberg() {
   msg_gotenberg
@@ -14576,6 +14676,12 @@ exibir_menu() {
                 verificar_stack "wppconnect${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_wppconnect
+                fi
+                ;;
+            66)
+                verificar_stack "browserless${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_browserless
                 fi
                 ;;
             *)
