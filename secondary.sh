@@ -14671,15 +14671,25 @@ ferramenta_langfuse() {
 
   # Função auxiliar para pegar dados do clickhouse
   pegar_dados_clickhouse() {
-        if [ -f "/root/dados_vps/dados_clickhouse" ]; then
-            API_CLICKHOUSE=$(grep "API:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
-            USUARIO_CLICKHOUSE=$(grep "Usuario:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
-            SENHA_CLICKHOUSE=$(grep "Senha:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
-        else
-            echo "Arquivo de dados do ClickHouse não encontrado."
-            return 1
+    local arquivo_dados="/root/dados_vps/dados_clickhouse"
+
+    if [ -f "$arquivo_dados" ]; then
+        # Usando awk para extrair os dados de forma segura
+        API_CLICKHOUSE=$(awk '/API:/ {print $2}' "$arquivo_dados")
+        USUARIO_CLICKHOUSE=$(awk '/Usuario:/ {print $2}' "$arquivo_dados")
+        SENHA_CLICKHOUSE=$(awk '/Senha:/ {print $2}' "$arquivo_dados")
+
+        # Verificação se as variáveis foram preenchidas
+        if [ -z "$API_CLICKHOUSE" ] || [ -z "$USUARIO_CLICKHOUSE" ] || [ -z "$SENHA_CLICKHOUSE" ]; then
+            echo "Aviso: Uma ou mais variáveis do ClickHouse não foram encontradas no arquivo."
+            # Opcional: retornar um erro se alguma variável for crítica
+            # return 1 
         fi
-    }
+    else
+        echo "Erro: Arquivo de dados do ClickHouse não encontrado em $arquivo_dados."
+        return 1
+    fi
+  }
   
   verificar_stack "clickhouse" || ferramenta_clickhouse
   pegar_dados_clickhouse
