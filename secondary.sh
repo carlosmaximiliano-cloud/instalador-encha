@@ -12821,6 +12821,197 @@ EOL
 
 }
 
+ferramenta_azuracast() {
+  msg_azuracast
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o AzuraCast (ex: radio.encha.ai): \e[0m" && read -r url_azuracast
+    echo ""
+
+    clear
+    msg_azuracast
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio AzuraCast:\e[97m $url_azuracast\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_azuracast; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do AzuraCast...\e[0m"
+  
+  azuracast_mysql_password=$(openssl rand -hex 16)
+
+  cat > azuracast${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  azuracast${1:+_$1}_web:
+    image: ghcr.io/azuracast/azuracast:latest
+
+    volumes:
+      - azuracast${1:+_$1}_station_data:/var/azuracast/stations
+      - azuracast${1:+_$1}_backups:/var/azuracast/backups
+      - azuracast${1:+_$1}_db_data:/var/lib/mysql
+      - azuracast${1:+_$1}_www_uploads:/var/azuracast/storage/uploads
+      - azuracast${1:+_$1}_shoutcast2_install:/var/azuracast/storage/shoutcast2
+      - azuracast${1:+_$1}_stereo_tool_install:/var/azuracast/storage/stereo_tool
+      - azuracast${1:+_$1}_rsas_install:/var/azuracast/storage/rsas
+      - azuracast${1:+_$1}_geolite_install:/var/azuracast/storage/geoip
+      - azuracast${1:+_$1}_sftpgo_data:/var/azuracast/storage/sftpgo
+      - azuracast${1:+_$1}_acme:/var/azuracast/storage/acme
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    ports:
+      - target: 2022
+        published: 2022
+        protocol: tcp
+        mode: host
+      - target: 8005
+        published: 8005
+        protocol: tcp
+        mode: host
+
+    environment:
+      ## Identificação do Projeto
+      - COMPOSE_PROJECT_NAME=azuracast
+
+      ## Configurações de Portas
+      - AZURACAST_HTTP_PORT=80
+      - AZURACAST_HTTPS_PORT=443
+      - AZURACAST_SFTP_PORT=2022
+
+      ## Configurações de Permissões
+      - AZURACAST_PUID=1000
+      - AZURACAST_PGID=1000
+
+      ## Configurações de Performance
+      - NGINX_TIMEOUT=1800
+
+      ## Configurações do MySQL (INTERNO)
+      - ENABLE_INTERNAL_MYSQL=true
+      - MYSQL_ROOT_PASSWORD=$azuracast_mysql_password ## Senha do MySQL (INTERNO)
+      - MYSQL_DATABASE=azuracast
+      - MYSQL_USER=azuracast
+      - MYSQL_PASSWORD=$azuracast_mysql_password ## Senha do usuário do MySQL (INTERNO)
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.azuracast${1:+_$1}_web.rule=Host(\`$url_azuracast\`) ## Dominio para aplicação
+        - traefik.http.routers.azuracast${1:+_$1}_web.entrypoints=websecure
+        - traefik.http.routers.azuracast${1:+_$1}_web.priority=1
+        - traefik.http.routers.azuracast${1:+_$1}_web.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.azuracast${1:+_$1}_web.service=azuracast${1:+_$1}_web
+        - traefik.http.services.azuracast${1:+_$1}_web.loadbalancer.server.port=80
+        - traefik.http.services.azuracast${1:+_$1}_web.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  azuracast${1:+_$1}_updater:
+    image: ghcr.io/azuracast/updater:latest
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+volumes:
+  azuracast${1:+_$1}_station_data:
+    external: true
+    name: azuracast${1:+_$1}_station_data
+  azuracast${1:+_$1}_backups:
+    external: true
+    name: azuracast${1:+_$1}_backups
+  azuracast${1:+_$1}_db_data:
+    external: true
+    name: azuracast${1:+_$1}_db_data
+  azuracast${1:+_$1}_www_uploads:
+    external: true
+    name: azuracast${1:+_$1}_www_uploads
+  azuracast${1:+_$1}_shoutcast2_install:
+    external: true
+    name: azuracast${1:+_$1}_shoutcast2_install
+  azuracast${1:+_$1}_stereo_tool_install:
+    external: true
+    name: azuracast${1:+_$1}_stereo_tool_install
+  azuracast${1:+_$1}_rsas_install:
+    external: true
+    name: azuracast${1:+_$1}_rsas_install
+  azuracast${1:+_$1}_geolite_install:
+    external: true
+    name: azuracast${1:+_$1}_geolite_install
+  azuracast${1:+_$1}_sftpgo_data:
+    external: true
+    name: azuracast${1:+_$1}_sftpgo_data
+  azuracast${1:+_$1}_acme:
+    external: true
+    name: azuracast${1:+_$1}_acme
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+
+EOL
+
+  STACK_NAME="azuracast${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull ghcr.io/azuracast/azuracast:latest ghcr.io/azuracast/updater:latest
+  wait_stack azuracast${1:+_$1}_azuracast${1:+_$1}_web azuracast${1:+_$1}_azuracast${1:+_$1}_updater
+
+  cd /root/dados_vps
+  cat > dados_azuracast${1:+_$1} <<EOL
+[ AZURACAST ]
+
+Dominio do AzuraCast: https://$url_azuracast
+Usuario: Precisa criar no primeiro acesso do AzuraCast
+Senha: Precisa criar no primeiro acesso do AzuraCast
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ AZURACAST ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_azuracast\e[0m"
+  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta.\e[0m"
+  msg_retorno_menu
+
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12901,9 +13092,10 @@ exibir_menu() {
     OPCOES[57]="Passbolt"
     OPCOES[58]="Gotenberg"
     OPCOES[59]="Wiki JS"
+    OPCOES[60]="Azuracast"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60)
     local pagina_atual=1
 
     while true; do
@@ -13349,6 +13541,12 @@ exibir_menu() {
                 verificar_stack "wiki${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_wiki
+                fi
+                ;;
+            60)
+                verificar_stack "azuracast${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_azuracast
                 fi
                 ;;
             *)
