@@ -742,6 +742,45 @@ msg_passbolt(){
     echo ""
 }
 
+msg_gotenberg(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗  ██████╗ ████████╗███████╗███╗   ██╗██████╗ ███████╗██████╗  ██████╗"
+    centralizar "██╔════╝ ██╔═══██╗╚══██╔══╝██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔════╝"
+    centralizar "██║  ███╗██║   ██║   ██║   █████╗  ██╔██╗ ██║██████╔╝█████╗  ██████╔╝██║  ███╗"
+    centralizar "██║   ██║██║   ██║   ██║   ██╔══╝  ██║╚██╗██║██╔══██╗██╔══╝  ██╔══██╗██║   ██║"
+    centralizar "╚██████╔╝╚██████╔╝   ██║   ███████╗██║ ╚████║██████╔╝███████╗██║  ██║╚██████╔╝"
+    centralizar " ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_wiki(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗██╗██╗  ██╗██╗        ██╗███████╗"
+    centralizar "██║    ██║██║██║ ██╔╝██║        ██║██╔════╝"
+    centralizar "██║ █╗ ██║██║█████╔╝ ██║        ██║███████╗"
+    centralizar "██║███╗██║██║██╔═██╗ ██║   ██   ██║╚════██║"
+    centralizar "╚███╔███╔╝██║██║  ██╗██║██╗╚█████╔╝███████║"
+    centralizar " ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚═╝╚═╝ ╚════╝ ╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_azuracast(){
+    clear
+    echo -e "${roxo}"
+    centralizar "   █████╗ ███████╗██╗   ██╗██████╗  █████╗  ██████╗ █████╗ ███████╗████████╗"
+    centralizar "  ██╔══██╗╚══███╔╝██║   ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝╚══██╔══╝"
+    centralizar "  ███████║  ███╔╝ ██║   ██║██████╔╝███████║██║     ███████║███████╗   ██║"
+    centralizar "  ██╔══██║ ███╔╝  ██║   ██║██╔══██╗██╔══██║██║     ██╔══██║╚════██║   ██║"
+    centralizar "  ██║  ██║███████╗╚██████╔╝██║  ██║██║  ██║╚██████╗██║  ██║███████║   ██║"
+    centralizar "  ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -12546,6 +12585,112 @@ EOL
 
 }
 
+ferramenta_gotenberg() {
+  msg_gotenberg
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Gotenberg (ex: pdf.encha.ai): \e[0m" && read -r url_gotenberg
+    echo ""
+
+    clear
+    msg_gotenberg
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Gotenberg:\e[97m $url_gotenberg\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_gotenberg; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Gotenberg...\e[0m"
+  cat > gotenberg${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  gotenberg${1:+_$1}:
+    image: gotenberg/gotenberg:latest
+    command:
+      - "gotenberg"
+   
+    volumes:
+      - gotenberg${1:+_$1}_data:/gotenberg
+      
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      ## Porta padrão do Gotenberg
+      - DEFAULT_LISTEN_PORT=3000
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.gotenberg${1:+_$1}.rule=Host(\`$url_gotenberg\`)
+        - traefik.http.services.gotenberg${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.gotenberg${1:+_$1}.service=gotenberg${1:+_$1}
+        - traefik.http.routers.gotenberg${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.gotenberg${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.gotenberg${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  gotenberg${1:+_$1}_data:
+    external: true
+    name: gotenberg${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="gotenberg${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull gotenberg/gotenberg:latest
+
+  wait_stack gotenberg${1:+_$1}_gotenberg${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_gotenberg${1:+_$1} <<EOL
+[ GOTENBERG ]
+
+Dominio do gotenberg: https://$url_gotenberg
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ GOTENBERG ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio da API:\e[97m https://$url_gotenberg\e[0m"
+  echo -e "\e[33mℹ️  Esta é uma API. Acesse a documentação oficial para saber como usá-la.\e[0m"  
+  msg_retorno_menu
+
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12624,9 +12769,10 @@ exibir_menu() {
     OPCOES[55]="Evo AI"
     OPCOES[56]="Keycloak"
     OPCOES[57]="Passbolt"
+    OPCOES[58]="Gotenberg"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32)
-    local pagina2_items=(33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57)
+    local pagina2_items=(33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58)
     local pagina_atual=1
 
     while true; do
@@ -13061,6 +13207,12 @@ exibir_menu() {
                 verificar_stack "passbolt${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                     ferramenta_passbolt
+                fi
+                ;;
+            58)
+                verificar_stack "gotenberg${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_gotenberg
                 fi
                 ;;
             *)
