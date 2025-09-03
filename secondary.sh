@@ -12313,7 +12313,6 @@ services:
 
       ## Dados do Host
       - KC_HOSTNAME=$url_keycloak
-      - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
       - KC_PROXY_HEADERS=xforwarded
       - KC_HOSTNAME_STRICT=false
