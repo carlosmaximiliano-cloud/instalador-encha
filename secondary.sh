@@ -12312,7 +12312,8 @@ services:
       - KC_BOOTSTRAP_ADMIN_PASSWORD=$senha_keycloak
 
       ## Dados do Host
-      - KC_HOSTNAME=https://$url_keycloak
+      - KC_HOSTNAME=$url_keycloak
+      - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
       - KC_PROXY_HEADERS=xforwarded
       - KC_HOSTNAME_STRICT=false
