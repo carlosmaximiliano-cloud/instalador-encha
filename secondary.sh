@@ -664,6 +664,45 @@ msg_openproject() {
     echo ""
 }
 
+msg_zep() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗███████╗██████╗"
+    centralizar "╚══███╔╝██╔════╝██╔══██╗"
+    centralizar "  ███╔╝ █████╗  ██████╔╝"
+    centralizar " ███╔╝  ██╔══╝  ██╔═══╝"
+    centralizar "███████╗███████╗██║"
+    centralizar "╚══════╝╚══════╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_yourls() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗   ██╗ ██████╗ ██╗   ██╗██████╗ ██╗     ███████╗"
+    centralizar "╚██╗ ██╔╝██╔═══██╗██║   ██║██╔══██╗██║     ██╔════╝"
+    centralizar " ╚████╔╝ ██║   ██║██║   ██║██████╔╝██║     ███████╗"
+    centralizar "  ╚██╔╝  ██║   ██║██║   ██║██╔══██╗██║     ╚════██║"
+    centralizar "   ██║   ╚██████╔╝╚██████╔╝██║  ██║███████╗███████║"
+    centralizar "   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_wisemapping() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗██╗███████╗███████╗███╗   ███╗ █████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗"
+    centralizar "██║    ██║██║██╔════╝██╔════╝████╗ ████║██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║██╔════╝"
+    centralizar "██║ █╗ ██║██║███████╗█████╗  ██╔████╔██║███████║██████╔╝██████╔╝██║██╔██╗ ██║██║  ███╗"
+    centralizar "██║███╗██║██║╚════██║██╔══╝  ██║╚██╔╝██║██╔══██║██╔═══╝ ██╔═══╝ ██║██║╚██╗██║██║   ██║"
+    centralizar "╚███╔███╔╝██║███████║███████╗██║ ╚═╝ ██║██║  ██║██║     ██║     ██║██║ ╚████║╚██████╔╝"
+    centralizar " ╚══╝╚══╝ ╚═╝╚══════╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝╚═╝  ╚═══╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -11535,6 +11574,182 @@ EOL
 
 }
 
+ferramenta_zep(){
+  msg_zep
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/2"
+    echo -en "🔗 \e[33mDigite o domínio para o Zep (ex: zep.encha.ai): \e[0m" && read -r url_zep
+    echo ""
+    echo -e "\n📍 Passo 2/2"
+    echo -en "🔑 \e[33mDigite sua API Key da OpenAI: \e[0m" && read -s -r apikey_openai_zep
+    echo ""
+
+    encryption_key_zep=$(openssl rand -hex 16)
+    apikey_zep=$(openssl rand -hex 16)
+
+    clear
+    msg_zep
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Zep:\e[97m $url_zep\e[0m"
+    echo -e "\e[33mApiKey da OpenAI:\e[97m $apikey_openai_zep\e[0m"
+    echo -e "🔑 \e[33mAPI Key Zep (será gerada):\e[97m $apikey_zep\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_zep; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Zep...\e[0m"
+
+  cd
+  mkdir temp
+  cd temp
+
+  git clone --depth 1 https://github.com/oriondesign2015/setuporion > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+      echo "1/1 - [ OK ] - Baixando Repositório do Zep"
+  else
+      echo "1/1 - [ OFF ] - Baixando Repositório do Zep"
+      echo "Não foi possivel Baixar."
+  fi
+
+  mv setuporion/Extras/Zep /root/zep${1:+_$1}
+
+  cd
+  cd
+  rm -r temp
+  cd
+  echo ""
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES VECTOR \e[33m[2/4]\e[0m"
+  echo ""
+
+  verificar_container_pgvector || ferramenta_pgvector
+  pegar_senha_pgvector
+  criar_banco_pgvector_da_stack "zep${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO ZEP \e[33m[3/4]\e[0m"
+  echo ""
+
+  cat > zep${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  zep${1:+_$1}_nlp:
+    image: ghcr.io/getzep/zep-nlp-server:latest
+
+    networks:
+      - $nome_rede_interna
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  zep${1:+_$1}_app:
+    image: ghcr.io/getzep/zep:latest
+    
+    volumes:
+      - /root/zep${1:+_$1}/config.yaml:/app/config.yaml
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados Postgres
+      - ZEP_STORE_TYPE=postgres
+      - ZEP_STORE_POSTGRES_DSN=postgres://postgres:$senha_pgvector@pgvector:5432/zep${1:+_$1}?sslmode=disable
+
+      ## Dados de acesso:
+      - ZEP_AUTH_SECRET=$apikey_zep
+      
+      ## Dados OpenAI
+      - ZEP_OPENAI_API_KEY=$apikey_openai_zep
+
+      ## Dados NLP
+      - ZEP_NLP_SERVER_URL=http://zep${1:+_$1}_nlp:5557
+
+      ## Configurações de extração
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_SERVICE=openai
+      - ZEP_EXTRACTORS_DOCUMENTS_EMBEDDINGS_DIMENSIONS=1536
+      - ZEP_EXTRACTORS_MESSAGES_EMBEDDINGS_SERVICE=openai
+      - ZEP_EXTRACTORS_MESSAGES_EMBEDDINGS_DIMENSIONS=1536
+      - ZEP_EXTRACTORS_MESSAGES_SUMMARIZER_EMBEDDINGS_SERVICE=openai
+      - ZEP_EXTRACTORS_MESSAGES_SUMMARIZER_EMBEDDINGS_DIMENSIONS=1536
+
+      ## Configuração Graphiti
+      - ZEP_GRAPHITI_URL=http://zep${1:+_$1}_graphiti:8003
+
+      ## Degub:
+      - ZEP_LOG_LEVEL=debug
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.zep${1:+_$1}.rule=Host(\`$url_zep\`)
+        - traefik.http.routers.zep${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.zep${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.zep${1:+_$1}.loadbalancer.server.port=8000
+        - traefik.http.services.zep${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.zep${1:+_$1}.service=zep${1:+_$1}
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+    
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="zep${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull ghcr.io/getzep/zep-nlp-server:latest ghcr.io/getzep/zep:latest
+  wait_stack zep${1:+_$1}_zep${1:+_$1}_nlp zep${1:+_$1}_zep${1:+_$1}_app
+
+  cat > dados_zep${1:+_$1} <<EOL
+[ ZEP ]
+
+Dominio do Zep: https://$url_zep/admin
+ApiKey da OpenAI: $apikey_openai_zep
+ApiKey do Zep: $apikey_zep
+EOL
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ ZEP ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_zep/admin\e[0m"
+  echo -e "\e[33m🔑 API Key do Zep:\e[97m $apikey_zep\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -11588,10 +11803,10 @@ exibir_menu() {
         echo -e "${azul}22.${reset} Instalar appsmith                ${azul}49.${reset} Instalar NTFY"
         echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
         echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}51.${reset} Instalar Openproject"
-        echo -e "${azul}26.${reset} Instalar twentyCRM"
+        echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}52.${reset} Instalar ZEP"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-51): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-52): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -11956,6 +12171,12 @@ exibir_menu() {
                 verificar_stack "openproject${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_openproject
+                  fi
+                  ;;
+            52)
+                verificar_stack "zep${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_zep
                   fi
                   ;;
             *)
