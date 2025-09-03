@@ -14672,7 +14672,7 @@ ferramenta_langfuse() {
   # Função auxiliar para pegar dados do clickhouse
   pegar_dados_clickhouse() {
         if [ -f "/root/dados_vps/dados_clickhouse" ]; then
-            API_CLICKHOUSE=$(grep "API:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
+            API_CLICKHOUSE=$(grep "API do clickhouse:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
             USUARIO_CLICKHOUSE=$(grep "Usuario:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
             SENHA_CLICKHOUSE=$(grep "Senha:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
         else
