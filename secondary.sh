@@ -12566,6 +12566,79 @@ verificar_status_servicos() {
 }
 
 exibir_menu() {
+    # Variável para controlar a página atual do menu
+    local pagina_atual=1
+
+    # Funções para exibir cada página (organiza o código)
+    exibir_pagina_1() {
+        centralizar "--- Página 1 de 2 ---"
+        echo ""
+        echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}28.${reset} Instalar outline"
+        echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}29.${reset} Instalar focalboard"
+        echo -e "${azul}03.${reset} Instalar N8N                     ${azul}30.${reset} Instalar GLPI"
+        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}31.${reset} Instalar Flowise"
+        echo -e "${azul}05.${reset} Liberar Chatwoot                 ${azul}32.${reset} Instalar Langflow"
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}33.${reset} Instalar Ollama"
+        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}34.${reset} Instalar Anythingllm"
+        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
+        echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
+        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
+        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}38.${reset} Instalar Formbricks"
+        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}39.${reset} Instalar MetaBase"
+        echo -e "${azul}15.${reset} Instalar botpress                ${azul}40.${reset} Instalar Docuseal"
+        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}41.${reset} Instalar Monitor"
+        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}42.${reset} Instalar Dify"
+        echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}43.${reset} Instalar Affine"
+        echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}44.${reset} Instalar Vaultwarden"
+        echo -e "${azul}20.${reset} Instalar calcom                  ${azul}45.${reset} Instalar Nextcloud"
+        echo -e "${azul}21.${reset} Instalar mautic                  ${azul}46.${reset} Instalar Strapi"
+        echo -e "${azul}22.${reset} Instalar appsmith                ${azul}47.${reset} Instalar MyphpAdmin"
+        echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}48.${reset} Instalar Supabase"
+        echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}49.${reset} Instalar NTFY"
+        echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}50.${reset} Instalar Lowcoder"
+        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}51.${reset} Instalar Openproject"
+        echo ""
+        echo -e "${azul}11.${reset} Verificar status dos serviços"
+        echo -e "${azul}12.${reset} Sair do menu"
+        echo ""
+    }
+
+    exibir_pagina_2() {
+        centralizar "--- Página 2 de 2 ---"
+        echo ""
+        echo -e "${azul}52.${reset} Instalar ZEP"
+        echo -e "${azul}53.${reset} Instalar Yourls"
+        echo -e "${azul}54.${reset} Instalar WiseMapping"
+        echo -e "${azul}55.${reset} Instalar Evo AI"
+        echo -e "${azul}56.${reset} Instalar Keycloak"
+        echo -e "${azul}57.${reset} Instalar Passbolt"
+        # Preenchimento para manter o layout, se necessário
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo -e "${azul}11.${reset} Verificar status dos serviços"
+        echo -e "${azul}12.${reset} Sair do menu"
+        echo ""
+    }
+
     while true; do
         clear
         banner
@@ -12574,42 +12647,30 @@ exibir_menu() {
         echo -e "${reset}"
         echo ""
 
-        # Menu principal (mantido como no original, mesmo com desalinhamento)
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}28.${reset} Instalar outline"
-        echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}29.${reset} Instalar focalboard"
-        echo -e "${azul}03.${reset} Instalar N8N                     ${azul}30.${reset} Instalar GLPI"
-        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}31.${reset} Instalar Flowise"
-        echo -e "${azul}05.${reset} Liberar Chatwoot                 ${azul}32.${reset} Instalar Langflow"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}33.${reset} Instalar Ollama"
-        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}34.${reset} Instalar Anythingllm"
-        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
-        echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
-        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
-        echo -e "${azul}11.${reset} Verificar status dos serviços    ${azul}38.${reset} Instalar Formbricks"
-        echo -e "${azul}12.${reset} Sair do menu                     ${azul}39.${reset} Instalar MetaBase"
-        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}40.${reset} Instalar Docuseal"
-        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}41.${reset} Instalar Monitor"
-        echo -e "${azul}15.${reset} Instalar botpress                ${azul}42.${reset} Instalar Dify"
-        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}43.${reset} Instalar Affine"
-        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}44.${reset} Instalar Vaultwarden"
-        echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}45.${reset} Instalar Nextcloud"
-        echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}46.${reset} Instalar Strapi"
-        echo -e "${azul}20.${reset} Instalar calcom                  ${azul}47.${reset} Instalar MyphpAdmin"
-        echo -e "${azul}21.${reset} Instalar mautic                  ${azul}48.${reset} Instalar Supabase"
-        echo -e "${azul}22.${reset} Instalar appsmith                ${azul}49.${reset} Instalar NTFY"
-        echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
-        echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}51.${reset} Instalar Openproject"
-        echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}52.${reset} Instalar ZEP"
-        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls"
-        echo -e "                                                    ${azul}54.${reset} Instalar WiseMapping"
-        echo -e "                                                    ${azul}55.${reset} Instalar Evo AI"
-        echo -e "                                                    ${azul}56.${reset} Instalar Keycloak"
-        echo -e "                                                    ${azul}57.${reset} Instalar Passbolt"
-        echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-57): ${reset}"
+        # Exibe a página correta
+        if [ "$pagina_atual" -eq 1 ]; then
+            exibir_pagina_1
+            echo -en "${amarelo}👉 Escolha uma opção ou [p] para próxima página: ${reset}"
+        else
+            exibir_pagina_2
+            echo -en "${amarelo}👉 Escolha uma opção ou [a] para página anterior: ${reset}"
+        fi
+        
         read -r opcao
 
+        # O 'case' agora inclui a lógica de navegação
         case $opcao in
+            # Navegação
+            p|P)
+                pagina_atual=2
+                continue
+                ;;
+            a|A)
+                pagina_atual=1
+                continue
+                ;;
+
+            # Suas opções originais (sem alteração na lógica)
             01|1)
                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
                 ferramenta_traefik_e_portainer
@@ -12676,7 +12737,6 @@ exibir_menu() {
                     ## FIM TOKEN
                 fi
                 ;;
-            # CORREÇÃO: O case 07|7 estava faltando e seu conteúdo estava misturado no 06|6. Agora está separado.
             07|7)
                 verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
@@ -12744,7 +12804,6 @@ exibir_menu() {
                 sleep 1
                 exit 0
                 ;;
-            # A partir daqui, casos mais simples que não usavam o padrão de TOKEN
             13)
                 verificar_stack "pgadmin" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
@@ -12885,130 +12944,130 @@ exibir_menu() {
                 ;;
             37)
                 verificar_stack "wordpress" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_траefik; then
                     ferramenta_wordpress
-                  fi
-                  ;;
+                fi
+                ;;
             38)
                 verificar_stack "formbricks${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_formbricks
-                  fi
-                  ;;
+                fi
+                ;;
             39)
                 verificar_stack "metabase${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_metabase
-                  fi
-                  ;;
+                fi
+                ;;
             40)
                 verificar_stack "docuseal${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_docuseal
-                  fi
-                  ;;
+                fi
+                ;;
             41)
                 verificar_stack "monitor" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_monitor
-                  fi
-                  ;;
+                fi
+                ;;
             42)
                 verificar_stack "dify${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_dify
-                  fi
-                  ;;
+                fi
+                ;;
             43)
                 verificar_stack "affine" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_affine
-                  fi
-                  ;;
+                fi
+                ;;
             44)
                 verificar_stack "vaultwarden" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_vaultwarden
-                  fi
-                  ;;
+                fi
+                ;;
             45)
                 verificar_stack "nextcloud${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_nextcloud
-                  fi
-                  ;;
+                fi
+                ;;
             46)
                 verificar_stack "strapi${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_strapi
-                  fi
-                  ;;
+                fi
+                ;;
             47)
                 verificar_stack "phpmyadmin${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_phpmyadmin
-                  fi
-                  ;;
+                fi
+                ;;
             48)
                 verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_supabase
-                  fi
-                  ;;
+                fi
+                ;;
             49)
                 verificar_stack "ntfy${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_ntfy
-                  fi
-                  ;;
+                fi
+                ;;
             50)
                 verificar_stack "lowcoder${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_lowcoder
-                  fi
-                  ;;
+                fi
+                ;;
             51)
                 verificar_stack "openproject${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_openproject
-                  fi
-                  ;;
+                fi
+                ;;
             52)
                 verificar_stack "zep${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_zep
-                  fi
-                  ;;
+                fi
+                ;;
             53)
                 verificar_stack "yourls${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_yourls
-                  fi
-                  ;;
+                fi
+                ;;
             54)
                 verificar_stack "wisemapping${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_wisemapping
-                  fi
-                  ;;
+                fi
+                ;;
             55)
                 verificar_stack "evoai${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_evoai
-                  fi
-                  ;;
+                fi
+                ;;
             56)
                 verificar_stack "keycloak${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_keycloak
-                  fi
-                  ;;
+                fi
+                ;;
             57)
                 verificar_stack "passbolt${opcao2:+_$opcao2}" && continue || echo ""
-                  if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_passbolt
-                  fi
-                  ;;
+                fi
+                ;;
             *)
                 echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
