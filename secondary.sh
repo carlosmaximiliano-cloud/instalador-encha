@@ -703,6 +703,45 @@ msg_wisemapping() {
     echo ""
 }
 
+msg_evoai() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗   ██╗ ██████╗      █████╗ ██╗"
+    centralizar "██╔════╝██║   ██║██╔═══██╗    ██╔══██╗██║"
+    centralizar "█████╗  ██║   ██║██║   ██║    ███████║██║"
+    centralizar "██╔══╝  ╚██╗ ██╔╝██║   ██║    ██╔══██║██║"
+    centralizar "███████╗ ╚████╔╝ ╚██████╔╝    ██║  ██║██║"
+    centralizar "╚══════╝  ╚═══╝   ╚═════╝     ╚═╝  ╚═╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_keycloak(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗  ██╗███████╗██╗   ██╗ ██████╗██╗      ██████╗  █████╗ ██╗  ██╗"
+    centralizar "██║ ██╔╝██╔════╝╚██╗ ██╔╝██╔════╝██║     ██╔═══██╗██╔══██╗██║ ██╔╝"
+    centralizar "█████╔╝ █████╗   ╚████╔╝ ██║     ██║     ██║   ██║███████║█████╔╝"
+    centralizar "██╔═██╗ ██╔══╝    ╚██╔╝  ██║     ██║     ██║   ██║██╔══██║██╔═██╗"
+    centralizar "██║  ██╗███████╗   ██║   ╚██████╗███████╗╚██████╔╝██║  ██║██║  ██╗"
+    centralizar "╚═╝  ╚═╝╚══════╝   ╚═╝    ╚═════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_passbolt(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗  █████╗ ███████╗███████╗██████╗  ██████╗ ██╗  ████████╗"
+    centralizar "██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗██╔═══██╗██║  ╚══██╔══╝"
+    centralizar "██████╔╝███████║███████╗███████╗██████╔╝██║   ██║██║     ██║"
+    centralizar "██╔═══╝ ██╔══██║╚════██║╚════██║██╔══██╗██║   ██║██║     ██║"
+    centralizar "██║     ██║  ██║███████║███████║██████╔╝╚██████╔╝███████╗██║"
+    centralizar "╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -11967,6 +12006,241 @@ EOL
 
 }
 
+ferramenta_evoai(){
+  msg_evoai
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/9"
+    echo -en "🔗 \e[33mDigite o domínio para o painel da EvoAI (ex: evo.encha.ai): \e[0m" && read -r url_evoai_front
+    echo ""
+    echo -e "\n📍 Passo 2/9"
+    echo -en "🔗 \e[33mDigite o domínio para a API da EvoAI (ex: api-evo.encha.ai): \e[0m" && read -r url_evoai_api
+    echo ""
+    echo -e "\n📍 Passo 3/9"
+    echo -en "📧 \e[33mDigite um email para o usuário admin: \e[0m" && read -r email_evoai
+    echo ""
+    echo -e "\n📍 Passo 4/9"
+    echo -en "🔑 \e[33mDigite uma senha para o admin: \e[0m" && read -s -r pass_evoai
+    echo ""
+    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    echo -e "\n📍 Passo 5/9"
+    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r smtp_email_evoai
+    echo ""
+    echo -e "\n📍 Passo 6/9"
+    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r smtp_user_evoai
+    echo ""
+    echo -e "\n📍 Passo 7/9"
+    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r smtp_pass_evoai
+    echo ""
+    echo -e "\n📍 Passo 8/9"
+    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r smtp_host_evoai
+    echo ""
+    echo -e "\n📍 Passo 9/9"
+    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r smtp_port_evoai
+    echo ""
+
+    if [ "$smtp_port_evoai" -eq 465 ]; then
+      SMTP_USE_TLS=false
+      SMTP_USE_SSL=true
+    else
+      SMTP_USE_TLS=true
+      SMTP_USE_SSL=false
+    fi
+
+    clear
+    msg_evoai
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Painel:\e[97m $url_evoai_front\e[0m"
+    echo -e "🔗 \e[33mDomínio API:\e[97m $url_evoai_api\e[0m"
+    echo -e "📧 \e[33mEmail Admin:\e[97m $email_evoai\e[0m"
+    echo -e "\e[33mSenha do Admin:\e[97m $pass_evoai\e[0m"
+    echo -e "\e[33mSenha do usuario:\e[97m $pass_evoai\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $smtp_email_evoai\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $smtp_pass_evoai\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $smtp_host_evoai\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $smtp_port_evoai\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_evoai; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação da Evo AI...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo ""
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "evoai${1:+_$1}"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo ""
+  verificar_container_redis || ferramenta_redis
+
+  echo -e "\e[97m• INSTALANDO A EVO AI \e[33m[4/5]\e[0m"
+  echo ""
+
+  EVO_AI_ENCRYPTION_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+  EVO_AI_JWT_SECRET_KEY=$(openssl rand -base64 32)
+
+  cat > evoai${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  evoai${1:+_$1}_api:
+    image: evoapicloud/evo-ai:latest ## Versão da imagem
+
+    volumes:
+      - evoai${1:+_$1}_logs:/app/logs
+      - evoai${1:+_$1}_static:/app/static
+    
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+  
+    ## 🔗 Informações da API
+      - API_URL=https://$url_evoai_api
+
+    ## 🔗 Informações do Front
+      - APP_URL=https://$url_evoai_front
+      
+    ## 🧪 Dados do Admin
+      - ADMIN_EMAIL=$email_evoai
+      - ADMIN_INITIAL_PASSWORD=$pass_evoai
+
+    ## 📧 Configuração de SMTP
+      - EMAIL_PROVIDER=smtp
+      - SMTP_FROM=$smtp_email_evoai
+      - SMTP_USER=$smtp_user_evoai
+      - SMTP_PASSWORD=$smtp_pass_evoai
+      - SMTP_HOST=$smtp_host_evoai
+      - SMTP_PORT=$smtp_port_evoai
+      - SMTP_USE_TLS=$SMTP_USE_TLS
+      - SMTP_USE_SSL=$SMTP_USE_SSL
+
+    ## 🛢️ Configuração do Postgres
+      - POSTGRES_CONNECTION_STRING=postgresql://postgres:$senha_postgres@postgres:5432/evoai${1:+_$1}
+
+    ## ⚡ Configuração do Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=9
+      - REDIS_KEY_PREFIX=a2a${1:+_$1}
+      - REDIS_SSL=false
+      - REDIS_TTL=3600
+      - TOOLS_CACHE_TTL=3600
+
+    ## 🔐 Encriptação e JWT
+      - ENCRYPTION_KEY=$EVO_AI_ENCRYPTION_KEY
+      - JWT_SECRET_KEY=$EVO_AI_JWT_SECRET_KEY
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRATION_TIME=3600
+
+    ## 🧾 Logs
+      - LOG_LEVEL=INFO
+      - LOG_DIR=logs
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.evoai${1:+_$1}_api.rule=Host(\`$url_evoai_api\`) ## Url da Evolution API
+        - traefik.http.routers.evoai${1:+_$1}_api.entrypoints=websecure
+        - traefik.http.routers.evoai${1:+_$1}_api.priority=1
+        - traefik.http.routers.evoai${1:+_$1}_api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.evoai${1:+_$1}_api.service=evoai${1:+_$1}_api
+        - traefik.http.services.evoai${1:+_$1}_api.loadbalancer.server.port=8000
+        - traefik.http.services.evoai${1:+_$1}_api.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  evoai${1:+_$1}_frontend:
+    image: evoapicloud/evo-ai-frontend:latest ## Versão da imagem
+    
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - NEXT_PUBLIC_API_URL=https://$url_evoai_api
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.evoai${1:+_$1}_frontend.rule=Host(\`$url_evoai_front\`) ## Url da Evolution API
+        - traefik.http.routers.evoai${1:+_$1}_frontend.entrypoints=websecure
+        - traefik.http.routers.evoai${1:+_$1}_frontend.priority=1
+        - traefik.http.routers.evoai${1:+_$1}_frontend.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.evoai${1:+_$1}_frontend.service=evoai${1:+_$1}_frontend
+        - traefik.http.services.evoai${1:+_$1}_frontend.loadbalancer.server.port=3000
+        - traefik.http.services.evoai${1:+_$1}_frontend.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  evoai${1:+_$1}_logs:
+    external: true
+    name: evoai${1:+_$1}_logs
+  evoai${1:+_$1}_static:
+    external: true
+    name: evoai${1:+_$1}_static
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+
+EOL
+
+  STACK_NAME="evoai${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull evoapicloud/evo-ai:latest evoapicloud/evo-ai-frontend:latest
+  wait_stack evoai${1:+_$1}_evoai${1:+_$1}_api evoai${1:+_$1}_evoai${1:+_$1}_frontend
+
+  cd /root/dados_vps
+  cat > dados_evoai${1:+_$1} <<EOL
+[ EVO AI ]
+
+Painel: https://$url_evoai_front
+API: https://$url_evoai_api
+Email Admin: $email_evoai
+Senha Admin: $pass_evoai
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ EVO AI ]\e[0m\n"
+  echo -e "\e[33m🌐 Painel:\e[97m https://$url_evoai_front\e[0m"
+  echo -e "\e[33m🔗 API:\e[97m https://$url_evoai_api\e[0m"
+  echo -e "\e[33m📧 Email Admin:\e[97m $email_evoai\e[0m"
+  echo -e "\e[33m🔑 Senha Admin:\e[97m $pass_evoai\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12023,8 +12297,9 @@ exibir_menu() {
         echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}52.${reset} Instalar ZEP"
         echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls"
         echo -e "                                                    ${azul}54.${reset} Instalar WiseMapping"
+        echo -e "                                                    ${azul}55.${reset} Instalar Evo AI"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-53): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-55): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -12407,6 +12682,12 @@ exibir_menu() {
                 verificar_stack "wisemapping${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_wisemapping
+                  fi
+                  ;;
+            55)
+                verificar_stack "evoai${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_evoai
                   fi
                   ;;
             *)
