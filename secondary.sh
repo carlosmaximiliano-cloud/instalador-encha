@@ -924,6 +924,19 @@ msg_quepasa() {
     echo ""
 }
 
+msg_excalidraw(){
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗  ██╗ ██████╗ █████╗ ██╗     ██╗██████╗ ██████╗  █████╗ ██╗    ██╗"
+    centralizar "██╔════╝╚██╗██╔╝██╔════╝██╔══██╗██║     ██║██╔══██╗██╔══██╗██╔══██╗██║    ██║"
+    centralizar "█████╗   ╚███╔╝ ██║     ███████║██║     ██║██║  ██║██████╔╝███████║██║ █╗ ██║"
+    centralizar "██╔══╝   ██╔██╗ ██║     ██╔══██║██║     ██║██║  ██║██╔══██╗██╔══██║██║███╗██║"
+    centralizar "███████╗██╔╝ ██╗╚██████╗██║  ██║███████╗██║██████╔╝██║  ██║██║  ██║╚███╔███╔╝"
+    centralizar "╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -1845,6 +1858,15 @@ verificar_container_redis_formacao_encha() {
     fi
 }
 
+pegar_user_senha_rabbitmq() {
+    if [ -f "/root/dados_vps/dados_rabbitmq" ]; then
+        user_rabbit_mqs=$(grep "Usuario:" "/root/dados_vps/dados_rabbitmq" | cut -d' ' -f2)
+        senha_rabbit_mqs=$(grep "Senha:" "/root/dados_vps/dados_rabbitmq" | cut -d' ' -f2)
+    else
+        echo "Arquivo de dados do RabbitMQ não encontrado. É necessário instalar o RabbitMQ primeiro."
+        ferramenta_rabbitmq
+    fi
+}
 
 ferramenta_traefik_e_portainer() {
 
@@ -14981,6 +15003,212 @@ EOL
 }
 
 
+ferramenta_unoapi() {
+  msg_unoapi
+  dados
+
+  while true; do
+    echo -e "\e[97mPasso$amarelo 1/11\e[0m"
+    echo -en "\e[33mDigite o Dominio para a Uno API (ex: unoapi.encha.ai): \e[0m" && read -r url_unoapi
+    echo ""
+    echo -e "\e[97mPasso$amarelo 2/11\e[0m"
+    echo -en "\e[33mDigite o Dominio do Chatwoot já instalado (ex: chatwoot.encha.ai): \e[0m" && read -r url_chatwoot_uno
+    echo ""
+    echo -e "\e[97mPasso$amarelo 3/11\e[0m"
+    echo -en "\e[33mDigite o token de usuario administrador do Chatwoot: \e[0m" && read -r token_chatwoot_uno
+    echo ""
+    echo -e "\e[97mPasso$amarelo 4/11\e[0m"
+    echo -en "\e[33mIgnorar mensagens de grupos (true ou false): \e[0m" && read -r op_1
+    echo ""
+    echo -e "\e[97mPasso$amarelo 5/11\e[0m"
+    echo -en "\e[33mIgnorar Status de Transmissão (true ou false): \e[0m" && read -r op_2
+    echo ""
+    echo -e "\e[97mPasso$amarelo 6/11\e[0m"
+    echo -en "\e[33mIgnorar Mensagens de Trasmissão (true ou false): \e[0m" && read -r op_3
+    echo ""
+    echo -e "\e[97mPasso$amarelo 7/11\e[0m"
+    echo -en "\e[33mIgnorar Mensagem de Status (true ou false): \e[0m" && read -r op_4
+    echo ""
+    echo -e "\e[97mPasso$amarelo 8/11\e[0m"
+    echo -en "\e[33mIgnorar Proprias Mensagens (true ou false): \e[0m" && read -r op_5
+    echo ""
+    echo -e "\e[97mPasso$amarelo 9/11\e[0m"
+    echo -en "\e[33mEnviar status de conexão (true ou false): \e[0m" && read -r op_6
+    echo ""
+    echo -e "\e[97mPasso$amarelo 10/11\e[0m"
+    echo -en "\e[33mAccess Key Minio: \e[0m" && read -r S3_ACCESS_KEY
+    echo ""
+    echo -e "\e[97mPasso$amarelo 11/11\e[0m"
+    echo -en "\e[33mSecret Key Minio: \e[0m" && read -r S3_SECRET_KEY
+    echo ""
+
+    pegar_user_senha_rabbitmq
+    pegar_senha_minio
+
+    clear
+    msg_unoapi
+
+    echo -e "\e[33mDominio da Uno API:\e[97m $url_unoapi\e[0m"
+    echo ""
+    echo -e "\e[33mDominio do Chatwoot:\e[97m $url_chatwoot_uno\e[0m"
+    echo ""
+    echo -e "\e[33mToken do Administrador:\e[97m $token_chatwoot_uno\e[0m"
+    echo ""
+    echo -e "\e[33mIgnorar mensagens de grupos:\e[97m $op_1\e[0m"
+    echo ""
+    echo -e "\e[33mIgnorar Status de Transmissão:\e[97m $op_2\e[0m"
+    echo ""
+    echo -e "\e[33mIgnorar Mensagens de Trasmissão:\e[97m $op_3\e[0m"
+    echo ""
+    echo -e "\e[33mIgnorar Mensagem de Status:\e[97m $op_4\e[0m"
+    echo ""
+    echo -e "\e[33mIgnorar Proprias mensagens:\e[97m $op_5\e[0m"
+    echo ""
+    echo -e "\e[33mEnviar status de conexão:\e[97m $op_6\e[0m"
+    echo ""
+    echo -e "\e[33mAccess Key Minio:\e[97m $S3_ACCESS_KEY\e[0m"
+    echo ""
+    echo -e "\e[33mSecret Key Minio:\e[97m $S3_SECRET_KEY\e[0m"
+    echo ""
+    echo -e "\e[33mUser RabbitMq:\e[97m $user_rabbit_mqs\e[0m"
+    echo ""
+    echo -e "\e[33mSenha RabbitMq:\e[97m $senha_rabbit_mqs\e[0m"
+    echo ""
+    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_unoapi; fi
+  done
+
+  clear
+  echo -e "\e[97m• INICIANDO A INSTALAÇÃO DA UNO API \e[33m[1/3]\e[0m"
+  echo ""
+
+  echo -e "\e[97m• INSTALANDO UNO API \e[33m[2/3]\e[0m"
+  echo ""
+
+  cat > unoapi${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  unoapi${1:+_$1}:
+    image: clairton/unoapi-cloud:latest
+    entrypoint: yarn cloud
+
+    volumes:
+      - unoapi${1:+_$1}_data:/home/u/app
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Url Uno API
+      - BASE_URL=https://$url_unoapi
+
+      ## Token Uno Api
+      - UNOAPI_AUTH_TOKEN=any
+
+      ## Configurações da Uno API
+      - IGNORE_GROUP_MESSAGES=$op_1
+      - IGNORE_BROADCAST_STATUSES=$op_2
+      - IGNORE_BROADCAST_MESSAGES=$op_3
+      - IGNORE_STATUS_MESSAGE=$op_4
+      - IGNORE_OWN_MESSAGES=$op_5
+      - REJECT_CALLS=
+      - REJECT_CALLS_WEBHOOK=
+      - SEND_CONNECTION_STATUS=$op_6
+
+      ## Sobre Webhook
+      - WEBHOOK_URL=https://$url_chatwoot_uno/webhooks/whatsapp
+      - WEBHOOK_HEADER=api_access_token
+      - WEBHOOK_TOKEN=$token_chatwoot_uno
+
+      ## Dados do Minio/S3
+      - STORAGE_ENDPOINT=https://$url_s3
+      - STORAGE_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - STORAGE_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - STORAGE_BUCKET_NAME=unoapi${1:+_$1}
+      - STORAGE_FORCE_PATH_STYLE=true
+
+      ## Dados do RabbitMQ
+      - AMQP_URL=amqp://$user_rabbit_mqs:$senha_rabbit_mqs@rabbitmq:5672/unoapi${1:+_$1}
+      
+      ## Dados do Redis
+      - REDIS_URL=redis://redis:6379
+
+      ## Outras configurações
+      - LOG_LEVEL=debug
+      - UNO_LOG_LEVEL=debug
+      - UNOAPI_RETRY_REQUEST_DELAY=1_000
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.unoapi${1:+_$1}.rule=Host(\`$url_unoapi\`)
+        - traefik.http.routers.unoapi${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.unoapi${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.unoapi${1:+_$1}.loadbalancer.server.port=9876
+        - traefik.http.routers.unoapi${1:+_$1}.priority=1
+        - traefik.http.services.unoapi${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.unoapi${1:+_$1}.service=unoapi${1:+_$1}
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+volumes:
+  unoapi${1:+_$1}_data:
+    external: true
+    name: unoapi${1:+_$1}_data
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="unoapi${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull clairton/unoapi-cloud:latest
+  wait_stack unoapi${1:+_$1}_unoapi${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_unoapi${1:+_$1} <<EOL
+[ UNO API ]
+
+Dominio do unoapi: https://$url_unoapi
+
+Auth Token: any
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ UNO API ]\e[0m"
+  echo ""
+  echo -e "\e[33mDominio:\e[97m https://$url_unoapi\e[0m"
+  echo ""
+  echo -e "\e[33mPing:\e[97m https://$url_unoapi/ping\e[0m"
+  echo ""
+  echo -e "\e[33mAuth Token:\e[97m any\e[0m"
+  msg_retorno_menu
+
+}
 
 verificar_status_servicos() {
     msg_status
@@ -15072,9 +15300,10 @@ exibir_menu() {
     OPCOES[67]="Frappe ERPnext"
     OPCOES[68]="Clickhouse"
     OPCOES[69]="Langfuse"
+    OPCOES[70]="UnoAPI"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70)
     local pagina_atual=1
 
     while true; do
@@ -15580,6 +15809,12 @@ exibir_menu() {
                 verificar_stack "langfuse${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_langfuse
+                fi
+                ;;
+            70)
+                verificar_stack "unoapi${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_unoapi
                 fi
                 ;;
             *)
