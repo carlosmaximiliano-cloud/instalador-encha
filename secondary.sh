@@ -859,6 +859,19 @@ msg_browserless() {
     echo ""
 }
 
+msg_frappe() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██████╗  █████╗ ██████╗ ██████╗ ███████╗"
+    centralizar "██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔════╝"
+    centralizar "█████╗  ██████╔╝███████║██████╔╝██████╔╝█████╗"
+    centralizar "██╔══╝  ██╔══██╗██╔══██║██╔═══╝ ██╔═══╝ ██╔══╝"
+    centralizar "██║     ██║  ██║██║  ██║██║     ██║     ███████╗"
+    centralizar "╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -13066,7 +13079,6 @@ EOL
 
 }
 
-
 ferramenta_gotenberg() {
   msg_gotenberg
   dados
@@ -14105,6 +14117,378 @@ EOL
 
 }
 
+ferramenta_frappe() {
+  msg_frappe
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/2"
+    echo -en "🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m" && read -r url_frappe
+    echo ""
+    echo -e "\n📍 Passo 2/2"
+    echo -en "🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m" && read -s -r senha_frappe
+    echo ""
+
+    clear
+    msg_frappe
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Frappe:\e[97m $url_frappe\e[0m"
+    echo -e "🔑 \e[33mSenha do Administrador:\e[97m $senha_frappe\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_frappe; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Frappe ERPNext...\e[0m"
+  echo -e "\e[33m⚠️  Esta instalação pode demorar vários minutos. Por favor, aguarde...\e[0m"
+
+  DB_PASSWORD=$(openssl rand -hex 16)
+  cat > erpnext${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_frontend:
+    image: frappe/erpnext:v15.49.3
+    command: ["nginx-entrypoint.sh"]
+
+    volumes:
+      - erpnext${1:+_$1}_sites:/home/frappe/frappe-bench/sites
+      - erpnext${1:+_$1}_logs:/home/frappe/frappe-bench/logs
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - BACKEND=erpnext${1:+_$1}_backend:8000
+      - FRAPPE_SITE_NAME_HEADER=$url_frappe
+      - FRAPPE_SITE=$url_frappe
+      - SOCKETIO=erpnext${1:+_$1}_websocket:9000
+      - UPSTREAM_REAL_IP_ADDRESS=127.0.0.1
+      - UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
+      - UPSTREAM_REAL_IP_RECURSIVE=off
+      - PROXY_READ_TIMEOUT=120
+      - CLIENT_MAX_BODY_SIZE=50m
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.erpnext${1:+_$1}_frontend.rule=Host(\`$url_frappe\`)
+        - traefik.http.services.erpnext${1:+_$1}_frontend.loadbalancer.server.port=8080
+        - traefik.http.routers.erpnext${1:+_$1}_frontend.service=erpnext${1:+_$1}_frontend
+        - traefik.http.routers.erpnext${1:+_$1}_frontend.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.erpnext${1:+_$1}_frontend.entrypoints=websecure
+        - traefik.http.routers.erpnext${1:+_$1}_frontend.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_backend:
+    image: frappe/erpnext:v15.49.3
+
+    volumes:
+      - erpnext${1:+_$1}_sites:/home/frappe/frappe-bench/sites
+      - erpnext${1:+_$1}_logs:/home/frappe/frappe-bench/logs
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do MySQL
+      - DB_HOST=erpnext${1:+_$1}_db
+      - DB_PORT=3306
+      - DB_USER=frappe
+      - DB_PASSWORD=$DB_PASSWORD
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MARIADB_ROOT_PASSWORD=$DB_PASSWORD
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_configurator:
+    image: frappe/erpnext:v15.49.3
+
+    volumes:
+      - erpnext${1:+_$1}_sites:/home/frappe/frappe-bench/sites
+      - erpnext${1:+_$1}_logs:/home/frappe/frappe-bench/logs
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do MySQL
+      - DB_HOST=erpnext${1:+_$1}_db
+      - DB_PORT=3306
+
+      ## Dados do Redis
+      - REDIS_CACHE=erpnext${1:+_$1}_cache:6379
+      - REDIS_QUEUE=erpnext${1:+_$1}_queue:6379
+      - REDIS_SOCKETIO=erpnext${1:+_$1}_socketio:6379
+
+      ## Dados Websocket
+      - SOCKETIO_PORT=9000
+
+      ## Host
+      - HOST_URL=$url_frappe
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+      
+  erpnext${1:+_$1}_websocket:
+    image: frappe/erpnext:v15.49.3
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+
+    volumes:
+      - erpnext${1:+_$1}_sites:/home/frappe/frappe-bench/sites
+      - erpnext${1:+_$1}_logs:/home/frappe/frappe-bench/logs
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+            
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_db:
+    image: mariadb:10.6
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake", "--skip-innodb-read-only-compressed"]
+
+    volumes:
+      - erpnext${1:+_$1}_db:/var/lib/mysql
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do MySQL
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MARIADB_ROOT_PASSWORD=$DB_PASSWORD
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_cache:
+    image: redis:latest
+    command: [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--port",
+        "6379"
+      ]
+
+    volumes:
+      - erpnext${1:+_$1}_cache:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_queue:
+    image: redis:latest
+    command: [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--port",
+        "6379"
+      ]
+
+    volumes:
+      - erpnext${1:+_$1}_queue:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  erpnext${1:+_$1}_socketio:
+    image: redis:latest
+    command: [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--port",
+        "6379"
+      ]
+
+    volumes:
+      - erpnext${1:+_$1}_socketio:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  erpnext${1:+_$1}_sites:
+    external: true
+    name: erpnext${1:+_$1}_sites
+  erpnext${1:+_$1}_logs:
+    external: true
+    name: erpnext${1:+_$1}_logs
+  erpnext${1:+_$1}_db:
+    external: true
+    name: erpnext${1:+_$1}_db
+  erpnext${1:+_$1}_cache:
+    external: true
+    name: erpnext${1:+_$1}_cache
+  erpnext${1:+_$1}_queue:
+    external: true
+    name: erpnext${1:+_$1}_queue
+  erpnext${1:+_$1}_socketio:
+    external: true
+    name: erpnext${1:+_$1}_socketio
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="erpnext${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/4]\e[0m"
+  echo ""
+
+  pull frappe/erpnext:v15.49.3 mariadb:10.6 redis:latest
+
+  echo "{
+  \"db_host\": \"erpnext${1:+_$1}_db\",
+  \"db_port\": \"3306\",
+  \"redis_cache\": \"redis://erpnext${1:+_$1}_cache:6379\",
+  \"redis_queue\": \"redis://erpnext${1:+_$1}_queue:6379\",
+  \"redis_socketio\": \"redis://erpnext${1:+_$1}_socketio:6379\",
+  \"auto_update\": false,
+  \"disable_website_cache\": true,
+  \"domains\": [\"$url_frappe\"]
+  }" > /var/lib/docker/volumes/erpnext${1:+_$1}_sites/_data/common_site_config.json
+
+  wait_stack erpnext${1:+_$1}_erpnext${1:+_$1}_frontend erpnext${1:+_$1}_erpnext${1:+_$1}_backend erpnext${1:+_$1}_erpnext${1:+_$1}_configurator erpnext${1:+_$1}_erpnext${1:+_$1}_websocket erpnext${1:+_$1}_erpnext${1:+_$1}_db erpnext${1:+_$1}_erpnext${1:+_$1}_cache erpnext${1:+_$1}_erpnext${1:+_$1}_queue erpnext${1:+_$1}_erpnext${1:+_$1}_socketio
+
+  echo -e "\e[97m• INSTALANDO APLICATIVO \e[33m[4/4]\e[0m"
+  echo ""
+
+  docker exec -it $(docker ps -qf "name=erpnext${1:+_$1}_backend") bash -c "bench new-site \"$url_frappe\" --mariadb-root-password=\"$DB_PASSWORD\" --admin-password=\"$senha_frappe\" --install-app erpnext"
+
+  cd /root/dados_vps
+  cat > dados_erpnext${1:+_$1} <<EOL
+[ ERPNEXT ]
+
+Dominio do ERPNext: https://$url_frappe
+Usuario: administrator
+Senha: $senha_frappe
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ FRAPPE ERPNext ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_frappe\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m Administrator\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $senha_frappe\e[0m"
+  echo -e "\e[33m⚠️  Pode levar alguns minutos para o site estar totalmente acessível após a configuração.\e[0m"
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -14193,9 +14577,10 @@ exibir_menu() {
     OPCOES[64]="Planka"
     OPCOES[65]="WPPconnect"
     OPCOES[66]="Browserless"
+    OPCOES[67]="Browserless"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67)
     local pagina_atual=1
 
     while true; do
@@ -14683,6 +15068,12 @@ exibir_menu() {
                 verificar_stack "browserless${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_browserless
+                fi
+                ;;
+            68)
+                verificar_stack "frappe${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_frappe
                 fi
                 ;;
             *)
