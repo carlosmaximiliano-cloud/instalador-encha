@@ -781,6 +781,45 @@ msg_azuracast(){
     echo ""
 }
 
+msg_rustdesk(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗   ██╗███████╗████████╗██████╗ ███████╗███████╗██╗  ██╗"
+    centralizar "██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔══██╗██╔════╝██╔════╝██║ ██╔╝"
+    centralizar "██████╔╝██║   ██║███████╗   ██║   ██║  ██║█████╗  ███████╗█████╔╝"
+    centralizar "██╔══██╗██║   ██║╚════██║   ██║   ██║  ██║██╔══╝  ╚════██║██╔═██╗"
+    centralizar "██║  ██║╚██████╔╝███████║   ██║   ██████╔╝███████╗███████║██║  ██╗"
+    centralizar "╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_hoppscotch(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗  ██╗ ██████╗ ██████╗ ██████╗ ███████╗ ██████╗ ██████╗ ████████╗ ██████╗██╗  ██╗"
+    centralizar "██║  ██║██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔═══██╗╚══██╔══╝██╔════╝██║  ██║"
+    centralizar "███████║██║   ██║██████╔╝██████╔╝███████╗██║     ██║   ██║   ██║   ██║     ███████║"
+    centralizar "██╔══██║██║   ██║██╔═══╝ ██╔═══╝ ╚════██║██║     ██║   ██║   ██║   ██║     ██╔══██║"
+    centralizar "██║  ██║╚██████╔╝██║     ██║     ███████║╚██████╗╚██████╔╝   ██║   ╚██████╗██║  ██║"
+    centralizar "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝    ╚═╝    ╚═════╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_bolt() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗  ██████╗ ██╗  ████████╗"
+    centralizar "██╔══██╗██╔═══██╗██║  ╚══██╔══╝"
+    centralizar "██████╔╝██║   ██║██║     ██║"
+    centralizar "██╔══██╗██║   ██║██║     ██║"
+    centralizar "██████╔╝╚██████╔╝███████╗██║"
+    centralizar "╚═════╝  ╚═════╝ ╚══════╝╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -13009,6 +13048,179 @@ EOL
   echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta.\e[0m"
   msg_retorno_menu
 
+}
+
+ferramenta_rustdesk() {
+  msg_rustdesk
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/2"
+    echo -en "🔗 \e[33mDigite o domínio para o servidor de ID (hbbs) (ex: hbbs-rustdesk.encha.ai): \e[0m" && read -r url_hbbs
+    echo ""
+    echo -e "\n📍 Passo 2/2"
+    echo -en "🔗 \e[33mDigite o domínio para o servidor de Relay (hbbr) (ex: hbbr-rustdesk.encha.ai): \e[0m" && read -r url_hbbr
+    echo ""
+
+    clear
+    msg_rustdesk
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🆔 \e[33mDomínio HBBS:\e[97m $url_hbbs\e[0m"
+    echo -e "릴 \e[33mDomínio HBBR:\e[97m $url_hbbr\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_rustdesk; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do RustDesk Server...\e[0m"
+  rustdesk_api_key=$(openssl rand -hex 16)
+
+  generate_rustdesk_string() {
+    local link_hbbs="$1"
+    local link_hbbr="$2"
+    local key="$3"
+    
+    # Criar o JSON com formatação específica
+    local json="{\"host\":\"$link_hbbs\",\"relay\":\"$link_hbbr\",\"api\":\"\",\"key\":\"$key\"}"
+    
+    # Converter para base64 e inverter
+    echo -n "$json" | base64 -w 0 | rev
+  }
+
+  link_hbbs="$url_hbbs"
+  link_hbbr="$url_hbbr"
+  key="$rustdesk_api_key"
+
+  rustdesk_string=$(generate_rustdesk_string "$url_hbbs" "$url_hbbr" "$key")
+  cat > rustdesk${1:+_$1}.yaml <<EOL
+version: "3.8"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  rustdesk${1:+_$1}_hbbs:
+    image: rustdesk/rustdesk-server:latest
+    command: hbbs
+
+    volumes:
+      - rustdesk${1:+_$1}_data:/root
+    
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    ports:
+      - 21115:21115
+      - 21116:21116/udp
+      - 21118:21118/udp
+      #- 21119:21119  
+    
+    environment:
+      - ALWAYS_USE_RELAY=N
+      - RELAY=$url_hbbr
+      - KEY=$rustdesk_api_key
+      - PORT=21116
+      - RUST_LOG=info
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbs.rule=Host(\`$url_hbbs\`) ## Dominio para aplicação
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbs.entrypoints=websecure
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbs.priority=1
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbs.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbs.service=rustdesk${1:+_$1}_hbbs
+        - traefik.http.services.rustdesk${1:+_$1}_hbbs.loadbalancer.server.port=21116
+        - traefik.http.services.rustdesk${1:+_$1}_hbbs.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  rustdesk${1:+_$1}_hbbr:
+    image: rustdesk/rustdesk-server:latest
+    command: hbbr
+
+    volumes:
+      - rustdesk${1:+_$1}_data:/root
+    
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - KEY=$rustdesk_api_key
+      - PORT=21117
+      - LIMIT_SPEED=200
+      - SINGLE_BANDWIDTH=50
+      - TOTAL_BANDWIDTH=500
+      - RUST_LOG=info
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbr.rule=Host(\`$url_hbbr\`) ## Dominio para aplicação
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbr.entrypoints=websecure
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbr.priority=1
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbr.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.rustdesk${1:+_$1}_hbbr.service=rustdesk${1:+_$1}_hbbr
+        - traefik.http.services.rustdesk${1:+_$1}_hbbr.loadbalancer.server.port=21117
+        - traefik.http.services.rustdesk${1:+_$1}_hbbr.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  rustdesk${1:+_$1}_data:
+    external: true
+    name: rustdesk${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="rustdesk${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull rustdesk/rustdesk-server:latest
+  wait_stack rustdesk${1:+_$1}_rustdesk${1:+_$1}_hbbs rustdesk${1:+_$1}_rustdesk${1:+_$1}_hbbr
+
+  cd /root/dados_vps
+  cat > dados_rustdesk${1:+_$1} <<EOL
+[ RUSTDESK ]
+
+Dominio do Servidor de ID do RustDesk:$url_hbbs
+Dominio do Servidor de Relay do RustDesk:$url_hbbr
+Dominio do Servidor da API do RustDesk: VAZIO
+ApiKey do RustDesk: $rustdesk_api_key
+Configurações do Servidor Rundesk: $rustdesk_string
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ RUSTDESK ]\e[0m\n"
+  echo -e "\e[33m🆔 Servidor de ID (hbbs):\e[97m $url_hbbs\e[0m"
+  echo -e "\e[33m릴 Servidor de Relay (hbbr):\e[97m $url_hbbr\e[0m"
+  echo -e "\e[33m🔑 Key:\e[97m $rustdesk_api_key\e[0m"
+  echo -e "\e[33m⚙️ String de Configuração (para o cliente):\e[97m $rustdesk_config_string\e[0m"  
+  msg_retorno_menu
 
 }
 
@@ -13093,9 +13305,10 @@ exibir_menu() {
     OPCOES[58]="Gotenberg"
     OPCOES[59]="Wiki JS"
     OPCOES[60]="Azuracast"
+    OPCOES[61]="Rustdesk"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61)
     local pagina_atual=1
 
     while true; do
@@ -13547,6 +13760,12 @@ exibir_menu() {
                 verificar_stack "azuracast${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_azuracast
+                fi
+                ;;
+            61)
+                verificar_stack "rustdesk${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_rustdesk
                 fi
                 ;;
             *)
