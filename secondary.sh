@@ -11035,7 +11035,7 @@ ferramenta_ntfy(){
     echo -e "🌐 \e[33mDomínio Ntfy:\e[97m $url_ntfy\e[0m"
     echo -e "👤 \e[33mUsuário:\e[97m $user_ntfy\e[0m"
     echo -e "🔑 \e[33mSenha do Ntfy:\e[97m $pass_ntfy\e[0m"
-    cho -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_ntfy; fi
   done
@@ -11043,7 +11043,7 @@ ferramenta_ntfy(){
   clear
   echo -e "\e[97m🚀 Iniciando a instalação do Ntfy...\e[0m"
   ## Gerando Hash
-  hashed_senha=$(htpasswd -nb $user_ntfy $pass_ntfy | sed -e s/\\$/\\$\\$/g)
+  hashed_senha=$(htpasswd -nbB "$user_ntfy" "$pass_ntfy" | sed -e 's/\\$/\\$\\$/g')
 
   ## Gerando Base64
   authentication=$(echo -n "$user_ntfy:$pass_ntfy" | base64)
@@ -11141,6 +11141,256 @@ EOL
 
 }
 
+ferramenta_lowcoder(){
+  msg_lowcoder
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/8"
+    echo -en "🔗 \e[33mDigite o domínio para o Lowcoder (ex: low.encha.ai): \e[0m" && read -r url_lowcoder
+    echo ""
+    echo -e "\n\e[97m--- Credenciais do MongoDB ---\e[0m"
+    echo -e "\n📍 Passo 2/8"
+    echo -en "👤 \e[33mDigite o usuário do MongoDB: \e[0m" && read -r user_mongodb_lowcoder
+    echo ""
+    echo -e "\n📍 Passo 3/8"
+    echo -en "🔑 \e[33mDigite a senha do MongoDB: \e[0m" && read -s -r pass_mongodb_lowcoder
+    echo ""
+    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    echo -e "\n📍 Passo 4/8"
+    echo -en "📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_lowcoder
+    echo ""
+    echo -e "\n📍 Passo 5/8"
+    echo -en "👤 \e[33mDigite o usuário do seu email (pode ser o mesmo email): \e[0m" && read -r user_smtp_lowcoder
+    echo ""
+    echo -e "\n📍 Passo 6/8"
+    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_smtp_lowcoder
+    echo ""
+    echo -e "\n📍 Passo 7/8"
+    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_lowcoder
+    echo ""
+    echo -e "\n📍 Passo 8/8"
+    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_lowcoder
+    echo ""
+
+    if [ "$porta_smtp_lowcoder" -eq 465 ]; then
+      smtp_secure_lowcoder_ssl=true
+      smtp_secure_lowcoder_startls=false
+    else
+      smtp_secure_lowcoder_ssl=false
+      smtp_secure_lowcoder_startls=true
+    fi
+
+    clear
+    msg_lowcoder
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Lowcoder:\e[97m $url_lowcoder\e[0m"
+    echo -e "🗄️ \e[33mUsuário MongoDB:\e[97m $user_mongodb_lowcoder\e[0m"
+    echo -e "\e[33mSenha do MongoDB:\e[97m $pass_mongodb_lowcoder\e[0m"
+    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_smtp_lowcoder\e[0m"
+    echo -e "\e[33mUser SMTP:\e[97m $user_smtp_lowcoder\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_lowcoder\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $host_smtp_lowcoder\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_lowcoder\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_lowcoder; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Lowcoder...\e[0m"
+  verificar_container_redis || ferramenta_redis
+
+  echo -e "\e[97m• INSTALANDO O LOWCODER \e[33m[3/4]\e[0m"
+  echo ""
+
+  ## Gerando Encryption
+  encryption_key_lowcoder1=$(openssl rand -hex 16)
+  encryption_key_lowcoder2=$(openssl rand -hex 16)
+  encryption_key_lowcoder3=$(openssl rand -hex 32)
+
+  read -r ip _ <<<$(hostname -I)
+  cat > lowcoder${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+  lowcoder${1:+_$1}_api:
+    image: lowcoderorg/lowcoder-ce-api-service:latest
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      - LOWCODER_PUID=9001
+      - LOWCODER_PGID=9001
+
+      ## Dados MongoDB
+      - LOWCODER_MONGODB_URL=mongodb://$user_mongodb_lowcoder:$pass_mongodb_lowcoder@$ip:27017/lowcoder${1:+_$1}?authSource=admin&readPreference=primary&ssl=false&directConnection=true
+
+      ## Dados Redis
+      - LOWCODER_REDIS_URL=redis://redis:6379
+
+      ## Dominio
+      - LOWCODER_NODE_SERVICE_URL=http://lowcoder${1:+_$1}_node:6060
+
+      ## Configurações
+      - LOWCODER_MAX_QUERY_TIMEOUT=120
+      - LOWCODER_EMAIL_AUTH_ENABLED=true
+      - LOWCODER_EMAIL_SIGNUP_ENABLED=true ## true = permitir criar novas contas
+      - LOWCODER_CREATE_WORKSPACE_ON_SIGNUP=true ## true = permitir criar novos workspaces
+      - LOWCODER_WORKSPACE_MODE=SAAS
+
+      ## Encryption
+      - LOWCODER_DB_ENCRYPTION_PASSWORD=$encryption_key_lowcoder1 ## hash Encryption
+      - LOWCODER_DB_ENCRYPTION_SALT=$encryption_key_lowcoder2 ## hash Encryption
+      - LOWCODER_API_KEY_SECRET=$encryption_key_lowcoder3 # hash Encryption
+
+      ## Outras configurações
+      - LOWCODER_CORS_DOMAINS=*
+      - LOWCODER_MAX_ORGS_PER_USER=100
+      - LOWCODER_MAX_MEMBERS_PER_ORG=1000
+      - LOWCODER_MAX_GROUPS_PER_ORG=100
+      - LOWCODER_MAX_APPS_PER_ORG=1000
+      - LOWCODER_MAX_DEVELOPERS=50
+
+      ## Dados SMTP
+      - LOWCODER_ADMIN_SMTP_HOST=$host_smtp_lowcoder
+      - LOWCODER_ADMIN_SMTP_PORT=$porta_smtp_lowcoder
+      - LOWCODER_ADMIN_SMTP_USERNAME=$user_smtp_lowcoder
+      - LOWCODER_ADMIN_SMTP_PASSWORD=$senha_smtp_lowcoder
+      - LOWCODER_ADMIN_SMTP_AUTH=true
+      - LOWCODER_ADMIN_SMTP_SSL_ENABLED=$smtp_secure_lowcoder_ssl
+      - LOWCODER_ADMIN_SMTP_STARTTLS_ENABLED=$smtp_secure_lowcoder_startls
+      - LOWCODER_ADMIN_SMTP_STARTTLS_REQUIRED=$smtp_secure_lowcoder_startls
+      - LOWCODER_EMAIL_NOTIFICATIONS_SENDER=$email_smtp_lowcoder
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+  lowcoder${1:+_$1}_node:
+    image: lowcoderorg/lowcoder-ce-node-service:latest
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      - LOWCODER_PUID=9001
+      - LOWCODER_PGID=9001
+      - LOWCODER_API_SERVICE_URL=http://lowcoder${1:+_$1}_api:8080
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+  lowcoder${1:+_$1}_frontend:
+    image: lowcoderorg/lowcoder-ce-frontend:latest
+
+    volumes:
+     - lowcoder${1:+_$1}_assets:/lowcoder/assets
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      - LOWCODER_PUID=9001
+      - LOWCODER_PGID=9001
+      - LOWCODER_MAX_REQUEST_SIZE=20m
+      - LOWCODER_MAX_QUERY_TIMEOUT=120
+      - LOWCODER_API_SERVICE_URL=http://lowcoder${1:+_$1}_api:8080
+      - LOWCODER_NODE_SERVICE_URL=http://lowcoder${1:+_$1}_node:6060
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager  
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.lowcoder${1:+_$1}.rule=Host(\`$url_lowcoder\`) && PathPrefix(\`/\`)
+        - traefik.http.services.lowcoder${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.lowcoder${1:+_$1}.service=lowcoder${1:+_$1}
+        - traefik.http.routers.lowcoder${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.lowcoder${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.lowcoder${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+volumes:
+  lowcoder${1:+_$1}_assets:
+    external: true
+    name: lowcoder${1:+_$1}_assets
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+  
+  STACK_NAME="lowcoder${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull lowcoderorg/lowcoder-ce-api-service:latest lowcoderorg/lowcoder-ce-node-service:latest lowcoderorg/lowcoder-ce-frontend:latest
+  wait_stack lowcoder${1:+_$1}_lowcoder${1:+_$1}_api lowcoder${1:+_$1}_lowcoder${1:+_$1}_node lowcoder${1:+_$1}_lowcoder${1:+_$1}_frontend
+
+  cd /root/dados_vps
+  cat > dados_lowcoder${1:+_$1} <<EOL
+[ LOWCODER ]
+
+Link do Lowcoder: https://$url_lowcoder
+Usuario: Precisa de criar dentro do LowCoder
+Senha: Precisa de criar dentro do LowCoder
+API_KEY: $encryption_key_lowcoder3
+EOL
+
+  cad
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ LOWCODER ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_lowcoder\e[0m"
+  echo -e "\e[33m🔑 API Key:\e[97m $encryption_key_lowcoder3\e[0m"
+  echo -e "\e[33m⚠️  Crie seu usuário no primeiro acesso.\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -11192,12 +11442,12 @@ exibir_menu() {
         echo -e "${azul}20.${reset} Instalar calcom                  ${azul}47.${reset} Instalar MyphpAdmin"
         echo -e "${azul}21.${reset} Instalar mautic                  ${azul}48.${reset} Instalar Supabase"
         echo -e "${azul}22.${reset} Instalar appsmith                ${azul}49.${reset} Instalar NTFY"
-        echo -e "${azul}23.${reset} Instalar qdrant"
+        echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
         echo -e "${azul}24.${reset} Instalar woofedcrm"
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-49): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-50): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -11550,6 +11800,12 @@ exibir_menu() {
                 verificar_stack "ntfy${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_ntfy
+                  fi
+                  ;;
+            50)
+                verificar_stack "lowcoder${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_lowcoder
                   fi
                   ;;
             *)
