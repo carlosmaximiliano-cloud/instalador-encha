@@ -12796,24 +12796,21 @@ exibir_menu() {
         local -i meio=$(( (max_items + 1) / 2 ))
 
         for (( i=0; i<meio; i++ )); do
-          local idx_esq=${items_pagina[i]}
-          local texto_esq="${OPCOES[$idx_esq]}"
-          local status_esq="${verde}[ ]${reset}"
-          # Alinha sem cor e depois aplica
-          local item_esq=$(printf "[ %02d ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
-          item_esq="${item_esq//\[$idx_esq\]/[ ${azul}$(printf "%02d" $idx_esq)${reset} ]}"
+            local idx_esq=${items_pagina[i]}
+            local texto_esq="${OPCOES[$idx_esq]}"
+            local status_esq="${verde}[ ]${reset}"
+            local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
 
-          local item_dir=""
-          local -i idx_dir_calc=$(( i + meio ))
-          if [ $idx_dir_calc -lt $max_items ]; then
-              local idx_dir=${items_pagina[$idx_dir_calc]}
-              local texto_dir="${OPCOES[$idx_dir]}"
-              local status_dir="${verde}[ ]${reset}"
-              item_dir=$(printf "| [ %02d ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
-              item_dir="${item_dir//\[$idx_dir\]/[ ${azul}$(printf "%02d" $idx_dir)${reset} ]}"
-          fi
-
-          printf "      %s %s\n" "$item_esq" "$item_dir"
+            local item_dir=""
+            local -i idx_dir_calc=$(( i + meio ))
+            if [ $idx_dir_calc -lt $max_items ]; then
+                local idx_dir=${items_pagina[$idx_dir_calc]}
+                local texto_dir="${OPCOES[$idx_dir]}"
+                local status_dir="${verde}[ ]${reset}"
+                item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
+            fi
+            
+            printf "      %s %s\n" "$item_esq" "$item_dir"
         done
 
         echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
