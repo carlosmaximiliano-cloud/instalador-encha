@@ -12870,6 +12870,102 @@ EOL
 
 }
 
+ferramenta_wppconnect() {
+  msg_wppconnect
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o WPPConnect (ex: wpp.encha.ai): \e[0m" && read -r url_wppconnect
+    echo ""
+
+    clear
+    msg_wppconnect
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio WPPConnect:\e[97m $url_wppconnect\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; msg_wppconnect; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do WPPConnect...\e[0m"
+  cat > wppconnect${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wppconnect${1:+_$1}_api:
+    image: wppconnect/server-cli:latest
+
+    volumes:
+      - wppconnect${1:+_$1}_config:/usr/src/wpp-server
+      
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.wppconnect${1:+_$1}_api.rule=Host(\`$url_wppconnect\`) && PathPrefix(\`/\`) ## Url do wppconnect API
+        - traefik.http.routers.wppconnect${1:+_$1}_api.entrypoints=websecure
+        - traefik.http.routers.wppconnect${1:+_$1}_api.priority=1
+        - traefik.http.routers.wppconnect${1:+_$1}_api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.wppconnect${1:+_$1}_api.service=wppconnect${1:+_$1}_api
+        - traefik.http.services.wppconnect${1:+_$1}_api.loadbalancer.server.port=21465
+        - traefik.http.services.wppconnect${1:+_$1}_api.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  wppconnect${1:+_$1}_config:
+    external: true
+    name: wppconnect${1:+_$1}_config
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="wppconnect${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull wppconnect/server-cli:latest
+  wait_stack wppconnect${1:+_$1}_wppconnect${1:+_$1}_api
+
+  cd /root/dados_vps
+  cat > dados_wppconnect${1:+_$1} <<EOL
+[ WPPCONNECT ]
+
+Dominio Front: https://$url_wppconnect
+Documentação: https://$url_wppconnect/api-docs
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WPPCONNECT ]\e[0m\n"
+  echo -e "\e[33m🔗 Domínio API:\e[97m https://$url_wppconnect\e[0m"
+  echo -e "\e[33m📚 Documentação:\e[97m https://$url_wppconnect/api-docs\e[0m"
+  msg_retorno_menu
+
+}
+
 
 ferramenta_gotenberg() {
   msg_gotenberg
@@ -13995,9 +14091,10 @@ exibir_menu() {
     OPCOES[62]="Hoppscotch"
     OPCOES[63]="Bolt"
     OPCOES[64]="Planka"
+    OPCOES[65]="WPPconnect"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65)
     local pagina_atual=1
 
     while true; do
@@ -14473,6 +14570,12 @@ exibir_menu() {
                 verificar_stack "planka${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_planka
+                fi
+                ;;
+            65)
+                verificar_stack "wppconnect${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_wppconnect
                 fi
                 ;;
             *)
