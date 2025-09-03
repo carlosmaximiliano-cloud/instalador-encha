@@ -14729,7 +14729,7 @@ ferramenta_langfuse() {
   echo ""
 
   pegar_senha_minio
-  criar_bucket.minio langfuse${1:+-$1}
+  criar_bucket.minio langfuse${1:+-$1} 
 
   echo -e "\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
   echo ""
