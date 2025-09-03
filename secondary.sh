@@ -12241,6 +12241,146 @@ EOL
 
 }
 
+ferramenta_keycloak() {
+  msg_keycloak
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o domínio para o Keycloak (ex: auth.encha.ai): \e[0m" && read -r url_keycloak
+    echo ""
+    echo -e "\n📍 Passo 2/3"
+    echo -en "👤 \e[33mDigite um usuário para o painel admin: \e[0m" && read -r user_keycloak
+    echo ""
+    echo -e "\n📍 Passo 3/3"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r senha_keycloak
+    echo ""
+
+    clear
+    msg_keycloak
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Keycloak:\e[97m $url_keycloak\e[0m"
+    echo -e "👤 \e[33mUsuário Admin:\e[97m $user_keycloak\e[0m"
+    echo -e "\e[33mSenha:\e[97m $senha_keycloak\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_keycloak; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Keycloak...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo ""
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "keycloak${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO keycloak \e[33m[3/4]\e[0m"
+  echo ""
+
+  cat > keycloak${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  keycloak${1:+_$1}:
+    image: quay.io/keycloak/keycloak:latest
+    command: start
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    volumes:
+      - keycloak${1:+_$1}_data:/opt/keycloak/data
+
+    environment:
+      ## Dados do Postgres
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=postgres
+      - KC_DB_URL_DATABASE=keycloak${1:+_$1}
+      - KC_DB_PASSWORD=$senha_postgres
+      - KC_DB_USERNAME=postgres
+      - KC_DB_SCHEMA=public
+
+      ## Dados de acesso
+      - KC_BOOTSTRAP_ADMIN_USERNAME=$user_keycloak
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=$senha_keycloak
+
+      ## Dados do Host
+      - KC_HOSTNAME=$url_keycloak
+      - KEYCLOAK_FRONTEND_URL=https://$url_keycloak/auth
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.keycloak${1:+_$1}.rule=Host(\`$url_keycloak\`)
+        - traefik.http.services.keycloak${1:+_$1}.loadbalancer.server.port=8080
+        - traefik.http.routers.keycloak${1:+_$1}.service=keycloak${1:+_$1}
+        - traefik.http.routers.keycloak${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.keycloak${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.keycloak${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  keycloak${1:+_$1}_data:
+    external: true
+    name: keycloak${1:+_$1}_data
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="keycloak${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull quay.io/keycloak/keycloak:latest
+
+  wait_stack keycloak${1:+_$1}_keycloak${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_keycloak${1:+_$1} <<EOL
+[ KEYCLOAK ]
+
+Dominio do Keycloak: https://$url_keycloak/auth
+Usuario: $user_keycloak
+Senha: $senha_keycloak
+
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ KEYCLOAK ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_keycloak/admin\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_keycloak\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $senha_keycloak\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12298,8 +12438,9 @@ exibir_menu() {
         echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls"
         echo -e "                                                    ${azul}54.${reset} Instalar WiseMapping"
         echo -e "                                                    ${azul}55.${reset} Instalar Evo AI"
+        echo -e "                                                    ${azul}56.${reset} Instalar Keycloak"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-55): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-56): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -12688,6 +12829,12 @@ exibir_menu() {
                 verificar_stack "evoai${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_evoai
+                  fi
+                  ;;
+            56)
+                verificar_stack "keycloak${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_keycloak
                   fi
                   ;;
             *)
