@@ -14665,6 +14665,312 @@ EOL
 
 }
 
+ferramenta_langfuse() {
+  msg_langfuse
+  dados
+
+  # Função auxiliar para pegar dados do clickhouse
+  pegar_dados_clickhouse() {
+        if [ -f "/root/dados_vps/dados_clickhouse" ]; then
+            API_CLICKHOUSE=$(grep "API:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
+            USUARIO_CLICKHOUSE=$(grep "Usuario:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
+            SENHA_CLICKHOUSE=$(grep "Senha:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
+        else
+            echo "Arquivo de dados do ClickHouse não encontrado."
+            return 1
+        fi
+    }
+  
+  verificar_stack "clickhouse" || ferramenta_clickhouse
+  pegar_dados_clickhouse
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Langfuse (ex: langfuse.encha.ai): \e[0m" && read -r url_langfuse
+    echo ""
+        
+    clear
+    msg_langfuse
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Langfuse:\e[97m $url_langfuse\e[0m"
+    echo -e "🗄️ \e[33mUsando ClickHouse em:\e[97m $API_CLICKHOUSE\e[0m"
+    echo -e "\e[33mUsuario do ClickHouse:\e[97m $USUARIO_CLICKHOUSE\e[0m"
+    echo -e "\e[33mSenha do ClickHouse:\e[97m $SENHA_CLICKHOUSE\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_langfuse; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Langfuse...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/6]\e[0m"
+  echo ""
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres 
+  criar_banco_postgres_da_stack "langfuse${1:+_$1}"
+
+  echo -e "\e[97m• CRIANDO BANCO NO CLICKHOUSE \e[33m[3/6]\e[0m"
+  echo ""
+
+  docker exec -it "$(docker ps --filter 'name=clickhouse' -q)" clickhouse-client -q "CREATE DATABASE langfuse${1:+_$1};" > /dev/null 2>&1
+  echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[4/6]\e[0m"
+  echo ""
+
+  pegar_senha_minio
+  criar_bucket.minio langfuse${1:+-$1} > /dev/null 2>&1
+
+  echo -e "\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
+  echo ""
+
+  ## Criando key Aleatória 64caracteres
+  key_encryption=$(openssl rand -hex 32)
+
+  ## Criando key Aleatória 64caracteres
+  key_secret=$(openssl rand -hex 32)
+
+  ## Criando key Aleatória 32caracteres
+  key_salt=$(openssl rand -hex 32)
+  cat > langfuse${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  langfuse${1:+_$1}_app:
+    image: langfuse/langfuse:latest
+
+    networks:
+     - $nome_rede_interna ## Rede interna
+
+    environment:
+      ## Url do Langfuse
+      - NEXTAUTH_URL=https://$url_langfuse
+
+      ## Desativar novas incrições
+      - NEXT_PUBLIC_SIGN_UP_DISABLED=false
+
+      ## Secrets Key
+      - ENCRYPTION_KEY=$key_encryption
+      - NEXTAUTH_SECRET=$key_secret
+      - SALT=$key_salt
+
+      ## Dados Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/langfuse${1:+_$1}
+      
+      ## Dados do ClickHouse
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+      - CLICKHOUSE_URL=$API_CLICKHOUSE
+      - CLICKHOUSE_USER=$USUARIO_CLICKHOUSE
+      - CLICKHOUSE_PASSWORD=$SENHA_CLICKHOUSE
+      - CLICKHOUSE_CLUSTER_ENABLED=false
+      - CLICKHOUSE_DB=langfuse${1:+_$1}
+
+      ## Dados Redis
+      - REDIS_CONNECTION_STRING=redis://langfuse${1:+_$1}_redis:6379
+
+      ## Dados do S3 - Eventos
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=https://$url_s3
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=langfuse${1:+-$1}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=auto
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
+
+      ## Dados do S3 - Medias
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://$url_s3
+      - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=langfuse${1:+-$1}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - LANGFUSE_S3_MEDIA_UPLOAD_REGION=auto
+      - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
+
+      ## Ativar Telemetria
+      - TELEMETRY_ENABLED=false
+
+      ## Features experimentais
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=false
+
+      ## Node
+      - NODE_ENV=production
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+          constraints:
+            - node.role == manager
+      resources:
+          limits:
+            cpus: '1'
+            memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.langfuse${1:+_$1}.rule=Host(\`$url_langfuse\`)
+        - traefik.http.routers.langfuse${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.langfuse${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.langfuse${1:+_$1}.service=langfuse${1:+_$1}
+        - traefik.http.services.langfuse${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.services.langfuse${1:+_$1}.loadbalancer.server.port=3000
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  langfuse${1:+_$1}_worker:
+    image: langfuse/langfuse-worker:latest
+
+    networks:
+     - $nome_rede_interna ## Rede interna
+
+    environment:
+      ## Url do Langfuse
+      - NEXTAUTH_URL=https://$url_langfuse
+
+      ## Desativar novas incrições
+      - NEXT_PUBLIC_SIGN_UP_DISABLED=false
+
+      ## Secrets Key
+      - ENCRYPTION_KEY=$key_encryption
+      - NEXTAUTH_SECRET=$key_secret
+      - SALT=$key_salt
+
+      ## Dados Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/langfuse${1:+_$1}
+      
+      ## Dados do ClickHouse
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+      - CLICKHOUSE_URL=$API_CLICKHOUSE
+      - CLICKHOUSE_USER=$USUARIO_CLICKHOUSE
+      - CLICKHOUSE_PASSWORD=$SENHA_CLICKHOUSE
+      - CLICKHOUSE_CLUSTER_ENABLED=false
+      - CLICKHOUSE_DB=langfuse${1:+_$1}
+
+      ## Dados Redis
+      - REDIS_CONNECTION_STRING=redis://langfuse${1:+_$1}_redis:6379
+
+      ## Dados do S3 - Eventos
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=https://$url_s3
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=langfuse${1:+-$1}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=auto
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
+
+      ## Dados do S3 - Medias
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://$url_s3
+      - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=langfuse${1:+-$1}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+      - LANGFUSE_S3_MEDIA_UPLOAD_REGION=auto
+      - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
+
+      ## Ativar Telemetria
+      - TELEMETRY_ENABLED=false
+
+      ## Features experimentais
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=false
+
+      ## Node
+      - NODE_ENV=production
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+          constraints:
+            - node.role == manager
+      resources:
+          limits:
+            cpus: '1'
+            memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  langfuse${1:+_$1}_redis:
+    image: redis:latest  ## Versão do Redis
+    command: [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--port",
+        "6379"
+      ]
+
+    volumes:
+      - langfuse${1:+_$1}_redis:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    ## Descomente as linhas abaixo para uso externo
+    #ports:
+    #  - 6379:6379
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+   langfuse${1:+_$1}_redis:
+    external: true
+    name: langfuse${1:+_$1}_redis
+
+networks:
+  $nome_rede_interna: ## Rede interna
+    external: true
+    name: $nome_rede_interna ## Rede interna
+EOL
+
+  STACK_NAME="langfuse${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[6/6]\e[0m"
+  echo ""
+
+  pull langfuse/langfuse:latest langfuse/langfuse-worker:latest
+  wait_stack langfuse${1:+_$1}_langfuse${1:+_$1}_app langfuse${1:+_$1}_langfuse${1:+_$1}_worker
+
+  cd /root/dados_vps
+
+  cat > dados_langfuse${1:+_$1} <<EOL
+[ LANGFUSE ]
+
+Dominio do Langfuse: https://$url_langfuse
+Usuario: Precisa criar no primeiro acesso do langfuse
+Senha: Precisa criar no primeiro acesso do langfuse
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ LANGFUSE ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_langfuse\e[0m"
+  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  msg_retorno_menu
+
+}
+
+
 
 verificar_status_servicos() {
     msg_status
@@ -14755,6 +15061,7 @@ exibir_menu() {
     OPCOES[66]="Browserless"
     OPCOES[67]="Frappe ERPnext"
     OPCOES[68]="Clickhouse"
+    OPCOES[69]="Langfuse"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
     local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68)
@@ -15257,6 +15564,12 @@ exibir_menu() {
                 verificar_stack "clickhouse${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_clickhouse
+                fi
+                ;;
+            69)
+                verificar_stack "langfuse${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_langfuse
                 fi
                 ;;
             *)
