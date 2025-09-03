@@ -13224,6 +13224,324 @@ EOL
 
 }
 
+ferramenta_hoppscotch() {
+  msg_hoppscotch
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/8"
+    echo -en "🔗 \e[33mDigite o domínio para a Interface Principal (ex: hop.encha.ai): \e[0m" && read -r url_hoppscotch_frontend
+    echo ""
+    echo -e "\n📍 Passo 2/8"
+    echo -en "🔗 \e[33mDigite o domínio para o Painel Admin (ex: admin-hop.encha.ai): \e[0m" && read -r url_hoppscotch_admin
+    echo ""
+    echo -e "\n📍 Passo 3/8"
+    echo -en "🔗 \e[33mDigite o domínio para o Backend/API (ex: api-hop.encha.ai): \e[0m" && read -r url_hoppscotch_backend
+    echo ""
+    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    echo -e "\n📍 Passo 4/8"
+    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r hoppscotch_smtp_email
+    echo ""
+    echo -e "\n📍 Passo 5/8"
+    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r hoppscotch_smtp_user
+    echo ""
+    echo -e "\n📍 Passo 6/8"
+    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r hoppscotch_smtp_pass
+    echo ""
+    echo -e "\n📍 Passo 7/8"
+    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r hoppscotch_smtp_host
+    echo ""
+    echo -e "\n📍 Passo 8/8"
+    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r hoppscotch_smtp_port
+    echo ""
+
+    if [ "$porta_smtp_typebot" -eq 465 ]; then
+    hoppscotch_smtp_secure=true
+    else
+    hoppscotch_smtp_secure=false
+    fi
+
+    clear
+    msg_hoppscotch
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Principal:\e[97m $url_hoppscotch_frontend\e[0m"
+    echo -e "⚙️ \e[33mDomínio Admin:\e[97m $url_hoppscotch_admin\e[0m"
+    echo -e "🔗 \e[33mDomínio Backend:\e[97m $url_hoppscotch_backend\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $hoppscotch_smtp_email\e[0m"
+    echo -e "\e[33mUsuário SMTP:\e[97m $hoppscotch_smtp_user\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $hoppscotch_smtp_host\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $hoppscotch_smtp_port\e[0m"
+    echo -e "\e[33mSSL SMTP:\e[97m $hoppscotch_smtp_secure\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_hoppscotch; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Hoppscotch...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo ""
+
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "hoppscotch${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO HOPPSCOTCH \e[33m[3/4]\e[0m"
+  echo ""
+
+  encryption_key=$(openssl rand -hex 16)
+  jwt_secret_key=$(openssl rand -hex 16)
+  sesstion_secret_key=$(openssl rand -hex 16)
+
+  cat > hoppscotch${1:+_$1}.yaml <<EOL
+version: "3.8"
+services:
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  hoppscotch${1:+_$1}_app:
+    image: hoppscotch/hoppscotch-frontend:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      ## Urls do App
+      - VITE_BASE_URL=https://$url_hoppscotch_frontend
+      - VITE_SHORTCODE_BASE_URL=https://$url_hoppscotch_frontend
+      - VITE_ADMIN_URL=https://$url_hoppscotch_admin
+      - VITE_BACKEND_GQL_URL=https://$url_hoppscotch_backend/graphql
+      - VITE_BACKEND_WS_URL=wss://$url_hoppscotch_backend/graphql
+      - VITE_BACKEND_API_URL=https://$url_hoppscotch_backend/v1
+
+      ## Provedores de Autenticação
+      - VITE_ALLOWED_AUTH_PROVIDERS=EMAIL ## Opções: EMAIL,GOOGLE,GITHUB,MICROSOFT
+
+      ## Links de Termos e Privacidade
+      - VITE_APP_TOS_LINK=https://docs.hoppscotch.io/support/terms
+      - VITE_APP_PRIVACY_POLICY_LINK=https://docs.hoppscotch.io/support/privacy
+
+      ## Acesso via Subpath
+      - ENABLE_SUBPATH_BASED_ACCESS=false
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_app.rule=Host(\`$url_hoppscotch_frontend\`) ## Dominio para aplicação
+        - traefik.http.routers.hoppscotch${1:+_$1}_app.entrypoints=websecure
+        - traefik.http.routers.hoppscotch${1:+_$1}_app.priority=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_app.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.hoppscotch${1:+_$1}_app.service=hoppscotch${1:+_$1}_app
+        - traefik.http.services.hoppscotch${1:+_$1}_app.loadbalancer.server.port=3000
+        - traefik.http.services.hoppscotch${1:+_$1}_app.loadbalancer.passHostHeader=true
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  hoppscotch${1:+_$1}_admin:
+    image: hoppscotch/hoppscotch-admin:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      ## Urls do App
+      - VITE_BASE_URL=https://$url_hoppscotch_frontend
+      - VITE_SHORTCODE_BASE_URL=https://$url_hoppscotch_frontend
+      - VITE_ADMIN_URL=https://$url_hoppscotch_admin
+      - VITE_BACKEND_GQL_URL=https://$url_hoppscotch_backend/graphql
+      - VITE_BACKEND_WS_URL=wss://$url_hoppscotch_backend/graphql
+      - VITE_BACKEND_API_URL=https://$url_hoppscotch_backend/v1
+
+      ## Provedores de Autenticação
+      - VITE_ALLOWED_AUTH_PROVIDERS=EMAIL ## Opções: EMAIL,GOOGLE,GITHUB,MICROSOFT
+
+      ## Links de Termos e Privacidade
+      - VITE_APP_TOS_LINK=https://docs.hoppscotch.io/support/terms
+      - VITE_APP_PRIVACY_POLICY_LINK=https://docs.hoppscotch.io/support/privacy
+
+      ## Acesso via Subpath
+      - ENABLE_SUBPATH_BASED_ACCESS=false
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_admin.rule=Host(\`$url_hoppscotch_admin\`) ## Dominio para aplicação
+        - traefik.http.routers.hoppscotch${1:+_$1}_admin.entrypoints=websecure
+        - traefik.http.routers.hoppscotch${1:+_$1}_admin.priority=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_admin.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.hoppscotch${1:+_$1}_admin.service=hoppscotch${1:+_$1}_admin
+        - traefik.http.services.hoppscotch${1:+_$1}_admin.loadbalancer.server.port=3100
+        - traefik.http.services.hoppscotch${1:+_$1}_admin.loadbalancer.passHostHeader=true
+        
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  hoppscotch${1:+_$1}_backend:
+    image: hoppscotch/hoppscotch-backend:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      ## Dados do Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/hoppscotch${1:+_$1}
+
+      ## Configurações do app
+      - REDIRECT_URL=https://$url_hoppscotch_frontend
+      - WHITELISTED_ORIGINS=https://$url_hoppscotch_frontend,https://$url_hoppscotch_admin
+      - VITE_BASE_URL=https://$url_hoppscotch_frontend
+      - VITE_ADMIN_URL=https://$url_hoppscotch_admin
+
+      ## Provedores de Autenticação
+      - VITE_ALLOWED_AUTH_PROVIDERS=EMAIL ## Opções: EMAIL,GOOGLE,GITHUB,MICROSOFT
+
+      ## E-mail SMTP
+      - MAILER_SMTP_ENABLE=true
+      - MAILER_USE_CUSTOM_CONFIGS=true
+      - MAILER_ADDRESS_FROM=$hoppscotch_smtp_email
+      - MAILER_SMTP_USER=$hoppscotch_smtp_user
+      - MAILER_SMTP_PASSWORD=$hoppscotch_smtp_pass
+      - MAILER_SMTP_HOST=$hoppscotch_smtp_host
+      - MAILER_SMTP_PORT=$hoppscotch_smtp_port
+      - MAILER_SMTP_SECURE=$hoppscotch_smtp_secure
+      - MAILER_TLS_REJECT_UNAUTHORIZED=true
+
+      ## Configurações de Segurança
+      - DATA_ENCRYPTION_KEY=$encryption_key
+      - JWT_SECRET=$jwt_secret_key
+      - TOKEN_SALT_COMPLEXITY=10
+      - MAGIC_LINK_TOKEN_VALIDITY=3
+      - REFRESH_TOKEN_VALIDITY=604800000
+      - ACCESS_TOKEN_VALIDITY=86400000
+      - SESSION_SECRET=$sesstion_secret_key
+      - ALLOW_SECURE_COOKIES=true
+
+      ## Rate Limit
+      - RATE_LIMIT_TTL=60
+      - RATE_LIMIT_MAX=100
+
+      ## Auth Google
+      - GOOGLE_CLIENT_ID=disabled
+      - GOOGLE_CLIENT_SECRET=disabled
+      - GOOGLE_CALLBACK_URL=https://$url_hoppscotch_backend/v1/auth/google/callback
+      - GOOGLE_SCOPE=email,profile
+  
+      ## Auth Github
+      - GITHUB_CLIENT_ID=disabled
+      - GITHUB_CLIENT_SECRET=disabled
+      - GITHUB_CALLBACK_URL=https://$url_hoppscotch_backend/v1/auth/github/callback
+      - GITHUB_SCOPE=user:email
+
+      ## Auth Microsoft
+      - MICROSOFT_CLIENT_ID=disabled
+      - MICROSOFT_CLIENT_SECRET=disabled
+      - MICROSOFT_CALLBACK_URL=https://$url_hoppscotch_backend/v1/auth/microsoft/callback
+      - MICROSOFT_SCOPE=user.read
+      - MICROSOFT_TENANT=common   
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_backend.rule=Host(\`$url_hoppscotch_backend\`) ## Dominio para aplicação
+        - traefik.http.routers.hoppscotch${1:+_$1}_backend.entrypoints=websecure
+        - traefik.http.routers.hoppscotch${1:+_$1}_backend.priority=1
+        - traefik.http.routers.hoppscotch${1:+_$1}_backend.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.hoppscotch${1:+_$1}_backend.service=hoppscotch${1:+_$1}_backend
+        - traefik.http.services.hoppscotch${1:+_$1}_backend.loadbalancer.server.port=3170
+        - traefik.http.services.hoppscotch${1:+_$1}_backend.loadbalancer.passHostHeader=true
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  hoppscotch${1:+_$1}_migrate:
+    image: hoppscotch/hoppscotch-backend:latest
+    command: sh -c "sleep 30 && pnpx prisma migrate deploy"
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/hoppscotch${1:+_$1}
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.role == manager      
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="hoppscotch${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull hoppscotch/hoppscotch-backend:latest hoppscotch/hoppscotch-frontend:latest hoppscotch/hoppscotch-admin:latest
+  wait_stack hoppscotch${1:+_$1}_hoppscotch${1:+_$1}_migrate hoppscotch${1:+_$1}_hoppscotch${1:+_$1}_app hoppscotch${1:+_$1}_hoppscotch${1:+_$1}_admin hoppscotch${1:+_$1}_hoppscotch${1:+_$1}_backend
+
+  cd /root/dados_vps
+  cat > dados_hoppscotch${1:+_$1} <<EOL
+[ HOPPSCOTCH ]
+
+Dominio do hoppscotch: https://$url_hoppscotch_frontend
+Usuario: Precisa criar no Hoppscotch
+Senha: Precisa criar no Hoppscotch
+Dominio do Admin: https://$url_hoppscotch_admin
+Dominio do Backend API: https://$url_hoppscotch_backend
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ HOPPSCOTCH ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio Principal:\e[97m https://$url_hoppscotch_frontend\e[0m"
+  echo -e "\e[33m⚙️ Domínio Admin:\e[97m https://$url_hoppscotch_admin\e[0m"
+  echo -e "\e[33m🔗 Domínio Backend:\e[97m https://$url_hoppscotch_backend\e[0m"
+  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio principal.\e[0m"  
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -13306,6 +13624,7 @@ exibir_menu() {
     OPCOES[59]="Wiki JS"
     OPCOES[60]="Azuracast"
     OPCOES[61]="Rustdesk"
+    OPCOES[62]="Hoppscotch"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
     local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61)
@@ -13766,6 +14085,12 @@ exibir_menu() {
                 verificar_stack "rustdesk${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_rustdesk
+                fi
+                ;;
+            62)
+                verificar_stack "hoppscotch${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_hoppscotch
                 fi
                 ;;
             *)
