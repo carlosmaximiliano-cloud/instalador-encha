@@ -11391,6 +11391,150 @@ EOL
 
 }
 
+ferramenta_openproject() {
+  msg_openproject
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o OpenProject (ex: projetos.encha.ai): \e[0m" && read -r url_openproject
+    echo ""
+
+    clear
+    msg_openproject
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio OpenProject:\e[97m $url_openproject\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_openproject; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do OpenProject...\e[0m"
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "openproject${1:+_$1}"
+  verificar_container_redis || ferramenta_redis
+
+  echo -e "\e[97m• INSTALANDO OPENPROJECT \e[33m[4/5]\e[0m"
+  echo ""
+
+  key_openproject=$(openssl rand -hex 16)
+  cat > openproject${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+  openproject${1:+_$1}:
+    image: openproject/openproject:15
+
+    volumes:
+      - openproject${1:+_$1}_pgdata:/var/openproject/pgdata
+      - openproject${1:+_$1}_assets:/var/openproject/assets
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Secret Key
+      - OPENPROJECT_SECRET_KEY_BASE=$key_openproject
+
+      ## Dominio:
+      - OPENPROJECT_HOST__NAME=$url_openproject
+      - OPENPROJECT_HTTPS=true
+
+      ## Dados do Redis
+      - OPENPROJECT_RAILS__CACHE__STORE=redis
+      - OPENPROJECT_CACHE_REDIS_URL=redis://redis:6379
+
+      ## Dados do Postgres
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/openproject${1:+_$1}
+
+      ## Configurações
+      - OPENPROJECT_DEFAULT__LANGUAGE=pt-BR
+
+      ## Dados SMTP
+      ## Deixei comentado pois a environment da senha não esta funcionando como o esperado
+      #- OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
+      #- OPENPROJECT_MAIL__FROM=email@dominio.com
+      #- OPENPROJECT_SMTP__USER__NAME=Usuario_do_Email
+      #- OPENPROJECT_SMTP__DOMAIN=dominio.com
+      #- OPENPROJECT_SMTP__PASSWORD=Senha_do_Email
+      #- OPENPROJECT_SMTP__ADDRESS=smtp.dominio.com
+      #- OPENPROJECT_SMTP__PORT=587
+      #- OPENPROJECT_SMTP__ENABLE__STARTTLS__AUTO=true
+      #- OPENPROJECT_SMTP__AUTHENTICATION=plain
+      #- OPENPROJECT_SMTP__OPENSSL__VERIFY__MODE=peer 
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.openproject${1:+_$1}.rule=Host(\`$url_openproject\`)
+        - traefik.http.routers.openproject${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.openproject${1:+_$1}.priority=1
+        - traefik.http.routers.openproject${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.openproject${1:+_$1}.service=openproject${1:+_$1}
+        - traefik.http.services.openproject${1:+_$1}.loadbalancer.server.port=8080
+        - traefik.http.services.openproject${1:+_$1}.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+volumes:
+  openproject${1:+_$1}_pgdata:
+    external: true
+    name: openproject${1:+_$1}_pgdata
+  openproject${1:+_$1}_assets:
+    external: true
+    name: openproject${1:+_$1}_assets
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="openproject${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull openproject/openproject:15
+
+  wait_stack openproject${1:+_$1}_openproject${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_openproject${1:+_$1} <<EOL
+[ OPENPROJECT ]
+
+Dominio do openproject: https://$url_openproject
+Usuario: admin
+Senha: admin
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ OPENPROJECT ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_openproject\e[0m"
+  echo -e "\e[33m👤 Usuário padrão:\e[97m admin\e[0m"
+  echo -e "\e[33m🔑 Senha padrão:\e[97m admin (você deverá alterá-la no primeiro login)\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -11443,11 +11587,11 @@ exibir_menu() {
         echo -e "${azul}21.${reset} Instalar mautic                  ${azul}48.${reset} Instalar Supabase"
         echo -e "${azul}22.${reset} Instalar appsmith                ${azul}49.${reset} Instalar NTFY"
         echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
-        echo -e "${azul}24.${reset} Instalar woofedcrm"
+        echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}51.${reset} Instalar Openproject"
         echo -e "${azul}26.${reset} Instalar twentyCRM"
         echo -e "${azul}27.${reset} Instalar Mattermost" 
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-50): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-51): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -11806,6 +11950,12 @@ exibir_menu() {
                 verificar_stack "lowcoder${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_lowcoder
+                  fi
+                  ;;
+            51)
+                verificar_stack "openproject${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_openproject
                   fi
                   ;;
             *)
