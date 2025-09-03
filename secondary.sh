@@ -14672,7 +14672,7 @@ ferramenta_langfuse() {
   # Função auxiliar para pegar dados do clickhouse
   pegar_dados_clickhouse() {
         if [ -f "/root/dados_vps/dados_clickhouse" ]; then
-            API_CLICKHOUSE=$(grep "API do clickhouse:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
+            API_CLICKHOUSE=$(grep "API:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
             USUARIO_CLICKHOUSE=$(grep "Usuario:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
             SENHA_CLICKHOUSE=$(grep "Senha:" "/root/dados_vps/dados_clickhouse" | cut -d' ' -f2)
         else
@@ -15064,7 +15064,7 @@ exibir_menu() {
     OPCOES[69]="Langfuse"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69)
     local pagina_atual=1
 
     while true; do
