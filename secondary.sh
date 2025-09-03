@@ -12691,6 +12691,136 @@ EOL
 
 }
 
+ferramenta_wiki() {
+  msg_wiki
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Wiki.js (ex: wiki.encha.ai): \e[0m" && read -r url_wiki
+    echo ""
+
+    clear
+    msg_wiki
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Wiki.js:\e[97m $url_wiki\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wiki; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Wiki.js...\e[0m"
+
+  wiki_postgres_password=$(openssl rand -hex 16)
+  cat > wiki${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wiki${1:+_$1}_app:
+    image: requarks/wiki:latest ## Versão da aplicação
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=wiki${1:+_$1}_db
+      - DB_PORT=5432
+      - DB_USER=wikijs
+      - DB_PASS=$wiki_postgres_password ## Senha para o Postgres
+      - DB_NAME=wiki
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.wiki${1:+_$1}_app.rule=Host(\`$url_wiki\`) ## Dominio para aplicação
+        - traefik.http.routers.wiki${1:+_$1}_app.entrypoints=websecure
+        - traefik.http.routers.wiki${1:+_$1}_app.priority=1
+        - traefik.http.routers.wiki${1:+_$1}_app.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.wiki${1:+_$1}_app.service=wiki${1:+_$1}_app
+        - traefik.http.services.wiki${1:+_$1}_app.loadbalancer.server.port=3000
+        - traefik.http.services.wiki${1:+_$1}_app.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wiki${1:+_$1}_db:
+    image: postgres:15-alpine ## Versão do Postgres
+
+    volumes:
+      - wiki${1:+_$1}_db:/var/lib/postgresql/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    
+    environment:
+      - POSTGRES_DB=wiki
+      - POSTGRES_PASSWORD=$wiki_postgres_password ## Senha para o Postgres
+      - POSTGRES_USER=wikijs
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+  
+volumes:
+  wiki${1:+_$1}_db:
+    external: true
+    name: wiki${1:+_$1}_db
+
+networks:
+  $nome_rede_interna: ## Sua Rede interna
+    external: true
+    name: $nome_rede_interna ## Sua Rede interna
+EOL
+
+  STACK_NAME="wiki${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull requarks/wiki:latest postgres:15-alpine
+  wait_stack wiki${1:+_$1}_wiki${1:+_$1}_db wiki${1:+_$1}_wiki${1:+_$1}_app
+
+  cd /root/dados_vps
+  cat > dados_wiki${1:+_$1} <<EOL
+[ WIKI ]
+
+Dominio do wiki: https://$url_wiki
+Usuario: Precisa criar no primeiro acesso do wiki
+Senha: Precisa criar no primeiro acesso do wiki
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WIKI.JS ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wiki\e[0m"
+  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12710,17 +12840,7 @@ verificar_status_servicos() {
     fi
 }
 
-
 exibir_menu() {
-    # --- Definição de Cores Corrigida ---
-    # As cores são definidas localmente usando a sintaxe $'...' para garantir
-    # que os códigos de escape sejam interpretados corretamente.
-    local azul=$'\033[34m'
-    local amarelo=$'\033[33m'
-    local verde=$'\033[32m'
-    local vermelho=$'\033[31m'
-    local reset=$'\033[0m'
-
     # --- Configuração do Menu ---
     declare -A OPCOES
     OPCOES[1]="Traefik & Portainer"
@@ -12780,9 +12900,10 @@ exibir_menu() {
     OPCOES[56]="Keycloak"
     OPCOES[57]="Passbolt"
     OPCOES[58]="Gotenberg"
+    OPCOES[59]="Wiki JS"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32)
-    local pagina2_items=(33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58)
+    local pagina2_items=(33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59)
     local pagina_atual=1
 
     while true; do
@@ -12791,7 +12912,6 @@ exibir_menu() {
         
         printf "\n"
         centralizar "Sistema de Deploy Automatizado"
-        # O 'echo -e' garante a interpretação das cores nas linhas abaixo
         echo -e "${amarelo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
         
         local items_pagina=()
@@ -12810,7 +12930,6 @@ exibir_menu() {
             local idx_esq=${items_pagina[i]}
             local texto_esq="${OPCOES[$idx_esq]}"
             local status_esq="${verde}[ ]${reset}"
-            # A construção do item agora funciona corretamente com as variáveis de cor
             local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
 
             local item_dir=""
@@ -12822,17 +12941,16 @@ exibir_menu() {
                 item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
             fi
             
-            # O 'echo -e' garante a renderização correta das cores
-            echo -e "      ${item_esq} ${item_dir}"
+            printf "      %s %s\n" "$item_esq" "$item_dir"
         done
 
         echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
-        # Usando 'echo -e' para a linha de opções fixas
-        echo -e "      [ ${azul}05${reset} ] - ${OPCOES[5]:<22} | [ ${azul}11${reset} ] - ${OPCOES[11]:<22} | [ ${azul}12${reset} ] - ${OPCOES[12]}"
+        printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
         echo -e "${amarelo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
         
-        # Usando 'echo -e' para a linha de paginação
-        echo -e "| --- Digite ${amarelo}P1${reset} para ir para pagina 1 \t\t | Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
+        local largura=$(tput cols)
+        local padding=$(( (largura - 70) / 2 )) # Ajuste para alinhar o pipe central
+        printf "%s%*s%s\n" "| --- Digite ${amarelo}P1${reset} para ir para pagina 1" "$padding" "" "| Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
 
         echo ""
         read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO oculto: "${reset})" opcao
@@ -13228,6 +13346,12 @@ exibir_menu() {
                   ferramenta_gotenberg
                 fi
                 ;;
+            59)
+                verificar_stack "wiki${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_wiki
+                fi
+                ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
@@ -13235,7 +13359,6 @@ exibir_menu() {
         esac
     done
 }
-
 
 
 main() {
