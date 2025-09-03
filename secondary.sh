@@ -12565,112 +12565,100 @@ verificar_status_servicos() {
     fi
 }
 
+
+# Função de menu completa, com paginação e layout corrigido
 exibir_menu() {
     # Variável para controlar a página atual do menu
     local pagina_atual=1
 
-    # Funções para exibir cada página (organiza o código)
+    # --- Funções para exibir cada página (organiza o código) ---
+
+    # PÁGINA 1 DE 2
     exibir_pagina_1() {
         centralizar "--- Página 1 de 2 ---"
         echo ""
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}28.${reset} Instalar outline"
-        echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}29.${reset} Instalar focalboard"
-        echo -e "${azul}03.${reset} Instalar N8N                     ${azul}30.${reset} Instalar GLPI"
-        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}31.${reset} Instalar Flowise"
-        echo -e "${azul}05.${reset} Liberar Chatwoot                 ${azul}32.${reset} Instalar Langflow"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}33.${reset} Instalar Ollama"
-        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}34.${reset} Instalar Anythingllm"
-        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}35.${reset} Instalar Nocodb"
-        echo -e "${azul}09.${reset} Instalar Directus                ${azul}36.${reset} Instalar humhub"
-        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}37.${reset} Instalar Wordpress"
-        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}38.${reset} Instalar Formbricks"
-        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}39.${reset} Instalar MetaBase"
-        echo -e "${azul}15.${reset} Instalar botpress                ${azul}40.${reset} Instalar Docuseal"
-        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}41.${reset} Instalar Monitor"
-        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}42.${reset} Instalar Dify"
-        echo -e "${azul}18.${reset} Instalar rabbitMQ                ${azul}43.${reset} Instalar Affine"
-        echo -e "${azul}19.${reset} Instalar uptimeKuma              ${azul}44.${reset} Instalar Vaultwarden"
-        echo -e "${azul}20.${reset} Instalar calcom                  ${azul}45.${reset} Instalar Nextcloud"
-        echo -e "${azul}21.${reset} Instalar mautic                  ${azul}46.${reset} Instalar Strapi"
-        echo -e "${azul}22.${reset} Instalar appsmith                ${azul}47.${reset} Instalar MyphpAdmin"
-        echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}48.${reset} Instalar Supabase"
-        echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}49.${reset} Instalar NTFY"
-        echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}50.${reset} Instalar Lowcoder"
-        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}51.${reset} Instalar Openproject"
-        echo ""
-        echo -e "${azul}11.${reset} Verificar status dos serviços"
-        echo -e "${azul}12.${reset} Sair do menu"
+        echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}18.${reset} Instalar rabbitMQ"
+        echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}19.${reset} Instalar uptimeKuma"
+        echo -e "${azul}03.${reset} Instalar N8N                     ${azul}20.${reset} Instalar calcom"
+        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}21.${reset} Instalar mautic"
+        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}22.${reset} Instalar appsmith"
+        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}23.${reset} Instalar qdrant"
+        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}24.${reset} Instalar woofedcrm"
+        echo -e "${azul}09.${reset} Instalar Directus                ${azul}26.${reset} Instalar twentyCRM"
+        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}27.${reset} Instalar Mattermost"
+        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}28.${reset} Instalar outline"
+        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}29.${reset} Instalar focalboard"
+        echo -e "${azul}15.${reset} Instalar botpress                ${azul}30.${reset} Instalar GLPI"
+        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}31.${reset} Instalar Flowise"
+        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}32.${reset} Instalar Langflow"
         echo ""
     }
 
+    # PÁGINA 2 DE 2
     exibir_pagina_2() {
         centralizar "--- Página 2 de 2 ---"
         echo ""
-        echo -e "${azul}52.${reset} Instalar ZEP"
-        echo -e "${azul}53.${reset} Instalar Yourls"
-        echo -e "${azul}54.${reset} Instalar WiseMapping"
-        echo -e "${azul}55.${reset} Instalar Evo AI"
-        echo -e "${azul}56.${reset} Instalar Keycloak"
-        echo -e "${azul}57.${reset} Instalar Passbolt"
-        # Preenchimento para manter o layout, se necessário
+        echo -e "${azul}33.${reset} Instalar Ollama                 ${azul}46.${reset} Instalar Strapi"
+        echo -e "${azul}34.${reset} Instalar Anythingllm            ${azul}47.${reset} Instalar MyphpAdmin"
+        echo -e "${azul}35.${reset} Instalar Nocodb                 ${azul}48.${reset} Instalar Supabase"
+        echo -e "${azul}36.${reset} Instalar humhub                  ${azul}49.${reset} Instalar NTFY"
+        echo -e "${azul}37.${reset} Instalar Wordpress              ${azul}50.${reset} Instalar Lowcoder"
+        echo -e "${azul}38.${reset} Instalar Formbricks              ${azul}51.${reset} Instalar Openproject"
+        echo -e "${azul}39.${reset} Instalar MetaBase                ${azul}52.${reset} Instalar ZEP"
+        echo -e "${azul}40.${reset} Instalar Docuseal                ${azul}53.${reset} Instalar Yourls"
+        echo -e "${azul}41.${reset} Instalar Monitor                 ${azul}54.${reset} Instalar WiseMapping"
+        echo -e "${azul}42.${reset} Instalar Dify                    ${azul}55.${reset} Instalar Evo AI"
+        echo -e "${azul}43.${reset} Instalar Affine                  ${azul}56.${reset} Instalar Keycloak"
+        echo -e "${azul}44.${reset} Instalar Vaultwarden             ${azul}57.${reset} Instalar Passbolt"
+        echo -e "${azul}45.${reset} Instalar Nextcloud"
         echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo ""
-        echo -e "${azul}11.${reset} Verificar status dos serviços"
-        echo -e "${azul}12.${reset} Sair do menu"
+    }
+    
+    # OPÇÕES GERAIS (visíveis em todas as páginas)
+    opcoes_gerais() {
+        echo -e "-------------------------------------------------------------------"
+        echo -e "${azul}05.${reset} Liberar Chatwoot    ${azul}11.${reset} Verificar status    ${azul}12.${reset} Sair"
         echo ""
     }
 
+    # === Loop Principal do Menu ===
     while true; do
         clear
         banner
         echo -e "${branco}"
         centralizar "📋 === MENU PRINCIPAL ==="
         echo -e "${reset}"
-        echo ""
-
-        # Exibe a página correta
+        
+        # Lógica para exibir a página correta e o prompt de navegação
         if [ "$pagina_atual" -eq 1 ]; then
             exibir_pagina_1
+            opcoes_gerais
             echo -en "${amarelo}👉 Escolha uma opção ou [p] para próxima página: ${reset}"
-        else
+        else # Página 2
             exibir_pagina_2
+            opcoes_gerais
             echo -en "${amarelo}👉 Escolha uma opção ou [a] para página anterior: ${reset}"
         fi
         
         read -r opcao
 
-        # O 'case' agora inclui a lógica de navegação
+        # Case com lógica de navegação e todas as suas opções
         case $opcao in
-            # Navegação
+            # NAVEGAÇÃO
             p|P)
-                pagina_atual=2
+                if [ "$pagina_atual" -eq 1 ]; then
+                    pagina_atual=2
+                fi
                 continue
                 ;;
             a|A)
-                pagina_atual=1
+                if [ "$pagina_atual" -eq 2 ]; then
+                    pagina_atual=1
+                fi
                 continue
                 ;;
 
-            # Suas opções originais (sem alteração na lógica)
+            # OPÇÕES DE INSTALAÇÃO E AÇÕES (CÓDIGO ORIGINAL)
             01|1)
                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
                 ferramenta_traefik_e_portainer
@@ -12678,7 +12666,6 @@ exibir_menu() {
             02|2)
                 verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="evolution${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_evolution "$opcao2"
@@ -12686,13 +12673,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_evolution"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             03|3)
                 verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="n8n${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_n8n "$opcao2"
@@ -12700,13 +12685,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_n8n"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             04|4)
                 verificar_stack "chatwoot${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="chatwoot${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_chatwoot "$opcao2"
@@ -12714,11 +12697,9 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_chatwoot"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             05|5)
-                # Este case não precisa de verificação de stack, pois é uma ação
                 if verificar_docker_e_portainer_traefik; then
                     liberar_chatwoot
                 fi
@@ -12726,7 +12707,6 @@ exibir_menu() {
             06|6)
                 verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_n8n_formacao_encha "$opcao2"
@@ -12734,13 +12714,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_n8n_formacao_encha"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             07|7)
                 verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="minio${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_minio "$opcao2"
@@ -12748,13 +12726,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_minio"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             08|8)
                 verificar_stack "typebot${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    ## INICIO TOKEN
                     STACK_NAME="typebot${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_typebot "$opcao2"
@@ -12762,13 +12738,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_typebot"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             09|9)
                 verificar_stack "directus${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    ## INICIO TOKEN
                     STACK_NAME="directus${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_directus "$opcao2"
@@ -12776,13 +12750,11 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_directus"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             10)
                 verificar_stack "odoo${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ## INICIO TOKEN
                     STACK_NAME="odoo${opcao2:+_$opcao2}"
                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
                         ferramenta_odoo "$opcao2"
@@ -12790,7 +12762,6 @@ exibir_menu() {
                         APP_ENCHA="ferramenta_odoo"
                         verificar_arquivo
                     fi
-                    ## FIM TOKEN
                 fi
                 ;;
             11)
@@ -12937,14 +12908,14 @@ exibir_menu() {
                 fi
                 ;;
             36)
-                verificar_stack "humhub" && continue || echo "" 
+                verificar_stack "humhub" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
-                    ferramenta_humhub 
+                    ferramenta_humhub
                 fi
                 ;;
             37)
                 verificar_stack "wordpress" && continue || echo ""
-                if verificar_docker_e_portainer_траefik; then
+                if verificar_docker_e_portainer_traefik; then
                     ferramenta_wordpress
                 fi
                 ;;
@@ -13075,6 +13046,7 @@ exibir_menu() {
         esac
     done
 }
+
 
 main() {
     exibir_menu
