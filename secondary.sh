@@ -12386,29 +12386,34 @@ ferramenta_passbolt() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/6"
+    echo -e "\n📍 Passo 1/7"
     echo -en "🔗 \e[33mDigite o domínio para o Passbolt (ex: pass.encha.ai): \e[0m" && read -r url_passbolt
     echo ""
-    echo -e "\n📍 Passo 2/6"
+    echo -e "\n📍 Passo 2/7"
     echo -en "📧 \e[33mDigite o email do usuário administrador: \e[0m" && read -r email_user_passbolt
     echo ""
     echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 3/6"
+    echo -e "\n📍 Passo 3/7"
     echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r smtp_email_passbolt
     echo ""
-    echo -e "\n📍 Passo 4/6"
+    echo -e "\n📍 Passo 4/7"
     echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r smtp_user_passbolt
     echo ""
-    echo -e "\n📍 Passo 5/6"
+    echo -e "\n📍 Passo 5/7"
     echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r smtp_pass_passbolt
     echo ""
-    echo -e "\n📍 Passo 6/6"
-    echo -en "🏠 \e[33mDigite o host e porta SMTP (ex: smtp.hostinger.com:465): \e[0m" && read -r smtp_host_passbolt
+    echo -e "\n📍 Passo 6/7"
+    echo -en "🏠 \e[33mDDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_host_passbolt
+    echo ""
+    echo -e "\n📍 Passo 6/7"
+    echo -en "🏠 \e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r smtp_port_passbolt
     echo ""
 
-    smtp_ssltls_passbolt="tls" # Padrão
-    if [[ $smtp_host_passbolt == *:465 ]]; then
-      smtp_ssltls_passbolt="ssl"
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    if [ "$smtp_port_passbolt" -eq 465 ]; then
+    smtp_ssltls_passbolt=false
+    else
+    smtp_ssltls_passbolt=true
     fi
 
     clear
