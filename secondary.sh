@@ -820,6 +820,45 @@ msg_bolt() {
     echo ""
 }
 
+msg_planka() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗ █████╗"
+    centralizar "██╔══██╗██║     ██╔══██╗████╗  ██║██║ ██╔╝██╔══██╗"
+    centralizar "██████╔╝██║     ███████║██╔██╗ ██║█████╔╝ ███████║"
+    centralizar "██╔═══╝ ██║     ██╔══██║██║╚██╗██║██╔═██╗ ██╔══██║"
+    centralizar "██║     ███████╗██║  ██║██║ ╚████║██║  ██╗██║  ██║"
+    centralizar "╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_wppconnect() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗██████╗ ██████╗  ██████╗ ██████╗ ███╗   ██╗███╗   ██╗███████╗ ██████╗████████╗"
+    centralizar "██║    ██║██╔══██╗██╔══██╗██╔════╝██╔═══██╗████╗  ██║████╗  ██║██╔════╝██╔════╝╚══██╔══╝"
+    centralizar "██║ █╗ ██║██████╔╝██████╔╝██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║"
+    centralizar "██║███╗██║██╔═══╝ ██╔═══╝ ██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║"
+    centralizar "╚███╔███╔╝██║     ██║     ╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║"
+    centralizar " ╚══╝╚══╝ ╚═╝     ╚═╝      ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_browserless() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗███████╗██████╗ ██╗     ███████╗███████╗███████╗"
+    centralizar "██╔══██╗██╔══██╗██╔═══██╗██║    ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝██╔════╝██╔════╝"
+    centralizar "██████╔╝██████╔╝██║   ██║██║ █╗ ██║███████╗█████╗  ██████╔╝██║     █████╗  ███████╗███████╗"
+    centralizar "██╔══██╗██╔══██╗██║   ██║██║███╗██║╚════██║██╔══╝  ██╔══██╗██║     ██╔══╝  ╚════██║╚════██║"
+    centralizar "██████╔╝██║  ██║╚██████╔╝╚███╔███╔╝███████║███████╗██║  ██║███████╗███████╗███████║███████║"
+    centralizar "╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -12624,6 +12663,214 @@ EOL
 
 }
 
+ferramenta_planka() {
+  msg_planka
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/10"
+    echo -en "🔗 \e[33mDigite o domínio para o Planka (ex: planka.encha.ai): \e[0m" && read -r url_planka
+    echo ""
+    echo -e "\n\e[97m--- Usuário Administrador ---\e[0m"
+    echo -e "\n📍 Passo 2/10"
+    echo -en "👤 \e[33mDigite o nome do administrador: \e[0m" && read -r nome_adm_planka
+    echo ""
+    echo -e "\n📍 Passo 3/10"
+    echo -en "📧 \e[33mDigite o email do administrador: \e[0m" && read -r email_adm_planka
+    echo ""
+    echo -e "\n📍 Passo 4/10"
+    echo -en "🧑‍💼 \e[33mDigite o nome de usuário do administrador: \e[0m" && read -r user_adm_planka
+    echo ""
+    echo -e "\n📍 Passo 5/10"
+    echo -en "🔑 \e[33mDigite a senha do administrador: \e[0m" && read -s -r senha_adm_planka
+    echo ""
+    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    echo -e "\n📍 Passo 6/10"
+    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_planka
+    echo ""
+    echo -e "\n📍 Passo 7/10"
+    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r usuario_email_planka
+    echo ""
+    echo -e "\n📍 Passo 8/10"
+    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_email_planka
+    echo ""
+    echo -e "\n📍 Passo 9/10"
+    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_planka
+    echo ""
+    echo -e "\n📍 Passo 10/10"
+    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_planka
+    echo ""
+
+    if [ "$porta_smtp_planka" -eq 465 ]; then
+      smtp_secure_planka=true
+      tls_reject=false
+    else
+      smtp_secure_planka=false
+      tls_reject=true
+    fi
+
+    clear
+    msg_planka
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Planka:\e[97m $url_planka\e[0m"
+    echo -e "📧 \e[33mEmail Admin:\e[97m $email_adm_planka\e[0m"
+    echo -e "🧑‍💼 \e[33mUsuário Admin:\e[97m $user_adm_planka\e[0m"
+    echo -e "\e[33mSenha do Admin:\e[97m $senha_adm_planka\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $email_planka\e[0m"
+    echo -e "\e[33mUsuario SMTP:\e[97m $usuario_email_planka\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $senha_email_planka\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $smtp_email_planka\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_planka\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_planka; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Planka...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo ""
+
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "planka${1:+_$1}"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo ""
+
+  verificar_container_redis || ferramenta_redis
+  secret_key=$(openssl rand -hex 16)
+
+  cat > planka${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  planka${1:+_$1}:
+    image: ghcr.io/plankanban/planka:latest
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    volumes:
+      - planka${1:+_$1}_avatars:/app/public/user-avatars
+      - planka${1:+_$1}_backgrounds:/app/public/project-background-images
+      - planka${1:+_$1}_attachments:/app/private/attachments
+
+    environment:
+      ## Dados de acesso
+      - BASE_URL=https://$url_planka
+      - DEFAULT_ADMIN_NAME=$nome_adm_planka
+      - DEFAULT_ADMIN_USERNAME=$user_adm_planka
+      - DEFAULT_ADMIN_PASSWORD=$senha_adm_planka
+      - DEFAULT_ADMIN_EMAIL=$email_adm_planka
+
+      ## Dados do SMTP
+      - DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/planka${1:+_$1}
+      
+      ## Secret Keys
+      - SECRET_KEY=$secret_key
+
+      ## Configurações do Planaka
+      - ALLOW_ALL_TO_CREATE_PROJECTS=true ## true = Permite que qualquer usuário crie projetos
+
+      ## Dados SMTP
+      - SMTP_NAME=Planka
+      - SMTP_FROM=Planka <$email_planka>
+      - SMTP_USER=$usuario_email_planka
+      - SMTP_PASSWORD=$senha_email_planka
+      - SMTP_HOST=$smtp_email_planka
+      - SMTP_PORT=$porta_smtp_planka
+      - SMTP_SECURE=$smtp_secure_planka
+      - SMTP_TLS_REJECT_UNAUTHORIZED=$tls_reject
+
+      ## Configurar Webhook Global
+      #- WEBHOOKS=[{
+      #-   "url": "https://webhook.dominio.com",
+      #-   "accessToken": "token_se_tiver",
+      #-   "events": ["cardCreate", "cardUpdate", "cardDelete"],
+      #-   "excludedEvents": ["notificationCreate", "notificationUpdate"]
+      #- }]
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.planka${1:+_$1}.rule=Host(\`$url_planka\`)
+        - traefik.http.services.planka${1:+_$1}.loadbalancer.server.port=1337
+        - traefik.http.routers.planka${1:+_$1}.service=planka${1:+_$1}
+        - traefik.http.routers.planka${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.planka${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.planka${1:+_$1}.tls=true
+
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  planka${1:+_$1}_avatars:
+    external: true
+    name: planka${1:+_$1}_avatars
+  planka${1:+_$1}_backgrounds:
+    external: true
+    name: planka${1:+_$1}_backgrounds
+  planka${1:+_$1}_attachments:
+    external: true
+    name: planka${1:+_$1}_attachments
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="planka${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull ghcr.io/plankanban/planka:latest
+  wait_stack planka${1:+_$1}_planka${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_planka${1:+_$1} <<EOL
+[ PLANKA ]
+
+Dominio do Planka: https://$url_planka
+Usuario: $user_adm_planka
+Email: $email_adm_planka
+Senha: $senha_adm_planka
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ PLANKA ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_planka\e[0m"
+  echo -e "\e[33m📧 Email Admin:\e[97m $email_adm_planka\e[0m"
+  echo -e "\e[33m👤 Usuário Admin:\e[97m $user_adm_planka\e[0m"
+  echo -e "\e[33m🔑 Senha Admin:\e[97m $senha_adm_planka\e[0m"
+  msg_retorno_menu
+
+}
+
+
 ferramenta_gotenberg() {
   msg_gotenberg
   dados
@@ -13747,9 +13994,10 @@ exibir_menu() {
     OPCOES[61]="Rustdesk"
     OPCOES[62]="Hoppscotch"
     OPCOES[63]="Bolt"
+    OPCOES[64]="Planka"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64)
     local pagina_atual=1
 
     while true; do
@@ -14219,6 +14467,12 @@ exibir_menu() {
                 verificar_stack "bolt${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_bolt
+                fi
+                ;;
+            64)
+                verificar_stack "planka${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_planka
                 fi
                 ;;
             *)
