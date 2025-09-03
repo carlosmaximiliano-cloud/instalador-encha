@@ -11803,6 +11803,7 @@ services:
 
     environment:
       ## Dados de acesso
+      - APACHE_SERVER_NAME=$url_yourls
       - YOURLS_SITE=https://$url_yourls ## Url da Aplicação
       - YOURLS_USER=$user_yourls
       - YOURLS_PASS=$pass_yourls
