@@ -12381,6 +12381,166 @@ EOL
 
 }
 
+ferramenta_passbolt() {
+  msg_passbolt
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/6"
+    echo -en "🔗 \e[33mDigite o domínio para o Passbolt (ex: pass.encha.ai): \e[0m" && read -r url_passbolt
+    echo ""
+    echo -e "\n📍 Passo 2/6"
+    echo -en "📧 \e[33mDigite o email do usuário administrador: \e[0m" && read -r email_user_passbolt
+    echo ""
+    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    echo -e "\n📍 Passo 3/6"
+    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r smtp_email_passbolt
+    echo ""
+    echo -e "\n📍 Passo 4/6"
+    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r smtp_user_passbolt
+    echo ""
+    echo -e "\n📍 Passo 5/6"
+    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r smtp_pass_passbolt
+    echo ""
+    echo -e "\n📍 Passo 6/6"
+    echo -en "🏠 \e[33mDigite o host e porta SMTP (ex: smtp.hostinger.com:465): \e[0m" && read -r smtp_host_passbolt
+    echo ""
+
+    smtp_ssltls_passbolt="tls" # Padrão
+    if [[ $smtp_host_passbolt == *:465 ]]; then
+      smtp_ssltls_passbolt="ssl"
+    fi
+
+    clear
+    msg_passbolt
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Passbolt:\e[97m $url_passbolt\e[0m"
+    echo -e "📧 \e[33mEmail Admin:\e[97m $email_user_passbolt\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $smtp_email_passbolt\e[0m"
+    echo -e "\e[33mUser SMTP:\e[97m $smtp_user_passbolt\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $smtp_pass_passbolt\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $smtp_host_passbolt\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $smtp_port_passbolt\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_passbolt; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Passbolt...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  echo ""
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "passbolt${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO A PASSBOLT \e[33m[4/5]\e[0m"
+  echo ""
+  cat > passbolt${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  passbolt${1:+_$1}:
+    image: passbolt/passbolt:latest ## Versão da aplicação
+
+    volumes:
+      - passbolt${1:+_$1}_data:/var/www/passbolt/webroot
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Configurações Gerais
+      - APP_FULL_BASE_URL=https://$url_passbolt
+      - PASSBOLT_REGISTRATION_PUBLIC=false ## false = Não permite registro de novos usuários
+
+      ## Banco do MySQL
+      - DATASOURCES_DEFAULT_HOST=mysql
+      - DATASOURCES_DEFAULT_PORT=3306
+      - DATASOURCES_DEFAULT_DATABASE=passbolt${1:+_$1}
+      - DATASOURCES_DEFAULT_USERNAME=root
+      - DATASOURCES_DEFAULT_PASSWORD=$senha_mysql
+
+      ## Dados do SMTP
+      - EMAIL_DEFAULT_FROM_NAME=Suporte
+      - EMAIL_DEFAULT_FROM=$smtp_email_passbolt
+      - EMAIL_TRANSPORT_DEFAULT_USERNAME=$smtp_user_passbolt
+      - EMAIL_TRANSPORT_DEFAULT_PASSWORD=$smtp_pass_passbolt
+      - EMAIL_TRANSPORT_DEFAULT_HOST=$smtp_host_passbolt
+      - EMAIL_TRANSPORT_DEFAULT_PORT=$smtp_port_passbolt
+      - EMAIL_TRANSPORT_DEFAULT_TLS=$smtp_ssltls_passbolt
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.passbolt${1:+_$1}.rule=Host(\`$url_passbolt\`)
+        - traefik.http.services.passbolt${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.passbolt${1:+_$1}.service=passbolt${1:+_$1}
+        - traefik.http.routers.passbolt${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.passbolt${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.passbolt${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  passbolt${1:+_$1}_data:
+    external: true
+    name: passbolt${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="passbolt${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull passbolt/passbolt:latest
+  wait_stack "passbolt${1:+_$1}_passbolt${1:+_$1}"
+
+  wait_30_sec
+  docker exec -u www-data $(docker ps --format "{{.Names}}" | grep "^passbolt${1:+_$1}") /usr/share/php/passbolt/bin/cake passbolt register_user -u "$email_user_passbolt" -f Administrador -l Master -r admin
+  cd /root/dados_vps
+  cat > dados_passbolt${1:+_$1} <<EOL
+[ PassBolt ]
+
+Link do Passbolt: https://$url_passbolt
+Email Administrador: $email_user_passbolt
+Senha Administrador: Via link magico no email
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ PASSBOLT ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_passbolt\e[0m"
+  echo -e "\e[33m📧 Email Admin:\e[97m $email_user_passbolt\e[0m"
+  echo -e "\e[33m⚠️  Um e-mail de configuração foi enviado para \e[97m$email_user_passbolt\e[33m. Siga o link para definir sua senha.\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -12439,8 +12599,9 @@ exibir_menu() {
         echo -e "                                                    ${azul}54.${reset} Instalar WiseMapping"
         echo -e "                                                    ${azul}55.${reset} Instalar Evo AI"
         echo -e "                                                    ${azul}56.${reset} Instalar Keycloak"
+        echo -e "                                                    ${azul}57.${reset} Instalar Passbolt"
         echo ""
-        echo -en "${amarelo}👉 Escolha uma opção (1-56): ${reset}"
+        echo -en "${amarelo}👉 Escolha uma opção (1-57): ${reset}"
         read -r opcao
 
         case $opcao in
@@ -12835,6 +12996,12 @@ exibir_menu() {
                 verificar_stack "keycloak${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_keycloak
+                  fi
+                  ;;
+            57)
+                verificar_stack "passbolt${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_passbolt
                   fi
                   ;;
             *)
