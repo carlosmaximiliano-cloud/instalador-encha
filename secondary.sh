@@ -14647,7 +14647,7 @@ EOL
 [ CLICKHOUSE ]
 
 Dashboard do clickhouse: https://$url_clickhouse/dashboard
-API do clickhouse: https://$url_clickhouse
+API: https://$url_clickhouse
 Usuario: $user_clickhouse
 Senha: $pass_clickhouse
 
@@ -14719,7 +14719,7 @@ ferramenta_langfuse() {
   echo ""
 
   pegar_senha_minio
-  criar_bucket.minio langfuse${1:+-$1} > /dev/null 2>&1
+  criar_bucket.minio langfuse${1:+-$1}
 
   echo -e "\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
   echo ""
