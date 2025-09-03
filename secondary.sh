@@ -11867,6 +11867,106 @@ EOL
 
 }
 
+ferramenta_wisemapping(){
+  msg_wisemapping
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o WiseMapping (ex: mapa.encha.ai): \e[0m" && read -r url_wisemapping
+    echo ""
+
+    clear
+    msg_wisemapping
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio WiseMapping:\e[97m $url_wisemapping\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wisemapping; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do WiseMapping...\e[0m"
+  cat > wisemapping${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  wisemapping${1:+_$1}:
+    image: wisemapping/wisemapping:latest
+
+    volumes:
+      - wisemapping${1:+_$1}_db:/var/lib/wisemapping/db
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - JAVA_OPTS=-Dserver.port=8080
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.wisemapping${1:+_$1}.rule=Host(\`$url_wisemapping\`)
+        - traefik.http.services.wisemapping${1:+_$1}.loadbalancer.server.port=8080
+        - traefik.http.routers.wisemapping${1:+_$1}.service=wisemapping${1:+_$1}
+        - traefik.http.routers.wisemapping${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.wisemapping${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.wisemapping${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  wisemapping${1:+_$1}_db:
+    external: true
+    name: wisemapping${1:+_$1}_db
+    
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="wisemapping${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull wisemapping/wisemapping:latest
+  wait_stack wisemapping${1:+_$1}_wisemapping${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_wisemapping${1:+_$1} <<EOL
+[ WISEMAPPING ]
+
+Dominio do WiseMapping: https://$url_wisemapping
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WISEMAPPING ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wisemapping\e[0m"
+  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio.\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -11921,7 +12021,8 @@ exibir_menu() {
         echo -e "${azul}23.${reset} Instalar qdrant                  ${azul}50.${reset} Instalar Lowcoder"
         echo -e "${azul}24.${reset} Instalar woofedcrm               ${azul}51.${reset} Instalar Openproject"
         echo -e "${azul}26.${reset} Instalar twentyCRM               ${azul}52.${reset} Instalar ZEP"
-        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls" 
+        echo -e "${azul}27.${reset} Instalar Mattermost              ${azul}53.${reset} Instalar Yourls"
+        echo -e "                                                    ${azul}54.${reset} Instalar WiseMapping"
         echo ""
         echo -en "${amarelo}👉 Escolha uma opção (1-53): ${reset}"
         read -r opcao
@@ -12300,6 +12401,12 @@ exibir_menu() {
                 verificar_stack "yourls${opcao2:+_$opcao2}" && continue || echo ""
                   if verificar_docker_e_portainer_traefik; then
                     ferramenta_yourls
+                  fi
+                  ;;
+            54)
+                verificar_stack "wisemapping${opcao2:+_$opcao2}" && continue || echo ""
+                  if verificar_docker_e_portainer_traefik; then
+                    ferramenta_wisemapping
                   fi
                   ;;
             *)
