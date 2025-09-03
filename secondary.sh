@@ -12565,113 +12565,124 @@ verificar_status_servicos() {
     fi
 }
 
-
-centralizar_prompt() {
-    local texto_com_cores="$1"
-    local texto_sem_cores=$(echo -e "$texto_com_cores" | sed 's/\x1b\[[0-9;]*m//g')
-    local largura_terminal=$(tput cols)
-    local comprimento_texto=${#texto_sem_cores}
-    local espacos=$(( (largura_terminal - comprimento_texto) / 2 ))
-    if [ "$espacos" -lt 0 ]; then
-        espacos=0
-    fi
-    printf "%*s%s" "$espacos" "" "$texto_com_cores"
-}
-
-# Função de menu completa, com paginação e TODO o conteúdo centralizado
 exibir_menu() {
-    # Variável para controlar a página atual do menu
+    # --- Configuração do Menu ---
+    declare -A OPCOES
+    OPCOES[1]="Traefik & Portainer"
+    OPCOES[2]="Evolution API"
+    OPCOES[3]="N8N"
+    OPCOES[4]="Chatwoot"
+    OPCOES[5]="Liberar Chatwoot" # Ação, não instalação
+    OPCOES[6]="N8N Formação Encha"
+    OPCOES[7]="Minio"
+    OPCOES[8]="Typebot"
+    OPCOES[9]="Directus"
+    OPCOES[10]="Odoo"
+    OPCOES[11]="Verificar status" # Ação
+    OPCOES[12]="Sair" # Ação
+    OPCOES[13]="pgAdmin"
+    OPCOES[14]="nocobase"
+    OPCOES[15]="botpress"
+    OPCOES[16]="baserow"
+    OPCOES[17]="mongoDB"
+    OPCOES[18]="rabbitMQ"
+    OPCOES[19]="uptimeKuma"
+    OPCOES[20]="calcom"
+    OPCOES[21]="mautic"
+    OPCOES[22]="appsmith"
+    OPCOES[23]="qdrant"
+    OPCOES[24]="woofedcrm"
+    OPCOES[26]="twentyCRM"
+    OPCOES[27]="Mattermost"
+    OPCOES[28]="outline"
+    OPCOES[29]="focalboard"
+    OPCOES[30]="GLPI"
+    OPCOES[31]="Flowise"
+    OPCOES[32]="Langflow"
+    OPCOES[33]="Ollama"
+    OPCOES[34]="Anythingllm"
+    OPCOES[35]="Nocodb"
+    OPCOES[36]="humhub"
+    OPCOES[37]="Wordpress"
+    OPCOES[38]="Formbricks"
+    OPCOES[39]="MetaBase"
+    OPCOES[40]="Docuseal"
+    OPCOES[41]="Monitor"
+    OPCOES[42]="Dify"
+    OPCOES[43]="Affine"
+    OPCOES[44]="Vaultwarden"
+    OPCOES[45]="Nextcloud"
+    OPCOES[46]="Strapi"
+    OPCOES[47]="MyphpAdmin"
+    OPCOES[48]="Supabase"
+    OPCOES[49]="NTFY"
+    OPCOES[50]="Lowcoder"
+    OPCOES[51]="Openproject"
+    OPCOES[52]="ZEP"
+    OPCOES[53]="Yourls"
+    OPCOES[54]="WiseMapping"
+    OPCOES[55]="Evo AI"
+    OPCOES[56]="Keycloak"
+    OPCOES[57]="Passbolt"
+
+    local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32)
+    local pagina2_items=(33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57)
     local pagina_atual=1
 
-    # --- Funções para exibir cada página (organiza o código) ---
-
-    # PÁGINA 1 DE 2
-    exibir_pagina_1() {
-        centralizar "--- Página 1 de 2 ---"
-        echo "" # Linha em branco para espaçamento
-        centralizar "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}18.${reset} Instalar rabbitMQ"
-        centralizar "${azul}02.${reset} Instalar Evolution API           ${azul}19.${reset} Instalar uptimeKuma"
-        centralizar "${azul}03.${reset} Instalar N8N                     ${azul}20.${reset} Instalar calcom"
-        centralizar "${azul}04.${reset} Instalar Chatwoot                ${azul}21.${reset} Instalar mautic"
-        centralizar "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}22.${reset} Instalar appsmith"
-        centralizar "${azul}07.${reset} Instalar Minio                   ${azul}23.${reset} Instalar qdrant"
-        centralizar "${azul}08.${reset} Instalar Typebot                 ${azul}24.${reset} Instalar woofedcrm"
-        centralizar "${azul}09.${reset} Instalar Directus                ${azul}26.${reset} Instalar twentyCRM"
-        centralizar "${azul}10.${reset} Instalar Odoo                    ${azul}27.${reset} Instalar Mattermost"
-        centralizar "${azul}13.${reset} Instalar pgAdmin                 ${azul}28.${reset} Instalar outline"
-        centralizar "${azul}14.${reset} Instalar nocobase                ${azul}29.${reset} Instalar focalboard"
-        centralizar "${azul}15.${reset} Instalar botpress                ${azul}30.${reset} Instalar GLPI"
-        centralizar "${azul}16.${reset} Instalar baserow                 ${azul}31.${reset} Instalar Flowise"
-        centralizar "${azul}17.${reset} Instalar mongoDB                 ${azul}32.${reset} Instalar Langflow"
-        echo ""
-    }
-
-    # PÁGINA 2 DE 2
-    exibir_pagina_2() {
-        centralizar "--- Página 2 de 2 ---"
-        echo ""
-        centralizar "${azul}33.${reset} Instalar Ollama                 ${azul}46.${reset} Instalar Strapi"
-        centralizar "${azul}34.${reset} Instalar Anythingllm            ${azul}47.${reset} Instalar MyphpAdmin"
-        centralizar "${azul}35.${reset} Instalar Nocodb                 ${azul}48.${reset} Instalar Supabase"
-        centralizar "${azul}36.${reset} Instalar humhub                  ${azul}49.${reset} Instalar NTFY"
-        centralizar "${azul}37.${reset} Instalar Wordpress              ${azul}50.${reset} Instalar Lowcoder"
-        centralizar "${azul}38.${reset} Instalar Formbricks              ${azul}51.${reset} Instalar Openproject"
-        centralizar "${azul}39.${reset} Instalar MetaBase                ${azul}52.${reset} Instalar ZEP"
-        centralizar "${azul}40.${reset} Instalar Docuseal                ${azul}53.${reset} Instalar Yourls"
-        centralizar "${azul}41.${reset} Instalar Monitor                 ${azul}54.${reset} Instalar WiseMapping"
-        centralizar "${azul}42.${reset} Instalar Dify                    ${azul}55.${reset} Instalar Evo AI"
-        centralizar "${azul}43.${reset} Instalar Affine                  ${azul}56.${reset} Instalar Keycloak"
-        centralizar "${azul}44.${reset} Instalar Vaultwarden             ${azul}57.${reset} Instalar Passbolt"
-        centralizar "${azul}45.${reset} Instalar Nextcloud"
-        echo ""
-    }
-    
-    # OPÇÕES GERAIS (visíveis em todas as páginas)
-    opcoes_gerais() {
-        centralizar "-------------------------------------------------------------------"
-        centralizar "${azul}05.${reset} Liberar Chatwoot    ${azul}11.${reset} Verificar status    ${azul}12.${reset} Sair"
-        echo ""
-    }
-
-    # === Loop Principal do Menu ===
     while true; do
         clear
-        banner # Assumindo que seu banner já é centralizado ou tem largura total
-        echo "" # Espaçamento
-        centralizar "Sistema de Deploy Automatizado"
-        echo ""
-        centralizar "📋 === MENU PRINCIPAL ==="
+        banner
         
-        # Lógica para exibir a página correta e o prompt de navegação
+        printf "\n"
+        centralizar "Sistema de Deploy Automatizado"
+        echo -e "${amarelo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
+        
+        local items_pagina=()
         if [ "$pagina_atual" -eq 1 ]; then
-            exibir_pagina_1
-            opcoes_gerais
-            centralizar_prompt "${amarelo}👉 Escolha uma opção ou [p] para próxima página: ${reset}"
-        else # Página 2
-            exibir_pagina_2
-            opcoes_gerais
-            centralizar_prompt "${amarelo}👉 Escolha uma opção ou [a] para página anterior: ${reset}"
+            centralizar "--- Página 1 de 2 ---"
+            items_pagina=("${pagina1_items[@]}")
+        else
+            centralizar "--- Página 2 de 2 ---"
+            items_pagina=("${pagina2_items[@]}")
         fi
         
-        read -r opcao
+        local -i max_items=${#items_pagina[@]}
+        local -i meio=$(( (max_items + 1) / 2 ))
 
-        # Case com lógica de navegação e todas as suas opções
+        for (( i=0; i<meio; i++ )); do
+            local idx_esq=${items_pagina[i]}
+            local texto_esq="${OPCOES[$idx_esq]}"
+            local status_esq="${verde}[ ]${reset}"
+            local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
+
+            local item_dir=""
+            local -i idx_dir_calc=$(( i + meio ))
+            if [ $idx_dir_calc -lt $max_items ]; then
+                local idx_dir=${items_pagina[$idx_dir_calc]}
+                local texto_dir="${OPCOES[$idx_dir]}"
+                local status_dir="${verde}[ ]${reset}"
+                item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
+            fi
+            
+            printf "      %s %s\n" "$item_esq" "$item_dir"
+        done
+
+        echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
+        printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
+        echo -e "${amarelo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
+        
+        local largura=$(tput cols)
+        local padding=$(( (largura - 70) / 2 )) # Ajuste para alinhar o pipe central
+        printf "%s%*s%s\n" "| --- Digite ${amarelo}P1${reset} para ir para pagina 1" "$padding" "" "| Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
+
+        echo ""
+        read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO oculto: "${reset})" opcao
+
+        # O CASE COMPLETO com a sua lógica original
         case $opcao in
-            # NAVEGAÇÃO
-            p|P)
-                if [ "$pagina_atual" -eq 1 ]; then
-                    pagina_atual=2
-                fi
-                continue
-                ;;
-            a|A)
-                if [ "$pagina_atual" -eq 2 ]; then
-                    pagina_atual=1
-                fi
-                continue
-                ;;
+            P1|p1) pagina_atual=1; continue ;;
+            P2|p2) pagina_atual=2; continue ;;
 
-            # OPÇÕES DE INSTALAÇÃO E AÇÕES (CÓDIGO ORIGINAL)
             01|1)
                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
                 ferramenta_traefik_e_portainer
@@ -12784,7 +12795,7 @@ exibir_menu() {
                 sleep 2
                 ;;
             12)
-                echo -e "${verde}Saindo do menu...${reset}"
+                echo -e "\n${verde}Saindo do menu...${reset}"
                 sleep 1
                 exit 0
                 ;;
@@ -13053,13 +13064,13 @@ exibir_menu() {
                 fi
                 ;;
             *)
-                echo "" # Adiciona uma linha em branco antes da mensagem de erro
-                centralizar "${vermelho}Opção inválida! Tente novamente.${reset}"
+                echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
                 ;;
         esac
     done
 }
+
 
 main() {
     exibir_menu
