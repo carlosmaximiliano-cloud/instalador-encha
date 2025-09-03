@@ -872,6 +872,58 @@ msg_frappe() {
     echo ""
 }
 
+msg_clickhouse() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗██╗     ██╗ ██████╗██╗  ██╗██╗  ██╗ ██████╗ ██╗   ██╗███████╗███████╗"
+    centralizar "██╔════╝██║     ██║██╔════╝██║ ██╔╝██║  ██║██╔═══██╗██║   ██║██╔════╝██╔════╝"
+    centralizar "██║     ██║     ██║██║     █████╔╝ ███████║██║   ██║██║   ██║███████╗█████╗"
+    centralizar "██║     ██║     ██║██║     ██╔═██╗ ██╔══██║██║   ██║██║   ██║╚════██║██╔══╝"
+    centralizar "╚██████╗███████╗██║╚██████╗██║  ██╗██║  ██║╚██████╔╝╚██████╔╝███████║███████╗"
+    centralizar " ╚═════╝╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_langfuse() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗      █████╗ ███╗   ██╗ ██████╗ ███████╗██╗   ██╗███████╗███████╗"
+    centralizar "██║     ██╔══██╗████╗  ██║██╔════╝ ██╔════╝██║   ██║██╔════╝██╔════╝"
+    centralizar "██║     ███████║██╔██╗ ██║██║  ███╗█████╗  ██║   ██║███████╗█████╗"
+    centralizar "██║     ██╔══██║██║╚██╗██║██║   ██║██╔══╝  ██║   ██║╚════██║██╔══╝"
+    centralizar "███████╗██║  ██║██║ ╚████║╚██████╔╝██║     ╚██████╔╝███████║███████╗"
+    centralizar "╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝      ╚═════╝ ╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_unoapi() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗   ██╗███╗   ██╗ ██████╗      █████╗ ██████╗ ██╗"
+    centralizar "██║   ██║████╗  ██║██╔═══██╗    ██╔══██╗██╔══██╗██║"
+    centralizar "██║   ██║██╔██╗ ██║██║   ██║    ███████║██████╔╝██║"
+    centralizar "██║   ██║██║╚██╗██║██║   ██║    ██╔══██║██╔═══╝ ██║"
+    centralizar "╚██████╔╝██║ ╚████║╚██████╔╝    ██║  ██║██║     ██║"
+    centralizar " ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_quepasa() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ██╗   ██╗███████╗██████╗  █████╗ ███████╗ █████╗"
+    centralizar "██╔═══██╗██║   ██║██╔════╝██╔══██╗██╔══██╗██╔════╝██╔══██╗"
+    centralizar "██║   ██║██║   ██║█████╗  ██████╔╝███████║███████╗███████║"
+    centralizar "██║▄▄ ██║██║   ██║██╔══╝  ██╔═══╝ ██╔══██║╚════██║██╔══██║"
+    centralizar "╚██████╔╝╚██████╔╝███████╗██║     ██║  ██║███████║██║  ██║"
+    centralizar " ╚══▀▀═╝  ╚═════╝ ╚══════╝╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -14489,6 +14541,130 @@ EOL
 
 }
 
+ferramenta_clickhouse() {
+  msg_clickhouse
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o domínio para o ClickHouse (ex: clickhouse.encha.ai): \e[0m" && read -r url_clickhouse
+    echo ""
+    echo -e "\n📍 Passo 2/3"
+    echo -en "👤 \e[33mDigite um nome de usuário para o ClickHouse (ex: admin): \e[0m" && read -r user_clickhouse
+    echo ""
+    echo -e "\n📍 Passo 3/3"
+    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_clickhouse
+    echo ""
+
+    clear
+    msg_clickhouse
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio ClickHouse:\e[97m $url_clickhouse\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_clickhouse\e[0m"
+    echo -e "🔑 \e[33mSenha:\e[97m $pass_clickhouse\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_clickhouse; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do ClickHouse...\e[0m"
+
+  cat > clickhouse${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  clickhouse${1:+_$1}:
+    image: clickhouse/clickhouse-server:23.8.8.20-alpine
+
+    volumes:
+      - clickhouse${1:+_$1}_data:/var/lib/clickhouse
+      - clickhouse${1:+_$1}_log:/var/log/clickhouse-server
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+    #ports:
+    #  - "8123:8123"
+    #  - "9000:9000"
+    #  - "9009:9009"
+
+    environment:
+      - CLICKHOUSE_DB=default
+      - CLICKHOUSE_USER=$user_clickhouse
+      - CLICKHOUSE_PASSWORD=$pass_clickhouse
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.clickhouse${1:+_$1}.rule=Host(\`$url_clickhouse\`)
+        - traefik.http.services.clickhouse${1:+_$1}.loadbalancer.server.port=8123
+        - traefik.http.routers.clickhouse${1:+_$1}.service=clickhouse${1:+_$1}
+        - traefik.http.routers.clickhouse${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.services.clickhouse${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.clickhouse${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.clickhouse${1:+_$1}.tls=true        
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  clickhouse${1:+_$1}_data:
+    external: true
+    name: clickhouse${1:+_$1}_data
+  clickhouse${1:+_$1}_log:
+    external: true
+    name: clickhouse${1:+_$1}_log
+  
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="clickhouse${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull clickhouse/clickhouse-server:23.8.8.20-alpine
+
+  wait_stack clickhouse${1:+_$1}_clickhouse${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_clickhouse${1:+_$1} <<EOL
+[ CLICKHOUSE ]
+
+Dashboard do clickhouse: https://$url_clickhouse/dashboard
+API do clickhouse: https://$url_clickhouse
+Usuario: $user_clickhouse
+Senha: $pass_clickhouse
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ CLICKHOUSE ]\e[0m\n"
+  echo -e "\e[33m🔗 API:\e[97m https://$url_clickhouse\e[0m"
+  echo -e "\e[33m🌐 Dashboard:\e[97m https://$url_clickhouse/play\e[0m"
+  echo -e "\e[33m👤 Usuário:\e[97m $user_clickhouse\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_clickhouse\e[0m"
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -14577,10 +14753,11 @@ exibir_menu() {
     OPCOES[64]="Planka"
     OPCOES[65]="WPPconnect"
     OPCOES[66]="Browserless"
-    OPCOES[67]="Browserless"
+    OPCOES[67]="Frappe ERPnext"
+    OPCOES[68]="Clickhouse"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68)
     local pagina_atual=1
 
     while true; do
@@ -15070,10 +15247,16 @@ exibir_menu() {
                   ferramenta_browserless
                 fi
                 ;;
-            68)
+            67)
                 verificar_stack "frappe${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_frappe
+                fi
+                ;;
+            68)
+                verificar_stack "clickhouse${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_clickhouse
                 fi
                 ;;
             *)
