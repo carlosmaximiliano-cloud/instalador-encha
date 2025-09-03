@@ -12313,8 +12313,7 @@ services:
 
       ## Dados do Host
       - KC_HOSTNAME=$url_keycloak
-      - KEYCLOAK_FRONTEND_URL=https://$url_keycloak/auth
-      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_PROXY=edge
       - KC_HTTP_ENABLED=true
 
     deploy:
