@@ -12318,6 +12318,7 @@ services:
       - KC_PROXY_HEADERS=xforwarded
       - KC_HOSTNAME_STRICT=false
       - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
 
     deploy:
       mode: replicated
