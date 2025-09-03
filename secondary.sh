@@ -12566,7 +12566,19 @@ verificar_status_servicos() {
 }
 
 
-# Função de menu completa, com paginação e layout corrigido
+centralizar_prompt() {
+    local texto_com_cores="$1"
+    local texto_sem_cores=$(echo -e "$texto_com_cores" | sed 's/\x1b\[[0-9;]*m//g')
+    local largura_terminal=$(tput cols)
+    local comprimento_texto=${#texto_sem_cores}
+    local espacos=$(( (largura_terminal - comprimento_texto) / 2 ))
+    if [ "$espacos" -lt 0 ]; then
+        espacos=0
+    fi
+    printf "%*s%s" "$espacos" "" "$texto_com_cores"
+}
+
+# Função de menu completa, com paginação e TODO o conteúdo centralizado
 exibir_menu() {
     # Variável para controlar a página atual do menu
     local pagina_atual=1
@@ -12576,21 +12588,21 @@ exibir_menu() {
     # PÁGINA 1 DE 2
     exibir_pagina_1() {
         centralizar "--- Página 1 de 2 ---"
-        echo ""
-        echo -e "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}18.${reset} Instalar rabbitMQ"
-        echo -e "${azul}02.${reset} Instalar Evolution API           ${azul}19.${reset} Instalar uptimeKuma"
-        echo -e "${azul}03.${reset} Instalar N8N                     ${azul}20.${reset} Instalar calcom"
-        echo -e "${azul}04.${reset} Instalar Chatwoot                ${azul}21.${reset} Instalar mautic"
-        echo -e "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}22.${reset} Instalar appsmith"
-        echo -e "${azul}07.${reset} Instalar Minio                   ${azul}23.${reset} Instalar qdrant"
-        echo -e "${azul}08.${reset} Instalar Typebot                 ${azul}24.${reset} Instalar woofedcrm"
-        echo -e "${azul}09.${reset} Instalar Directus                ${azul}26.${reset} Instalar twentyCRM"
-        echo -e "${azul}10.${reset} Instalar Odoo                    ${azul}27.${reset} Instalar Mattermost"
-        echo -e "${azul}13.${reset} Instalar pgAdmin                 ${azul}28.${reset} Instalar outline"
-        echo -e "${azul}14.${reset} Instalar nocobase                ${azul}29.${reset} Instalar focalboard"
-        echo -e "${azul}15.${reset} Instalar botpress                ${azul}30.${reset} Instalar GLPI"
-        echo -e "${azul}16.${reset} Instalar baserow                 ${azul}31.${reset} Instalar Flowise"
-        echo -e "${azul}17.${reset} Instalar mongoDB                 ${azul}32.${reset} Instalar Langflow"
+        echo "" # Linha em branco para espaçamento
+        centralizar "${azul}01.${reset} Instalar Traefik + Portainer     ${azul}18.${reset} Instalar rabbitMQ"
+        centralizar "${azul}02.${reset} Instalar Evolution API           ${azul}19.${reset} Instalar uptimeKuma"
+        centralizar "${azul}03.${reset} Instalar N8N                     ${azul}20.${reset} Instalar calcom"
+        centralizar "${azul}04.${reset} Instalar Chatwoot                ${azul}21.${reset} Instalar mautic"
+        centralizar "${azul}06.${reset} Instalar N8N Formação Encha      ${azul}22.${reset} Instalar appsmith"
+        centralizar "${azul}07.${reset} Instalar Minio                   ${azul}23.${reset} Instalar qdrant"
+        centralizar "${azul}08.${reset} Instalar Typebot                 ${azul}24.${reset} Instalar woofedcrm"
+        centralizar "${azul}09.${reset} Instalar Directus                ${azul}26.${reset} Instalar twentyCRM"
+        centralizar "${azul}10.${reset} Instalar Odoo                    ${azul}27.${reset} Instalar Mattermost"
+        centralizar "${azul}13.${reset} Instalar pgAdmin                 ${azul}28.${reset} Instalar outline"
+        centralizar "${azul}14.${reset} Instalar nocobase                ${azul}29.${reset} Instalar focalboard"
+        centralizar "${azul}15.${reset} Instalar botpress                ${azul}30.${reset} Instalar GLPI"
+        centralizar "${azul}16.${reset} Instalar baserow                 ${azul}31.${reset} Instalar Flowise"
+        centralizar "${azul}17.${reset} Instalar mongoDB                 ${azul}32.${reset} Instalar Langflow"
         echo ""
     }
 
@@ -12598,46 +12610,47 @@ exibir_menu() {
     exibir_pagina_2() {
         centralizar "--- Página 2 de 2 ---"
         echo ""
-        echo -e "${azul}33.${reset} Instalar Ollama                 ${azul}46.${reset} Instalar Strapi"
-        echo -e "${azul}34.${reset} Instalar Anythingllm            ${azul}47.${reset} Instalar MyphpAdmin"
-        echo -e "${azul}35.${reset} Instalar Nocodb                 ${azul}48.${reset} Instalar Supabase"
-        echo -e "${azul}36.${reset} Instalar humhub                  ${azul}49.${reset} Instalar NTFY"
-        echo -e "${azul}37.${reset} Instalar Wordpress              ${azul}50.${reset} Instalar Lowcoder"
-        echo -e "${azul}38.${reset} Instalar Formbricks              ${azul}51.${reset} Instalar Openproject"
-        echo -e "${azul}39.${reset} Instalar MetaBase                ${azul}52.${reset} Instalar ZEP"
-        echo -e "${azul}40.${reset} Instalar Docuseal                ${azul}53.${reset} Instalar Yourls"
-        echo -e "${azul}41.${reset} Instalar Monitor                 ${azul}54.${reset} Instalar WiseMapping"
-        echo -e "${azul}42.${reset} Instalar Dify                    ${azul}55.${reset} Instalar Evo AI"
-        echo -e "${azul}43.${reset} Instalar Affine                  ${azul}56.${reset} Instalar Keycloak"
-        echo -e "${azul}44.${reset} Instalar Vaultwarden             ${azul}57.${reset} Instalar Passbolt"
-        echo -e "${azul}45.${reset} Instalar Nextcloud"
+        centralizar "${azul}33.${reset} Instalar Ollama                 ${azul}46.${reset} Instalar Strapi"
+        centralizar "${azul}34.${reset} Instalar Anythingllm            ${azul}47.${reset} Instalar MyphpAdmin"
+        centralizar "${azul}35.${reset} Instalar Nocodb                 ${azul}48.${reset} Instalar Supabase"
+        centralizar "${azul}36.${reset} Instalar humhub                  ${azul}49.${reset} Instalar NTFY"
+        centralizar "${azul}37.${reset} Instalar Wordpress              ${azul}50.${reset} Instalar Lowcoder"
+        centralizar "${azul}38.${reset} Instalar Formbricks              ${azul}51.${reset} Instalar Openproject"
+        centralizar "${azul}39.${reset} Instalar MetaBase                ${azul}52.${reset} Instalar ZEP"
+        centralizar "${azul}40.${reset} Instalar Docuseal                ${azul}53.${reset} Instalar Yourls"
+        centralizar "${azul}41.${reset} Instalar Monitor                 ${azul}54.${reset} Instalar WiseMapping"
+        centralizar "${azul}42.${reset} Instalar Dify                    ${azul}55.${reset} Instalar Evo AI"
+        centralizar "${azul}43.${reset} Instalar Affine                  ${azul}56.${reset} Instalar Keycloak"
+        centralizar "${azul}44.${reset} Instalar Vaultwarden             ${azul}57.${reset} Instalar Passbolt"
+        centralizar "${azul}45.${reset} Instalar Nextcloud"
         echo ""
     }
     
     # OPÇÕES GERAIS (visíveis em todas as páginas)
     opcoes_gerais() {
-        echo -e "-------------------------------------------------------------------"
-        echo -e "${azul}05.${reset} Liberar Chatwoot    ${azul}11.${reset} Verificar status    ${azul}12.${reset} Sair"
+        centralizar "-------------------------------------------------------------------"
+        centralizar "${azul}05.${reset} Liberar Chatwoot    ${azul}11.${reset} Verificar status    ${azul}12.${reset} Sair"
         echo ""
     }
 
     # === Loop Principal do Menu ===
     while true; do
         clear
-        banner
-        echo -e "${branco}"
+        banner # Assumindo que seu banner já é centralizado ou tem largura total
+        echo "" # Espaçamento
+        centralizar "Sistema de Deploy Automatizado"
+        echo ""
         centralizar "📋 === MENU PRINCIPAL ==="
-        echo -e "${reset}"
         
         # Lógica para exibir a página correta e o prompt de navegação
         if [ "$pagina_atual" -eq 1 ]; then
             exibir_pagina_1
             opcoes_gerais
-            echo -en "${amarelo}👉 Escolha uma opção ou [p] para próxima página: ${reset}"
+            centralizar_prompt "${amarelo}👉 Escolha uma opção ou [p] para próxima página: ${reset}"
         else # Página 2
             exibir_pagina_2
             opcoes_gerais
-            echo -en "${amarelo}👉 Escolha uma opção ou [a] para página anterior: ${reset}"
+            centralizar_prompt "${amarelo}👉 Escolha uma opção ou [a] para página anterior: ${reset}"
         fi
         
         read -r opcao
@@ -13040,13 +13053,13 @@ exibir_menu() {
                 fi
                 ;;
             *)
-                echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
+                echo "" # Adiciona uma linha em branco antes da mensagem de erro
+                centralizar "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
                 ;;
         esac
     done
 }
-
 
 main() {
     exibir_menu
