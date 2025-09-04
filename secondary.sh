@@ -18319,7 +18319,7 @@ processar_menu_unlimited() {
     # outras opções
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
-    OPCOES[100]="Sair" # Ação
+    OPCOES[100]="Voltar para o Menu" # Ação
 
     local pagina_atual=1
 
@@ -18339,7 +18339,7 @@ processar_menu_unlimited() {
         
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
-        printf "      [ ${azul}98${reset} ] - %-22s | [ ${azul}99${reset} ] - %-22s | [ ${azul}100${reset} ] - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        printf "      [ ${azul}98${reset} ] - %-22s | [ ${azul}99${reset} ] - %-22s | [ ${azul}V${reset} ] - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
@@ -18894,7 +18894,7 @@ processar_menu_unlimited() {
             V|v)
                 echo "Voltando ao menu principal..."
                 sleep 1
-                menu_principal
+                return
                 ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
