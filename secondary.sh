@@ -10,10 +10,10 @@ centralizar() {
     printf "%*s%s\n" "$espacos" "" "$texto"
 }
 
+reset="\033[0m"
 roxo="\033[35m"
 azul="\033[34m"
 branco="\e[1;37m"   # Branco brilhante
-reset="\033[0m"
 amarelo="\033[33m"
 verde="\033[32m"
 vermelho="\033[31m"
