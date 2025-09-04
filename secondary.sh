@@ -6434,7 +6434,7 @@ ferramenta_rabbitmq(){
   echo -e "\e[97m🚀 Iniciando a instalação do RabbitMQ...\e[0m"
   key_cookie=$(openssl rand -hex 16)
 
-  cat > rabbitmq.yaml <<EOL
+  cat > rabbitmq${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
@@ -6442,37 +6442,71 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  rabbitmq:
+  rabbitmq${1:+_$1}:
     image: rabbitmq:management
+    command: rabbitmq-server
+
     hostname: rabbitmq
+
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq${1:+_$1}_data:/var/lib/rabbitmq
+
     networks:
-      - ${nome_rede_interna}
+      - $nome_rede_interna
+    #ports:
+    #  - 5672:5672
+    #  - 15672:15672
+
     environment:
-      RABBITMQ_DEFAULT_USER: ${user_rabbitmq}
-      RABBITMQ_DEFAULT_PASS: ${pass_rabbitmq}
-      RABBITMQ_ERLANG_COOKIE: ${key_cookie}
+      ## Dados de acesso
+      RABBITMQ_DEFAULT_USER: $user_rabbitmq
+      RABBITMQ_DEFAULT_PASS: $pass_rabbitmq
+      RABBITMQ_ERLANG_COOKIE: $key_cookie
+      RABBITMQ_DEFAULT_VHOST: "/"
+
     deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.rabbitmq.rule=Host(\`${url_rabbitmq}\`)"
-        - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
-        - "traefik.http.routers.rabbitmq.entrypoints=websecure"
-        - "traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver"
+        - traefik.enable=true
+        - traefik.http.routers.rabbitmq${1:+_$1}.rule=Host(\`$url_rabbitmq\`)
+        - traefik.http.routers.rabbitmq${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.rabbitmq${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.rabbitmq${1:+_$1}.service=rabbitmq${1:+_$1}
+        - traefik.http.services.rabbitmq${1:+_$1}.loadbalancer.server.port=15672
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
 volumes:
-  rabbitmq_data:
+  rabbitmq${1:+_$1}_data:
+    external: true
+
 networks:
-  ${nome_rede_interna}:
+  $nome_rede_interna:
     external: true
 EOL
 
-  STACK_NAME="rabbitmq"
+  STACK_NAME="rabbitmq${1:+_$1}"
   stack_editavel
-  wait_stack rabbitmq_rabbitmq
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull rabbitmq:management
+
+  wait_stack rabbitmq${1:+_$1}_rabbitmq${1:+_$1}
 
   cd /root/dados_vps
-  cat > dados_rabbitmq <<EOL
+  cat > dados_rabbitmq${1:+_$1} <<EOL
 [ RABBITMQ ]
 
 Dominio do Painel: https://${url_rabbitmq}
@@ -15133,7 +15167,7 @@ services:
       - STORAGE_FORCE_PATH_STYLE=true
 
       ## Dados do RabbitMQ
-      - AMQP_URL=amqp://$user_rabbit_mqs:$senha_rabbit_mqs@rabbitmq:5672/
+      - AMQP_URL=amqp://$user_rabbit_mqs:$senha_rabbit_mqs@rabbitmq:5672/unoapi${1:+_$1}
       
       ## Dados do Redis
       - REDIS_URL=redis://redis:6379
