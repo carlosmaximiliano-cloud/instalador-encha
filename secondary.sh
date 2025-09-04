@@ -17965,7 +17965,7 @@ exibir_menu_business () {
   echo -e "      ${ciano}[ 44 ]${reset} - Supabase               | ${ciano}[ 74 ]${reset} - RedisInsight"
   echo -e "      ${ciano}[ 09 ]${reset} - Odoo                   | ${ciano}[ 73 ]${reset} - Stirling PDF"
   echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot"
-  echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
+  #echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
 
   echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
   # Menu inferior com ações fixas
@@ -17978,7 +17978,7 @@ processar_menu_business() {
     declare -A OPCOES
     OPCOES[98]="Liberar Chatwoot"
     OPCOES[99]="Verificar status"
-    OPCOES[100]="Voltar ao Menu Principal"
+    OPCOES[100]="Voltar ao Menu"
 
     while true; do
         clear
