@@ -17886,6 +17886,7 @@ exibir_menu_nano () {
   echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer"
   echo -e "      [ ${azul}02${reset} ] - Evolution API"
   echo -e "      [ ${azul}03${reset} ] - N8N"
+  echo -e "      [ ${azul}V${reset} ] - Voltar ao Menu Principal"
 }
 
 processar_menu_nano() {
@@ -17939,7 +17940,7 @@ processar_menu_nano() {
             V|v)
                 echo "Voltando ao menu principal..."
                 sleep 1
-                menu_principal
+                return
                 ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
@@ -17963,6 +17964,7 @@ exibir_menu_business () {
   echo -e "      [ ${azul}44${reset} ] - Supabase             | [ ${azul}74${reset} ] - RedisInsight"
   echo -e "      [ ${azul}09${reset} ] - Odoo                 | [ ${azul}73${reset} ] - Stirling PDF"
   echo -e "      [ ${azul}04${reset} ] - Chatwoot"
+  echo -e "      [ ${azul}V${reset} ] - Voltar ao Menu Principal"
 }
 
 processar_menu_business() {
@@ -18118,7 +18120,7 @@ processar_menu_business() {
             V|v)
                 echo "Voltando ao menu principal..."
                 sleep 1
-                menu_principal
+                return
                 ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
