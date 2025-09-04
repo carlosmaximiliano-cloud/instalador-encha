@@ -15133,7 +15133,7 @@ services:
       - STORAGE_FORCE_PATH_STYLE=true
 
       ## Dados do RabbitMQ
-      - AMQP_URL=amqp://$user_rabbit_mqs:$senha_rabbit_mqs@rabbitmq:5672/unoapi${1:+_$1}
+      - AMQP_URL=amqp://$user_rabbit_mqs:$senha_rabbit_mqs@rabbitmq:5672/
       
       ## Dados do Redis
       - REDIS_URL=redis://redis:6379
