@@ -15769,7 +15769,7 @@ ferramenta_documenso() {
     echo -e "\e[33mSecure SMTP do Email:\e[97m $smtp_secure_documenso\e[0m"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_documenso; ficar
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_documenso; fi
   done
 
   clear
