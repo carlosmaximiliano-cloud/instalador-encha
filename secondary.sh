@@ -17978,7 +17978,6 @@ processar_menu_business() {
     declare -A OPCOES
     OPCOES[98]="Liberar Chatwoot"
     OPCOES[99]="Verificar status"
-    OPCOES[100]="Voltar ao Menu"
 
     while true; do
         clear
@@ -18121,11 +18120,6 @@ processar_menu_business() {
                 echo "Aperte ENTER para retornar ao menu de ferramentas"
                 read
                 sleep 2
-                ;;
-            100)
-                echo -e "\n${verde}Saindo do menu...${reset}"
-                sleep 1
-                exit 0
                 ;;
             V|v)
                 echo "Voltando ao menu principal..."
