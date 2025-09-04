@@ -1022,6 +1022,45 @@ msg_redisinsight() {
     echo ""
 }
 
+msg_traccar() {
+    clear
+    echo -e "${roxo}"
+    centralizar "████████╗██████╗  █████╗  ██████╗ ██████╗ █████╗ ██████╗ "
+    centralizar "╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗"
+    centralizar "   ██║   ██████╔╝███████║██║     ██║     ███████║██████╔╝"
+    centralizar "   ██║   ██╔══██╗██╔══██║██║     ██║     ██╔══██║██╔══██╗"
+    centralizar "   ██║   ██║  ██║██║  ██║╚██████╗╚██████╗██║  ██║██║  ██║"
+    centralizar "   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_firecrawl() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗██████╗ ███████╗ ██████╗██████╗  █████╗ ██╗    ██╗██╗     "
+    centralizar "██╔════╝██║██╔══██╗██╔════╝██╔════╝██╔══██╗██╔══██╗██║    ██║██║     "
+    centralizar "█████╗  ██║██████╔╝█████╗  ██║     ██████╔╝███████║██║ █╗ ██║██║     "
+    centralizar "██╔══╝  ██║██╔══██╗██╔══╝  ██║     ██╔══██╗██╔══██║██║███╗██║██║     "
+    centralizar "██║     ██║██║  ██║███████╗╚██████╗██║  ██║██║  ██║╚███╔███╔╝███████╗"
+    centralizar "╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_wuzapi() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗    ██╗██╗   ██╗███████╗ █████╗ ██████╗ ██╗"
+    centralizar "██║    ██║██║   ██║╚══███╔╝██╔══██╗██╔══██╗██║"
+    centralizar "██║ █╗ ██║██║   ██║  ███╔╝ ███████║██████╔╝██║"
+    centralizar "██║███╗██║██║   ██║ ███╔╝  ██╔══██║██╔═══╝ ██║"
+    centralizar "╚███╔███╔╝╚██████╔╝███████╗██║  ██║██║     ██║"
+    centralizar " ╚══╝╚══╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -16670,6 +16709,168 @@ EOL
 
 }
 
+ferramenta_traccar() {
+  msg_traccar
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Traccar (ex: traccar.encha.ai): \e[0m" && read -r url_traccar
+    echo ""
+
+    clear
+    msg_traccar
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Traccar:\e[97m $url_traccar\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_traccar; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Traccar...\e[0m"
+
+  gerar_senha_mysql=$(openssl rand -hex 16)
+
+  mkdir -p /opt/traccar${1:+_$1}/logs
+
+  cat > traccar.xml <<EOL
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <entry key="database.driver">com.mysql.cj.jdbc.Driver</entry>
+    <entry key="database.url">jdbc:mysql://traccar${1:+_$1}_db:3306/traccar?allowPublicKeyRetrieval=true&amp;useSSL=false</entry>
+    <entry key="database.user">traccar</entry>
+    <entry key="database.password">$gerar_senha_mysql</entry>
+    <entry key="web.port">8082</entry>
+</properties>
+EOL
+
+  mv traccar.xml /opt/traccar${1:+_$1}/
+
+  echo -e "\e[97m• INSTALANDO TRACCAR \e[33m[2/3]\e[0m"
+  echo ""
+
+  cat > traccar${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  traccar${1:+_$1}:
+    image: traccar/traccar:latest
+    
+    volumes:
+      - /opt/traccar${1:+_$1}/logs:/opt/traccar${1:+_$1}/logs:rw
+      - /opt/traccar${1:+_$1}/traccar.xml:/opt/traccar${1:+_$1}/conf/traccar.xml:ro
+      - traccar${1:+_$1}_data:/opt/traccar/
+
+    networks:
+     - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+     - JAVA_OPTS=-Xms1g -Xmx1g -Djava.net.preferIPv4Stack=true
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.traccar${1:+_$1}.rule=Host(\`$url_traccar\`)
+        - traefik.http.services.traccar${1:+_$1}.loadbalancer.server.port=8082
+        - traefik.http.routers.traccar${1:+_$1}.service=traccar${1:+_$1}
+        - traefik.http.routers.traccar${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.traccar${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.traccar${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  traccar${1:+_$1}_db:
+    image: mysql:8.0
+
+    volumes:
+      - traccar${1:+_$1}_db:/var/lib/mysql
+
+    networks:
+     - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=traccar
+      - MYSQL_USER=traccar
+      - MYSQL_PASSWORD=$gerar_senha_mysql
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  traccar${1:+_$1}_data:
+    external: true
+    name: traccar${1:+_$1}_data
+  traccar${1:+_$1}_db:
+    external: true
+    name: traccar${1:+_$1}_db
+    
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="traccar${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull traccar/traccar:latest mysql:8.0
+  wait_stack traccar${1:+_$1}_traccar${1:+_$1} traccar${1:+_$1}_traccar${1:+_$1}_db
+
+  cd /root/dados_vps
+
+  cat > dados_traccar${1:+_$1} <<EOL
+[ TRACCAR ]
+
+Dominio do Traccar: https://$url_traccar
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ TRACCAR ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_traccar\e[0m"
+  echo -e "\e[33m👤 Usuário Padrão:\e[97m admin\e[0m"
+  echo -e "\e[33m🔑 Senha Padrão:\e[97m admin\e[0m"
+  msg_retorno_menu
+
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -16769,9 +16970,10 @@ exibir_menu() {
     OPCOES[76]="Tooljet"
     OPCOES[77]="Stirling PDF"
     OPCOES[78]="RedisInsight"
+    OPCOES[79]="Traccar"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79)
     local pagina_atual=1
 
     while true; do
@@ -17332,7 +17534,13 @@ exibir_menu() {
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_redisinsight
                 fi
-                ;;    
+                ;;
+            79)
+                verificar_stack "traccar${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_traccar
+                fi
+                ;;  
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
