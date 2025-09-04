@@ -17763,7 +17763,6 @@ EOL
 
 }
 
-
 ferramenta_testeemail() {
     msg_testeemail
     dados
@@ -17797,8 +17796,7 @@ ferramenta_testeemail() {
         echo ""
 
         clear
-        nome_testeemail
-        conferindo_as_info
+        msg_testeemail
 
         echo -e "\e[33mEmail SMTP: \e[97m$email_teste\e[0m"
         echo ""
@@ -17881,22 +17879,23 @@ verificar_status_servicos() {
     fi
 }
 
+
 exibir_menu() {
-    # --- Configuração do Menu ---
+    # --- Configuração do Menu (Adicione ou remova itens aqui) ---
     declare -A OPCOES
-    OPCOES[0]="Testar SMPT"
+    OPCOES[0]="Testar SMTP"
     OPCOES[1]="Traefik & Portainer"
     OPCOES[2]="Evolution API"
     OPCOES[3]="N8N"
     OPCOES[4]="Chatwoot"
-    OPCOES[5]="Liberar Chatwoot" # Ação, não instalação
+    OPCOES[5]="Liberar Chatwoot"
     OPCOES[6]="N8N Formação Encha"
     OPCOES[7]="Minio"
     OPCOES[8]="Typebot"
     OPCOES[9]="Directus"
     OPCOES[10]="Odoo"
-    OPCOES[11]="Verificar status" # Ação
-    OPCOES[12]="Sair" # Ação
+    OPCOES[11]="Verificar status"
+    OPCOES[12]="Sair do Menu"
     OPCOES[13]="pgAdmin"
     OPCOES[14]="nocobase"
     OPCOES[15]="botpress"
@@ -17909,76 +17908,97 @@ exibir_menu() {
     OPCOES[22]="appsmith"
     OPCOES[23]="qdrant"
     OPCOES[24]="woofedcrm"
-    OPCOES[26]="twentyCRM"
-    OPCOES[27]="Mattermost"
-    OPCOES[28]="outline"
-    OPCOES[29]="focalboard"
-    OPCOES[30]="GLPI"
-    OPCOES[31]="Flowise"
-    OPCOES[32]="Langflow"
-    OPCOES[33]="Ollama"
-    OPCOES[34]="Anythingllm"
-    OPCOES[35]="Nocodb"
-    OPCOES[36]="humhub"
-    OPCOES[37]="Wordpress"
-    OPCOES[38]="Formbricks"
-    OPCOES[39]="MetaBase"
-    OPCOES[40]="Docuseal"
-    OPCOES[41]="Monitor"
-    OPCOES[42]="Dify"
-    OPCOES[43]="Affine"
-    OPCOES[44]="Vaultwarden"
-    OPCOES[45]="Nextcloud"
-    OPCOES[46]="Strapi"
-    OPCOES[47]="MyphpAdmin"
-    OPCOES[48]="Supabase"
-    OPCOES[49]="NTFY"
-    OPCOES[50]="Lowcoder"
-    OPCOES[51]="Openproject"
-    OPCOES[52]="ZEP"
-    OPCOES[53]="Yourls"
-    OPCOES[54]="WiseMapping"
-    OPCOES[55]="Evo AI"
-    OPCOES[56]="Keycloak"
-    OPCOES[57]="Passbolt"
-    OPCOES[58]="Gotenberg"
-    OPCOES[59]="Wiki JS"
-    OPCOES[60]="Azuracast"
-    OPCOES[61]="Rustdesk"
-    OPCOES[62]="Hoppscotch"
-    OPCOES[63]="Bolt"
-    OPCOES[64]="Planka"
-    OPCOES[65]="WPPconnect"
-    OPCOES[66]="Browserless"
-    OPCOES[67]="Frappe ERPnext"
-    OPCOES[68]="Clickhouse"
-    OPCOES[69]="Langfuse"
-    OPCOES[70]="UnoAPI"
-    OPCOES[71]="Quepasa API"
-    OPCOES[72]="Excalidraw"
-    OPCOES[73]="Easyapointments"
-    OPCOES[74]="Documenso"
-    OPCOES[75]="Moodle"
-    OPCOES[76]="Tooljet"
-    OPCOES[77]="Stirling PDF"
-    OPCOES[78]="RedisInsight"
-    OPCOES[79]="Traccar"
-    OPCOES[80]="Firecrawl"
-    OPCOES[81]="Wuzapi"
-    OPCOES[82]="Krayin CRM"
-    OPCOES[83]="Shlink"
+    OPCOES[25]="twentyCRM" # Corrigido de 26 para 25
+    OPCOES[26]="Mattermost" # Corrigido de 27 para 26
+    OPCOES[27]="outline" # Corrigido de 28 para 27
+    OPCOES[28]="focalboard" # Corrigido de 29 para 28
+    OPCOES[29]="GLPI" # Corrigido de 30 para 29
+    OPCOES[30]="Flowise" # Corrigido de 31 para 30
+    OPCOES[31]="Langflow" # Corrigido de 32 para 31
+    OPCOES[32]="Ollama" # Corrigido de 33 para 32
+    OPCOES[33]="Anythingllm" # Corrigido de 34 para 33
+    OPCOES[34]="Nocodb" # Corrigido de 35 para 34
+    OPCOES[35]="humhub" # Corrigido de 36 para 35
+    OPCOES[36]="Wordpress" # Corrigido de 37 para 36
+    OPCOES[37]="Formbricks" # Corrigido de 38 para 37
+    OPCOES[38]="MetaBase" # Corrigido de 39 para 38
+    OPCOES[39]="Docuseal" # Corrigido de 40 para 39
+    OPCOES[40]="Monitor" # Corrigido de 41 para 40
+    OPCOES[41]="Dify" # Corrigido de 42 para 41
+    OPCOES[42]="Affine" # Corrigido de 43 para 42
+    OPCOES[43]="Vaultwarden" # Corrigido de 44 para 43
+    OPCOES[44]="Nextcloud" # Corrigido de 45 para 44
+    OPCOES[45]="Strapi" # Corrigido de 46 para 45
+    OPCOES[46]="PhpMyAdmin" # Corrigido de 47 para 46
+    OPCOES[47]="Supabase" # Corrigido de 48 para 47
+    OPCOES[48]="NTFY" # Corrigido de 49 para 48
+    OPCOES[49]="Lowcoder" # Corrigido de 50 para 49
+    OPCOES[50]="OpenProject" # Corrigido de 51 para 50
+    OPCOES[51]="ZEP" # Corrigido de 52 para 51
+    OPCOES[52]="Yourls" # Corrigido de 53 para 52
+    OPCOES[53]="WiseMapping" # Corrigido de 54 para 53
+    OPCOES[54]="Evo AI" # Corrigido de 55 para 54
+    OPCOES[55]="Keycloak" # Corrigido de 56 para 55
+    OPCOES[56]="Passbolt" # Corrigido de 57 para 56
+    OPCOES[57]="Gotenberg" # Corrigido de 58 para 57
+    OPCOES[58]="Wiki.js" # Corrigido de 59 para 58
+    OPCOES[59]="AzuraCast" # Corrigido de 60 para 59
+    OPCOES[60]="RustDesk" # Corrigido de 61 para 60
+    OPCOES[61]="Hoppscotch" # Corrigido de 62 para 61
+    OPCOES[62]="Bolt" # Corrigido de 63 para 62
+    OPCOES[63]="Planka" # Corrigido de 64 para 63
+    OPCOES[64]="WPPconnect" # Corrigido de 65 para 64
+    OPCOES[65]="Browserless" # Corrigido de 66 para 65
+    OPCOES[66]="Frappe ERPNext" # Corrigido de 67 para 66
+    OPCOES[67]="Clickhouse" # Corrigido de 68 para 67
+    OPCOES[68]="Langfuse" # Corrigido de 69 para 68
+    OPCOES[69]="UnoAPI" # Corrigido de 70 para 69
+    OPCOES[70]="Quepasa API" # Corrigido de 71 para 70
+    OPCOES[71]="Excalidraw" # Corrigido de 72 para 71
+    OPCOES[72]="Easy!Appointments" # Corrigido de 73 para 72
+    OPCOES[73]="Documenso" # Corrigido de 74 para 73
+    OPCOES[74]="Moodle" # Corrigido de 75 para 74
+    OPCOES[75]="Tooljet" # Corrigido de 76 para 75
+    OPCOES[76]="Stirling PDF" # Corrigido de 77 para 76
+    OPCOES[77]="RedisInsight" # Corrigido de 78 para 77
+    OPCOES[78]="Traccar" # Corrigido de 79 para 78
+    OPCOES[79]="Firecrawl" # Corrigido de 80 para 79
+    OPCOES[80]="Wuzapi" # Corrigido de 81 para 80
+    OPCOES[81]="Krayin CRM" # Corrigido de 82 para 81
+    OPCOES[82]="Shlink" # Corrigido de 83 para 82
+
+
+    # Ações Especiais (não são stacks, não entram na paginação)
+    local acoes_especiais=(5 11 12)
     
-    local pagina1_items=(0 1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83)
+    # Gera a lista de chaves de instalação (todas as OPCOES exceto ações especiais)
+    local chaves_instalacao=()
+    for i in "${!OPCOES[@]}"; do
+        is_action=false
+        for action_key in "${acoes_especiais[@]}"; do
+            if [[ "$i" == "$action_key" ]]; then
+                is_action=true
+                break
+            fi
+        done
+        if ! $is_action; then
+            chaves_instalacao+=("$i")
+        fi
+    done
+    # Ordena numericamente
+    IFS=$'\n' chaves_instalacao=($(sort -n <<<"${chaves_instalacao[*]}"))
+    unset IFS
+
+    local total_items=${#chaves_instalacao[@]}
+    local items_por_pagina=$(( (total_items + 1) / 2 )) # Divide em duas colunas
+    
+    local pagina1_items=("${chaves_instalacao[@]:0:$items_por_pagina}")
+    local pagina2_items=("${chaves_instalacao[@]:$items_por_pagina}")
     local pagina_atual=1
 
     while true; do
         clear
         banner
-        
-        printf "\n"
-        centralizar "Sistema de Deploy Automatizado"
-        echo -e "${amarelo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
         
         local items_pagina=()
         if [ "$pagina_atual" -eq 1 ]; then
@@ -17989,585 +18009,140 @@ exibir_menu() {
             items_pagina=("${pagina2_items[@]}")
         fi
         
+        echo "" # Espaçamento
+        
+        # Lógica para exibir em duas colunas
         local -i max_items=${#items_pagina[@]}
         local -i meio=$(( (max_items + 1) / 2 ))
 
         for (( i=0; i<meio; i++ )); do
+            # Item da Esquerda
             local idx_esq=${items_pagina[i]}
-            local texto_esq="${OPCOES[$idx_esq]}"
-            local status_esq="${verde}[ ]${reset}"
-            local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
+            local nome_esq=$(echo "${OPCOES[$idx_esq]}" | tr '[:upper:]' '[:lower:]' | sed 's/ .*//' | sed 's/!//')
+            local status_esq="\e[31m[ ]\e[0m" # Padrão: não instalado
+            if docker stack ls --format "{{.Name}}" | grep -q "^${nome_esq}$"; then
+                status_esq="\e[32m[✓]\e[0m" # Instalado
+            fi
+            local item_esq=$(printf "[ ${azul}%02d${reset} ] %-24s %s" "$idx_esq" "${OPCOES[$idx_esq]}" "$status_esq")
 
+            # Item da Direita
             local item_dir=""
             local -i idx_dir_calc=$(( i + meio ))
             if [ $idx_dir_calc -lt $max_items ]; then
                 local idx_dir=${items_pagina[$idx_dir_calc]}
-                local texto_dir="${OPCOES[$idx_dir]}"
-                local status_dir="${verde}[ ]${reset}"
-                item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
+                local nome_dir=$(echo "${OPCOES[$idx_dir]}" | tr '[:upper:]' '[:lower:]' | sed 's/ .*//' | sed 's/!//')
+                local status_dir="\e[31m[ ]\e[0m"
+                if docker stack ls --format "{{.Name}}" | grep -q "^${nome_dir}$"; then
+                    status_dir="\e[32m[✓]\e[0m"
+                fi
+                item_dir=$(printf "| [ ${azul}%02d${reset} ] %-24s %s" "$idx_dir" "${OPCOES[$idx_dir]}" "$status_dir")
             fi
             
-            printf "      %s %s\n" "$item_esq" "$item_dir"
+            # Imprime a linha com as duas colunas
+            printf "    %s %s\n" "$item_esq" "$item_dir"
         done
 
-        echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
-        printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
-        echo -e "${amarelo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
-        
-        local largura=$(tput cols)
-        local padding=$(( (largura - 70) / 2 )) # Ajuste para alinhar o pipe central
-        printf "%s%*s%s\n" "| --- Digite ${amarelo}P1${reset} para ir para pagina 1" "$padding" "" "| Digite ${amarelo}P2${reset} para ir para pagina 2 -->"
-
+        # Linha de Ações Especiais
         echo ""
-        read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO oculto: "${reset})" opcao
-
+        echo -e "    ${amarelo}$(printf '─%.0s' {1..73})${reset}"
+        printf "    [ ${azul}%02d${reset} ] %-22s | [ ${azul}%02d${reset} ] %-22s | [ ${azul}%02d${reset} ] %s\n" "5" "${OPCOES[5]}" "11" "${OPCOES[11]}" "12" "${OPCOES[12]}"
+        echo -e "    ${amarelo}$(printf '─%.0s' {1..73})${reset}"
+        
+        # Navegação
+        echo ""
+        echo -e "    ${branco}Digite ${amarelo}P1${branco} para Página 1  |  Digite ${amarelo}P2${branco} para Página 2${reset}"
+        echo ""
+        read -p "$(echo -e ${branco}"👉 Escolha uma opção: "${reset})" opcao
+        
+        # --- Lógica do Case (mantida e atualizada com a nova numeração) ---
         case $opcao in
             P1|p1) pagina_atual=1; continue ;;
             P2|p2) pagina_atual=2; continue ;;
-
-            0)
-              ferramenta_testeemail
-              ;;
-            01|1)
-                verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
-                ferramenta_traefik_e_portainer
-                ;;
-            02|2)
-                verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="evolution${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_evolution "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_evolution"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            03|3)
-                verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="n8n${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_n8n "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_n8n"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            04|4)
-                verificar_stack "chatwoot${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="chatwoot${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_chatwoot "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_chatwoot"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            05|5)
-                if verificar_docker_e_portainer_traefik; then
-                    liberar_chatwoot
-                fi
-                ;;
-            06|6)
-                verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_n8n_formacao_encha "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_n8n_formacao_encha"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            07|7)
-                verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="minio${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_minio "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_minio"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            08|8)
-                verificar_stack "typebot${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    STACK_NAME="typebot${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_typebot "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_typebot"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            09|9)
-                verificar_stack "directus${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik && verificar_minio; then
-                    STACK_NAME="directus${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_directus "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_directus"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            10)
-                verificar_stack "odoo${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="odoo${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_odoo "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_odoo"
-                        verificar_arquivo
-                    fi
-                fi
-                ;;
-            11)
-                verificar_status_servicos
-                echo "Aperte ENTER para retornar ao menu de ferramentas"
-                read
-                sleep 2
-                ;;
-            12)
-                echo -e "\n${verde}Saindo do menu...${reset}"
-                sleep 1
-                exit 0
-                ;;
-            13)
-                verificar_stack "pgadmin" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_pgadmin
-                fi
-                ;;
-            14)
-                verificar_stack "nocobase" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_nocobase
-                fi
-                ;;
-            15)
-                verificar_stack "botpress" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_botpress
-                fi
-                ;;
-            16)
-                verificar_stack "baserow" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_baserow
-                fi
-                ;;
-            17)
-                verificar_stack "mongodb" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_mongodb
-                fi
-                ;;
-            18)
-                verificar_stack "rabbitmq" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_rabbitmq
-                fi
-                ;;
-            19)
-                verificar_stack "uptimekuma" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_uptimekuma
-                fi
-                ;;
-            20)
-                verificar_stack "calcom" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_calcom
-                fi
-                ;;
-            21)
-                verificar_stack "mautic" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_mautic
-                fi
-                ;;
-            22)
-                verificar_stack "appsmith" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_appsmith
-                fi
-                ;;
-            23)
-                verificar_stack "qdrant" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_qdrant
-                fi
-                ;;
-            24)
-                verificar_stack "woofedcrm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_woofedcrm
-                fi
-                ;;
-            26)
-                verificar_stack "twentycrm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_twentycrm
-                fi
-                ;;
-            27)
-                verificar_stack "mattermost" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_mattermost
-                fi
-                ;;
-            28)
-                verificar_stack "outline" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_outline
-                fi
-                ;;
-            29)
-                verificar_stack "focalboard" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_focalboard
-                fi
-                ;;
-            30)
-                verificar_stack "glpi" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_glpi
-                fi
-                ;;
-            31)
-                verificar_stack "flowise" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_flowise
-                fi
-                ;;
-            32)
-                verificar_stack "langflow" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_langflow
-                fi
-                ;;
-            33)
-                verificar_stack "ollama" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_ollama
-                fi
-                ;;
-            34)
-                verificar_stack "anythingllm" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_anythingllm
-                fi
-                ;;
-            35)
-                verificar_stack "nocodb" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_nocodb
-                fi
-                ;;
-            36)
-                verificar_stack "humhub" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_humhub
-                fi
-                ;;
-            37)
-                verificar_stack "wordpress" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_wordpress
-                fi
-                ;;
-            38)
-                verificar_stack "formbricks${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_formbricks
-                fi
-                ;;
-            39)
-                verificar_stack "metabase${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_metabase
-                fi
-                ;;
-            40)
-                verificar_stack "docuseal${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_docuseal
-                fi
-                ;;
-            41)
-                verificar_stack "monitor" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_monitor
-                fi
-                ;;
-            42)
-                verificar_stack "dify${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_dify
-                fi
-                ;;
-            43)
-                verificar_stack "affine" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_affine
-                fi
-                ;;
-            44)
-                verificar_stack "vaultwarden" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_vaultwarden
-                fi
-                ;;
-            45)
-                verificar_stack "nextcloud${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_nextcloud
-                fi
-                ;;
-            46)
-                verificar_stack "strapi${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_strapi
-                fi
-                ;;
-            47)
-                verificar_stack "phpmyadmin${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_phpmyadmin
-                fi
-                ;;
-            48)
-                verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_supabase
-                fi
-                ;;
-            49)
-                verificar_stack "ntfy${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_ntfy
-                fi
-                ;;
-            50)
-                verificar_stack "lowcoder${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_lowcoder
-                fi
-                ;;
-            51)
-                verificar_stack "openproject${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_openproject
-                fi
-                ;;
-            52)
-                verificar_stack "zep${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_zep
-                fi
-                ;;
-            53)
-                verificar_stack "yourls${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_yourls
-                fi
-                ;;
-            54)
-                verificar_stack "wisemapping${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_wisemapping
-                fi
-                ;;
-            55)
-                verificar_stack "evoai${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_evoai
-                fi
-                ;;
-            56)
-                verificar_stack "keycloak${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_keycloak
-                fi
-                ;;
-            57)
-                verificar_stack "passbolt${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    ferramenta_passbolt
-                fi
-                ;;
-            58)
-                verificar_stack "gotenberg${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_gotenberg
-                fi
-                ;;
-            59)
-                verificar_stack "wiki${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_wiki
-                fi
-                ;;
-            60)
-                verificar_stack "azuracast${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_azuracast
-                fi
-                ;;
-            61)
-                verificar_stack "rustdesk${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_rustdesk
-                fi
-                ;;
-            62)
-                verificar_stack "hoppscotch${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_hoppscotch
-                fi
-                ;;
-            63)
-                verificar_stack "bolt${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_bolt
-                fi
-                ;;
-            64)
-                verificar_stack "planka${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_planka
-                fi
-                ;;
-            65)
-                verificar_stack "wppconnect${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_wppconnect
-                fi
-                ;;
-            66)
-                verificar_stack "browserless${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_browserless
-                fi
-                ;;
-            67)
-                verificar_stack "frappe${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_frappe
-                fi
-                ;;
-            68)
-                verificar_stack "clickhouse${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_clickhouse
-                fi
-                ;;
-            69)
-                verificar_stack "langfuse${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_langfuse
-                fi
-                ;;
-            70)
-                verificar_stack "unoapi${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_unoapi
-                fi
-                ;;
-            71)
-                verificar_stack "quepasa${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_quepasa
-                fi
-                ;;
-            72)
-                verificar_stack "excalidraw${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_excalidraw
-                fi
-                ;;
-            73)
-                verificar_stack "easyappointments${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_easyappointments
-                fi
-                ;;
-            74)
-                verificar_stack "documenso${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_documenso
-                fi
-                ;;
-            75)
-                verificar_stack "moodle${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_moodle
-                fi
-                ;;
-            76)
-                verificar_stack "tooljet${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_tooljet
-                fi
-                ;;
-            77)
-                verificar_stack "stirling${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_stirling
-                fi
-                ;;
-            78)
-                verificar_stack "redisinsight${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_redisinsight
-                fi
-                ;;
-            79)
-                verificar_stack "traccar${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_traccar
-                fi
-                ;;
-            80)
-                verificar_stack "firecrawl${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_firecrawl
-                fi
-                ;;
-            81)
-                verificar_stack "wuzapi${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_wuzapi
-                fi
-                ;;
-            82)
-                verificar_stack "krayincrm${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_krayincrm
-                fi
-                ;;
-            83)
-                verificar_stack "shlink${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                  ferramenta_shlink
-                fi
-                ;;
-            *)
-                echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-                sleep 2
-                ;;
+            
+            0) ferramenta_testeemail ;;
+            1) ferramenta_traefik_e_portainer ;;
+            2) ferramenta_evolution ;;
+            3) ferramenta_n8n ;;
+            4) ferramenta_chatwoot ;;
+            5) liberar_chatwoot ;;
+            6) ferramenta_n8n_formacao_encha ;;
+            7) ferramenta_minio ;;
+            8) ferramenta_typebot ;;
+            9) ferramenta_directus ;;
+            10) ferramenta_odoo ;;
+            11) verificar_status_servicos; read ;;
+            12) echo -e "\n${verde}Saindo...${reset}"; sleep 1; exit 0 ;;
+            13) ferramenta_pgadmin ;;
+            14) ferramenta_nocobase ;;
+            15) ferramenta_botpress ;;
+            16) ferramenta_baserow ;;
+            17) ferramenta_mongodb ;;
+            18) ferramenta_rabbitmq ;;
+            19) ferramenta_uptimekuma ;;
+            20) ferramenta_calcom ;;
+            21) ferramenta_mautic ;;
+            22) ferramenta_appsmith ;;
+            23) ferramenta_qdrant ;;
+            24) ferramenta_woofedcrm ;;
+            25) ferramenta_twentycrm ;;
+            26) ferramenta_mattermost ;;
+            27) ferramenta_outline ;;
+            28) ferramenta_focalboard ;;
+            29) ferramenta_glpi ;;
+            30) ferramenta_flowise ;;
+            31) ferramenta_langflow ;;
+            32) ferramenta_ollama ;;
+            33) ferramenta_anythingllm ;;
+            34) ferramenta_nocodb ;;
+            35) ferramenta_humhub ;;
+            36) ferramenta_wordpress ;;
+            37) ferramenta_formbricks ;;
+            38) ferramenta_metabase ;;
+            39) ferramenta_docuseal ;;
+            40) ferramenta_monitor ;;
+            41) ferramenta_dify ;;
+            42) ferramenta_affine ;;
+            43) ferramenta_vaultwarden ;;
+            44) ferramenta_nextcloud ;;
+            45) ferramenta_strapi ;;
+            46) ferramenta_phpmyadmin ;;
+            47) ferramenta_supabase ;;
+            48) ferramenta_ntfy ;;
+            49) ferramenta_lowcoder ;;
+            50) ferramenta_openproject ;;
+            51) ferramenta_zep ;;
+            52) ferramenta_yourls ;;
+            53) ferramenta_wisemapping ;;
+            54) ferramenta_evoai ;;
+            55) ferramenta_keycloak ;;
+            56) ferramenta_passbolt ;;
+            57) ferramenta_gotenberg ;;
+            58) ferramenta_wiki ;;
+            59) ferramenta_azuracast ;;
+            60) ferramenta_rustdesk ;;
+            61) ferramenta_hoppscotch ;;
+            62) ferramenta_bolt ;;
+            63) ferramenta_planka ;;
+            64) ferramenta_wppconnect ;;
+            65) ferramenta_browserless ;;
+            66) ferramenta_frappe ;;
+            67) ferramenta_clickhouse ;;
+            68) ferramenta_langfuse ;;
+            69) ferramenta_unoapi ;;
+            70) ferramenta_quepasa ;;
+            71) ferramenta_excalidraw ;;
+            72) ferramenta_easyappointments ;;
+            73) ferramenta_documenso ;;
+            74) ferramenta_moodle ;;
+            75) ferramenta_tooljet ;;
+            76) ferramenta_stirling ;;
+            77) ferramenta_redisinsight ;;
+            78) ferramenta_traccar ;;
+            79) ferramenta_firecrawl ;;
+            80) ferramenta_wuzapi ;;
+            81) ferramenta_krayincrm ;;
+            82) ferramenta_shlink ;;
+            *) echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"; sleep 2 ;;
         esac
     done
 }
