@@ -17988,25 +17988,23 @@ processar_menu_nano() {
 
 
 exibir_menu_business () {
-  centralizar "--- BUSINESS ---"
-  printf "\n"
-  echo -e "      ${amarelo_escuro}[ 01 ]${reset} - Traefik & Portainer    | ${amarelo_escuro}[ 37 ]${reset} - Grafana + Prometeus + Advisor"
-  echo -e "      ${amarelo_escuro}[ 02 ]${reset} - Evolution API          | ${amarelo_escuro}[ 10 ]${reset} - PgAdmin 4"
-  echo -e "      ${amarelo_escuro}[ 03 ]${reset} - N8N                    | ${amarelo_escuro}[ 06 ]${reset} - Minio"
-  echo -e "      ${amarelo_escuro}[ 05 ]${reset} - N8N Formação Encha     | ${amarelo_escuro}[ 18 ]${reset} - Mautic"
-  echo -e "      ${amarelo_escuro}[ 15 ]${reset} - RabbitMQ               | ${amarelo_escuro}[ 20 ]${reset} - Qdrant"
-  echo -e "      ${amarelo_escuro}[ 13 ]${reset} - Baserow                | ${amarelo_escuro}[ XX ]${reset} - Duplicate - Em breve"
-  echo -e "      ${amarelo_escuro}[ 08 ]${reset} - Directus               | ${amarelo_escuro}[ 69 ]${reset} - Easyapointments"
-  echo -e "      ${amarelo_escuro}[ 44 ]${reset} - Supabase               | ${amarelo_escuro}[ 74 ]${reset} - RedisInsight"
-  echo -e "      ${amarelo_escuro}[ 09 ]${reset} - Odoo                   | ${amarelo_escuro}[ 73 ]${reset} - Stirling PDF"
-  echo -e "      ${amarelo_escuro}[ 04 ]${reset} - Chatwoot"
-  #echo -e "      ${amarelo_escuro}[ V ]${reset}  - Voltar ao Menu Principal"
+    centralizar "--- BUSINESS ---"
+    printf "\n"
+    exibir_bloco_centralizado \
+        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer    | ${amarelo_escuro}[ 37 ]${reset} - Grafana + Prometeus + Advisor${reset}" \
+        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API          | ${amarelo_escuro}[ 10 ]${reset} - PgAdmin 4${reset}" \
+        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N                    | ${amarelo_escuro}[ 06 ]${reset} - Minio${reset}" \
+        "${amarelo_escuro}[ 05 ]${reset} ${cinza}- N8N Formação Encha    | ${amarelo_escuro}[ 18 ]${reset} - Mautic${reset}" \
+        "${amarelo_escuro}[ 15 ]${reset} ${cinza}- RabbitMQ               | ${amarelo_escuro}[ 20 ]${reset} - Qdrant${reset}" \
+        "${amarelo_escuro}[ 13 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ XX ]${reset} - Duplicate - Em breve${reset}" \
+        "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Directus                | ${amarelo_escuro}[ 69 ]${reset} - Easyapointments${reset}" \
+        "${amarelo_escuro}[ 44 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 74 ]${reset} - RedisInsight${reset}" \
+        "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 73 ]${reset} - Stirling PDF${reset}" \
+        "${amarelo_escuro}[ 04 ]${reset} ${cinza}- Chatwoot${reset}"
 
-  echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
-  # Menu inferior com ações fixas
-  printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
-  echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-
+    echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
+    printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+    echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
 }
 
 processar_menu_business() {
