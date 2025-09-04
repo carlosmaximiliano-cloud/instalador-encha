@@ -26,7 +26,7 @@ centralizar "██╔══╝  ██║╚██╗██║██║     █
 centralizar "███████╗██║ ╚████║╚██████╗██║  ██║██║  ██║██╗██║  ██║██║"
 centralizar "╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
     echo -e "${reset}"
-    echo -e "${azul}"
+    echo -e "${ciano}"
     centralizar "Sistema de Deploy Automatizado"
     echo -e "${reset}"
     echo ""
@@ -17973,8 +17973,14 @@ processar_menu_business() {
         clear
         banner
         exibir_menu_business
+        
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_business
+
+                echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
+        # Menu inferior com ações fixas
+        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V$ ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
 
         case $opcao_business in
             01|1)
@@ -18135,52 +18141,52 @@ exibir_pagina1() {
     centralizar "--- UNLIMITED Página 1 de 2 ---"
     printf "\n"
     # Usando 'echo' para exibir as opções formatadas em duas colunas (0-41)
-    echo -e "      [ ${azul}00${reset} ] - Testar SMPT           | [ ${azul}21${reset} ] - Woofedcrm"
-    echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer   | [ ${azul}22${reset} ] - TwentyCRM"
-    echo -e "      [ ${azul}02${reset} ] - Evolution API         | [ ${azul}23${reset} ] - Mattermost"
-    echo -e "      [ ${azul}03${reset} ] - N8N                   | [ ${azul}24${reset} ] - Outline"
-    echo -e "      [ ${azul}04${reset} ] - Chatwoot              | [ ${azul}25${reset} ] - Focalboard"
-    echo -e "      [ ${azul}05${reset} ] - N8N Formação Encha    | [ ${azul}26${reset} ] - GLPI"
-    echo -e "      [ ${azul}06${reset} ] - Minio                 | [ ${azul}27${reset} ] - Flowise"
-    echo -e "      [ ${azul}07${reset} ] - Typebot               | [ ${azul}28${reset} ] - Langflow"
-    echo -e "      [ ${azul}08${reset} ] - Directus              | [ ${azul}29${reset} ] - Ollama"
-    echo -e "      [ ${azul}09${reset} ] - Odoo                  | [ ${azul}30${reset} ] - Anythingllm"
-    echo -e "      [ ${azul}10${reset} ] - PgAdmin               | [ ${azul}31${reset} ] - Nocodb"
-    echo -e "      [ ${azul}11${reset} ] - Nocobase              | [ ${azul}32${reset} ] - Humhub"
-    echo -e "      [ ${azul}12${reset} ] - Botpress              | [ ${azul}33${reset} ] - Wordpress"
-    echo -e "      [ ${azul}13${reset} ] - Baserow               | [ ${azul}34${reset} ] - Formbricks"
-    echo -e "      [ ${azul}14${reset} ] - MongoDB               | [ ${azul}35${reset} ] - MetaBase"
-    echo -e "      [ ${azul}15${reset} ] - RabbitMQ              | [ ${azul}36${reset} ] - Docuseal"
-    echo -e "      [ ${azul}16${reset} ] - UptimeKuma            | [ ${azul}37${reset} ] - Grafana + Prometeus + Advisor"
-    echo -e "      [ ${azul}17${reset} ] - Calcom                | [ ${azul}38${reset} ] - Dify"
-    echo -e "      [ ${azul}18${reset} ] - Mautic                | [ ${azul}39${reset} ] - Affine"
-    echo -e "      [ ${azul}19${reset} ] - Appsmith              | [ ${azul}40${reset} ] - Vaultwarden"
-    echo -e "      [ ${azul}20${reset} ] - Qdrant                | [ ${azul}41${reset} ] - Nextcloud"
+    echo -e "      ${ciano}[ 00 ]${reset} - Testar SMPT            | ${ciano}[ 21 ]${reset} - Woofedcrm"
+    echo -e "      ${ciano}[ 01 ]${reset} - Traefik & Portainer    | ${ciano}[ 22 ]${reset} - TwentyCRM"
+    echo -e "      ${ciano}[ 02 ]${reset} - Evolution API          | ${ciano}[ 23 ]${reset} - Mattermost"
+    echo -e "      ${ciano}[ 03 ]${reset} - N8N                    | ${ciano}[ 24 ]${reset} - Outline"
+    echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot               | ${ciano}[ 25 ]${reset} - Focalboard"
+    echo -e "      ${ciano}[ 05 ]${reset} - N8N Formação Encha    | ${ciano}[ 26 ]${reset} - GLPI"
+    echo -e "      ${ciano}[ 06 ]${reset} - Minio                  | ${ciano}[ 27 ]${reset} - Flowise"
+    echo -e "      ${ciano}[ 07 ]${reset} - Typebot                | ${ciano}[ 28 ]${reset} - Langflow"
+    echo -e "      ${ciano}[ 08 ]${reset} - Directus               | ${ciano}[ 29 ]${reset} - Ollama"
+    echo -e "      ${ciano}[ 09 ]${reset} - Odoo                   | ${ciano}[ 30 ]${reset} - Anythingllm"
+    echo -e "      ${ciano}[ 10 ]${reset} - PgAdmin                | ${ciano}[ 31 ]${reset} - Nocodb"
+    echo -e "      ${ciano}[ 11 ]${reset} - Nocobase               | ${ciano}[ 32 ]${reset} - Humhub"
+    echo -e "      ${ciano}[ 12 ]${reset} - Botpress               | ${ciano}[ 33 ]${reset} - Wordpress"
+    echo -e "      ${ciano}[ 13 ]${reset} - Baserow                | ${ciano}[ 34 ]${reset} - Formbricks"
+    echo -e "      ${ciano}[ 14 ]${reset} - MongoDB                | ${ciano}[ 35 ]${reset} - MetaBase"
+    echo -e "      ${ciano}[ 15 ]${reset} - RabbitMQ               | ${ciano}[ 36 ]${reset} - Docuseal"
+    echo -e "      ${ciano}[ 16 ]${reset} - UptimeKuma             | ${ciano}[ 37 ]${reset} - Grafana + Prometeus + Advisor"
+    echo -e "      ${ciano}[ 17 ]${reset} - Calcom                 | ${ciano}[ 38 ]${reset} - Dify"
+    echo -e "      ${ciano}[ 18 ]${reset} - Mautic                 | ${ciano}[ 39 ]${reset} - Affine"
+    echo -e "      ${ciano}[ 19 ]${reset} - Appsmith               | ${ciano}[ 40 ]${reset} - Vaultwarden"
+    echo -e "      ${ciano}[ 20 ]${reset} - Qdrant                 | ${ciano}[ 41 ]${reset} - Nextcloud"
 }
 
 exibir_pagina2() {
     centralizar "--- UNLIMITED Página 2 de 2 ---"
     printf "\n"
     # Usando 'echo' para exibir as opções formatadas em duas colunas (42-79)
-    echo -e "      [ ${azul}42${reset} ] - Strapi                | [ ${azul}61${reset} ] - WPPconnect"
-    echo -e "      [ ${azul}43${reset} ] - MyphpAdmin            | [ ${azul}62${reset} ] - Browserless"
-    echo -e "      [ ${azul}44${reset} ] - Supabase              | [ ${azul}63${reset} ] - Frappe ERPnext"
-    echo -e "      [ ${azul}45${reset} ] - NTFY                  | [ ${azul}64${reset} ] - Clickhouse"
-    echo -e "      [ ${azul}46${reset} ] - Lowcoder              | [ ${azul}65${reset} ] - Langfuse"
-    echo -e "      [ ${azul}47${reset} ] - Openproject           | [ ${azul}66${reset} ] - UnoAPI"
-    echo -e "      [ ${azul}48${reset} ] - ZEP                   | [ ${azul}67${reset} ] - Quepasa API"
-    echo -e "      [ ${azul}49${reset} ] - Yourls                | [ ${azul}68${reset} ] - Excalidraw"
-    echo -e "      [ ${azul}50${reset} ] - WiseMapping           | [ ${azul}69${reset} ] - Easyapointments"
-    echo -e "      [ ${azul}51${reset} ] - Evo AI                | [ ${azul}70${reset} ] - Documenso"
-    echo -e "      [ ${azul}52${reset} ] - Keycloak              | [ ${azul}71${reset} ] - Moodle"
-    echo -e "      [ ${azul}53${reset} ] - Passbolt              | [ ${azul}72${reset} ] - Tooljet"
-    echo -e "      [ ${azul}54${reset} ] - Gotenberg             | [ ${azul}73${reset} ] - Stirling PDF"
-    echo -e "      [ ${azul}55${reset} ] - Wiki JS               | [ ${azul}74${reset} ] - RedisInsight"
-    echo -e "      [ ${azul}56${reset} ] - Azuracast             | [ ${azul}75${reset} ] - Traccar"
-    echo -e "      [ ${azul}57${reset} ] - Rustdesk              | [ ${azul}76${reset} ] - Firecrawl"
-    echo -e "      [ ${azul}58${reset} ] - Hoppscotch            | [ ${azul}77${reset} ] - Wuzapi"
-    echo -e "      [ ${azul}59${reset} ] - Bolt                  | [ ${azul}78${reset} ] - Krayin CRM"
-    echo -e "      [ ${azul}60${reset} ] - Planka                | [ ${azul}79${reset} ] - Shlink"
+    echo -e "      ${ciano}[ 42 ]${reset} - Strapi                 | ${ciano}[ 61 ]${reset} - WPPconnect"
+    echo -e "      ${ciano}[ 43 ]${reset} - MyphpAdmin             | ${ciano}[ 62 ]${reset} - Browserless"
+    echo -e "      ${ciano}[ 44 ]${reset} - Supabase               | ${ciano}[ 63 ]${reset} - Frappe ERPnext"
+    echo -e "      ${ciano}[ 45 ]${reset} - NTFY                   | ${ciano}[ 64 ]${reset} - Clickhouse"
+    echo -e "      ${ciano}[ 46 ]${reset} - Lowcoder               | ${ciano}[ 65 ]${reset} - Langfuse"
+    echo -e "      ${ciano}[ 47 ]${reset} - Openproject            | ${ciano}[ 66 ]${reset} - UnoAPI"
+    echo -e "      ${ciano}[ 48 ]${reset} - ZEP                    | ${ciano}[ 67 ]${reset} - Quepasa API"
+    echo -e "      ${ciano}[ 49 ]${reset} - Yourls                 | ${ciano}[ 68 ]${reset} - Excalidraw"
+    echo -e "      ${ciano}[ 50 ]${reset} - WiseMapping            | ${ciano}[ 69 ]${reset} - Easyapointments"
+    echo -e "      ${ciano}[ 51 ]${reset} - Evo AI                 | ${ciano}[ 70 ]${reset} - Documenso"
+    echo -e "      ${ciano}[ 52 ]${reset} - Keycloak               | ${ciano}[ 71 ]${reset} - Moodle"
+    echo -e "      ${ciano}[ 53 ]${reset} - Passbolt               | ${ciano}[ 72 ]${reset} - Tooljet"
+    echo -e "      ${ciano}[ 54 ]${reset} - Gotenberg              | ${ciano}[ 73 ]${reset} - Stirling PDF"
+    echo -e "      ${ciano}[ 55 ]${reset} - Wiki JS                | ${ciano}[ 74 ]${reset} - RedisInsight"
+    echo -e "      ${ciano}[ 56 ]${reset} - Azuracast              | ${ciano}[ 75 ]${reset} - Traccar"
+    echo -e "      ${ciano}[ 57 ]${reset} - Rustdesk               | ${ciano}[ 76 ]${reset} - Firecrawl"
+    echo -e "      ${ciano}[ 58 ]${reset} - Hoppscotch             | ${ciano}[ 77 ]${reset} - Wuzapi"
+    echo -e "      ${ciano}[ 59 ]${reset} - Bolt                   | ${ciano}[ 78 ]${reset} - Krayin CRM"
+    echo -e "      ${ciano}[ 60 ]${reset} - Planka                 | ${ciano}[ 79 ]${reset} - Shlink"
 }
 
 # --- Função Principal do Menu ---
@@ -18290,7 +18296,7 @@ processar_menu_unlimited() {
         
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
-        printf "      [ ${azul}98${reset} ] - %-22s | [ ${azul}99${reset} ] - %-22s | [ ${azul}V${reset} ] - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V$ ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
