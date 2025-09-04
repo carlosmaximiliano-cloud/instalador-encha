@@ -18298,7 +18298,7 @@ processar_menu_unlimited() {
         
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
-        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        printf "       ${amarelo_escuro}[ 98 ]${reset} - %-22s |  ${amarelo_escuro}[ 99 ]${reset} - %-22s |  ${amarelo_escuro}[ V ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
