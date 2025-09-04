@@ -15,6 +15,7 @@ azul="\033[34m"
 branco="\e[1;37m"   # Branco brilhante
 reset="\033[0m"
 ciano="\033[1;36m"
+amarelo_escuro='\033[0;33m'
 banner(){
   clear
   clear
@@ -26,7 +27,7 @@ centralizar "██╔══╝  ██║╚██╗██║██║     █
 centralizar "███████╗██║ ╚████║╚██████╗██║  ██║██║  ██║██╗██║  ██║██║"
 centralizar "╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
     echo -e "${reset}"
-    echo -e "${ciano}"
+    echo -e "${amarelo_escuro}"
     centralizar "Sistema de Deploy Automatizado"
     echo -e "${reset}"
     echo ""
@@ -18870,11 +18871,11 @@ menu_principal() {
         centralizar "Por favor, selecione um plano para continuar"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         printf "\n"
-        echo -e "       ${ciano}[ 1 ]${reset}  - Plano NANO"
-        echo -e "       ${ciano}[ 2 ]${reset}  - Plano BUSINESS"
-        echo -e "       ${ciano}[ 3 ]${reset}  - Plano UNLIMITED"
+        echo -e "       ${amarelo_escuro}[ 1 ]${reset}  - Plano NANO"
+        echo -e "       ${amarelo_escuro}[ 2 ]${reset}  - Plano BUSINESS"
+        echo -e "       ${amarelo_escuro}[ 3 ]${reset}  - Plano UNLIMITED"
         printf "\n"
-        echo -e "       ${ciano}[ 4 ]${reset}  - Sair do Script"
+        echo -e "       ${amarelo_escuro}[ 4 ]${reset}  - Sair do Script"
         printf "\n"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
