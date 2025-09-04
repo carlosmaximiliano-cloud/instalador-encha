@@ -15785,7 +15785,7 @@ ferramenta_documenso() {
   echo ""
 
   pegar_senha_minio
-  criar_bucket.minio documenso${1:+-$1}
+  criar_bucket.minio documenso${1:+-$1} > /dev/null 2>&1
 
     ## Criando key Aleatória
   key_documenso1=$(openssl rand -hex 16)
@@ -15918,6 +15918,221 @@ EOL
 
 }
 
+ferramenta_moodle(){
+  msg_moodle
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/10"
+    echo -en "🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m" && read -r url_moodle
+    echo ""
+    echo -e "\n📍 Passo 2/10"
+    echo -en "\e[33mDigite o nome para o projeto (ex: enchaProject): \e[0m" && read -r project_name_moodle
+    echo ""
+    echo -e "\n📍 Passo 3/10"
+    echo -en "\e[33mDigite um Nome de Usuario (ex: encha): \e[0m" && read -r user_moodle
+    echo ""
+    echo -e "\n📍 Passo 4/10"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$"
+    echo -en "\e[33mDigite uma Senha para o Usuario (ex: @Senha123_): \e[0m" && read -r pass_moodle
+    echo ""
+    echo -e "\n📍 Passo 5/10"
+    echo -en "\e[33mDigite um Email para o Usuario (ex: contato@encha.ai): \e[0m" && read -r mail_moodle
+    echo ""
+    echo -e "\n📍 Passo 6/10"
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_smtp_moodle
+    echo ""
+    echo -e "\n📍 Passo 7/10"
+    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_smtp_moodle
+    echo ""
+    echo -e "\n📍 Passo 8/10"
+    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_smtp_moodle
+    echo ""
+    echo -e "\n📍 Passo 9/10"
+    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_moodle
+    echo ""
+    echo -e "\n📍 Passo 10/10"
+    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_moodle
+    echo ""
+
+    if [ "$porta_smtp_typebot" -eq 465 ]; then
+    smtp_secure_smtp_moodle=ssl
+    else
+    smtp_secure_smtp_moodle=tls
+    fi
+
+    clear
+    msg_moodle
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Moodle:\e[97m $url_moodle\e[0m"
+    echo -e "\e[33mNome do Projeto:\e[97m $project_name_moodle\e[0m"
+    echo -e "\e[33mUsuario:\e[97m $user_moodle\e[0m"
+    echo -e "\e[33mSenha:\e[97m $pass_moodle\e[0m"
+    echo -e "\e[33mEmail:\e[97m $mail_moodle\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $email_smtp_moodle\e[0m"
+    echo -e "\e[33mUsuario SMTP:\e[97m $usuario_smtp_moodle\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_moodle\e[0m"
+    echo -e "\e[33mHost SMTP\e[97m $host_smtp_moodle\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_moodle\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_moodle; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
+
+  senha_marinadb=$(openssl rand -hex 16)
+  cat > moodle${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  moodle${1:+_$1}_app:
+    image: bitnami/moodle:latest
+
+    volumes:
+      - moodle${1:+_$1}_data:/bitnami/moodle
+      - moodle${1:+_$1}data_data:/bitnami/moodledata
+
+    networks:
+       - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados do projeto
+      - MOODLE_SITE_NAME=$project_name_moodle
+
+      ## Dados de acesso
+      - MOODLE_HOST=$url_moodle
+      - MOODLE_USERNAME=$user_moodle
+      - MOODLE_PASSWORD=$pass_moodle
+      - MOODLE_EMAIL=$mail_moodle
+
+      ## Dados SMTP
+      - MOODLE_SMTP_USER=$usuario_smtp_moodle
+      - MOODLE_SMTP_PASSWORD=$senha_smtp_moodle
+      - MOODLE_SMTP_HOST=$host_smtp_moodle
+      - MOODLE_SMTP_PORT_NUMBER=$porta_smtp_moodle
+      - MOODLE_SMTP_PROTOCOL=$smtp_secure_smtp_moodle ## 587 = tls ou plain | 465 = ssl 
+
+      ## Idioma
+      - MOODLE_LANG=pt
+      
+      ## Dados MarinaDB
+      - MOODLE_DATABASE_HOST=moodle${1:+_$1}_mariadb
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=orion_moodle
+      - MOODLE_DATABASE_PASSWORD=$senha_marinadb
+      - MOODLE_DATABASE_NAME=orionbase_moodle
+      - ALLOW_EMPTY_PASSWORD=no
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.moodle${1:+_$1}.rule=Host(\`$url_moodle\`)
+        - traefik.http.services.moodle${1:+_$1}.loadbalancer.server.port=8080
+        - traefik.http.routers.moodle${1:+_$1}.service=moodle${1:+_$1}
+        - traefik.http.routers.moodle${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.moodle${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.moodle${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  moodle${1:+_$1}_mariadb:
+    image: bitnami/mariadb:latest
+
+    volumes:
+      - moodle${1:+_$1}_mariadb_data:/bitnami/mariadb
+
+    networks:
+       - $nome_rede_interna ## Nome da rede interna
+
+    environment:  
+      ## Dados MarinaDB
+      - MARIADB_USER=orion_moodle
+      - MARIADB_ROOT_PASSWORD=$senha_marinadb
+      - MARIADB_DATABASE=orionbase_moodle
+      - MARIADB_PASSWORD=$senha_marinadb
+      - MARIADB_CHARACTER_SET=utf8mb4
+      - MARIADB_COLLATE=utf8mb4_unicode_ci
+      - ALLOW_EMPTY_PASSWORD=no
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  moodle${1:+_$1}_data:
+    external: true
+    name: moodle${1:+_$1}_data
+  moodle${1:+_$1}data_data:
+    external: true
+    name: moodle${1:+_$1}data_data
+  moodle${1:+_$1}_mariadb_data:
+    external: true
+    name: moodle${1:+_$1}_mariadb_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="moodle${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull bitnami/moodle:latest bitnami/mariadb:latest
+  wait_stack moodle${1:+_$1}_moodle${1:+_$1}_app moodle${1:+_$1}_moodle${1:+_$1}_mariadb
+
+  cd /root/dados_vps
+  cat > dados_moodle${1:+_$1} <<EOL
+[ MOODLE ]
+
+Dominio do moodle: https://$url_moodle
+Usuario: $user_moodle
+Senha: $pass_moodle
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ MOODLE ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_moodle\e[0m"
+  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta de administrador.\e[0m"
+  msg_retorno_menu
+
+}
+
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -16013,9 +16228,10 @@ exibir_menu() {
     OPCOES[72]="Excalidraw"
     OPCOES[73]="Easyapointments"
     OPCOES[74]="Documenso"
+    OPCOES[74]="Moodle"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75)
     local pagina_atual=1
 
     while true; do
@@ -16551,6 +16767,12 @@ exibir_menu() {
                 verificar_stack "documenso${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_documenso
+                fi
+                ;;
+            75)
+                verificar_stack "moodle${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_moodle
                 fi
                 ;;
             *)
