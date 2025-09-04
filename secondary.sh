@@ -17887,7 +17887,7 @@ exibir_menu_nano () {
   echo -e "       ${ciano}[ 01 ]${reset} - Traefik & Portainer"
   echo -e "       ${ciano}[ 02 ]${reset} - Evolution API"
   echo -e "       ${ciano}[ 03 ]${reset} - N8N"
-  echo -e "       ${ciano}[ V ]${$reset}  - Voltar ao Menu Principal"
+  echo -e "       ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
 }
 
 processar_menu_nano() {
