@@ -17572,7 +17572,10 @@ ferramenta_shlink() {
     msg_shlink
     echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Shlink:\e[97m $url_shlink\e[0m"
+    echo -e "🌐 \e[33mDomínio do Painel Shlink:\e[97m $url_shlink\e[0m"
+    echo -e "\e[33mDominio da API do Shlink:\e[97m $url_shlink_api\e[0m"
+    echo -e "\e[33mUsuario do Shlink:\e[97m $shlink_user\e[0m"
+    echo -e "\e[33mSenha do Shlink:\e[97m $shlink_pass\e[0m"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_shlink; fi
