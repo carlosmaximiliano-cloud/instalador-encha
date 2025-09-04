@@ -17979,6 +17979,7 @@ processar_menu_business() {
     declare -A OPCOES
     OPCOES[98]="Liberar Chatwoot"
     OPCOES[99]="Verificar status"
+    OPCOES[100]="Voltar ao Menu"
 
     while true; do
         clear
