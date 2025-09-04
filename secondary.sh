@@ -15436,6 +15436,110 @@ EOL
 
 }
 
+ferramenta_excalidraw() {
+  msg_excalidraw
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Excalidraw (ex: draw.encha.ai): \e[0m" && read -r url_excalidraw
+    echo ""
+
+    clear
+    msg_excalidraw
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Excalidraw:\e[97m $url_excalidraw\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_excalidraw; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Excalidraw...\e[0m"
+  cat > excalidraw${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  excalidraw${1:+_$1}:
+    image: excalidraw/excalidraw:latest
+
+    volumes:
+      - excalidraw${1:+_$1}_data:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - EXCALIDRAW_PORT=80
+      - NODE_ENV=development
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.excalidraw${1:+_$1}.rule=Host(\`$url_excalidraw\`)
+        - traefik.http.services.excalidraw${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.excalidraw${1:+_$1}.service=excalidraw${1:+_$1}
+        - traefik.http.routers.excalidraw${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.excalidraw${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.excalidraw${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+
+volumes:
+  excalidraw${1:+_$1}_data:
+    external: true
+    name: excalidraw${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="excalidraw${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull excalidraw/excalidraw:latest
+  wait_stack excalidraw${1:+_$1}_excalidraw${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_excalidraw${1:+_$1} <<EOL
+[ EXCALIDRAW ]
+
+Dominio do Excalidraw: https://$url_excalidraw
+Usuario: Precisa criar no primeiro acesso do Excalidraw
+Senha: Precisa criar no primeiro acesso do Excalidraw
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ EXCALIDRAW ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_excalidraw\e[0m"
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -15528,9 +15632,10 @@ exibir_menu() {
     OPCOES[69]="Langfuse"
     OPCOES[70]="UnoAPI"
     OPCOES[71]="Quepasa API"
+    OPCOES[72]="Excalidraw"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72)
     local pagina_atual=1
 
     while true; do
@@ -16048,6 +16153,12 @@ exibir_menu() {
                 verificar_stack "quepasa${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_quepasa
+                fi
+                ;;
+            72)
+                verificar_stack "excalidraw${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_excalidraw
                 fi
                 ;;
             *)
