@@ -17936,6 +17936,11 @@ processar_menu_nano() {
                 sleep 1
                 exit 0
                 ;;
+            V|v)
+                echo "Voltando ao menu principal..."
+                sleep 1
+                menu_principal
+                ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
@@ -18109,6 +18114,11 @@ processar_menu_business() {
                 echo -e "\n${verde}Saindo do menu...${reset}"
                 sleep 1
                 exit 0
+                ;;
+            V|v)
+                echo "Voltando ao menu principal..."
+                sleep 1
+                menu_principal
                 ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
@@ -18879,6 +18889,11 @@ processar_menu_unlimited() {
                 sleep 1
                 exit 0
                 ;;
+            V|v)
+                echo "Voltando ao menu principal..."
+                sleep 1
+                menu_principal
+                ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
@@ -18907,9 +18922,6 @@ menu_principal() {
         read -p "Digite a opção desejada: " escolha_plano
 
         case $escolha_plano in
-            v|V)
-                menu_principal
-                ;;
             1)
                 processar_menu_nano
                 ;;
