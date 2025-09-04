@@ -17230,6 +17230,47 @@ EOL
 }
 
 
+ferramenta_testeemail() {
+    dados
+    clear
+    banner
+    echo -e "\e[33m--- Ferramenta de Teste de SMTP ---\e[0m"
+
+    # Verifica se o 'sendemail' está instalado
+    if ! command -v sendemail &> /dev/null; then
+        echo -e "\n\e[97mO utilitário 'sendemail' não está instalado. Instalando agora...\e[0m"
+        apt-get update > /dev/null 2>&1 && apt-get install sendemail -y > /dev/null 2>&1
+        echo -e "\e[32m'sendemail' instalado com sucesso!\e[0m"
+    fi
+
+    echo -e "\n\e[97mPor favor, forneça os detalhes do seu servidor SMTP para o teste.\e[0m"
+    echo ""
+
+    echo -en "📧 \e[33mSeu e-mail de envio (ex: noreply@encha.ai): \e[0m" && read -r from_email
+    echo -en "👤 \e[33mUsuário SMTP (pode ser o mesmo e-mail): \e[0m" && read -r smtp_user
+    echo -en "🔑 \e[33mSenha SMTP: \e[0m" && read -s -r smtp_pass
+    echo ""
+    echo -en "🏠 \e[33mHost e Porta SMTP (ex: smtp.hostinger.com:465): \e[0m" && read -r smtp_server
+    echo -en "📬 \e[33mE-mail do destinatário para o teste: \e[0m" && read -r to_email
+    
+    local use_tls="auto"
+    if [[ $smtp_server == *:465 ]]; then
+        use_tls="yes"
+    fi
+
+    echo -e "\n\e[97mEnviando e-mail de teste...\e[0m"
+    
+    sendemail -f "$from_email" -t "$to_email" -u "E-mail de Teste do Instalador" -m "Se você recebeu este e-mail, seu SMTP está funcionando corretamente!" -s "$smtp_server" -o tls=$use_tls -xu "$smtp_user" -xp "$smtp_pass"
+
+    if [ $? -eq 0 ]; then
+        echo -e "\e[32m\n✅ E-mail de teste enviado com sucesso para $to_email!\e[0m"
+    else
+        echo -e "\e[31m\n❌ Falha ao enviar o e-mail de teste. Verifique suas credenciais e configurações de SMTP.\e[0m"
+    fi
+    
+    msg_retorno_menu
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -17252,6 +17293,7 @@ verificar_status_servicos() {
 exibir_menu() {
     # --- Configuração do Menu ---
     declare -A OPCOES
+    OPCOES[0]="Testar SMPT"
     OPCOES[1]="Traefik & Portainer"
     OPCOES[2]="Evolution API"
     OPCOES[3]="N8N"
@@ -17333,7 +17375,7 @@ exibir_menu() {
     OPCOES[80]="Firecrawl"
     OPCOES[81]="Wuzapi"
     
-    local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
+    local pagina1_items=(0 1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
     local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81)
     local pagina_atual=1
 
@@ -17390,6 +17432,9 @@ exibir_menu() {
             P1|p1) pagina_atual=1; continue ;;
             P2|p2) pagina_atual=2; continue ;;
 
+            0)
+              ferramenta_testeemail
+              ;;
             01|1)
                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
                 ferramenta_traefik_e_portainer
