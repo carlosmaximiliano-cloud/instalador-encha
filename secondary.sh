@@ -15244,6 +15244,198 @@ EOL
 
 }
 
+ferramenta_quepasa() {
+  msg_quepasa
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/2"
+    echo -en "🔗 \e[33mDigite o domínio para a Quepasa API (ex: quepasa.encha.ai): \e[0m" && read -r url_quepasa
+    echo ""
+    echo -e "\n📍 Passo 2/2"
+    echo -en "📧 \e[33mDigite um email de contato para a API (ex: contato@encha.ai): \e[0m" && read -r email_quepasa
+    echo ""
+
+    clear
+    msg_quepasa
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Quepasa:\e[97m $url_quepasa\e[0m"
+    echo -e "📧 \e[33mEmail de Contato:\e[97m $email_quepasa\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_quepasa; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação da Quepasa API...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES\e[33m[2/5]\e[0m"
+  echo ""
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "quepasa${1:+_$1}"
+
+  key_quepasa=$(openssl rand -hex 16)
+
+  cat > quepasa${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  quepasa${1:+_$1}:
+    image: deividms/quepasa:latest ## Imagem/versão do Quepasa
+      
+    volumes:
+      - quepasa${1:+_$1}_volume:/opt/quepasa
+
+    networks:
+      - $nome_rede_interna
+
+    environment:
+      ## Dados de acesso
+      - DOMAIN=$url_quepasa
+
+      ## Email Quepasa
+      - EMAIL=$email_quepasa
+      - QUEPASA_BASIC_AUTH_USER=$email_quepasa
+      - QUEPASA_BASIC_AUTH_PASSWORD=$email_quepasa
+
+      ## Titulo no celular
+      - APP_TITLE=OrionDesign ## Mude aqui o nome que vai aparecer no celular.
+
+      ## TimeZone
+      - TZ=America/Sao_Paulo
+
+      ## Banco de dados
+      - DBDRIVER=postgres
+      - DBHOST=postgres
+      - DBDATABASE=quepasa${1:+_$1}
+      - DBPORT=5432
+      - DBUSER=postgres
+      - DBPASSWORD=$senha_postgres
+      - DBSSLMODE=disable
+
+
+      ## Configurações para o WhatsApp
+      - GROUPS=true
+      - BROADCASTS=false
+      - READRECEIPTS=forcedfalse
+      - CALLS=true
+      - READUPDATE=false
+      - LOGLEVEL=DEBUG
+
+      ## Configurações quepasa
+      - QUEPASA_HOST_NAME=Quepasa
+      - QUEPASA_MEMORY_LIMIT=4096M
+      - WEBSOCKETSSL=true
+      - REMOVEDIGIT9=true
+      - SIGNING_SECRET=$key_quepasa
+
+      ## Webhook
+      - WEBHOOK_QUEPASA=$url_quepasa/webhook/quepasa
+      - WEBHOOK_TESTE_QUEPASA=$url_quepasa/webhook-test/quepasa
+            
+      ## Portas
+      - QUEPASA_EXTERNAL_PORT=31000
+      - QUEPASA_INTERNAL_PORT=31000
+      - WEBAPIPORT=31000
+
+      ## Outras configurações
+      - DEBUGREQUESTS=false
+      - SYNOPSISLENGTH=500
+      - METRICS_HOST=
+      - METRICS_PORT=9392
+      - MIGRATIONS=/builder/migrations
+      - DEBUGJSONMESSAGES=false
+      - HTTPLOGS=false
+
+      ## WHATSMEOW SERVICE
+      - WHATSMEOW_LOGLEVEL=WARN
+      - WHATSMEOW_DBLOGLEVEL=WARN
+
+      ## Env Mode
+      - APP_ENV=production
+      - NODE_ENV=production
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+          constraints:
+          - node.role == manager
+      resources:
+          limits:
+              cpus: "2"
+              memory: 2096M
+                      
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.quepasa${1:+_$1}.rule=Host(\`$url_quepasa\`)
+        - traefik.http.routers.quepasa${1:+_$1}.tls=true
+        - traefik.http.routers.quepasa${1:+_$1}.entrypoints=web,websecure
+        - traefik.http.routers.quepasa${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.quepasa${1:+_$1}.service=quepasa${1:+_$1}
+        - traefik.http.routers.quepasa${1:+_$1}.priority=1      
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.SSLRedirect=true
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.STSSeconds=315360000
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.browserXSSFilter=true
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.contentTypeNosniff=true
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.forceSTSHeader=true
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.SSLHost=\${QUEPASA_HOST}
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.STSIncludeSubdomains=true
+        - traefik.http.middlewares.quepasa${1:+_$1}.headers.STSPreload=true
+        - traefik.http.services.quepasa${1:+_$1}.loadbalancer.server.port=31000
+        - traefik.http.services.quepasa${1:+_$1}.loadbalancer.passHostHeader=true              
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  quepasa${1:+_$1}_volume:
+    external: true
+    name: quepasa${1:+_$1}_volume
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="quepasa${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull deividms/quepasa:latest
+  wait_stack quepasa${1:+_$1}_quepasa${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_quepasa${1:+_$1} <<EOL
+[ QUEPASA ]
+
+Dominio do quepasa: https://$url_quepasa
+
+Email: $email_quepasa
+Usuario: Precisa de criar ao entrar no /setup
+Senha: Precisa de criar ao entrar no /setup
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ QUEPASA API ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio API:\e[97m https://$url_quepasa\e[0m"
+  echo -e "\e[33m⚙️ URL de Setup:\e[97m https://$url_quepasa/setup\e[0m"
+  echo -e "\e[33m⚠️  Acesse a URL de Setup para criar seu primeiro usuário.\e[0m" 
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -15335,9 +15527,10 @@ exibir_menu() {
     OPCOES[68]="Clickhouse"
     OPCOES[69]="Langfuse"
     OPCOES[70]="UnoAPI"
+    OPCOES[71]="Quepasa API"
 
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71)
     local pagina_atual=1
 
     while true; do
@@ -15849,6 +16042,12 @@ exibir_menu() {
                 verificar_stack "unoapi${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_unoapi
+                fi
+                ;;
+            71)
+                verificar_stack "quepasa${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_quepasa
                 fi
                 ;;
             *)
