@@ -1102,6 +1102,19 @@ msg_testeemail() {
     echo ""
 }
 
+msg_duplicati(){
+  clear
+    echo -e "${roxo}"
+centralizar "██████╗ ██╗   ██╗██████╗ ██╗     ██╗ ██████╗ █████╗ ████████╗██╗"
+centralizar "██╔══██╗██║   ██║██╔══██╗██║     ██║██╔════╝██╔══██╗╚══██╔══╝██║"
+centralizar "██║  ██║██║   ██║██████╔╝██║     ██║██║     ███████║   ██║   ██║"
+centralizar "██║  ██║██║   ██║██╔═══╝ ██║     ██║██║     ██╔══██║   ██║   ╚═╝"
+centralizar "██████╔╝╚██████╔╝██║     ███████╗██║╚██████╗██║  ██║   ██║   ██╗"
+centralizar "╚═════╝  ╚═════╝ ╚═╝     ╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -17765,6 +17778,123 @@ EOL
 
 }
 
+ferramenta_duplicati() {
+  msg_duplicati
+  dados
+
+  while true; do 
+    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para acessar o Duplicati (ex: backup.encha.ai): \e[0m" && read -r url_duplicati
+    echo ""
+
+    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    echo -e "🔑 \e[33mDigite uma senha para proteger a interface web do Duplicati (opcional, deixe em branco para não usar): \e[0m"
+    read -s -r pass_duplicati
+    echo ""
+
+    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    echo -e "📂 \e[33mQual diretório do servidor você quer acessar para fazer backup? (ex: /var/lib/docker/volumes)\e[0m"
+    echo -e "   \e[36mDica: Para acessar TODOS os arquivos do servidor, use apenas a barra: /\e[0m"
+    read -r dir_origem
+    echo ""
+
+    clear
+    msg_duplicati
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Duplicati:\e[97m $url_duplicati\e[0m"
+    echo -e "🔑 \e[33mSenha da Interface:\e[97m ${pass_duplicati:+(Senha definida)}\e[0m"
+    echo -e "📂 \e[33mDiretório de Origem:\e[97m $dir_origem\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_duplicati; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Duplicati...\e[0m"
+  encryption_key_duplicati=$(openssl rand -base64 32)
+  cat > duplicati${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  duplicati${1:+_$1}:
+    image: lscr.io/linuxserver/duplicati:latest
+    networks:
+      - $nome_rede_interna
+    volumes:
+      - duplicati${1:+_$1}_config:/config
+      - duplicati${1:+_$1}_backups:/backups
+      - ${dir_origem}:/source
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - SETTINGS_ENCRYPTION_KEY=${encryption_key_duplicati}
+      - DUPLICATI__WEBSERVICE_PASSWORD=${pass_duplicati}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.duplicati${1:+_$1}.rule=Host(\`${url_duplicati}\`)"
+        - "traefik.http.services.duplicati${1:+_$1}.loadbalancer.server.port=8200"
+        - "traefik.http.routers.duplicati${1:+_$1}.service=duplicati${1:+_$1}"
+        - "traefik.http.routers.duplicati${1:+_$1}.entrypoints=websecure"
+        - "traefik.http.routers.duplicati${1:+_$1}.tls.certresolver=letsencryptresolver"
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  duplicati${1:+_$1}_config:
+    external: true
+    name: duplicati${1:+_$1}_config
+  duplicati${1:+_$1}_backups:
+    external: true
+    name: duplicati${1:+_$1}_backups
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="duplicati${1:+_$1}"
+  stack_editavel
+
+  echo -e "\n\e[97m• VERIFICANDO SERVIÇO...\e[0m"
+  echo ""
+
+  pull lscr.io/linuxserver/duplicati:latest
+  wait_stack "duplicati${1:+_$1}_duplicati${1:+_$1}"
+
+  cd /root/dados_vps
+  cat > dados_duplicati${1:+_$1} <<EOL
+[ DUPLICATI ]
+
+Dominio: https://$url_duplicati
+Senha da Interface: ${pass_duplicati:-(Nenhuma senha definida)}
+Diretório de Origem Mapeado: $dir_origem
+EOL
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ DUPLICATI ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_duplicati\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m ${pass_duplicati:-(Nenhuma senha definida)}\e[0m"
+  echo -e "\e[33m📂 Dentro do Duplicati, a pasta '\e[97m/source\e[33m' corresponde a '\e[97m$dir_origem\e[33m' no seu servidor.\e[0m"
+  msg_retorno_menu
+
+}
+
 ferramenta_testeemail() {
     msg_testeemail
     dados
@@ -18220,7 +18350,8 @@ exibir_pagina2() {
         "${amarelo_escuro}[ 57 ]${reset} ${cinza}- Rustdesk               | ${amarelo_escuro}[ 76 ]${reset} - Firecrawl${reset}" \
         "${amarelo_escuro}[ 58 ]${reset} ${cinza}- Hoppscotch             | ${amarelo_escuro}[ 77 ]${reset} - Wuzapi${reset}" \
         "${amarelo_escuro}[ 59 ]${reset} ${cinza}- Bolt                   | ${amarelo_escuro}[ 78 ]${reset} - Krayin CRM${reset}" \
-        "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Planka                 | ${amarelo_escuro}[ 79 ]${reset} - Shlink${reset}"
+        "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Planka                 | ${amarelo_escuro}[ 79 ]${reset} - Shlink${reset}" \
+        "                                                                 | ${amarelo_escuro}[ 80 ]${reset} ${cinza}- Duplicati"
 }
 
 # --- Função Principal do Menu ---
@@ -18307,6 +18438,7 @@ processar_menu_unlimited() {
     OPCOES[77]="Wuzapi"
     OPCOES[78]="Krayin CRM"
     OPCOES[79]="Shlink"
+    OPCOES[80]="Duplicati"
     # outras opções
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
@@ -18864,6 +18996,12 @@ processar_menu_unlimited() {
                 verificar_stack "shlink${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_shlink
+                fi
+                ;;
+            80)
+                verificar "duplicati${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_duplicati
                 fi
                 ;;
             98)
