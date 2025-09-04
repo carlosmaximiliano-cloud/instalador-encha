@@ -17089,6 +17089,146 @@ EOL
 
 }
 
+ferramenta_wuzapi() {
+  msg_wuzapi
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para a Wuzapi (ex: wuzapi.encha.ai): \e[0m" && read -r url_wuzapi
+    echo ""
+
+    clear
+    msg_wuzapi
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Wuzapi:\e[97m $url_wuzapi\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wuzapi; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação da Wuzapi...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo ""
+
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "wuzapi${1:+_$1}"
+
+  apikey_wuzapi=$(openssl rand -hex 16)
+  encryption_key=$(openssl rand -hex 16)
+
+  cat > wuzapi${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+ wuzapi${1:+_$1}:
+  image: asternic/wuzapi:latest
+
+  volumes:
+    - wuzapi${1:+_$1}_dbdata:/app/dbdata
+    - wuzapi${1:+_$1}_files:/app/files
+
+  networks:
+    - $nome_rede_interna ## Nome da rede interna
+
+  environment:
+    ## Credencial
+    - WUZAPI_ADMIN_TOKEN=$apikey_wuzapi
+    - SECRET_KEY=$encryption_key
+
+    ## Dados do postgres
+    - DB_HOST=postgres
+    - DB_USER=postgres
+    - DB_PASSWORD=$senha_postgres
+    - DB_NAME=wuzapi${1:+_$1}
+    - DB_PORT=5432
+    - DB_DRIVER=postgres
+
+    ## Timezone
+    - TZ=America/Sao_Paulo
+
+    ## Formato do webhook
+    - WEBHOOK_FORMAT=json
+
+  deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      #resources:
+      #  limits:
+      #    cpus: "1"
+      #    memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.wuzapi${1:+_$1}.rule=Host(\`$url_wuzapi\`)
+        - traefik.http.services.wuzapi${1:+_$1}.loadbalancer.server.port=8080
+        - traefik.http.routers.wuzapi${1:+_$1}.service=wuzapi${1:+_$1}
+        - traefik.http.routers.wuzapi${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.wuzapi${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.wuzapi${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  wuzapi${1:+_$1}_dbdata:
+    external: true
+    name: wuzapi${1:+_$1}_dbdata
+  wuzapi${1:+_$1}_files:
+    external: true
+    name: wuzapi${1:+_$1}_files
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="wuzapi${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull asternic/wuzapi:latest
+  wait_stack wuzapi${1:+_$1}_wuzapi${1:+_$1}
+
+  cd /root/dados_vps
+
+  cat > dados_wuzapi${1:+_$1} <<EOL
+[ WUZAPI ]
+
+Dominio do wuzapi: https://$url_wuzapi
+Apikey: $apikey_wuzapi
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ WUZAPI ]\e[0m"
+  echo ""
+  echo -e "\e[33mDominio:\e[97m https://$url_wuzapi\e[0m"
+  echo ""
+  echo -e "\e[33mDashboard:\e[97m https://$url_wuzapi/dashboard\e[0m"
+  echo ""
+  echo -e "\e[33mDocumentação:\e[97m https://$url_wuzapi/api\e[0m"
+  echo ""
+  echo -e "\e[33mAPI Key:\e[97m $apikey_wuzapi\e[0m"
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -17190,10 +17330,11 @@ exibir_menu() {
     OPCOES[77]="Stirling PDF"
     OPCOES[78]="RedisInsight"
     OPCOES[79]="Traccar"
-    OPCOES[79]="Firecrawl"
+    OPCOES[80]="Firecrawl"
+    OPCOES[81]="Wuzapi"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81)
     local pagina_atual=1
 
     while true; do
@@ -17765,6 +17906,12 @@ exibir_menu() {
                 verificar_stack "firecrawl${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_firecrawl
+                fi
+                ;;
+            81)
+                verificar_stack "wuzapi${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_wuzapi
                 fi
                 ;;
             *)
