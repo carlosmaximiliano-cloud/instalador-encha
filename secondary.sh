@@ -17966,7 +17966,7 @@ exibir_menu_business () {
   echo -e "      ${ciano}[ 09 ]${reset} - Odoo                   | ${ciano}[ 73 ]${reset} - Stirling PDF"
   echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot"
   echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
-  
+
 }
 
 processar_menu_business() {
@@ -18863,11 +18863,11 @@ menu_principal() {
         centralizar "Por favor, selecione um plano para continuar"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         printf "\n"
-        echo -e "      [ ${azul}1${reset} ] - Plano NANO"
-        echo -e "      [ ${azul}2${reset} ] - Plano BUSINESS"
-        echo -e "      [ ${azul}3${reset} ] - Plano UNLIMITED"
+        echo -e "       ${ciano}[ 1 ]${reset}  - Plano NANO"
+        echo -e "       ${ciano}[ 2 ]${reset}  - Plano BUSINESS"
+        echo -e "       ${ciano}[ 3 ]${reset}  - Plano UNLIMITED"
         printf "\n"
-        echo -e "      [ ${azul}4${reset} ] - Sair do Script"
+        echo -e "       ${ciano}[ 4 ]${reset}  - Sair do Script"
         printf "\n"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
