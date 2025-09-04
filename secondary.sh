@@ -17985,7 +17985,7 @@ processar_menu_business() {
         exibir_menu_business
 
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-        read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_nano
+        read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_business
 
         case $opcao_business in
             01|1)
