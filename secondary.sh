@@ -17882,13 +17882,47 @@ verificar_status_servicos() {
 }
 
 
+# Função para exibir um bloco de múltiplas linhas de forma centralizada
+# Ela calcula a linha mais longa e centraliza o bloco inteiro baseado nela.
+exibir_bloco_centralizado() {
+    local linhas=("$@")
+    local largura_terminal=$(tput cols)
+    local largura_maxima=0
+
+    # Primeiro, descobre qual é a linha mais longa (ignorando códigos de cor)
+    for linha in "${linhas[@]}"; do
+        # Remove os códigos de cor ANSI para medir o comprimento real do texto
+        local linha_sem_cor=$(echo -e "$linha" | sed 's/\x1b\[[0-9;]*m//g')
+        local comprimento=${#linha_sem_cor}
+        if (( comprimento > largura_maxima )); then
+            largura_maxima=$comprimento
+        fi
+    done
+
+    # Calcula o preenchimento (padding) à esquerda para centralizar o bloco
+    local padding=$(( (largura_terminal - largura_maxima) / 2 ))
+    # Garante que o padding não seja negativo se a tela for muito pequena
+    if (( padding < 0 )); then
+        padding=0
+    fi
+
+    # Agora, exibe cada linha com o padding calculado
+    for linha in "${linhas[@]}"; do
+        printf "%*s" "$padding" "" # Imprime os espaços do padding
+        echo -e "$linha"
+    done
+}
+
+
 exibir_menu_nano () {
-  centralizar "--- NANO ---"
-  printf "\n"
-  echo -e "       ${amarelo_escuro}[ 01 ]${reset} - Traefik & Portainer"
-  echo -e "       ${amarelo_escuro}[ 02 ]${reset} - Evolution API"
-  echo -e "       ${amarelo_escuro}[ 03 ]${reset} - N8N"
-  echo -e "       ${amarelo_escuro}[ V ]${reset}  - Voltar ao Menu Principal"
+    centralizar "--- NANO ---"
+    printf "\n"
+    exibir_bloco_centralizado \
+        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer${reset}" \
+        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API${reset}" \
+        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N${reset}" \
+        "" \
+        "${amarelo_escuro}[ V ]${reset}  ${cinza}- Voltar ao Menu Principal${reset}"
 }
 
 processar_menu_nano() {
