@@ -15717,8 +15717,201 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ EASY!APPOINTMENTS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_easy\e[0m"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$$url_easyappointments\e[0m"
   echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
+  msg_retorno_menu
+
+}
+
+ferramenta_documenso() {
+  msg_documenso
+  dados
+
+  while true; do 
+    echo -e "\n📍 Passo 1/6"
+    echo -en "🔗 \e[33mDigite o domínio para o Documenso (ex: doc.encha.ai): \e[0m" && read -r url_documenso
+    echo ""
+    echo -e "\n📍 Passo 2/6"
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_documenso
+    echo ""
+    echo -e "\n📍 Passo 3/6"
+    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_email_documenso
+    echo ""
+    echo -e "\n📍 Passo 4/6"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_documenso
+    echo ""
+    echo -e "\n📍 Passo 5/6"
+    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_documenso
+    echo ""
+    echo -e "\n📍 Passo 6/6"
+    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_documenso
+    echo ""
+
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    if [ "$porta_smtp_documenso" -eq 465 ]; then
+    smtp_secure_documenso=true
+    else
+    smtp_secure_documenso=false
+    fi
+
+    clear
+    msg_documenso
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Documenso:\e[97m $url_documenso\e[0m"
+    echo -e "\e[33mEmail do SMTP:\e[97m $email_documenso\e[0m"
+    echo -e "\e[33mUsuário do SMTP:\e[97m $usuario_email_documenso\e[0m"
+    echo -e "\e[33mSenha do Email:\e[97m $senha_email_documenso\e[0m"
+    echo -e "\e[33mHost SMTP do Email:\e[97m $smtp_email_documenso\e[0m"
+    echo -e "\e[33mPorta SMTP do Email:\e[97m $porta_smtp_documenso\e[0m"
+    echo -e "\e[33mSecure SMTP do Email:\e[97m $smtp_secure_documenso\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_documenso; ficar
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Documenso...\e[0m"    
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo ""
+  verificar_container_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "documenso${1:+_$1}"
+
+  echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[3/5]\e[0m"
+  echo ""
+  criar_bucket.minio documenso${1:+-$1}
+
+    ## Criando key Aleatória
+  key_documenso1=$(openssl rand -hex 16)
+  key_documenso2=$(openssl rand -hex 16)
+  key_documenso3=$(openssl rand -hex 16)
+
+  cat > documenso${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  documenso${1:+_$1}:
+    image: documenso/documenso:latest
+
+    volumes:
+      - documenso${1:+_$1}_cert:/opt/documenso/cert.p12
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados de Acesso
+      - PORT=3000
+      - NEXTAUTH_URL=https://$url_documenso
+      - NEXT_PUBLIC_WEBAPP_URL=https://$url_documenso
+      - NEXT_PUBLIC_MARKETING_URL=https://oriondesign.art.br
+
+      ## Secret Keys
+      - NEXTAUTH_SECRET=$key_documenso1
+      - NEXT_PRIVATE_ENCRYPTION_KEY=$key_documenso2
+      - NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY=$key_documenso3
+
+      ## Dados do Google Cloud
+      #- NEXT_PRIVATE_GOOGLE_CLIENT_ID=
+      #- NEXT_PRIVATE_GOOGLE_CLIENT_SECRET=
+
+      ## Dados Postgres
+      - NEXT_PRIVATE_DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/documenso${1:+_$1}
+      - NEXT_PRIVATE_DIRECT_DATABASE_URL=postgresql://postgres:$senha_postgres@postgres:5432/documenso${1:+_$1}
+
+      ## Configurações MinIO
+      - NEXT_PUBLIC_UPLOAD_TRANSPORT=s3
+      - NEXT_PRIVATE_UPLOAD_ENDPOINT=https://$url_s3
+      - NEXT_PRIVATE_UPLOAD_FORCE_PATH_STYLE=true
+      - NEXT_PRIVATE_UPLOAD_REGION=eu-south
+      - NEXT_PRIVATE_UPLOAD_BUCKET=documenso${1:+-$1}
+      - NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID=$S3_ACCESS_KEY
+      - NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY=$S3_SECRET_KEY
+
+      ## Dados de SMTP
+      - NEXT_PRIVATE_SMTP_TRANSPORT=smtp-auth
+      - NEXT_PRIVATE_SMTP_FROM_ADDRESS=$email_documenso
+      - NEXT_PRIVATE_SMTP_USERNAME=$usuario_email_documenso
+      - NEXT_PRIVATE_SMTP_PASSWORD=$senha_email_documenso
+      - NEXT_PRIVATE_SMTP_HOST=$smtp_email_documenso
+      - NEXT_PRIVATE_SMTP_PORT=$porta_smtp_documenso
+      - NEXT_PRIVATE_SMTP_SECURE=$smtp_secure_documenso
+      - NEXT_PRIVATE_SMTP_FROM_NAME=Suporte
+
+      ## Configurações
+      - NEXT_PUBLIC_DOCUMENT_SIZE_UPLOAD_LIMIT=10
+      - NEXT_PUBLIC_DISABLE_SIGNUP=false
+      - NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH=/opt/documenso/cert.p12
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.documenso${1:+_$1}.rule=Host(\`$url_documenso\`)
+        - traefik.http.services.documenso${1:+_$1}.loadbalancer.server.port=3000
+        - traefik.http.routers.documenso${1:+_$1}.service=documenso${1:+_$1}
+        - traefik.http.routers.documenso${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.documenso${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.documenso${1:+_$1}.tls=true
+    
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  documenso${1:+_$1}_cert:
+    external: true
+    name: documenso${1:+_$1}_cert
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="documenso${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull documenso/documenso:latest
+
+  wait_stack documenso${1:+_$1}_documenso${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_documenso${1:+_$1} <<EOL
+[ DOCUMENSO ]
+
+Dominio do Documenso: https://$url_documenso
+Email: Precisa criar no primeiro acesso do Documenso
+Senha: Precisa criar no primeiro acesso do Documenso
+
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ DOCUMENSO ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_documenso\e[0m"
+  echo -e "\e[33m⚠️  Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
   msg_retorno_menu
 
 }
@@ -15817,9 +16010,10 @@ exibir_menu() {
     OPCOES[71]="Quepasa API"
     OPCOES[72]="Excalidraw"
     OPCOES[73]="Easyapointments"
+    OPCOES[74]="Documenso"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74)
     local pagina_atual=1
 
     while true; do
@@ -16349,6 +16543,12 @@ exibir_menu() {
                 verificar_stack "easyappointments${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_easyappointments
+                fi
+                ;;
+            74)
+                verificar_stack "documenso${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_documenso
                 fi
                 ;;
             *)
