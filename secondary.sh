@@ -15585,14 +15585,14 @@ ferramenta_easyappointments() {
 
   while true; do
     echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Easy!Appointments (ex: agenda.encha.ai): \e[0m" && read -r url_easy
+    echo -en "🔗 \e[33mDigite o domínio para o Easy!Appointments (ex: agenda.encha.ai): \e[0m" && read -r url_easyappointments
     echo ""
 
     clear
     msg_easyappointments
     echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Easy!Appointments:\e[97m $url_easy\e[0m"
+    echo -e "🌐 \e[33mDomínio Easy!Appointments:\e[97m $url_easyappointments\e[0m"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_easyappointments; fi
@@ -16346,7 +16346,7 @@ exibir_menu() {
                 fi
                 ;;
             73)
-                verificar_stack "easyapointments${opcao2:+_$opcao2}" && continue || echo ""
+                verificar_stack "easyappointments${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_easyappointments
                 fi
