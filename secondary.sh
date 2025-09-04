@@ -18036,36 +18036,36 @@ exibir_pagina1() {
     centralizar "--- Página 1 de 2 ---"
     printf "\n"
     # Usando 'echo' para exibir as opções formatadas em duas colunas
-    centralizar echo -e "      [ ${azul}00${reset} ] - Testar SMPT             | [ ${azul}34${reset} ] - Anythingllm          "
-    centralizar echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer     | [ ${azul}35${reset} ] - Nocodb               "
-    centralizar echo -e "      [ ${azul}02${reset} ] - Evolution API           | [ ${azul}36${reset} ] - humhub               "
-    centralizar echo -e "      [ ${azul}03${reset} ] - N8N                     | [ ${azul}37${reset} ] - Wordpress            "
-    centralizar echo -e "      [ ${azul}04${reset} ] - Chatwoot                | [ ${azul}38${reset} ] - Formbricks           "
-    centralizar echo -e "      [ ${azul}06${reset} ] - N8N Formação Encha      | [ ${azul}39${reset} ] - MetaBase             "
-    centralizar echo -e "      [ ${azul}07${reset} ] - Minio                   | [ ${azul}40${reset} ] - Docuseal             "
-    centralizar echo -e "      [ ${azul}08${reset} ] - Typebot                 | [ ${azul}41${reset} ] - Monitor              "
-    centralizar echo -e "      [ ${azul}09${reset} ] - Directus                | [ ${azul}42${reset} ] - Dify                 "
-    centralizar echo -e "      [ ${azul}10${reset} ] - Odoo                    | [ ${azul}43${reset} ] - Affine               "
-    centralizar echo -e "      [ ${azul}13${reset} ] - pgAdmin                 | [ ${azul}44${reset} ] - Vaultwarden          "
-    centralizar echo -e "      [ ${azul}14${reset} ] - nocobase                | [ ${azul}45${reset} ] - Nextcloud            "
-    centralizar echo -e "      [ ${azul}15${reset} ] - botpress                | [ ${azul}46${reset} ] - Strapi               "
-    centralizar echo -e "      [ ${azul}16${reset} ] - baserow                 | [ ${azul}47${reset} ] - MyphpAdmin           "
-    centralizar echo -e "      [ ${azul}17${reset} ] - mongoDB                 | [ ${azul}48${reset} ] - Supabase             "
-    centralizar echo -e "      [ ${azul}18${reset} ] - rabbitMQ                | [ ${azul}49${reset} ] - NTFY                 "
-    centralizar echo -e "      [ ${azul}19${reset} ] - uptimeKuma              | [ ${azul}50${reset} ] - Lowcoder             "
-    centralizar echo -e "      [ ${azul}20${reset} ] - calcom                  | [ ${azul}51${reset} ] - Openproject          "
-    centralizar echo -e "      [ ${azul}21${reset} ] - mautic                  | [ ${azul}52${reset} ] - ZEP                  "
-    centralizar echo -e "      [ ${azul}22${reset} ] - appsmith                | [ ${azul}53${reset} ] - Yourls               "
-    centralizar echo -e "      [ ${azul}23${reset} ] - qdrant                  | [ ${azul}54${reset} ] - WiseMapping          "
-    centralizar echo -e "      [ ${azul}24${reset} ] - woofedcrm               | [ ${azul}55${reset} ] - Evo AI               "
-    centralizar echo -e "      [ ${azul}26${reset} ] - twentyCRM               |"
-    centralizar echo -e "      [ ${azul}27${reset} ] - Mattermost              |"
-    centralizar echo -e "      [ ${azul}28${reset} ] - outline                 |"
-    centralizar echo -e "      [ ${azul}29${reset} ] - focalboard              |"
-    centralizar echo -e "      [ ${azul}30${reset} ] - GLPI                    |"
-    centralizar echo -e "      [ ${azul}31${reset} ] - Flowise                 |"
-    centralizar echo -e "      [ ${azul}32${reset} ] - Langflow                |"
-    centralizar echo -e "      [ ${azul}33${reset} ] - Ollama                  |"
+    echo -e "      [ ${azul}00${reset} ] - Testar SMPT             | [ ${azul}34${reset} ] - Anythingllm          "
+    echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer     | [ ${azul}35${reset} ] - Nocodb               "
+    echo -e "      [ ${azul}02${reset} ] - Evolution API           | [ ${azul}36${reset} ] - humhub               "
+    echo -e "      [ ${azul}03${reset} ] - N8N                     | [ ${azul}37${reset} ] - Wordpress            "
+    echo -e "      [ ${azul}04${reset} ] - Chatwoot                | [ ${azul}38${reset} ] - Formbricks           "
+    echo -e "      [ ${azul}06${reset} ] - N8N Formação Encha      | [ ${azul}39${reset} ] - MetaBase             "
+    echo -e "      [ ${azul}07${reset} ] - Minio                   | [ ${azul}40${reset} ] - Docuseal             "
+    echo -e "      [ ${azul}08${reset} ] - Typebot                 | [ ${azul}41${reset} ] - Monitor              "
+    echo -e "      [ ${azul}09${reset} ] - Directus                | [ ${azul}42${reset} ] - Dify                 "
+    echo -e "      [ ${azul}10${reset} ] - Odoo                    | [ ${azul}43${reset} ] - Affine               "
+    echo -e "      [ ${azul}13${reset} ] - pgAdmin                 | [ ${azul}44${reset} ] - Vaultwarden          "
+    echo -e "      [ ${azul}14${reset} ] - nocobase                | [ ${azul}45${reset} ] - Nextcloud            "
+    echo -e "      [ ${azul}15${reset} ] - botpress                | [ ${azul}46${reset} ] - Strapi               "
+    echo -e "      [ ${azul}16${reset} ] - baserow                 | [ ${azul}47${reset} ] - MyphpAdmin           "
+    echo -e "      [ ${azul}17${reset} ] - mongoDB                 | [ ${azul}48${reset} ] - Supabase             "
+    echo -e "      [ ${azul}18${reset} ] - rabbitMQ                | [ ${azul}49${reset} ] - NTFY                 "
+    echo -e "      [ ${azul}19${reset} ] - uptimeKuma              | [ ${azul}50${reset} ] - Lowcoder             "
+    echo -e "      [ ${azul}20${reset} ] - calcom                  | [ ${azul}51${reset} ] - Openproject          "
+    echo -e "      [ ${azul}21${reset} ] - mautic                  | [ ${azul}52${reset} ] - ZEP                  "
+    echo -e "      [ ${azul}22${reset} ] - appsmith                | [ ${azul}53${reset} ] - Yourls               "
+    echo -e "      [ ${azul}23${reset} ] - qdrant                  | [ ${azul}54${reset} ] - WiseMapping          "
+    echo -e "      [ ${azul}24${reset} ] - woofedcrm               | [ ${azul}55${reset} ] - Evo AI               "
+    echo -e "      [ ${azul}26${reset} ] - twentyCRM               |"
+    echo -e "      [ ${azul}27${reset} ] - Mattermost              |"
+    echo -e "      [ ${azul}28${reset} ] - outline                 |"
+    echo -e "      [ ${azul}29${reset} ] - focalboard              |"
+    echo -e "      [ ${azul}30${reset} ] - GLPI                    |"
+    echo -e "      [ ${azul}31${reset} ] - Flowise                 |"
+    echo -e "      [ ${azul}32${reset} ] - Langflow                |"
+    echo -e "      [ ${azul}33${reset} ] - Ollama                  |"
 
 }
 
@@ -18187,7 +18187,7 @@ exibir_menu() {
         
         printf "\n"
         centralizar "Sistema de Deploy Automatizado"
-        echo -e "${amarelo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
         
         if [ "$pagina_atual" -eq 1 ]; then
             exibir_pagina1
@@ -18195,16 +18195,16 @@ exibir_menu() {
             exibir_pagina2
         fi
         
-        echo -e "${amarelo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
         # Menu inferior com ações fixas
         printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
-        echo -e "${amarelo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
         
         # Navegação entre páginas
-        printf "%s | %s\n" "--- Digite ${amarelo}P1${reset} para ir para pagina 1" "Digite ${amarelo}P2${reset} para ir para pagina 2 ---"
+        printf "%s | %s\n" "--- Digite P1${reset} para ir para pagina 1" "Digite P2${reset} para ir para pagina 2 ---"
 
         echo ""
-        read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO: "${reset})" opcao
+        read -p "$(echo -e "Digite o NÚMERO da opção desejada ou COMANDO: "${reset})" opcao
 
         case $opcao in
             P1|p1) pagina_atual=1; continue ;;
