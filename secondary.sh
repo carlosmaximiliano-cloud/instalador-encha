@@ -18947,7 +18947,7 @@ menu_principal() {
                 ;;
             *)
                 # Também vamos centralizar a mensagem de erro para consistência
-                "${vermelho}Opção inválida! Tente novamente.${reset}"
+                echo -e "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
                 ;;
         esac
