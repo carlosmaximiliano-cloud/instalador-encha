@@ -18895,16 +18895,16 @@ processar_menu_unlimited() {
     done
 }
 
-gerar_prompt_centralizado() {
-    local texto_prompt="$1"
-    local largura_terminal=$(tput cols)
-    local comprimento_texto=${#texto_prompt}
-    local padding=$(( (largura_terminal - comprimento_texto) / 2 ))
-    if (( padding < 0 )); then padding=0; fi
+# gerar_prompt_centralizado() {
+#     local texto_prompt="$1"
+#     local largura_terminal=$(tput cols)
+#     local comprimento_texto=${#texto_prompt}
+#     local padding=$(( (largura_terminal - comprimento_texto) / 2 ))
+#     if (( padding < 0 )); then padding=0; fi
 
-    # Imprime os espaços de padding e o texto do prompt
-    printf "%*s%s" "$padding" "" "$texto_prompt"
-}
+#     # Imprime os espaços de padding e o texto do prompt
+#     printf "%*s%s" "$padding" "" "$texto_prompt"
+# }
 
 menu_principal() {
     while true; do
@@ -18928,8 +18928,7 @@ menu_principal() {
         
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
-        # Usamos a nova função para gerar o prompt centralizado
-        read -p "$(gerar_prompt_centralizado "Digite a opção desejada: ")" escolha_plano
+        read -p "$("Digite a opção desejada: ")" escolha_plano
 
         case $escolha_plano in
             1)
@@ -18948,7 +18947,7 @@ menu_principal() {
                 ;;
             *)
                 # Também vamos centralizar a mensagem de erro para consistência
-                centralizar "${vermelho}Opção inválida! Tente novamente.${reset}"
+                "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
                 ;;
         esac
