@@ -1061,6 +1061,32 @@ msg_wuzapi() {
     echo ""
 }
 
+msg_krayincrm() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██╗  ██╗██████╗  █████╗ ██╗   ██╗██╗███╗   ██╗     ██████╗██████╗ ███╗   ███╗"
+    centralizar "██║ ██╔╝██╔══██╗██╔══██╗╚██╗ ██╔╝██║████╗  ██║    ██╔════╝██╔══██╗████╗ ████║"
+    centralizar "█████╔╝ ██████╔╝███████║ ╚████╔╝ ██║██╔██╗ ██║    ██║     ██████╔╝██╔████╔██║"
+    centralizar "██╔═██╗ ██╔══██╗██╔══██║  ╚██╔╝  ██║██║╚██╗██║    ██║     ██╔══██╗██║╚██╔╝██║"
+    centralizar "██║  ██╗██║  ██║██║  ██║   ██║   ██║██║ ╚████║    ╚██████╗██║  ██║██║ ╚═╝ ██║"
+    centralizar "╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝╚═╝  ╚═══╝     ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_shlink() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗██╗  ██╗██╗     ██╗███╗   ██╗██╗  ██╗"
+    centralizar "██╔════╝██║  ██║██║     ██║████╗  ██║██║ ██╔╝"
+    centralizar "███████╗███████║██║     ██║██╔██╗ ██║█████╔╝"
+    centralizar "╚════██║██╔══██║██║     ██║██║╚██╗██║██╔═██╗"
+    centralizar "███████║██║  ██║███████╗██║██║ ╚████║██║  ██╗"
+    centralizar "╚══════╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -17229,6 +17255,300 @@ EOL
 
 }
 
+ferramenta_krayincrm() {
+  msg_krayincrm
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/6"
+    echo -en "🔗 \e[33mDigite o domínio para o Krayin CRM (ex: krayincrm.encha.ai): \e[0m" && read -r url_krayin
+    echo ""
+    echo -e "\n📍 Passo 2/6"
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_krayincrm
+    echo ""
+
+    dominio_smtp=$(echo "$email_krayincrm" | cut -d'@' -f2)
+
+    echo -e "\n📍 Passo 3/6"
+    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_email_krayincrm
+    echo ""
+    echo -e "\n📍 Passo 4/6"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_krayincrm
+    echo ""
+    echo -e "\n📍 Passo 5/6"
+    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_krayincrm
+    echo ""
+    echo -e "\n📍 Passo 6/6"
+    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_krayincrm
+    echo ""
+
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    if [ "$porta_smtp_krayincrm" -eq 465 ]; then
+    smtp_secure_krayincrm=ssl
+    else
+    smtp_secure_krayincrm=tls
+    fi 
+
+    clear
+    msg_krayincrm
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Krayin CRM:\e[97m $url_krayin\e[0m"
+    echo -e "\e[33mEmail do SMTP:\e[97m $email_krayincrm\e[0m"
+    echo -e "\e[33mUsuário do SMTP:\e[97m $usuario_email_krayincrm\e[0m"
+    echo -e "\e[33mSenha do Email:\e[97m $senha_email_krayincrm\e[0m"
+    echo -e "\e[33mHost SMTP do Email:\e[97m $smtp_email_krayincrm\e[0m"
+    echo -e "\e[33mPorta SMTP do Email:\e[97m $porta_smtp_krayincrm\e[0m"
+    echo -e "\e[33mSecure SMTP do Email:\e[97m $smtp_secure_krayincrm\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_krayincrm; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Krayin CRM...\e[0m"
+
+  secret_key="base64:$(openssl rand -base64 32)"
+  senha_postgres_krayin=$(openssl rand -hex 16)
+
+  cat > krayincrm${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  krayincrm${1:+_$1}_app:
+    image: francisbreit/crmk:v2.0.5-fr
+
+    volumes:
+      - krayincrm${1:+_$1}_data:/var/www/html/
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+    ## Dados de Acesso (URLs e domínios)
+      - APP_URL=https://$url_krayincrm
+      - SANCTUM_STATEFUL_DOMAINS=https://$url_krayincrm/public
+      - krayin_PUBLIC_URL=https://$url_krayincrm
+      - krayin_CADDY_ADDRESSES=:80
+
+    ## Configurações Globais da Aplicação
+      - APP_NAME=Krayin CRM - Orion
+      - APP_LOCALE=pt_BR
+      - APP_CURRENCY=BRL
+      - APP_TIMEZONE=America/Sao_Paulo
+      - LOG_CHANNEL=stack
+      - LOG_LEVEL=debug
+      - APP_DEBUG=false
+      - BROADCAST_DRIVER=log
+
+    ## Configurações Adicionais de Cache e Sessões
+      - CACHE_DRIVER=file
+      - QUEUE_CONNECTION=sync
+      - SESSION_DRIVER=file
+      - SESSION_LIFETIME=120
+
+    ## Configurações de Email
+      - MAIL_MAILER=smtp
+      - MAIL_FROM_ADDRESS=$email_krayincrm
+      - MAIL_DOMAIN=$dominio_smtp
+      - MAIL_USERNAME=$usuario_email_krayincrm
+      - MAIL_PASSWORD=$senha_email_krayincrm
+      - MAIL_HOST=$smtp_email_krayincrm
+      - MAIL_PORT=$porta_smtp_krayincrm
+      - MAIL_ENCRYPTION=$smtp_secure_krayincrm
+      - MAIL_FROM_NAME=Krayin CRM
+
+    ## Configurações do Banco de Dados
+      - DB_CONNECTION=mysql
+      - DB_HOST=krayin${1:+_$1}_db
+      - DB_PORT=3306
+      - DB_DATABASE=krayincrm${1:+_$1}
+      - DB_USERNAME=root
+      - DB_PREFIX=
+      - DB_PASSWORD=$senha_postgres_krayin
+
+    ## Configurações do Redis
+      - REDIS_HOST=krayin${1:+_$1}_redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - MEMCACHED_HOST=127.0.0.1
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.krayincrm${1:+_$1}_app.rule=Host(\`$url_krayincrm\`) && PathPrefix(\`/\`) ## Url do Krayin
+        - traefik.http.services.krayincrm${1:+_$1}_app.loadbalancer.server.port=80
+        - traefik.http.routers.krayincrm${1:+_$1}_app.service=krayincrm${1:+_$1}_app
+        - traefik.http.routers.krayincrm${1:+_$1}_app.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.krayincrm${1:+_$1}_app.entrypoints=websecure
+        - traefik.http.routers.krayincrm${1:+_$1}_app.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  krayin${1:+_$1}_db:
+    image: percona/percona-server:latest
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --sql-mode=
+      - --default-authentication-plugin=mysql_native_password
+      - --max-allowed-packet=512MB
+      - --expire_logs_days=7
+      - --max_binlog_size=100M
+
+    volumes:
+      - krayin${1:+_$1}_db:/var/lib/mysql
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - MYSQL_ROOT_PASSWORD=$senha_postgres_krayin
+      - MYSQL_DATABASE=krayincrm${1:+_$1}
+      - TZ=America/Sao_Paulo
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  krayin${1:+_$1}_redis:
+    image: redis:latest
+    command: >
+      redis-server
+      --port 6379
+      --appendonly yes
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendfsync everysec
+
+    volumes:
+      - krayin${1:+_$1}_redis:/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  krayincrm${1:+_$1}_data:
+    external: true
+    name: krayincrm${1:+_$1}_data
+
+  krayin${1:+_$1}_db:
+    external: true
+    name: krayin${1:+_$1}_db
+
+  krayin${1:+_$1}_redis:
+    external: true
+    name: krayin${1:+_$1}_redis
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  STACK_NAME="krayincrm${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo ""
+
+  pull francisbreit/crmk:v2.0.5-fr percona/percona-server:latest redis:latest
+  wait_stack krayincrm${1:+_$1}_krayincrm${1:+_$1}_app krayincrm${1:+_$1}_krayin${1:+_$1}_db krayincrm${1:+_$1}_krayin${1:+_$1}_redis
+
+  cd /root/dados_vps
+
+  cat > dados_krayincrm${1:+_$1} <<EOL
+[ KRAYIN CRM ]
+
+Dominio do Krayin CRM: https://$url_krayincrm
+
+Usuario: Precisa de criar no primeiro acesso ao Krayin CRM
+
+Senha: Precisa de criar no primeiro acesso ao Krayin CRM
+
+Documentação: https://$url_krayincrm/api/documentation
+
+----
+
+Host Mysql: krayin${1:+_$1}_db
+Porta Mysql: 3306
+Usuario Mysql: root
+Senha Mysql: $senha_postgres_krayin
+Database Mysql: krayincrm${1:+_$1}
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ KRAYIN CRM ]\e[0m"
+  echo ""
+  echo -e "\e[33mDominio:\e[97m https://$url_krayincrm\e[0m"
+  echo ""
+  echo -e "\e[33mUsuario:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  echo ""
+  echo -e "\e[33mSenha:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  echo ""
+  echo -e "\e[33mDocumentação:\e[97m https://$url_krayincrm/api/documentation\e[0m"
+  echo ""
+  echo -e "\e[33mHost Mysql:\e[97m krayin${1:+_$1}_db\e[0m"
+  echo ""
+  echo -e "\e[33mPorta Mysql:\e[97m 3306\e[0m"
+  echo ""
+  echo -e "\e[33mDatabase Mysql:\e[97m krayincrm${1:+_$1}\e[0m"
+  echo ""
+  echo -e "\e[33mPrefixo:\e[97m vazio${1:+_$1}\e[0m"
+  echo ""
+  echo -e "\e[33mUsuario Mysql:\e[97m root\e[0m"
+  echo ""
+  echo -e "\e[33mSenha Mysql:\e[97m $senha_postgres_krayin\e[0m"
+  msg_retorno_menu
+
+}
+
 
 ferramenta_testeemail() {
     dados
@@ -17374,9 +17694,10 @@ exibir_menu() {
     OPCOES[79]="Traccar"
     OPCOES[80]="Firecrawl"
     OPCOES[81]="Wuzapi"
+    OPCOES[82]="Krayin CRM"
     
     local pagina1_items=(0 1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82)
     local pagina_atual=1
 
     while true; do
@@ -17957,6 +18278,12 @@ exibir_menu() {
                 verificar_stack "wuzapi${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_wuzapi
+                fi
+                ;;
+            82)
+                verificar_stack "krayincrm${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_krayincrm
                 fi
                 ;;
             *)
