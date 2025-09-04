@@ -17880,214 +17880,56 @@ verificar_status_servicos() {
 }
 
 
-exibir_menu() {
-    # --- Configuração do Menu ---
-    declare -A OPCOES
-    OPCOES[0]="Testar SMPT"
-    OPCOES[1]="Traefik & Portainer"
-    OPCOES[2]="Evolution API"
-    OPCOES[3]="N8N"
-    OPCOES[4]="Chatwoot"
-    OPCOES[5]="Liberar Chatwoot" # Ação
-    OPCOES[6]="N8N Formação Encha"
-    OPCOES[7]="Minio"
-    OPCOES[8]="Typebot"
-    OPCOES[9]="Directus"
-    OPCOES[10]="Odoo"
-    OPCOES[11]="Verificar status" # Ação
-    OPCOES[12]="Sair" # Ação
-    OPCOES[13]="pgAdmin"
-    OPCOES[14]="nocobase"
-    OPCOES[15]="botpress"
-    OPCOES[16]="baserow"
-    OPCOES[17]="mongoDB"
-    OPCOES[18]="rabbitMQ"
-    OPCOES[19]="uptimeKuma"
-    OPCOES[20]="calcom"
-    OPCOES[21]="mautic"
-    OPCOES[22]="appsmith"
-    OPCOES[23]="qdrant"
-    OPCOES[24]="woofedcrm"
-    OPCOES[25]="twentyCRM"
-    OPCOES[26]="Mattermost"
-    OPCOES[27]="outline"
-    OPCOES[28]="focalboard"
-    OPCOES[29]="GLPI"
-    OPCOES[30]="Flowise"
-    OPCOES[31]="Langflow"
-    OPCOES[32]="Ollama"
-    OPCOES[33]="Anythingllm"
-    OPCOES[34]="Nocodb"
-    OPCOES[35]="humhub"
-    OPCOES[36]="Wordpress"
-    OPCOES[37]="Formbricks"
-    OPCOES[38]="MetaBase"
-    OPCOES[39]="Docuseal"
-    OPCOES[40]="Monitor"
-    OPCOES[41]="Dify"
-    OPCOES[42]="Affine"
-    OPCOES[43]="Vaultwarden"
-    OPCOES[44]="Nextcloud"
-    OPCOES[45]="Strapi"
-    OPCOES[46]="MyphpAdmin"
-    OPCOES[47]="Supabase"
-    OPCOES[48]="NTFY"
-    OPCOES[49]="Lowcoder"
-    OPCOES[50]="Openproject"
-    OPCOES[51]="ZEP"
-    OPCOES[52]="Yourls"
-    OPCOES[53]="WiseMapping"
-    OPCOES[54]="Evo AI"
-    OPCOES[55]="Keycloak"
-    OPCOES[56]="Passbolt"
-    OPCOES[57]="Gotenberg"
-    OPCOES[58]="Wiki JS"
-    OPCOES[59]="Azuracast"
-    OPCOES[60]="Rustdesk"
-    OPCOES[61]="Hoppscotch"
-    OPCOES[62]="Bolt"
-    OPCOES[63]="Planka"
-    OPCOES[64]="WPPconnect"
-    OPCOES[65]="Browserless"
-    OPCOES[66]="Frappe ERPnext"
-    OPCOES[67]="Clickhouse"
-    OPCOES[68]="Langfuse"
-    OPCOES[69]="UnoAPI"
-    OPCOES[70]="Quepasa API"
-    OPCOES[71]="Excalidraw"
-    OPCOES[72]="Easyapointments"
-    OPCOES[73]="Documenso"
-    OPCOES[74]="Moodle"
-    OPCOES[75]="Tooljet"
-    OPCOES[76]="Stirling PDF"
-    OPCOES[77]="RedisInsight"
-    OPCOES[78]="Traccar"
-    OPCOES[79]="Firecrawl"
-    OPCOES[80]="Wuzapi"
-    OPCOES[81]="Krayin CRM"
-    OPCOES[82]="Shlink"
-
-    # Divisão em 2 páginas (máximo 45 stacks cada)
-    local pagina1_items=({0..44})
-    local pagina2_items=({45..82})
-
-    local pagina_atual=1
-
-    while true; do
-        clear
-        banner
-
-        printf "\n"
-        centralizar "Sistema de Deploy Automatizado"
-        printf "${amarelo}%*s${reset}\n" "$(tput cols)" | tr ' ' '='
-
-        local items_pagina=()
-        if [ "$pagina_atual" -eq 1 ]; then
-            centralizar "--- Página 1 de 2 ---"
-            items_pagina=("${pagina1_items[@]}")
-        else
-            centralizar "--- Página 2 de 2 ---"
-            items_pagina=("${pagina2_items[@]}")
-        fi
-
-        local -i max_items=${#items_pagina[@]}
-        local -i meio=$(( (max_items + 1) / 2 ))
-
-        for (( i=0; i<meio; i++ )); do
-            local idx_esq=${items_pagina[i]}
-            local texto_esq="${OPCOES[$idx_esq]}"
-            local status_esq="${verde}[ ]${reset}"
-            local item_esq=$(printf "[ ${azul}%02d${reset} ] - %-22s %s" "$idx_esq" "$texto_esq" "$status_esq")
-
-            local item_dir=""
-            local -i idx_dir_calc=$(( i + meio ))
-            if [ $idx_dir_calc -lt $max_items ]; then
-                local idx_dir=${items_pagina[$idx_dir_calc]}
-                local texto_dir="${OPCOES[$idx_dir]}"
-                local status_dir="${verde}[ ]${reset}"
-                item_dir=$(printf "| [ ${azul}%02d${reset} ] - %-22s %s" "$idx_dir" "$texto_dir" "$status_dir")
-            fi
-
-            printf "      %s %s\n" "$item_esq" "$item_dir"
-        done
-
-        printf "${amarelo}%*s${reset}\n" "$(tput cols)" | tr ' ' '-'
-        printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" \
-          "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
-        printf "${amarelo}%*s${reset}\n" "$(tput cols)" | tr ' ' '_'
-
-        local largura=$(tput cols)
-        local padding=$(( (largura - 70) / 2 ))
-        printf "%s%*s%s\n" "| --- Digite ${amarelo}P1${reset} para ir para página 1" "$padding" "" "| Digite ${amarelo}P2${reset} para ir para página 2 -->"
-
-        echo ""
-        read -p "$(echo -e ${amarelo}"Digite o NÚMERO da opção desejada ou COMANDO oculto: "${reset})" opcao
-
-        case $opcao in
-            P1|p1) pagina_atual=1; continue ;;
-            P2|p2) pagina_atual=2; continue ;;
-            12) echo -e "\n${verde}Saindo do menu...${reset}"; sleep 1; exit 0 ;;
-            *) echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"; sleep 2 ;;
-        esac
-    done
-}
-
 exibir_pagina1() {
     centralizar "--- Página 1 de 2 ---"
     printf "\n"
-    # Usando 'echo' para exibir as opções formatadas em duas colunas
-    echo -e "      [ ${azul}00${reset} ] - Testar SMPT             | [ ${azul}34${reset} ] - Anythingllm          "
-    echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer     | [ ${azul}35${reset} ] - Nocodb               "
-    echo -e "      [ ${azul}02${reset} ] - Evolution API           | [ ${azul}36${reset} ] - humhub               "
-    echo -e "      [ ${azul}03${reset} ] - N8N                     | [ ${azul}37${reset} ] - Wordpress            "
-    echo -e "      [ ${azul}04${reset} ] - Chatwoot                | [ ${azul}38${reset} ] - Formbricks           "
-    echo -e "      [ ${azul}06${reset} ] - N8N Formação Encha      | [ ${azul}39${reset} ] - MetaBase             "
-    echo -e "      [ ${azul}07${reset} ] - Minio                   | [ ${azul}40${reset} ] - Docuseal             "
-    echo -e "      [ ${azul}08${reset} ] - Typebot                 | [ ${azul}41${reset} ] - Monitor              "
-    echo -e "      [ ${azul}09${reset} ] - Directus                | [ ${azul}42${reset} ] - Dify                 "
-    echo -e "      [ ${azul}10${reset} ] - Odoo                    | [ ${azul}43${reset} ] - Affine               "
-    echo -e "      [ ${azul}13${reset} ] - pgAdmin                 | [ ${azul}44${reset} ] - Vaultwarden          "
-    echo -e "      [ ${azul}14${reset} ] - nocobase                | [ ${azul}45${reset} ] - Nextcloud            "
-    echo -e "      [ ${azul}15${reset} ] - botpress                | [ ${azul}46${reset} ] - Strapi               "
-    echo -e "      [ ${azul}16${reset} ] - baserow                 | [ ${azul}47${reset} ] - MyphpAdmin           "
-    echo -e "      [ ${azul}17${reset} ] - mongoDB                 | [ ${azul}48${reset} ] - Supabase             "
-    echo -e "      [ ${azul}18${reset} ] - rabbitMQ                | [ ${azul}49${reset} ] - NTFY                 "
-    echo -e "      [ ${azul}19${reset} ] - uptimeKuma              | [ ${azul}50${reset} ] - Lowcoder             "
-    echo -e "      [ ${azul}20${reset} ] - calcom                  | [ ${azul}51${reset} ] - Openproject          "
-    echo -e "      [ ${azul}21${reset} ] - mautic                  | [ ${azul}52${reset} ] - ZEP                  "
-    echo -e "      [ ${azul}22${reset} ] - appsmith                | [ ${azul}53${reset} ] - Yourls               "
-    echo -e "      [ ${azul}23${reset} ] - qdrant                  | [ ${azul}54${reset} ] - WiseMapping          "
-    echo -e "      [ ${azul}24${reset} ] - woofedcrm               | [ ${azul}55${reset} ] - Evo AI               "
-    echo -e "      [ ${azul}26${reset} ] - twentyCRM               |"
-    echo -e "      [ ${azul}27${reset} ] - Mattermost              |"
-    echo -e "      [ ${azul}28${reset} ] - outline                 |"
-    echo -e "      [ ${azul}29${reset} ] - focalboard              |"
-    echo -e "      [ ${azul}30${reset} ] - GLPI                    |"
-    echo -e "      [ ${azul}31${reset} ] - Flowise                 |"
-    echo -e "      [ ${azul}32${reset} ] - Langflow                |"
-    echo -e "      [ ${azul}33${reset} ] - Ollama                  |"
-
+    # Usando 'echo' para exibir as opções formatadas em duas colunas (0-45)
+    echo -e "      [ ${azul}00${reset} ] - Testar SMPT           | [ ${azul}24${reset} ] - woofedcrm"
+    echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer   | [ ${azul}26${reset} ] - twentyCRM"
+    echo -e "      [ ${azul}02${reset} ] - Evolution API         | [ ${azul}27${reset} ] - Mattermost"
+    echo -e "      [ ${azul}03${reset} ] - N8N                   | [ ${azul}28${reset} ] - outline"
+    echo -e "      [ ${azul}04${reset} ] - Chatwoot              | [ ${azul}29${reset} ] - focalboard"
+    echo -e "      [ ${azul}06${reset} ] - N8N Formação Encha    | [ ${azul}30${reset} ] - GLPI"
+    echo -e "      [ ${azul}07${reset} ] - Minio                 | [ ${azul}31${reset} ] - Flowise"
+    echo -e "      [ ${azul}08${reset} ] - Typebot               | [ ${azul}32${reset} ] - Langflow"
+    echo -e "      [ ${azul}09${reset} ] - Directus              | [ ${azul}33${reset} ] - Ollama"
+    echo -e "      [ ${azul}10${reset} ] - Odoo                  | [ ${azul}34${reset} ] - Anythingllm"
+    echo -e "      [ ${azul}13${reset} ] - pgAdmin               | [ ${azul}35${reset} ] - Nocodb"
+    echo -e "      [ ${azul}14${reset} ] - nocobase              | [ ${azul}36${reset} ] - humhub"
+    echo -e "      [ ${azul}15${reset} ] - botpress              | [ ${azul}37${reset} ] - Wordpress"
+    echo -e "      [ ${azul}16${reset} ] - baserow               | [ ${azul}38${reset} ] - Formbricks"
+    echo -e "      [ ${azul}17${reset} ] - mongoDB               | [ ${azul}39${reset} ] - MetaBase"
+    echo -e "      [ ${azul}18${reset} ] - rabbitMQ              | [ ${azul}40${reset} ] - Docuseal"
+    echo -e "      [ ${azul}19${reset} ] - uptimeKuma            | [ ${azul}41${reset} ] - Monitor"
+    echo -e "      [ ${azul}20${reset} ] - calcom                | [ ${azul}42${reset} ] - Dify"
+    echo -e "      [ ${azul}21${reset} ] - mautic                | [ ${azul}43${reset} ] - Affine"
+    echo -e "      [ ${azul}22${reset} ] - appsmith              | [ ${azul}44${reset} ] - Vaultwarden"
+    echo -e "      [ ${azul}23${reset} ] - qdrant                | [ ${azul}45${reset} ] - Nextcloud"
 }
 
 exibir_pagina2() {
     centralizar "--- Página 2 de 2 ---"
     printf "\n"
-    # Usando 'echo' para exibir as opções formatadas em duas colunas
-    echo -e "      [ ${azul}56${reset} ] - Keycloak                | [ ${azul}70${reset} ] - UnoAPI               "
-    echo -e "      [ ${azul}57${reset} ] - Passbolt                | [ ${azul}71${reset} ] - Quepasa API          "
-    echo -e "      [ ${azul}58${reset} ] - Gotenberg               | [ ${azul}72${reset} ] - Excalidraw           "
-    echo -e "      [ ${azul}59${reset} ] - Wiki JS                 | [ ${azul}73${reset} ] - Easyapointments      "
-    echo -e "      [ ${azul}60${reset} ] - Azuracast               | [ ${azul}74${reset} ] - Documenso            "
-    echo -e "      [ ${azul}61${reset} ] - Rustdesk                | [ ${azul}75${reset} ] - Moodle               "
-    echo -e "      [ ${azul}62${reset} ] - Hoppscotch              | [ ${azul}76${reset} ] - Tooljet              "
-    echo -e "      [ ${azul}63${reset} ] - Bolt                    | [ ${azul}77${reset} ] - Stirling PDF         "
-    echo -e "      [ ${azul}64${reset} ] - Planka                  | [ ${azul}78${reset} ] - RedisInsight         "
-    echo -e "      [ ${azul}65${reset} ] - WPPconnect              | [ ${azul}79${reset} ] - Traccar              "
-    echo -e "      [ ${azul}66${reset} ] - Browserless             | [ ${azul}80${reset} ] - Firecrawl            "
-    echo -e "      [ ${azul}67${reset} ] - Frappe ERPnext          | [ ${azul}81${reset} ] - Wuzapi               "
-    echo -e "      [ ${azul}68${reset} ] - Clickhouse              | [ ${azul}82${reset} ] - Krayin CRM           "
-    echo -e "      [ ${azul}69${reset} ] - Langfuse                | [ ${azul}83${reset} ] - Shlink               "
-
+    # Usando 'echo' para exibir as opções formatadas em duas colunas (46-83)
+    echo -e "      [ ${azul}46${reset} ] - Strapi                | [ ${azul}65${reset} ] - WPPconnect"
+    echo -e "      [ ${azul}47${reset} ] - MyphpAdmin            | [ ${azul}66${reset} ] - Browserless"
+    echo -e "      [ ${azul}48${reset} ] - Supabase              | [ ${azul}67${reset} ] - Frappe ERPnext"
+    echo -e "      [ ${azul}49${reset} ] - NTFY                  | [ ${azul}68${reset} ] - Clickhouse"
+    echo -e "      [ ${azul}50${reset} ] - Lowcoder              | [ ${azul}69${reset} ] - Langfuse"
+    echo -e "      [ ${azul}51${reset} ] - Openproject           | [ ${azul}70${reset} ] - UnoAPI"
+    echo -e "      [ ${azul}52${reset} ] - ZEP                   | [ ${azul}71${reset} ] - Quepasa API"
+    echo -e "      [ ${azul}53${reset} ] - Yourls                | [ ${azul}72${reset} ] - Excalidraw"
+    echo -e "      [ ${azul}54${reset} ] - WiseMapping           | [ ${azul}73${reset} ] - Easyapointments"
+    echo -e "      [ ${azul}55${reset} ] - Evo AI                | [ ${azul}74${reset} ] - Documenso"
+    echo -e "      [ ${azul}56${reset} ] - Keycloak              | [ ${azul}75${reset} ] - Moodle"
+    echo -e "      [ ${azul}57${reset} ] - Passbolt              | [ ${azul}76${reset} ] - Tooljet"
+    echo -e "      [ ${azul}58${reset} ] - Gotenberg             | [ ${azul}77${reset} ] - Stirling PDF"
+    echo -e "      [ ${azul}59${reset} ] - Wiki JS               | [ ${azul}78${reset} ] - RedisInsight"
+    echo -e "      [ ${azul}60${reset} ] - Azuracast             | [ ${azul}79${reset} ] - Traccar"
+    echo -e "      [ ${azul}61${reset} ] - Rustdesk              | [ ${azul}80${reset} ] - Firecrawl"
+    echo -e "      [ ${azul}62${reset} ] - Hoppscotch            | [ ${azul}81${reset} ] - Wuzapi"
+    echo -e "      [ ${azul}63${reset} ] - Bolt                  | [ ${azul}82${reset} ] - Krayin CRM"
+    echo -e "      [ ${azul}64${reset} ] - Planka                | [ ${azul}83${reset} ] - Shlink"
 }
 
 
