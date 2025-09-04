@@ -17887,7 +17887,7 @@ exibir_menu_nano () {
   echo -e "       ${ciano}[ 01 ]${reset} - Traefik & Portainer"
   echo -e "       ${ciano}[ 02 ]${reset} - Evolution API"
   echo -e "       ${ciano}[ 03 ]${reset} - N8N"
-  echo -e "       ${ciano}[ V ]{$reset}  - Voltar ao Menu Principal"
+  echo -e "       ${ciano}[ V ]${$reset}  - Voltar ao Menu Principal"
 }
 
 processar_menu_nano() {
@@ -17955,17 +17955,17 @@ processar_menu_nano() {
 exibir_menu_business () {
   centralizar "--- BUSINESS ---"
   printf "\n"
-  echo -e "      [ ${azul}01${reset} ] - Traefik & Portainer  | [ ${azul}37${reset} ] - Grafana + Prometeus + Advisor"
-  echo -e "      [ ${azul}02${reset} ] - Evolution API        | [ ${azul}10${reset} ] - PgAdmin 4"
-  echo -e "      [ ${azul}03${reset} ] - N8N                  | [ ${azul}06${reset} ] - Minio"
-  echo -e "      [ ${azul}05${reset} ] - N8N Formação Encha   | [ ${azul}18${reset} ] - Mautic"
-  echo -e "      [ ${azul}15${reset} ] - RabbitMQ             | [ ${azul}20${reset} ] - Qdrant"
-  echo -e "      [ ${azul}13${reset} ] - Baserow              | [ ${azul}XX${reset} ] - Duplicate - Em breve"
-  echo -e "      [ ${azul}08${reset} ] - Directus             | [ ${azul}69${reset} ] - Easyapointments"
-  echo -e "      [ ${azul}44${reset} ] - Supabase             | [ ${azul}74${reset} ] - RedisInsight"
-  echo -e "      [ ${azul}09${reset} ] - Odoo                 | [ ${azul}73${reset} ] - Stirling PDF"
-  echo -e "      [ ${azul}04${reset} ] - Chatwoot"
-  echo -e "      [ ${azul}V${reset} ] - Voltar ao Menu Principal"
+  echo -e "      ${ciano}[ 01 ]${reset} - Traefik & Portainer    | ${ciano}[ 37 ]${reset} - Grafana + Prometeus + Advisor"
+  echo -e "      ${ciano}[ 02 ]${reset} - Evolution API          | ${ciano}[ 10 ]${reset} - PgAdmin 4"
+  echo -e "      ${ciano}[ 03 ]${reset} - N8N                    | ${ciano}[ 06 ]${reset} - Minio"
+  echo -e "      ${ciano}[ 05 ]${reset} - N8N Formação Encha     | ${ciano}[ 18 ]${reset} - Mautic"
+  echo -e "      ${ciano}[ 15 ]${reset} - RabbitMQ               | ${ciano}[ 20 ]${reset} - Qdrant"
+  echo -e "      ${ciano}[ 13 ]${reset} - Baserow                | ${ciano}[ XX ]${reset} - Duplicate - Em breve"
+  echo -e "      ${ciano}[ 08 ]${reset} - Directus               | ${ciano}[ 69 ]${reset} - Easyapointments"
+  echo -e "      ${ciano}[ 44 ]${reset} - Supabase               | ${ciano}[ 74 ]${reset} - RedisInsight"
+  echo -e "      ${ciano}[ 09 ]${reset} - Odoo                   | ${ciano}[ 73 ]${reset} - Stirling PDF"
+  echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot"
+  echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
 }
 
 processar_menu_business() {
