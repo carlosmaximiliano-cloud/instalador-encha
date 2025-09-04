@@ -12,7 +12,7 @@ centralizar() {
 
 roxo="\033[35m"
 azul="\033[34m"
-branco="\e[1;37m"   # Branco brilhante
+branco='\033[0;90m'   # Branco brilhante
 reset="\033[0m"
 ciano="\033[1;36m"
 amarelo_escuro='\033[0;33m'
