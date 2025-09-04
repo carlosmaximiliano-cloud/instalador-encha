@@ -18907,6 +18907,9 @@ menu_principal() {
         read -p "Digite a opção desejada: " escolha_plano
 
         case $escolha_plano in
+            v||V)
+                menu_principal
+                ;;
             1)
                 processar_menu_nano
                 ;;
