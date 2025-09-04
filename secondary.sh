@@ -17261,7 +17261,7 @@ ferramenta_krayincrm() {
 
   while true; do
     echo -e "\n📍 Passo 1/6"
-    echo -en "🔗 \e[33mDigite o domínio para o Krayin CRM (ex: krayincrm.encha.ai): \e[0m" && read -r url_krayin
+    echo -en "🔗 \e[33mDigite o domínio para o Krayin CRM (ex: krayincrm.encha.ai): \e[0m" && read -r url_krayincrm
     echo ""
     echo -e "\n📍 Passo 2/6"
     echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_krayincrm
@@ -17295,7 +17295,7 @@ ferramenta_krayincrm() {
     msg_krayincrm
     echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Krayin CRM:\e[97m $url_krayin\e[0m"
+    echo -e "🌐 \e[33mDomínio Krayin CRM:\e[97m $url_krayincrm\e[0m"
     echo -e "\e[33mEmail do SMTP:\e[97m $email_krayincrm\e[0m"
     echo -e "\e[33mUsuário do SMTP:\e[97m $usuario_email_krayincrm\e[0m"
     echo -e "\e[33mSenha do Email:\e[97m $senha_email_krayincrm\e[0m"
