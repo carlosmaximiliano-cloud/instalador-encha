@@ -18187,7 +18187,7 @@ exibir_menu() {
         
         printf "\n"
         centralizar "Sistema de Deploy Automatizado"
-        echo -e "$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
         if [ "$pagina_atual" -eq 1 ]; then
             exibir_pagina1
@@ -18195,16 +18195,16 @@ exibir_menu() {
             exibir_pagina2
         fi
         
-        echo -e "$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
         printf "      [ ${azul}05${reset} ] - %-22s | [ ${azul}11${reset} ] - %-22s | [ ${azul}12${reset} ] - %s\n" "${OPCOES[5]}" "${OPCOES[11]}" "${OPCOES[12]}"
-        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
+        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
-        printf "%s | %s\n" "--- Digite P1${reset} para ir para pagina 1" "Digite P2${reset} para ir para pagina 2 ---"
+        printf "%s | %s\n" "--- Digite P1 para ir para pagina 1" "Digite P2 para ir para pagina 2 ---"
 
         echo ""
-        read -p "$(echo -e "Digite o NÚMERO da opção desejada ou COMANDO: "${reset})" opcao
+        read -p "$(echo -e "Digite o NÚMERO da opção desejada ou COMANDO: ")" opcao
 
         case $opcao in
             P1|p1) pagina_atual=1; continue ;;
