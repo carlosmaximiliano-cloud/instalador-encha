@@ -18895,24 +18895,41 @@ processar_menu_unlimited() {
     done
 }
 
+gerar_prompt_centralizado() {
+    local texto_prompt="$1"
+    local largura_terminal=$(tput cols)
+    local comprimento_texto=${#texto_prompt}
+    local padding=$(( (largura_terminal - comprimento_texto) / 2 ))
+    if (( padding < 0 )); then padding=0; fi
+
+    # Imprime os espaços de padding e o texto do prompt
+    printf "%*s%s" "$padding" "" "$texto_prompt"
+}
+
 menu_principal() {
     while true; do
         clear
         banner
         printf "\n"
-        centralizar "BEM-VINDO AO SISTEMA DE DEPLOY"
-        centralizar "Por favor, selecione um plano para continuar"
-        echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
-        printf "\n"
-        echo -e "       ${amarelo_escuro}[ 1 ]${reset}  - Plano NANO"
-        echo -e "       ${amarelo_escuro}[ 2 ]${reset}  - Plano BUSINESS"
-        echo -e "       ${amarelo_escuro}[ 3 ]${reset}  - Plano UNLIMITED"
-        printf "\n"
-        echo -e "       ${amarelo_escuro}[ 4 ]${reset}  - Sair do Script"
-        printf "\n"
+        # Mantém os títulos já centralizados com a função original
+        centralizar "${cinza}BEM-VINDO AO SISTEMA DE DEPLOY${reset}"
+        centralizar "${cinza}Por favor, selecione um plano para continuar${reset}"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
-        read -p "Digite a opção desejada: " escolha_plano
+        # Usamos a nova função para centralizar todo o bloco de opções
+        exibir_bloco_centralizado \
+            "" \
+            "${amarelo_escuro}[ 1 ]${reset} ${cinza}- Plano NANO${reset}" \
+            "${amarelo_escuro}[ 2 ]${reset} ${cinza}- Plano BUSINESS${reset}" \
+            "${amarelo_escuro}[ 3 ]${reset} ${cinza}- Plano UNLIMITED${reset}" \
+            "" \
+            "${amarelo_escuro}[ 4 ]${reset} ${cinza}- Sair do Script${reset}" \
+            ""
+        
+        echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
+        
+        # Usamos a nova função para gerar o prompt centralizado
+        read -p "$(gerar_prompt_centralizado "Digite a opção desejada: ")" escolha_plano
 
         case $escolha_plano in
             1)
@@ -18922,7 +18939,6 @@ menu_principal() {
                 processar_menu_business
                 ;;
             3)
-                # Esta é a sua função de menu original e complexa
                 processar_menu_unlimited 
                 ;;
             4)
@@ -18931,7 +18947,8 @@ menu_principal() {
                 exit 0
                 ;;
             *)
-                echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
+                # Também vamos centralizar a mensagem de erro para consistência
+                centralizar "${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
                 ;;
         esac
