@@ -976,6 +976,45 @@ msg_moodle() {
     echo ""
 }
 
+msg_tooljet() {
+    clear
+    echo -e "${roxo}"
+    centralizar "████████╗ ██████╗  ██████╗ ██╗      ██████╗ ███████╗████████╗"
+    centralizar "╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝ ██╔════╝╚══██╔══╝"
+    centralizar "   ██║   ██║   ██║██║   ██║██║     ██║  ███╗█████╗     ██║"
+    centralizar "   ██║   ██║   ██║██║   ██║██║     ██║   ██║██╔══╝     ██║"
+    centralizar "   ██║   ╚██████╔╝╚██████╔╝███████╗╚██████╔╝███████╗   ██║"
+    centralizar "   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_stirling() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗████████╗██╗██████╗ ██╗     ██╗███╗   ██╗ ██████╗     ██████╗ ███████╗███████╗"
+    centralizar "██╔════╝╚══██╔══╝██║██╔══██╗██║     ██║████╗  ██║██╔═══██╗    ██╔══██╗██╔════╝██╔════╝"
+    centralizar "███████╗   ██║   ██║██████╔╝██║     ██║██╔██╗ ██║██║   ██║    ██████╔╝█████╗  █████╗"
+    centralizar "╚════██║   ██║   ██║██╔══██╗██║     ██║██║╚██╗██║██║   ██║    ██╔══██╗██╔══╝  ██╔══╝"
+    centralizar "███████║   ██║   ██║██║  ██║███████╗██║██║ ╚████║╚██████╔╝    ██║  ██║███████╗███████╗"
+    centralizar "╚══════╝   ╚═╝   ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_redisinsight() {
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗ ███████╗██████╗ ██╗███████╗██╗███╗   ██╗███████╗ ██╗ ██████╗ ██╗  ██╗████████╗"
+    centralizar "██╔══██╗██╔════╝██╔══██╗██║██╔════╝██║████╗  ██║██╔════╝ ██║██╔════╝ ██║  ██║╚══██╔══╝"
+    centralizar "██████╔╝█████╗  ██║  ██║██║███████╗██║██╔██╗ ██║███████╗ ██║██║  ███╗███████║   ██║"
+    centralizar "██╔══██╗██╔══╝  ██║  ██║██║╚════██║██║██║╚██╗██║╚════██║ ██║██║   ██║██╔══██║   ██║"
+    centralizar "██║  ██║███████╗██████╔╝██║███████║██║██║ ╚████║███████║ ██║╚██████╔╝██║  ██║   ██║"
+    centralizar "╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝ ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -16132,6 +16171,252 @@ EOL
 
 }
 
+ferramenta_tooljet() {
+  msg_tooljet
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/6"
+    echo -en "🔗 \e[33mDigite o domínio para o ToolJet (ex: tooljet.encha.ai): \e[0m" && read -r url_tooljet
+    echo ""
+    echo -e "\n📍 Passo 2/6"
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@oriondesign.art.br): \e[0m" && read -r email_smtp_tooljet
+    echo ""
+    echo -e "\n📍 Passo 3/6"
+    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_smtp_tooljet
+    echo ""
+    echo -e "\n📍 Passo 4/6"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_smtp_tooljet
+    echo ""
+    echo -e "\n📍 Passo 5/6"
+    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_tooljet
+    echo ""
+    echo -e "\n📍 Passo 6/6"
+    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_tooljet
+    echo ""
+
+    clear
+    msg_tooljet
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio ToolJet:\e[97m $url_tooljet\e[0m"
+    echo -e "\e[33mEmail SMTP:\e[97m $email_smtp_tooljet\e[0m"
+    echo -e "\e[33mUser SMTP:\e[97m $usuario_smtp_tooljet\e[0m"
+    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_tooljet\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $host_smtp_tooljet\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_tooljet\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_tooljet; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do ToolJet...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo ""
+
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "tooljet${1:+_$1}_app"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo ""
+
+  verificar_container_redis || ferramenta_redis
+
+  ## Criando uma Global Key Aleatória
+  master_key=$(openssl rand -hex 16)
+  secret_key=$(openssl rand -hex 16)
+  jwt_key=$(openssl rand -hex 16)
+
+  cat > tooljet${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  tooljet${1:+_$1}_app:
+    image: tooljet/tooljet:ee-lts-latest
+    command: npm run start:prod
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Configuração básica
+      - TOOLJET_HOST=https://$url_tooljet
+      - SERVE_CLIENT=true
+      - PORT=80
+
+      ## Desativar novas inscrições
+      - DISABLE_SIGNUPS=false
+
+      ## Ativar perguntas no Onboarding
+      - ENABLE_ONBOARDING_QUESTIONS_FOR_ALL_SIGN_UPS=true
+
+      ## Chaves de segurança
+      - LOCKBOX_MASTER_KEY=$master_key
+      - SECRET_KEY_BASE=$secret_key
+
+      ## Configuração do banco de dados principal
+      - DATABASE_URL=postgres://postgres:$senha_postgres@postgres:5432/tooljet${1:+_$1}_app?sslmode=disable
+
+      ## Configuração do banco interno do ToolJet
+      - ENABLE_TOOLJET_DB=true
+      - TOOLJET_DB=tooljet${1:+_$1}
+      - TOOLJET_DB_USER=postgres
+      - TOOLJET_DB_HOST=postgres
+      - TOOLJET_DB_PASS=$senha_postgres
+
+      ## Configuração do PostgREST
+      - PGRST_HOST=tooljet_postgrest${1:+_$1}
+      - PGRST_JWT_SECRET=$jwt_key
+
+      ## Configuração do Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      ## Configurações do Chroma
+      - CHROMA_DB_URL=http://tooljet${1:+_$1}_chroma:8000
+
+      ## Configuração do SMTP
+      - DEFAULT_FROM_EMAIL=$email_smtp_tooljet
+      - SMTP_USERNAME=$usuario_smtp_tooljet
+      - SMTP_PASSWORD=$senha_smtp_tooljet
+      - SMTP_DOMAIN=$host_smtp_tooljet
+      - SMTP_PORT=$porta_smtp_tooljet
+
+      ## Features do ToolJet
+      - COMMENT_FEATURE_ENABLE=true
+      - ENABLE_MULTIPLAYER_EDITING=true
+      - ENABLE_MARKETPLACE_FEATURE=true
+
+      ## Atualizações e expiração de sessão
+      - CHECK_FOR_UPDATES=false
+      - USER_SESSION_EXPIRY=120
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4096M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.tooljet${1:+_$1}.rule=Host(\`$url_tooljet\`)
+        - traefik.http.services.tooljet${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.tooljet${1:+_$1}.service=tooljet${1:+_$1}
+        - traefik.http.routers.tooljet${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.tooljet${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.tooljet${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  tooljet${1:+_$1}_postgrest:
+    image: postgrest/postgrest:v12.0.2
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - PGRST_SERVER_PORT=80
+      - PGRST_DB_URI=postgres://postgres:$senha_postgres@postgres:5432/tooljet${1:+_$1}_app?sslmode=disable
+      - PGRST_DB_SCHEMA=public 
+      - PGRST_DB_ANON_ROLE=anon 
+      - PGRST_JWT_SECRET=$jwt_key
+      - PGRST_JWT_AUD=tooljet${1:+_$1}
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  tooljet${1:+_$1}_chroma:
+    image: chromadb/chroma:latest
+
+    volumes:
+      - tooljet_chromadb${1:+_$1}:/chroma
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - CHROMA_HOST_PORT=8000
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M      
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  tooljet_chromadb${1:+_$1}:
+    external: true
+    name: tooljet_chromadb${1:+_$1}
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="tooljet${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  echo ""
+
+  pull tooljet/tooljet:ee-lts-latest postgrest/postgrest:v12.0.2 chromadb/chroma:latest
+  wait_stack tooljet${1:+_$1}_tooljet${1:+_$1}_app tooljet${1:+_$1}_tooljet${1:+_$1}_postgrest tooljet${1:+_$1}_tooljet${1:+_$1}_chroma
+
+  cd /root/dados_vps
+  cat > dados_tooljet${1:+_$1} <<EOL
+[ TOOLJET ]
+
+Dominio: https://$url_tooljet
+Usuario: Precisa de criar no primeiro acesso ao ToolJet
+Senha: Precisa de criar no primeiro acesso ao ToolJet
+EOL
+
+  cd
+  msg_resumo_informacoes
+  echo -e "\e[32m[ TOOLJET ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_tooljet\e[0m"
+  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -16229,9 +16514,10 @@ exibir_menu() {
     OPCOES[73]="Easyapointments"
     OPCOES[74]="Documenso"
     OPCOES[75]="Moodle"
+    OPCOES[76]="Tooljet"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76)
     local pagina_atual=1
 
     while true; do
@@ -16773,6 +17059,12 @@ exibir_menu() {
                 verificar_stack "moodle${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_moodle
+                fi
+                ;;
+            76)
+                verificar_stack "tooljet${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_tooljet
                 fi
                 ;;
             *)
