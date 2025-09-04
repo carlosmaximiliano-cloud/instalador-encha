@@ -16870,6 +16870,225 @@ EOL
 
 }
 
+ferramenta_firecrawl() {
+  msg_firecrawl
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/2"
+    echo -en "🔗 \e[33mDigite o domínio para a API Firecrawl (ex: firecrawl.encha.ai): \e[0m" && read -r url_firecrawl
+    echo ""
+    echo -e "\n📍 Passo 2/2"
+    echo -en "\e[33mDigite uma ApiKey da OpenAI: \e[0m" && read -r api_firecrawl
+    echo ""
+
+    clear
+    msg_firecrawl
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Firecrawl:\e[97m $url_firecrawl\e[0m"
+    echo -e "\e[33mApiKey OpenAi:\e[97m $api_firecrawl\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_firecrawl; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação da Firecrawl...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[2/4]\e[0m"
+  echo ""
+
+  verificar_container_redis || ferramenta_redis
+  apikey_firecrawl="fc-$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 32)"
+
+  cat > firecrawl${1:+_$1}.yaml <<EOL
+version: "3.8"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  firecrawl${1:+_$1}_api:
+    image: oriondesign/firecrawl-api:latest
+    command: [ "pnpm", "run", "start:production" ]
+
+    networks:
+     - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Credencial
+      - FIRECRAWL_API_KEY=$apikey_firecrawl
+
+      ## Dados do Redis
+      - REDIS_URL=redis://redis:6379
+      - REDIS_RATE_LIMIT_URL=redis://redis:6379
+      
+      ## Dados da OpenAI
+      - OPENAI_API_KEY=$api_firecrawl
+      - OPENAI_BASE_URL=https://api.openai.com/v1
+      - MODEL_NAME=gpt-4o
+      
+      # Dados do ScrapingBee
+      - SCRAPING_BEE_API_KEY=
+      - HOST=0.0.0.0
+      
+      # Dados do Webhook e Debug
+      - SELF_HOSTED_WEBHOOK_URL=
+      - LOGGING_LEVEL=DEBUG
+
+      ## Dados do Supabase
+      - USE_DB_AUTHENTICATION=false
+      #- SUPABASE_URL=
+      #- SUPABASE_ANON_TOKEN=
+      #- SUPABASE_SERVICE_TOKEN=
+
+      ## Outras configurações
+      - PORT=3002
+      - NUM_WORKERS_PER_QUEUE=8 
+      - FLY_PROCESS_GROUP=app
+      - PLAYWRIGHT_MICROSERVICE_URL=http://firecrawl${1:+_$1}_playwright:3000
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.firecrawl${1:+_$1}_api.rule=Host(\`$url_firecrawl\`)
+        - traefik.http.services.firecrawl${1:+_$1}_api.loadbalancer.server.port=3002
+        - traefik.http.routers.firecrawl${1:+_$1}_api.service=firecrawl${1:+_$1}_api
+        - traefik.http.routers.firecrawl${1:+_$1}_api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.firecrawl${1:+_$1}_api.entrypoints=websecure
+        - traefik.http.routers.firecrawl${1:+_$1}_api.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  firecrawl${1:+_$1}_worker:
+    image: oriondesign/firecrawl-api:latest
+    command: [ "pnpm", "run", "workers" ]
+
+    networks:
+     - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Credencial
+      - FIRECRAWL_API_KEY=$apikey_firecrawl
+      
+      ## Dados do Redis
+      - REDIS_URL=redis://redis:6379
+      - REDIS_RATE_LIMIT_URL=redis://redis:6379
+      
+      ## Dados da OpenAI
+      - OPENAI_API_KEY=$api_firecrawl
+      - OPENAI_BASE_URL=https://api.openai.com/v1
+      - MODEL_NAME=gpt-4o
+      
+      # Dados do ScrapingBee
+      - SCRAPING_BEE_API_KEY=
+      - HOST=0.0.0.0
+      
+      # Dados do Webhook e Debug
+      - SELF_HOSTED_WEBHOOK_URL=
+      - LOGGING_LEVEL=DEBUG
+
+      ## Dados do Supabase
+      - USE_DB_AUTHENTICATION=false
+      #- SUPABASE_URL=
+      #- SUPABASE_ANON_TOKEN=
+      #- SUPABASE_SERVICE_TOKEN=
+
+      ## Outras configurações
+      - PORT=3002
+      - NUM_WORKERS_PER_QUEUE=8 
+      - FLY_PROCESS_GROUP=worker
+      - PLAYWRIGHT_MICROSERVICE_URL=http://firecrawl${1:+_$1}_playwright:3000
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  firecrawl${1:+_$1}_playwright:
+    image: oriondesign/firecrawl-playwright-service:latest
+
+    networks:
+     - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      - PORT=3000
+      - PROXY_SERVER=http://proxy-server.com:3128
+      - PROXY_USERNAME=admin
+      - PROXY_PASSWORD=admin
+      - BLOCK_MEDIA=true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="firecrawl${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull oriondesign/firecrawl-api:latest oriondesign/firecrawl-api:latest oriondesign/firecrawl-playwright-service:latest
+  wait_stack firecrawl${1:+_$1}_firecrawl${1:+_$1}_api firecrawl${1:+_$1}_firecrawl${1:+_$1}_worker firecrawl${1:+_$1}_firecrawl${1:+_$1}_playwright
+
+  cd /root/dados_vps
+  cat > dados_firecrawl${1:+_$1} <<EOL
+[ FIRECRAWL ]
+
+Dominio do firecrawl: https://$url_firecrawl
+API Key: $apikey_firecrawl
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ FIRECRAWL ]\e[0m\n"
+  echo -e "\e[33m🔗 Domínio da API:\e[97m https://$url_firecrawl\e[0m"
+  echo -e "\e[33mAPI Key:\e[97m $apikey_firecrawl\e[0m"
+  msg_retorno_menu
+
+}
+
 
 verificar_status_servicos() {
     msg_status
@@ -16971,9 +17190,10 @@ exibir_menu() {
     OPCOES[77]="Stirling PDF"
     OPCOES[78]="RedisInsight"
     OPCOES[79]="Traccar"
+    OPCOES[79]="Firecrawl"
     
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80)
     local pagina_atual=1
 
     while true; do
@@ -17540,7 +17760,13 @@ exibir_menu() {
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_traccar
                 fi
-                ;;  
+                ;;
+            80)
+                verificar_stack "firecrawl${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_firecrawl
+                fi
+                ;;
             *)
                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
                 sleep 2
