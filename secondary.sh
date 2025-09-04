@@ -10,13 +10,10 @@ centralizar() {
     printf "%*s%s\n" "$espacos" "" "$texto"
 }
 
-reset="\033[0m"
 roxo="\033[35m"
 azul="\033[34m"
 branco="\e[1;37m"   # Branco brilhante
-amarelo="\033[33m"
-verde="\033[32m"
-vermelho="\033[31m"
+reset="\033[0m"
 banner(){
   clear
   clear
@@ -18035,7 +18032,184 @@ exibir_menu() {
     done
 }
 
+exibir_menu() {
+    # --- Configuração do Menu ---
+    declare -A OPCOES
+    OPCOES[0]="Testar SMPT"
+    OPCOES[1]="Traefik & Portainer"
+    OPCOES[2]="Evolution API"
+    OPCOES[3]="N8N"
+    OPCOES[4]="Chatwoot"
+    OPCOES[5]="Liberar Chatwoot" # Ação, não instalação
+    OPCOES[6]="N8N Formação Encha"
+    OPCOES[7]="Minio"
+    OPCOES[8]="Typebot"
+    OPCOES[9]="Directus"
+    OPCOES[10]="Odoo"
+    OPCOES[11]="Verificar status" # Ação
+    OPCOES[12]="Sair" # Ação
+    OPCOES[13]="pgAdmin"
+    OPCOES[14]="nocobase"
+    OPCOES[15]="botpress"
+    OPCOES[16]="baserow"
+    OPCOES[17]="mongoDB"
+    OPCOES[18]="rabbitMQ"
+    OPCOES[19]="uptimeKuma"
+    OPCOES[20]="calcom"
+    OPCOES[21]="mautic"
+    OPCOES[22]="appsmith"
+    OPCOES[23]="qdrant"
+    OPCOES[24]="woofedcrm"
+    OPCOES[26]="twentyCRM"
+    OPCOES[27]="Mattermost"
+    OPCOES[28]="outline"
+    OPCOES[29]="focalboard"
+    OPCOES[30]="GLPI"
+    OPCOES[31]="Flowise"
+    OPCOES[32]="Langflow"
+    OPCOES[33]="Ollama"
+    OPCOES[34]="Anythingllm"
+    OPCOES[35]="Nocodb"
+    OPCOES[36]="humhub"
+    OPCOES[37]="Wordpress"
+    OPCOES[38]="Formbricks"
+    OPCOES[39]="MetaBase"
+    OPCOES[40]="Docuseal"
+    OPCOES[41]="Monitor"
+    OPCOES[42]="Dify"
+    OPCOES[43]="Affine"
+    OPCOES[44]="Vaultwarden"
+    OPCOES[45]="Nextcloud"
+    OPCOES[46]="Strapi"
+    OPCOES[47]="MyphpAdmin"
+    OPCOES[48]="Supabase"
+    OPCOES[49]="NTFY"
+    OPCOES[50]="Lowcoder"
+    OPCOES[51]="Openproject"
+    OPCOES[52]="ZEP"
+    OPCOES[53]="Yourls"
+    OPCOES[54]="WiseMapping"
+    OPCOES[55]="Evo AI"
+    OPCOES[56]="Keycloak"
+    OPCOES[57]="Passbolt"
+    OPCOES[58]="Gotenberg"
+    OPCOES[59]="Wiki JS"
+    OPCOES[60]="Azuracast"
+    OPCOES[61]="Rustdesk"
+    OPCOES[62]="Hoppscotch"
+    OPCOES[63]="Bolt"
+    OPCOES[64]="Planka"
+    OPCOES[65]="WPPconnect"
+    OPCOES[66]="Browserless"
+    OPCOES[67]="Frappe ERPnext"
+    OPCOES[68]="Clickhouse"
+    OPCOES[69]="Langfuse"
+    OPCOES[70]="UnoAPI"
+    OPCOES[71]="Quepasa API"
+    OPCOES[72]="Excalidraw"
+    OPCOES[73]="Easyapointments"
+    OPCOES[74]="Documenso"
+    OPCOES[75]="Moodle"
+    OPCOES[76]="Tooljet"
+    OPCOES[77]="Stirling PDF"
+    OPCOES[78]="RedisInsight"
+    OPCOES[79]="Traccar"
+    OPCOES[80]="Firecrawl"
+    OPCOES[81]="Wuzapi"
+    OPCOES[82]="Krayin CRM"
+    OPCOES[83]="Shlink"
 
+    # --- Itens por Página ---
+    local pagina1_items=(0 1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 44 45)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83)
+    local pagina_atual=1
+
+    while true; do
+        clear
+        banner
+
+        echo # Linha em branco
+        centralizar "${branco}Sistema de Deploy Automatizado${reset}"
+        echo -e "${roxo}$(printf -- '=%.0s' {1..$(tput cols)})${reset}"
+
+        local items_pagina=()
+        if [ "$pagina_atual" -eq 1 ]; then
+            centralizar "--- ${branco}Página 1 de 2${reset} ---"
+            items_pagina=("${pagina1_items[@]}")
+        else
+            centralizar "--- ${branco}Página 2 de 2${reset} ---"
+            items_pagina=("${pagina2_items[@]}")
+        fi
+        echo # Linha em branco
+
+        local -i max_items=${#items_pagina[@]}
+        local -i meio=$(( (max_items + 1) / 2 ))
+
+        for (( i=0; i<meio; i++ )); do
+            # --- Coluna da Esquerda ---
+            local idx_esq=${items_pagina[i]}
+            local texto_esq="${OPCOES[$idx_esq]}"
+            # Formata o item da esquerda em uma variável
+            local item_esq
+            item_esq=$(printf "[ ${azul}%02d${reset} ] - ${branco}%-22s${reset}" "$idx_esq" "$texto_esq")
+
+            # --- Coluna da Direita ---
+            local item_dir=""
+            local -i idx_dir_calc=$(( i + meio ))
+            if [ $idx_dir_calc -lt $max_items ]; then
+                local idx_dir=${items_pagina[$idx_dir_calc]}
+                local texto_dir="${OPCOES[$idx_dir]}"
+                # Formata o item da direita em uma variável
+                item_dir=$(printf "| [ ${azul}%02d${reset} ] - ${branco}%-22s${reset}" "$idx_dir" "$texto_dir")
+            fi
+            
+            # Imprime as duas colunas formatadas com echo
+            echo -e "      ${item_esq} ${item_dir}"
+        done
+
+        echo -e "${roxo}$(printf -- '-%.0s' {1..$(tput cols)})${reset}"
+        # Formata as opções de ação antes de imprimir
+        local acao_liberar=$(printf "[ ${azul}05${reset} ] - ${branco}%-22s${reset}" "${OPCOES[5]}")
+        local acao_status=$(printf "[ ${azul}11${reset} ] - ${branco}%-22s${reset}" "${OPCOES[11]}")
+        local acao_sair=$(printf "[ ${azul}12${reset} ] - ${branco}%s${reset}" "${OPCOES[12]}")
+        echo -e "      ${acao_liberar} | ${acao_status} | ${acao_sair}"
+        echo -e "${roxo}$(printf -- '_%.0s' {1..$(tput cols)})${reset}"
+        
+        # Navegação de página
+        local msg_p1="Digite ${roxo}P1${reset} para ir para a página 1"
+        local msg_p2="Digite ${roxo}P2${reset} para ir para a página 2"
+        echo -e "${branco}  Navegação: ${msg_p1} | ${msg_p2}${reset}"
+        echo # Linha em branco
+
+        # Prompt de entrada do usuário
+        read -p "$(echo -e ${roxo}"Digite o NÚMERO da opção desejada: "${reset}")" opcao
+
+        # O 'case' permanece o mesmo, mas ajustei a cor da mensagem de erro e saída
+        case $opcao in
+            P1|p1) pagina_atual=1; continue ;;
+            P2|p2) pagina_atual=2; continue ;;
+
+            0)
+                ferramenta_testeemail
+                ;;
+            1) # Exemplo de como uma opção seria chamada
+                echo "Chamando Traefik & Portainer..."
+                sleep 2
+                ;;
+            12)
+                echo -e "\n${branco}Saindo do menu...${reset}"
+                sleep 1
+                exit 0
+                ;;
+            # Adicione os outros 'cases' de 2 a 83 aqui...
+
+            *)
+                echo -e "\n${roxo}Opção inválida! Tente novamente.${reset}"
+                sleep 2
+                ;;
+        esac
+    done
+}
 
 
 main() {
