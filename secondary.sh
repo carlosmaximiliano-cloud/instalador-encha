@@ -937,6 +937,45 @@ msg_excalidraw(){
     echo ""
 }
 
+msg_easyappointments() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███████╗ █████╗ ███████╗██╗   ██╗    █████╗ ██████╗ ██████╗ ██╗ ███╗   ██╗████████╗"
+    centralizar "██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝   ██╔══██╗██╔══██╗██╔══██╗██║ ████╗  ██║╚══██╔══╝"
+    centralizar "█████╗  ███████║███████╗ ╚████╔╝    ███████║██████╔╝██████╔╝██║ ██╔██╗ ██║   ██║"
+    centralizar "██╔══╝  ██╔══██║╚════██║  ╚██╔╝     ██╔══██║██╔═══╝ ██╔═══╝ ██║ ██║╚██╗██║   ██║"
+    centralizar "███████╗██║  ██║███████║   ██║      ██║  ██║██║     ██║     ██║ ██║ ╚████║   ██║"
+    centralizar "╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝      ╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝ ╚═╝  ╚═══╝   ╚═╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_documenso(){
+    clear
+    echo -e "${roxo}"
+    centralizar "██████╗  ██████╗  ██████╗██╗   ██╗███╗   ███╗███████╗███╗   ██╗ ██████╗"
+    centralizar "██╔══██╗██╔═══██╗██╔════╝██║   ██║████╗ ████║██╔════╝████╗  ██║██╔═══██╗"
+    centralizar "██║  ██║██║   ██║██║     ██║   ██║██╔████╔██║███████╗██╔██╗ ██║██║   ██║"
+    centralizar "██║  ██║██║   ██║██║     ██║   ██║██║╚██╔╝██║██╔════╝██║╚██╗██║██║   ██║"
+    centralizar "██████╔╝╚██████╔╝╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗██║ ╚████║╚██████╔╝"
+    centralizar "╚═════╝  ╚═════╝  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
+msg_moodle() {
+    clear
+    echo -e "${roxo}"
+    centralizar "███╗   ███╗ ██████╗  ██████╗ ██████╗ ██╗      ███████╗"
+    centralizar "████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗██║      ██╔════╝"
+    centralizar "██╔████╔██║██║   ██║██║   ██║██████╔╝██║      ███████╗"
+    centralizar "██║╚██╔╝██║██║   ██║██║   ██║██╔══██╗██║      ╚════██║"
+    centralizar "██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██║  ██║███████╗███████║"
+    centralizar "╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -15540,6 +15579,150 @@ EOL
 
 }
 
+ferramenta_easyappointments() {
+  msg_easyappointments
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/1"
+    echo -en "🔗 \e[33mDigite o domínio para o Easy!Appointments (ex: agenda.encha.ai): \e[0m" && read -r url_easy
+    echo ""
+
+    clear
+    msg_easyappointments
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Easy!Appointments:\e[97m $url_easy\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_easyappointments; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Easy!Appointments...\e[0m"    
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  echo ""
+
+  verificar_container_mysql || ferramenta_mysql
+  pegar_senha_mysql_da_stack
+  criar_banco_mysql_da_stack "easyapointments${1:+_$1}"
+
+  echo -e "\e[97m• INSTALANDO EASY!APPOINTMENTS \e[33m[3/4]\e[0m"
+  echo ""
+
+  cat > apache-custom.conf << EOL
+ServerName $url_easyappointments
+EOL
+
+# Cria o diretório, se ainda não existir
+mkdir -p /root/easyappointments${1:+_$1} > /dev/null 2>&1
+
+# Move o arquivo para o diretório de destino
+sudo mv apache-custom.conf /root/easyappointments${1:+_$1}/apache-custom.conf
+
+## Criando a stack
+cat > easyappointments${1:+_$1}.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  easyapointments${1:+_$1}:
+    image: alextselegidis/easyappointments:latest
+
+    volumes:
+      - easyapointments${1:+_$1}_data:/var/www/html
+      - /root/easyappointments${1:+_$1}/apache-custom.conf:/etc/apache2/conf-enabled/custom.conf:ro
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Dados de acesso
+      - BASE_URL=https://$url_easyappointments
+      - APACHE_SERVER_NAME=$url_easyappointments
+
+      ## Dados do banco de dados
+      - DB_HOST=mysql
+      - DB_NAME=easyapointments${1:+_$1}
+      - DB_USERNAME=root
+      - DB_PASSWORD=$senha_mysql
+
+      ## Dados Google Calendar
+      - GOOGLE_SYNC_FEATURE=false
+      - GOOGLE_PRODUCT_NAME=
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GOOGLE_API_KEY=
+
+      ## Modo de Debug
+      - DEBUG_MODE=TRUE
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.easyapointments${1:+_$1}.rule=Host(\`$url_easyappointments\`)
+        - traefik.http.services.easyapointments${1:+_$1}.loadbalancer.server.port=80
+        - traefik.http.routers.easyapointments${1:+_$1}.service=easyapointments${1:+_$1}
+        - traefik.http.routers.easyapointments${1:+_$1}.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.easyapointments${1:+_$1}.entrypoints=websecure
+        - traefik.http.routers.easyapointments${1:+_$1}.tls=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  easyapointments${1:+_$1}_data:
+    external: true
+    name: easyapointments${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    name: $nome_rede_interna ## Nome da rede interna
+    external: true
+EOL
+
+  STACK_NAME="easyappointments${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull alextselegidis/easyappointments:latest
+  wait_stack easyappointments${1:+_$1}_easyapointments${1:+_$1}
+
+  cd /root/dados_vps
+  cat > dados_easyappointments${1:+_$1} <<EOL
+[ EASY!APPOINTMENTS ]
+
+Dominio do Easy!Appointments: https://$url_easyappointments
+Usuario: Precisa criar no primeiro acesso do Easy!Appointments
+Senha: Precisa criar no primeiro acesso do Easy!Appointments
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ EASY!APPOINTMENTS ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_easy\e[0m"
+  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
+  msg_retorno_menu
+
+}
+
 verificar_status_servicos() {
     msg_status
     echo -e "${azul}[📊] Status dos Serviços:${reset}"
@@ -15633,9 +15816,10 @@ exibir_menu() {
     OPCOES[70]="UnoAPI"
     OPCOES[71]="Quepasa API"
     OPCOES[72]="Excalidraw"
-
+    OPCOES[73]="Easyapointments"
+    
     local pagina1_items=(1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73)
     local pagina_atual=1
 
     while true; do
@@ -16159,6 +16343,12 @@ exibir_menu() {
                 verificar_stack "excalidraw${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_excalidraw
+                fi
+                ;;
+            73)
+                verificar_stack "easyapointments${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_easyappointments
                 fi
                 ;;
             *)
