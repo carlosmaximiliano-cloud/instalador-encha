@@ -17966,6 +17966,7 @@ exibir_menu_business () {
   echo -e "      ${ciano}[ 09 ]${reset} - Odoo                   | ${ciano}[ 73 ]${reset} - Stirling PDF"
   echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot"
   echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
+  
 }
 
 processar_menu_business() {
@@ -17973,14 +17974,6 @@ processar_menu_business() {
         clear
         banner
         exibir_menu_business
-        
-        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-        read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_business
-
-                echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
-        # Menu inferior com ações fixas
-        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V$ ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
-        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
 
         case $opcao_business in
             01|1)
@@ -18146,7 +18139,7 @@ exibir_pagina1() {
     echo -e "      ${ciano}[ 02 ]${reset} - Evolution API          | ${ciano}[ 23 ]${reset} - Mattermost"
     echo -e "      ${ciano}[ 03 ]${reset} - N8N                    | ${ciano}[ 24 ]${reset} - Outline"
     echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot               | ${ciano}[ 25 ]${reset} - Focalboard"
-    echo -e "      ${ciano}[ 05 ]${reset} - N8N Formação Encha    | ${ciano}[ 26 ]${reset} - GLPI"
+    echo -e "      ${ciano}[ 05 ]${reset} - N8N Formação Encha     | ${ciano}[ 26 ]${reset} - GLPI"
     echo -e "      ${ciano}[ 06 ]${reset} - Minio                  | ${ciano}[ 27 ]${reset} - Flowise"
     echo -e "      ${ciano}[ 07 ]${reset} - Typebot                | ${ciano}[ 28 ]${reset} - Langflow"
     echo -e "      ${ciano}[ 08 ]${reset} - Directus               | ${ciano}[ 29 ]${reset} - Ollama"
@@ -18276,7 +18269,7 @@ processar_menu_unlimited() {
     # outras opções
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
-    OPCOES[100]="Voltar para o Menu" # Ação
+    OPCOES[100]="Voltar ao Menu" # Ação
 
     local pagina_atual=1
 
@@ -18296,7 +18289,7 @@ processar_menu_unlimited() {
         
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
-        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V$ ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        printf "       ${ciano}[ 98 ]${reset} - %-22s |  ${ciano}[ 99 ]${reset} - %-22s |  ${ciano}[ V ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
