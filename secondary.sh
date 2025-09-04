@@ -15783,6 +15783,8 @@ ferramenta_documenso() {
 
   echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[3/5]\e[0m"
   echo ""
+
+  pegar_senha_minio
   criar_bucket.minio documenso${1:+-$1}
 
     ## Criando key Aleatória
