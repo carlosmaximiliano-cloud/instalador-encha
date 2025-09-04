@@ -14,9 +14,9 @@ roxo="\033[35m"
 azul="\033[34m"
 branco="\e[1;37m"   # Branco brilhante
 reset="\033[0m"
-amarelo="\e[33m"
-verde="\e[32m"
-vermelho="\e[31m"
+amarelo="\033[33m"
+verde="\033[32m"
+vermelho="\033[31m"
 banner(){
   clear
   clear
