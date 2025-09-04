@@ -6443,7 +6443,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   rabbitmq${1:+_$1}:
-    image: rabbitmq:3.9-management
+    image: rabbitmq:management
     command: rabbitmq-server
 
     hostname: rabbitmq
