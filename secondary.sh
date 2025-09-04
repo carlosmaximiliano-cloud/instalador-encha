@@ -17967,9 +17967,19 @@ exibir_menu_business () {
   echo -e "      ${ciano}[ 04 ]${reset} - Chatwoot"
   echo -e "      ${ciano}[ V ]${reset}  - Voltar ao Menu Principal"
 
+  echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
+  # Menu inferior com ações fixas
+  printf "      ${ciano}[ 98 ]${reset} - %-22s | ${ciano}[ 99 ]${reset} - %-22s | ${ciano}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+  echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
+
 }
 
 processar_menu_business() {
+    declare -A OPCOES
+    OPCOES[98]="Liberar Chatwoot"
+    OPCOES[99]="Verificar status"
+    OPCOES[100]="Voltar ao Menu Principal"
+
     while true; do
         clear
         banner
