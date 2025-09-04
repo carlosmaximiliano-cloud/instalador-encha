@@ -17549,6 +17549,204 @@ EOL
 
 }
 
+ferramenta_shlink() {
+  msg_shlink
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/4"
+    echo -en "🔗 \e[33mDigite o domínio para o Painel do Shlink (ex: painel-shlink.encha.ai): \e[0m" && read -r url_shlink
+    echo ""
+    echo -e "\n📍 Passo 2/4"
+    echo -en "\e[33mDigite o dominio para a API do Shlink (ex: shlink.encha.ai): \e[0m" && read -r url_shlink_api
+    echo ""
+    echo -e "\n📍 Passo 3/4"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$ e/ou espaços"
+    echo -en "\e[33mDigite um usuario (ex: encha): \e[0m" && read -r shlink_user
+    echo ""
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$"
+    echo -en "\e[33mDigite uma Senha (ex: @Senha123_): \e[0m" && read -r shlink_pass
+    echo ""
+
+    clear
+    msg_shlink
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio Shlink:\e[97m $url_shlink\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_shlink; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Shlink...\e[0m"
+
+  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo ""
+  verificar_container_postgres || ferramenta_postgres
+  pegar_senha_postgres
+  criar_banco_postgres_da_stack "shlink${1:+_$1}"
+
+  shlink_api_key=$(openssl rand -hex 16)
+  basicauth=$(htpasswd -nbB "$shlink_user" "$shlink_pass" | sed 's/\$/\$\$/g')
+
+  cat > shlink${1:+_$1}.yaml <<EOL
+version: "3.8"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  shlink${1:+_$1}_app:
+    image: shlinkio/shlink-web-client:latest
+
+    networks:
+      - $nome_rede_interna
+    
+    environment:
+      ## Configurações Gerais
+      - DEFAULT_DOMAIN=$url_shlink_api
+      - IS_HTTPS_ENABLED=true
+
+      ## ApiKey Shlink
+      - INITIAL_API_KEY=$shlink_api_key
+
+      ## ApiKey do Geolite
+      #- GEOLITE_LICENSE_KEY=SUA_CHAVE_GEOIP
+
+      ## Dados do Postgres
+      - DB_DRIVER=postgres
+      - DB_HOST=postgres
+      - DB_NAME=shlink${1:+_$1}
+      - DB_USER=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_PORT=5432
+
+      ## Redis
+      - REDIS_URL=redis://redis:6379
+
+      ## Timezone
+      - TIMEZONE=America/Sao_Paulo
+      
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.shlink${1:+_$1}_app.rule=Host(\`$url_shlink\`) ## Dominio para aplicação
+        - traefik.http.routers.shlink${1:+_$1}_app.entrypoints=websecure
+        - traefik.http.routers.shlink${1:+_$1}_app.priority=1
+        - traefik.http.routers.shlink${1:+_$1}_app.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.shlink${1:+_$1}_app.service=shlink${1:+_$1}_app
+        - traefik.http.services.shlink${1:+_$1}_app.loadbalancer.server.port=8080
+        - traefik.http.services.shlink${1:+_$1}_app.loadbalancer.passHostHeader=true
+        - "traefik.http.routers.shlink${1:+_$1}_app.middlewares=authshlink${1:+_$1}_app"
+        - "traefik.http.middlewares.authshlink${1:+_$1}_app.basicauth.users=$basicauth"
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  shlink${1:+_$1}_api:
+    image: shlinkio/shlink:latest
+
+    volumes:
+      - shlink${1:+_$1}_data:/etc/shlink
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    environment:
+      ## Configurações Gerais
+      - DEFAULT_DOMAIN=$url_shlink_api
+      - IS_HTTPS_ENABLED=true
+
+      ## ApiKey Shlink
+      - INITIAL_API_KEY=$shlink_api_key
+
+      ## ApiKey do Geolite
+      #- GEOLITE_LICENSE_KEY=SUA_CHAVE_GEOIP
+
+      ## Dados do Postgres
+      - DB_DRIVER=postgres
+      - DB_HOST=postgres
+      - DB_NAME=shlink${1:+_$1}
+      - DB_USER=postgres
+      - DB_PASSWORD=$senha_postgres
+      - DB_PORT=5432
+
+      ## Redis
+      - REDIS_URL=redis://redis:6379
+
+      ## Timezone
+      - TIMEZONE=America/Sao_Paulo
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=1
+        - traefik.http.routers.shlink${1:+_$1}_api.rule=Host(\`$url_shlink_api\`) ## Dominio para aplicação
+        - traefik.http.routers.shlink${1:+_$1}_api.entrypoints=websecure
+        - traefik.http.routers.shlink${1:+_$1}_api.priority=1
+        - traefik.http.routers.shlink${1:+_$1}_api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.shlink${1:+_$1}_api.service=shlink${1:+_$1}_api
+        - traefik.http.services.shlink${1:+_$1}_api.loadbalancer.server.port=8080
+        - traefik.http.services.shlink${1:+_$1}_api.loadbalancer.passHostHeader=true
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  shlink${1:+_$1}_data:
+    external: true
+    name: shlink${1:+_$1}_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+
+  STACK_NAME="shlink${1:+_$1}"
+  stack_editavel
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo ""
+
+  pull shlinkio/shlink-web-client:latest shlinkio/shlink:latest
+  wait_stack shlink${1:+_$1}_shlink${1:+_$1}_app shlink${1:+_$1}_shlink${1:+_$1}_api
+
+  cd /root/dados_vps
+  cat > dados_shlink${1:+_$1} <<EOL
+[ SHLINK ]
+
+Dominio do Painel do Shlink: https://$url_shlink
+
+Dominio da API do Shlink: https://$url_shlink_api
+
+ApiKey do Shlink: $shlink_api_key
+EOL
+
+  cd
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ SHLINK ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_shlink\e[0m"
+  echo -e "\e[33m🌐 Dominio da API:\e[97m https://$url_shlink_api\e[0m"
+  echo -e "\e[33mApiKey:\e[97m $shlink_api_key\e[0m"
+  msg_retorno_menu
+
+}
+
 
 ferramenta_testeemail() {
     dados
@@ -17695,9 +17893,10 @@ exibir_menu() {
     OPCOES[80]="Firecrawl"
     OPCOES[81]="Wuzapi"
     OPCOES[82]="Krayin CRM"
+    OPCOES[83]="Shlink"
     
     local pagina1_items=(0 1 2 3 4 6 7 8 9 10 13 14 15 16 17 18 19 20 21 22 23 24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 43 43 44 45)
-    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82)
+    local pagina2_items=(46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83)
     local pagina_atual=1
 
     while true; do
@@ -18284,6 +18483,12 @@ exibir_menu() {
                 verificar_stack "krayincrm${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_krayincrm
+                fi
+                ;;
+            83)
+                verificar_stack "shlink${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_shlink
                 fi
                 ;;
             *)
