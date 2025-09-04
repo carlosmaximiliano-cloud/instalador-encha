@@ -18126,7 +18126,7 @@ exibir_menu_business () {
         "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N                     | ${amarelo_escuro}[ 06 ]${reset} - Minio${reset}" \
         "${amarelo_escuro}[ 05 ]${reset} ${cinza}- N8N Formação Encha      | ${amarelo_escuro}[ 18 ]${reset} - Mautic${reset}" \
         "${amarelo_escuro}[ 15 ]${reset} ${cinza}- RabbitMQ                | ${amarelo_escuro}[ 20 ]${reset} - Qdrant${reset}" \
-        "${amarelo_escuro}[ 13 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ XX ]${reset} - Duplicate - Em breve${reset}" \
+        "${amarelo_escuro}[ 13 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ 80 ]${reset} - Duplicati${reset}" \
         "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Directus                | ${amarelo_escuro}[ 69 ]${reset} - Easyapointments${reset}" \
         "${amarelo_escuro}[ 44 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 74 ]${reset} - RedisInsight${reset}" \
         "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 73 ]${reset} - Stirling PDF${reset}" \
@@ -18280,6 +18280,12 @@ processar_menu_business() {
                 verificar_stack "redisinsight${opcao2:+_$opcao2}" && continue || echo ""
                 if verificar_docker_e_portainer_traefik; then
                   ferramenta_redisinsight
+                fi
+                ;;
+            80)
+                verificar "duplicati${opcao2:+_$opcao2}" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                  ferramenta_duplicati
                 fi
                 ;;
             99)
