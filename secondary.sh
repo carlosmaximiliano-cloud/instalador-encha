@@ -1087,6 +1087,19 @@ msg_shlink() {
     echo ""
 }
 
+msg_testeemail() {
+    clear
+    echo -e "${roxo}"
+    centralizar "████████╗███████╗███████╗████████╗███████╗    ███████╗███╗   ███╗████████╗██████╗ "
+    centralizar "╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝    ██╔════╝████╗ ████║╚══██╔══╝██╔══██╗"
+    centralizar "   ██║   █████╗  ███████╗   ██║   █████╗      ███████╗██╔████╔██║   ██║   ██████╔╝"
+    centralizar "   ██║   ██╔══╝  ╚════██║   ██║   ██╔══╝      ╚════██║██║╚██╔╝██║   ██║   ██╔═══╝ "
+    centralizar "   ██║   ███████╗███████║   ██║   ███████╗    ███████║██║ ╚═╝ ██║   ██║   ██║     "
+    centralizar "   ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝    ╚══════╝╚═╝     ╚═╝   ╚═╝   ╚═╝ "  
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -17752,44 +17765,101 @@ EOL
 
 
 ferramenta_testeemail() {
+    msg_testeemail
     dados
-    clear
-    banner
-    echo -e "\e[33m--- Ferramenta de Teste de SMTP ---\e[0m"
+  
+    while true; do
+        echo -e "\e[97mPasso${amarelo} 1/5\e[0m"
+        echo -en "\e[33mDigite o endereço de Email (ex: contato@encha.ai): \e[0m"
+        read -r email_teste
+        echo ""
 
-    # Verifica se o 'sendemail' está instalado
-    if ! command -v sendemail &> /dev/null; then
-        echo -e "\n\e[97mO utilitário 'sendemail' não está instalado. Instalando agora...\e[0m"
-        apt-get update > /dev/null 2>&1 && apt-get install sendemail -y > /dev/null 2>&1
-        echo -e "\e[32m'sendemail' instalado com sucesso!\e[0m"
-    fi
+        echo -e "\e[97mPasso${amarelo} 2/5\e[0m"
+        echo -e "${amarelo}--> Caso não tiver um usuário do email, use o próprio email abaixo"
+        echo -en "\e[33mDigite o usuário de Email (ex: encha ou contato@encha.ai): \e[0m"
+        read -r user_teste
+        echo ""
 
-    echo -e "\n\e[97mPor favor, forneça os detalhes do seu servidor SMTP para o teste.\e[0m"
+        echo -e "\e[97mPasso${amarelo} 3/5\e[0m"
+        echo -e "${amarelo}--> Sem caracteres especiais: !#$ | Se estiver usando Gmail, use a senha de app"
+        echo -en "\e[33mDigite a Senha do email (ex: @Senha123_): \e[0m"
+        read -r senha_teste
+        echo ""
+
+        echo -e "\e[97mPasso${amarelo} 4/5\e[0m"
+        echo -en "\e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m"
+        read -r host_teste
+        echo ""
+
+        echo -e "\e[97mPasso${amarelo} 5/5\e[0m"
+        echo -en "\e[33mDigite a Porta SMTP (ex: 465): \e[0m"
+        read -r porta_teste
+        echo ""
+
+        clear
+        nome_testeemail
+        conferindo_as_info
+
+        echo -e "\e[33mEmail SMTP: \e[97m$email_teste\e[0m"
+        echo ""
+        echo -e "\e[33mUsuário SMTP: \e[97m$user_teste\e[0m"
+        echo ""
+        echo -e "\e[33mSenha SMTP: \e[97m$senha_teste\e[0m"
+        echo ""
+        echo -e "\e[33mHost SMTP: \e[97m$host_teste\e[0m"
+        echo ""
+        echo -e "\e[33mPorta SMTP: \e[97m$porta_teste\e[0m"
+        echo ""
+        read -p "As respostas estão corretas? (Y/N): " confirmacao
+        if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_testeemail; fi
+    done
+
+    # Mensagem de Início
+    echo -e "\e[97m• INICIANDO VERIFICAÇÃO \e[33m[1/3]\e[0m"
     echo ""
 
-    echo -en "📧 \e[33mSeu e-mail de envio (ex: noreply@encha.ai): \e[0m" && read -r from_email
-    echo -en "👤 \e[33mUsuário SMTP (pode ser o mesmo e-mail): \e[0m" && read -r smtp_user
-    echo -en "🔑 \e[33mSenha SMTP: \e[0m" && read -s -r smtp_pass
-    echo ""
-    echo -en "🏠 \e[33mHost e Porta SMTP (ex: smtp.hostinger.com:465): \e[0m" && read -r smtp_server
-    echo -en "📬 \e[33mE-mail do destinatário para o teste: \e[0m" && read -r to_email
-    
-    local use_tls="auto"
-    if [[ $smtp_server == *:465 ]]; then
-        use_tls="yes"
-    fi
+    sudo apt-get update > /dev/null 2>&1
+    sudo apt-get install swaks -y > /dev/null 2>&1
 
-    echo -e "\n\e[97mEnviando e-mail de teste...\e[0m"
-    
-    sendemail -f "$from_email" -t "$to_email" -u "E-mail de Teste do Instalador" -m "Se você recebeu este e-mail, seu SMTP está funcionando corretamente!" -s "$smtp_server" -o tls=$use_tls -xu "$smtp_user" -xp "$smtp_pass"
+    msg="Se você está lendo isso, o seu SMTP está funcionando =D.
+By: EnchaAi"
 
-    if [ $? -eq 0 ]; then
-        echo -e "\e[32m\n✅ E-mail de teste enviado com sucesso para $to_email!\e[0m"
+    if swaks --to "$email_teste" --from "$email_teste" \
+             --server "$host_teste" --port "$porta_teste" \
+             --auth LOGIN --auth-user "$user_teste" \
+             --auth-password "$senha_teste" --tls \
+             --header "Subject: ✅ Teste de SMTP - EnchaAi" \
+             --header "Content-Type: text/plain; charset=UTF-8" \
+             --body "$msg"; then
+
+        sleep 2
+        clear
+        nome_testeemail
+        echo -e "\e[32m[Resultado do Teste SMTP]\e[0m"
+        echo ""
+        echo -e "\e[33mOs dados informados \e[92mestão funcionando corretamente\e[33m.\e[0m"
+
     else
-        echo -e "\e[31m\n❌ Falha ao enviar o e-mail de teste. Verifique suas credenciais e configurações de SMTP.\e[0m"
+        sleep 2
+        clear
+        nome_testeemail
+        echo -e "\e[32m[Resultado do Teste SMTP]\e[0m"
+        echo ""
+        echo -e "\e[33mOs dados informados \e[91mNÃO estão funcionando corretamente\e[33m. Por favor, verifique os dados e tente novamente.\e[0m"
     fi
-    
+        echo ""
+        echo -e "\e[33mEmail SMTP: \e[97m$email_teste\e[0m"
+        echo ""
+        echo -e "\e[33mUsuário SMTP: \e[97m$user_teste\e[0m"
+        echo ""
+        echo -e "\e[33mSenha SMTP: \e[97m$senha_teste\e[0m"
+        echo ""
+        echo -e "\e[33mHost SMTP: \e[97m$host_teste\e[0m"
+        echo ""
+        echo -e "\e[33mPorta SMTP: \e[97m$porta_teste\e[0m"
+
     msg_retorno_menu
+
 }
 
 verificar_status_servicos() {
