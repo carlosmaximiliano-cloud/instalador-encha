@@ -15909,7 +15909,7 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ EASY!APPOINTMENTS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$$url_easyappointments\e[0m"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_easyappointments\e[0m"
   echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
   msg_retorno_menu
 
