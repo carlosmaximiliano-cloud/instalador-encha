@@ -4,22 +4,23 @@
 #FERRAMENTAS VISUAIS
 
 centralizar() {
-    # Usar 'local' é uma boa prática para evitar que variáveis "vazem" da função
     local texto="$1"
-    local largura_terminal
-    largura_terminal=$(tput cols)
-    local largura_texto=${#texto}
+    local largura_terminal=$(tput cols)
 
-    # Verifica se o terminal é mais estreito que o texto
+    # Remove sequências ANSI para calcular o tamanho "real"
+    local texto_sem_cor=$(echo -e "$texto" | sed 's/\x1b\[[0-9;]*m//g')
+
+    local largura_texto=${#texto_sem_cor}
+
     if [ "$largura_terminal" -lt "$largura_texto" ]; then
-        # Se for, apenas imprime o texto alinhado à esquerda para evitar quebra
+        # Se o terminal for pequeno, imprime sem tentar centralizar
         printf "%s\n" "$texto"
     else
-        # Se houver espaço, centraliza normalmente
         local espacos=$(( (largura_terminal - largura_texto) / 2 ))
         printf "%*s%s\n" "$espacos" "" "$texto"
     fi
 }
+
 
 roxo="\033[35m"
 azul="\033[34m"
