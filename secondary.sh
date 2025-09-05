@@ -18255,7 +18255,6 @@ instalar_traefik_e_portainer() {
   local nome_rede_interna="$5"
   local email_ssl="$6"
 
-  
 
   echo -e "⚙️ \e[97mIniciando a instalação do Traefik \e[33m[1/9]\e[0m\n"
   sleep 1
@@ -18464,14 +18463,10 @@ EOL
 
   wait_stack "traefik"  # Certifique-se que essa função existe
 
- 
-
   wait_30_sec
 
   echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m\n"
   sleep 1
-
- 
 
   cat > portainer.yaml <<EOL
 version: "3.7"
@@ -18600,9 +18595,9 @@ if [ "$CONTA_CRIADA" = true ]; then
   fi
 fi
 
-sleep 5
-## Salvando informações da instalação dentro de /dados_vps/
-cd dados_vps
+  sleep 5
+  ## Salvando informações da instalação dentro de /dados_vps/
+  cd dados_vps
 
 if [ "$CONTA_CRIADA" = true ]; then
   cat > dados_portainer <<EOL
@@ -18626,17 +18621,17 @@ Usuario: Precisa criar dentro do portainer
 
 Senha: Precisa criar dentro do portainer
 EOL
-fi
+  fi
 
-cd
-cd
+  cd
+  cd
 
-## Espera 30 segundos
-wait_30_sec
+  ## Espera 30 segundos
+  wait_30_sec
 
-echo - "Instalando outra ferramenta..."
-echo ""
-sleep 2
+  echo - "Instalando outra ferramenta..."
+  echo ""
+  sleep 2
 
 }
 
@@ -18671,45 +18666,45 @@ echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]
 echo ""
 sleep 1
 
-## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
-verificar_container_postgres
-if [ $? -eq 0 ]; then
-    echo "✅ 1/3 - Postgres já está instalado."
-    pegar_senha_postgres > /dev/null 2>&1
-    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
-    criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-    echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
-    echo ""
-else
-    ferramenta_postgres
-    pegar_senha_postgres > /dev/null 2>&1
-    criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-fi
+  ## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
+  verificar_container_postgres
+  if [ $? -eq 0 ]; then
+      echo "✅ 1/3 - Postgres já está instalado."
+      pegar_senha_postgres > /dev/null 2>&1
+      echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+      criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
+      echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+      echo ""
+  else
+      ferramenta_postgres
+      pegar_senha_postgres > /dev/null 2>&1
+      criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
+  fi
 
-## Mensagem de Passo
-echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
-echo ""
-sleep 1
+  ## Mensagem de Passo
+  echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
+  echo ""
+  sleep 1
 
-## Verifica/instala o Redis
-verificar_container_redis
-if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - Redis já está instalado."
-    echo ""
-else
-    ferramenta_redis
-fi
+  ## Verifica/instala o Redis
+  verificar_container_redis
+  if [ $? -eq 0 ]; then
+      echo "✅ 1/1 - Redis já está instalado."
+      echo ""
+  else
+      ferramenta_redis
+  fi
 
-## Mensagem de Passo
-echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
-echo ""
-sleep 1
+  ## Mensagem de Passo
+  echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
+  echo ""
+  sleep 1
 
-## Criando key Aleatória
-encryption_key=$(openssl rand -hex 16)
+  ## Criando key Aleatória
+  encryption_key=$(openssl rand -hex 16)
 
-## Criando a stack n8n.yaml
-cat > n8n${1:+_$1}.yaml <<EOL
+  ## Criando a stack n8n.yaml
+  cat > n8n${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
@@ -19004,30 +18999,30 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
-if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
-else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
-fi
+  if [ $? -eq 0 ]; then
+      echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
+  else
+      echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
+      echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
+  fi
 
-STACK_NAME="n8n${1:+_$1}"
-stack_editavel 
+  STACK_NAME="n8n${1:+_$1}"
+  stack_editavel 
 
-## Mensagem de Passo
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
-echo ""
-sleep 1
+  ## Mensagem de Passo
+  echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+  echo ""
+  sleep 1
 
-## Baixando imagens:
-pull n8nio/n8n:latest
+  ## Baixando imagens:
+  pull n8nio/n8n:latest
 
-## Usa o serviço wait_n8n para verificar se o serviço esta online
-wait_stack n8n${1:+_$1}_n8n${1:+_$1}_editor n8n${1:+_$1}_n8n${1:+_$1}_webhook n8n${1:+_$1}_n8n${1:+_$1}_worker
+  ## Usa o serviço wait_n8n para verificar se o serviço esta online
+  wait_stack n8n${1:+_$1}_n8n${1:+_$1}_editor n8n${1:+_$1}_n8n${1:+_$1}_webhook n8n${1:+_$1}_n8n${1:+_$1}_worker
 
 
 
-cd dados_vps
+  cd dados_vps
 
 cat > dados_n8n${1:+_$1} <<EOL
 [ N8N ]
@@ -19042,11 +19037,11 @@ Senha: Precisa criar no primeiro acesso do N8N
 
 EOL
 
-cd
-cd
+  cd
+  cd
 
 ## Espera 30 segundos
-wait_30_sec
+  wait_30_sec
 
   echo -e "Instalando próxima stack..."
   sleep 2
@@ -19409,16 +19404,15 @@ wait_30_sec
 
 }
 
-# Função principal para instalar o ambiente completo
 instalar_ambiente_completo() {
-  # Adicione esta linha no início do seu script para definir a cor,
-  # caso ainda não tenha feito.
   amarelo="\e[33m"
 
   while true; do
     # =================================================================
     # DADOS GERAIS E PORTAINER
     # =================================================================
+    clear
+    msg_traefik_portainer
     echo -e "Passo \e[33m1/6\e[0m 📡"
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
@@ -19532,13 +19526,11 @@ instalar_ambiente_completo() {
     # Pergunta ao usuário se as informações estão corretas
     echo -ne "\e[36mAs informações estão corretas? Deseja iniciar a instalação? (Y/n): \e[0m" && read -r confirmacao
 
-    # Se a resposta for 'Y', 'y' ou vazia (pressionar Enter), sai do loop e continua.
-    # Caso contrário, volta ao início para preencher os dados novamente.
     if [[ "$confirmacao" =~ ^[Yy]$ ]] || [[ -z "$confirmacao" ]]; then
       break
     else
       clear
-      banner # Supondo que 'banner' exiba a tela inicial
+      banner 
       echo -e "\e[31mInstalação cancelada. Por favor, insira os dados novamente.\e[0m"
       sleep 2
     fi
@@ -19547,9 +19539,27 @@ instalar_ambiente_completo() {
   echo "Iniciando a instalação do ambiente..."
 
   instalar_traefik_e_portainer "$url_portainer" "$user_portainer" "$pass_portainer" "$nome_servidor" "$nome_rede_interna" "$email_ssl" 
-  instalar_ferramenta_n8n "$url_editorn8n" "$url_webhookn8n" "$email_smtp_n8n" "$usuario_smtp_n8n" "$senha_smtp_n8n" "$host_smtp_n8n" "$porta_smtp_n8n"
-  instalar_ferramenta_evolution "$url_evolution"
-
+  verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
+    if verificar_docker_e_portainer_traefik; then
+      STACK_NAME="n8n${opcao2:+_$opcao2}"
+      if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+        instalar_ferramenta_n8n "$url_editorn8n" "$url_webhookn8n" "$email_smtp_n8n" "$usuario_smtp_n8n" "$senha_smtp_n8n" "$host_smtp_n8n" "$porta_smtp_n8n"
+      else
+        APP_ENCHA="ferramenta_n8n"
+        verificar_arquivo
+      fi
+    fi
+  verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
+    if verificar_docker_e_portainer_traefik; then
+      STACK_NAME="evolution${opcao2:+_$opcao2}"
+      if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+        instalar_ferramenta_evolution "$url_evolution"
+      else
+        APP_ENCHA="ferramenta_evolution"
+        verificar_arquivo
+      fi
+    fi
+               
   # validar informações
   msg_retorno_menu
 }
