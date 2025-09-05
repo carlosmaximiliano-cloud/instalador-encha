@@ -18507,7 +18507,7 @@ exibir_pagina2() {
         "${amarelo_escuro}[ 58 ]${reset} ${cinza}- Hoppscotch           | ${amarelo_escuro}[ 77 ]${reset} - Wuzapi${reset}" \
         "${amarelo_escuro}[ 59 ]${reset} ${cinza}- Bolt                 | ${amarelo_escuro}[ 78 ]${reset} - Krayin CRM${reset}" \
         "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Planka               | ${amarelo_escuro}[ 79 ]${reset} - Shlink${reset}" \
-        "                                 | ${amarelo_escuro}[ 80 ]${reset} ${cinza}- Duplicati${reset}"
+        "                              | ${amarelo_escuro}[ 80 ]${reset} ${cinza}- Duplicati${reset}"
 }
 
 # --- Função Principal do Menu ---
