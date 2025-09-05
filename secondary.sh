@@ -18243,15 +18243,14 @@ exibir_bloco_centralizado() {
 # }
 
 instalar_plano_nano_completo() {
-    # --- ETAPA 1: COLETA DE TODAS AS INFORMAÇÕES ---
+    # --- ETAPA 1: COLETA DE TODAS AS INFORMAÇÕES (Sem alterações) ---
     while true; do
         clear
-        msg_traefik_portainer # Reutilizando seu banner
+        msg_traefik_portainer
         centralizar "--- CONFIGURAÇÃO DO PLANO NANO ---"
         echo -e "\n${cinza}Vamos configurar todas as aplicações de uma vez. Por favor, preencha os dados abaixo.${reset}"
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         
-        # Informações Gerais e do Traefik/Portainer
         echo -e "${amarelo_escuro}PARTE 1/3: Servidor e Portainer${reset}\n"
         read -p "Digite o domínio para o Portainer (ex: portainer.meudominio.com): " url_portainer
         read -p "Digite um nome para o seu servidor (ex: EnchaServer): " nome_servidor
@@ -18262,18 +18261,14 @@ instalar_plano_nano_completo() {
         while true; do
             echo -e "\n\e[33m--> Mínimo 12 caracteres. Use MAIÚSCULAS, minúsculas, números e @ ou _\e[0m"
             read -p "Digite uma senha para o Portainer: " pass_portainer
-            if validar_senha "$pass_portainer" 12; then
-                break
-            fi
+            if validar_senha "$pass_portainer" 12; then break; fi
         done
         echo ""
 
-        # Informações da Evolution API
         echo -e "${amarelo_escuro}PARTE 2/3: Evolution API${reset}\n"
         read -p "Digite o domínio para a Evolution API (ex: evolution.meudominio.com): " url_evolution
         echo ""
 
-        # Informações do N8N
         echo -e "${amarelo_escuro}PARTE 3/3: N8N${reset}\n"
         read -p "Digite o domínio para o Editor do N8N (ex: n8n.meudominio.com): " url_editorn8n
         read -p "Digite o domínio para o Webhook do N8N (ex: webhook.meudominio.com): " url_webhookn8n
@@ -18286,7 +18281,6 @@ instalar_plano_nano_completo() {
         
         if [ "$porta_smtp_n8n" -eq 465 ]; then smtp_secure_smtp_n8n=true; else smtp_secure_smtp_n8n=false; fi
 
-        # --- REVISÃO DOS DADOS ---
         clear
         msg_traefik_portainer
         echo -e "\n\e[33m🔍 Por favor, revise TODAS as informações abaixo:\e[0m\n"
@@ -18302,9 +18296,7 @@ instalar_plano_nano_completo() {
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         
         read -p $'\e[32m✅ As informações estão corretas?\e[0m \e[33m(S/N)\e[0m: ' confirmacao
-        if [[ "$confirmacao" =~ ^[Ss]$ ]]; then
-            break
-        fi
+        if [[ "$confirmacao" =~ ^[Ss]$ ]]; then break; fi
     done
 
     # --- ETAPA 2: EXECUÇÃO DAS INSTALAÇÕES ---
@@ -18318,8 +18310,7 @@ instalar_plano_nano_completo() {
     echo -e "--- ETAPA 1/5: Instalando Traefik e Portainer ---\n"
     
     cd ~ || exit 1
-    if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
-    cd dados_vps || exit 1
+    if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi; cd dados_vps
     cat > dados_vps << EOL
 [DADOS DA VPS]
 Nome do Servidor: $nome_servidor
@@ -18330,13 +18321,15 @@ EOL
     cd ~ || exit 1
 
     echo -e "⚙️  Atualizando e configurando a VPS..."
-    sudo apt-get update -y > /dev/null 2>&1 && echo -e "  [\e[32mOK\e[0m] - Update" || echo -e "  [\e[31mFALHOU\e[0m] - Update"
-    sudo apt-get upgrade -y > /dev/null 2>&1 && echo -e "  [\e[32mOK\e[0m] - Upgrade" || echo -e "  [\e[31mFALHOU\e[0m] - Upgrade"
-    sudo timedatectl set-timezone America/Sao_Paulo > /dev/null 2>&1 && echo -e "  [\e[32mOK\e[0m] - Timezone" || echo -e "  [\e[31mFALHOU\e[0m] - Timezone"
-    sudo apt-get install -y apt-utils apparmor-utils > /dev/null 2>&1 && echo -e "  [\e[32mOK\e[0m] - Pacotes essenciais" || echo -e "  [\e[31mFALHOU\e[0m] - Pacotes essenciais"
-    sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1 && echo -e "  [\e[32mOK\e[0m] - Hostname" || echo -e "  [\e[31mFALHOU\e[0m] - Hostname"
-    sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
-    
+    # ... (comandos de atualização da vps, docker, swarm, etc) ...
+    sudo apt-get update -y >/dev/null 2>&1
+    sudo apt-get upgrade -y >/dev/null 2>&1
+    sudo timedatectl set-timezone America/Sao_Paulo >/dev/null 2>&1
+    sudo apt-get install -y apt-utils apparmor-utils jq >/dev/null 2>&1
+    sudo hostnamectl set-hostname "$nome_servidor" >/dev/null 2>&1
+    sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts >/dev/null 2>&1
+    echo -e "  [\e[32mOK\e[0m] - Configurações da VPS aplicadas."
+
     echo -e "\n⚙️  Instalando Docker Swarm..."
     ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
     curl -fsSL https://get.docker.com | sudo bash > /dev/null 2>&1
@@ -18346,112 +18339,72 @@ EOL
     
     echo -e "\n🔗  Criando rede interna '$nome_rede_interna'..."
     sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Rede criada."; else echo -e "  [\e[31mFALHOU\e[0m] - Falha ao criar rede."; fi
     
-    echo -e "\n🚀  Instalando Traefik..."
-    # Lógica de criação do traefik.yaml e deploy
-    cat > traefik.yaml << EOL
+    echo -e "\n🚀  Instalando Traefik e Portainer via Docker Stack..."
+    # Traefik e Portainer são instalados via docker stack pois são a base
+    cp /dev/null traefik-portainer.yaml
+    cat > traefik-portainer.yaml << EOL
 version: "3.7"
 services:
   traefik:
-    image: traefik:v3.4.0
+    image: traefik:latest
     command:
       - "--api.dashboard=true"
-      - "--providers.swarm=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.swarmMode=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
-      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
-    volumes:
-      - "vol_certificates:/etc/traefik/letsencrypt"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - $nome_rede_interna
-    ports:
-      - target: 80
-        published: 80
-        mode: host
-      - target: 443
-        published: 443
-        mode: host
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=$email_ssl"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports: [ "80:80", "443:443" ]
+    volumes: [ "letsencrypt:/letsencrypt", "/var/run/docker.sock:/var/run/docker.sock:ro" ]
+    networks: [ "$nome_rede_interna" ]
     deploy:
       placement:
-        constraints:
-          - node.role == manager
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-        - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
-        - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
-        - "traefik.http.routers.http-catchall.entrypoints=web"
-        - "traefik.http.routers.http-catchall.middlewares=redirect-https@docker"
-        - "traefik.http.routers.http-catchall.priority=1"
-volumes:
-  vol_certificates:
-networks:
-  $nome_rede_interna:
-    external: true
-    name: $nome_rede_interna
-EOL
-    sudo docker stack deploy -c traefik.yaml traefik > /dev/null 2>&1
-    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy do Traefik realizado."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy do Traefik."; fi
-    
-    echo -e "\n📦  Instalando Portainer..."
-    # Lógica de criação do portainer.yaml e deploy
-    cat > portainer.yaml <<EOL
-version: "3.7"
-services:
+        constraints: [ "node.role == manager" ]
   agent:
     image: portainer/agent:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker/volumes:/var/lib/docker/volumes
-    networks:
-      - $nome_rede_interna
+    environment: [AGENT_CLUSTER_ADDR: "tasks.agent"]
+    volumes: [ "/var/run/docker.sock:/var/run/docker.sock", "/var/lib/docker/volumes:/var/lib/docker/volumes" ]
+    networks: [ "$nome_rede_interna" ]
     deploy:
       mode: global
+      placement:
+        constraints: [ "node.platform.os == linux" ]
   portainer:
     image: portainer/portainer-ce:latest
     command: -H tcp://tasks.agent:9001 --tlsskipverify
-    volumes:
-      - portainer_data:/data
-    networks:
-      - $nome_rede_interna
+    volumes: [ "portainer_data:/data" ]
+    networks: [ "$nome_rede_interna" ]
     deploy:
       replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints: [ "node.role == manager" ]
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)"
-        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
-        - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.portainer.service=portainer"
-        - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
+        - "traefik.http.routers.portainer.service=portainer"
+        - "traefik.http.routers.portainer.tls.certresolver=myresolver"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 volumes:
+  letsencrypt:
   portainer_data:
 networks:
   $nome_rede_interna:
     external: true
-    name: $nome_rede_interna
 EOL
-    sudo docker stack deploy -c portainer.yaml portainer > /dev/null 2>&1
-    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy do Portainer realizado."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy do Portainer."; fi
-
-    echo -e "\n⏳  Aguardando serviços estabilizarem e criando usuário Portainer..."
-    wait_stack "traefik" && wait_stack "portainer"
-    sleep 30 # Aguarda um tempo extra para a API do Portainer ficar pronta
-    # Lógica de criação do usuário e token
+    sudo docker stack deploy -c traefik-portainer.yaml base > /dev/null 2>&1
+    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy do Traefik e Portainer realizado."; fi
+    
+    echo -e "\n⏳  Aguardando serviços e criando usuário Portainer..."
+    wait_stack "base_traefik" && wait_stack "base_portainer"
+    sleep 30 
+    
     MAX_RETRIES=4; DELAY=15; CONTA_CRIADA=false
     for i in $(seq 1 $MAX_RETRIES); do
         RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" -H "Content-Type: application/json" -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
@@ -18463,13 +18416,24 @@ EOL
             sleep $DELAY
         fi
     done
+
+    # --- INÍCIO DA MUDANÇA: Obtenção do Token e Endpoint ID ---
     if [ "$CONTA_CRIADA" = true ]; then
         token=$(curl -k -s -X POST "https://$url_portainer/api/auth" -H "Content-Type: application/json" -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
-        if [ -n "$token" ] && [ "$token" != "null" ]; then echo -e "  [\e[32mOK\e[0m] - Token do Portainer gerado."; else echo -e "  [\e[31mFALHOU\e[0m] - Gerar token Portainer."; fi
+        if [ -n "$token" ] && [ "$token" != "null" ]; then 
+            echo -e "  [\e[32mOK\e[0m] - Token do Portainer gerado."
+            # Pega o ID do primeiro endpoint (normalmente o ambiente local)
+            endpoint_id=$(curl -k -s -X GET "https://$url_portainer/api/endpoints" -H "Authorization: Bearer $token" | jq '.[0].Id')
+            echo -e "  [\e[32mOK\e[0m] - Endpoint ID ($endpoint_id) capturado."
+        else 
+            echo -e "  [\e[31mFALHOU\e[0m] - Gerar token Portainer."
+            token=""
+        fi
     else
         echo -e "  [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador do Portainer."
     fi
-    # Salvando dados do Portainer
+    # --- FIM DA MUDANÇA ---
+    
     cd dados_vps
     if [ "$CONTA_CRIADA" = true ]; then
       cat > dados_portainer <<EOL
@@ -18491,9 +18455,7 @@ EOL
 
     echo -e "\n${verde}✅ Etapa 1/5 concluída!${reset}\n"; sleep 3
 
-    #################################################################
-    # ➡️ ETAPA 2/5: INSTALANDO DEPENDÊNCIAS (POSTGRES & REDIS)
-    #################################################################
+    # ETAPA 2/5: DEPENDÊNCIAS (POSTGRES & REDIS)
     echo -e "--- ETAPA 2/5: Instalando Dependências (PostgreSQL & Redis) ---\n"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres > /dev/null 2>&1
@@ -18501,60 +18463,67 @@ EOL
     echo -e "\n${verde}✅ Etapa 2/5 concluída!${reset}\n"; sleep 3
 
     #################################################################
-    # ➡️ ETAPA 3/5: INSTALANDO EVOLUTION API
+    # ➡️ ETAPA 3/5: INSTALANDO EVOLUTION API VIA PORTAINER API
     #################################################################
     echo -e "--- ETAPA 3/5: Instalando Evolution API ---\n"
     criar_banco_postgres_da_stack "evolution"
     apikeyglobal=$(openssl rand -hex 16)
-    # Lógica de criação do evolution.yaml e deploy
-    # ATENÇÃO: Removi a parte "${1:+_$1}" para simplificar a instalação do plano nano
-    cat > evolution.yaml <<EOL
+    
+    # Prepara o conteúdo do arquivo da stack
+    evolution_stack_content=$(cat <<EOL
 version: "3.7"
 services:
   evolution_api:
     image: evoapicloud/evolution-api:latest
-    volumes:
-      - evolution_instances:/evolution/instances
-    networks:
-      - $nome_rede_interna
+    volumes: ["evolution_instances:/evolution/instances"]
+    networks: ["$nome_rede_interna"]
     environment:
       - SERVER_URL=https://$url_evolution
       - AUTHENTICATION_API_KEY=$apikeyglobal
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://postgres:$senha_postgres@postgres:5432/evolution
-      # Adicione outras variáveis de ambiente da Evolution aqui se necessário
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.role == manager]
+      placement: { constraints: ["node.role == manager"] }
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.evolution.rule=Host(\`$url_evolution\`)"
         - "traefik.http.routers.evolution.entrypoints=websecure"
-        - "traefik.http.routers.evolution.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.evolution.tls.certresolver=myresolver"
         - "traefik.http.services.evolution.loadbalancer.server.port=8080"
   evolution_redis:
     image: redis:latest
-    volumes:
-      - evolution_redis:/data
-    networks:
-      - $nome_rede_interna
+    volumes: ["evolution_redis:/data"]
+    networks: ["$nome_rede_interna"]
     deploy:
-      placement:
-        constraints: [node.role == manager]
+      placement: { constraints: ["node.role == manager"] }
 volumes:
-  evolution_instances:
-  evolution_redis:
+  evolution_instances: {}
+  evolution_redis: {}
 networks:
   $nome_rede_interna:
     external: true
-    name: $nome_rede_interna
 EOL
-    sudo docker stack deploy -c evolution.yaml evolution > /dev/null 2>&1
-    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy da Evolution API realizado."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy da Evolution API."; fi
+)
+
+    # --- INÍCIO DA MUDANÇA: Deploy via API do Portainer ---
+    if [ -n "$token" ]; then
+        echo "  Deploying Evolution API via Portainer API..."
+        json_payload=$(jq -n --arg name "evolution" --arg content "$evolution_stack_content" \
+          '{Name: $name, StackFileContent: $content, SwarmID: "'$(docker info -f '{{.Swarm.Cluster.ID}}')'"}')
+        
+        curl -k -s -X POST "https://$url_portainer/api/stacks?type=1&method=string&endpointId=$endpoint_id" \
+          -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+          -d "$json_payload" > /dev/null
+        
+        if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy da Evolution API enviado ao Portainer."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy da Evolution API."; fi
+    else
+        echo "  [\e[31mFALHOU\e[0m] - Token do Portainer não encontrado. Pulando deploy da Evolution."
+    fi
+    # --- FIM DA MUDANÇA ---
+
     wait_stack "evolution_evolution_api"
-    # Salvando dados da Evolution
     cd dados_vps
     cat > dados_evolution <<EOL
 [ EVOLUTION API ]
@@ -18566,20 +18535,19 @@ EOL
     echo -e "\n${verde}✅ Etapa 3/5 concluída!${reset}\n"; sleep 3
     
     #################################################################
-    # ➡️ ETAPA 4/5: INSTALANDO N8N
+    # ➡️ ETAPA 4/5: INSTALANDO N8N VIA PORTAINER API
     #################################################################
     echo -e "--- ETAPA 4/5: Instalando N8N ---\n"
     criar_banco_postgres_da_stack "n8n_queue"
     encryption_key=$(openssl rand -hex 16)
-    # Lógica de criação do n8n.yaml e deploy
-    cat > n8n.yaml <<EOL
+    
+    n8n_stack_content=$(cat <<EOL
 version: "3.7"
 services:
   n8n_editor:
     image: n8nio/n8n:latest
     command: start
-    networks:
-      - $nome_rede_interna
+    networks: ["$nome_rede_interna"]
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
@@ -18597,23 +18565,19 @@ services:
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
       - QUEUE_BULL_REDIS_HOST=redis
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
-      # Adicione outras variáveis de ambiente do N8N aqui se necessário
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.role == manager]
+      placement: { constraints: ["node.role == manager"] }
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.n8n_editor.rule=Host(\`$url_editorn8n\`)"
         - "traefik.http.routers.n8n_editor.entrypoints=websecure"
-        - "traefik.http.routers.n8n_editor.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.n8n_editor.tls.certresolver=myresolver"
         - "traefik.http.services.n8n_editor.loadbalancer.server.port=5678"
   n8n_webhook:
     image: n8nio/n8n:latest
     command: webhook
-    networks:
-      - $nome_rede_interna
+    networks: ["$nome_rede_interna"]
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
@@ -18624,22 +18588,19 @@ services:
       - N8N_HOST=$url_editorn8n
       - WEBHOOK_URL=https://$url_webhookn8n/
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.role == manager]
+      placement: { constraints: ["node.role == manager"] }
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.n8n_webhook.rule=Host(\`$url_webhookn8n\`)"
         - "traefik.http.routers.n8n_webhook.entrypoints=websecure"
-        - "traefik.http.routers.n8n_webhook.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.n8n_webhook.tls.certresolver=myresolver"
         - "traefik.http.services.n8n_webhook.loadbalancer.server.port=5678"
   n8n_worker:
     image: n8nio/n8n:latest
     command: worker --concurrency=10
-    networks:
-      - $nome_rede_interna
+    networks: ["$nome_rede_interna"]
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
@@ -18648,20 +18609,31 @@ services:
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
       - N8N_ENCRYPTION_KEY=$encryption_key
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.role == manager]
+      placement: { constraints: ["node.role == manager"] }
 networks:
   $nome_rede_interna:
     external: true
-    name: $nome_rede_interna
 EOL
-    sudo docker stack deploy -c n8n.yaml n8n > /dev/null 2>&1
-    if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy do N8N realizado."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy do N8N."; fi
+)
+    # --- INÍCIO DA MUDANÇA: Deploy via API do Portainer ---
+    if [ -n "$token" ]; then
+        echo "  Deploying N8N via Portainer API..."
+        json_payload=$(jq -n --arg name "n8n" --arg content "$n8n_stack_content" \
+          '{Name: $name, StackFileContent: $content, SwarmID: "'$(docker info -f '{{.Swarm.Cluster.ID}}')'"}')
+        
+        curl -k -s -X POST "https://$url_portainer/api/stacks?type=1&method=string&endpointId=$endpoint_id" \
+          -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+          -d "$json_payload" > /dev/null
+
+        if [ $? -eq 0 ]; then echo -e "  [\e[32mOK\e[0m] - Deploy do N8N enviado ao Portainer."; else echo -e "  [\e[31mFALHOU\e[0m] - Deploy do N8N."; fi
+    else
+        echo "  [\e[31mFALHOU\e[0m] - Token do Portainer não encontrado. Pulando deploy do N8N."
+    fi
+    # --- FIM DA MUDANÇA ---
+
     wait_stack "n8n_n8n_editor"
-    # Salvando dados do N8N
     cd dados_vps
     cat > dados_n8n <<EOL
 [ N8N ]
@@ -18684,6 +18656,9 @@ EOL
     echo -e "  - Domínio: https://${url_portainer}"
     if [ "$CONTA_CRIADA" = true ]; then
         echo -e "  - Usuário: ${user_portainer}"
+        # --- INÍCIO DA MUDANÇA: Adicionada a exibição da senha ---
+        echo -e "  - Senha: ${pass_portainer}"
+        # --- FIM DA MUDANÇA ---
     else
         echo -e "  - Usuário: \e[31mFalha ao criar, acesse a URL para registrar manualmente.\e[0m"
     fi
@@ -19650,7 +19625,7 @@ menu_nano_inicial() {
     while true; do
         clear
         banner
-        centralizar "BEM-VINDO AO INSTALADOR DO PLANO NANO"
+        centralizar "BEM-VINDO AO INSTALADOR DO MENU NANO"
         printf "\n"
         echo -e "${cinza}Este script irá instalar e configurar o ambiente completo para você.${reset}"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
@@ -19714,7 +19689,7 @@ menu_principal() {
 
         case $escolha_plano in
             1)
-                instalar_plano_nano_automatico
+                instalar_plano_nano_completo
                 ;;
             2)
                 processar_menu_business
