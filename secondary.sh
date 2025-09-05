@@ -4,23 +4,11 @@
 #FERRAMENTAS VISUAIS
 
 centralizar() {
-    local texto="$1"
-    local largura_terminal=$(tput cols)
-
-    # Remove sequências ANSI para calcular o tamanho "real"
-    local texto_sem_cor=$(echo -e "$texto" | sed 's/\x1b\[[0-9;]*m//g')
-
-    local largura_texto=${#texto_sem_cor}
-
-    if [ "$largura_terminal" -lt "$largura_texto" ]; then
-        # Se o terminal for pequeno, imprime sem tentar centralizar
-        printf "%s\n" "$texto"
-    else
-        local espacos=$(( (largura_terminal - largura_texto) / 2 ))
-        printf "%*s%s\n" "$espacos" "" "$texto"
-    fi
+    texto="$1"
+    largura_terminal=$(tput cols)
+    espacos=$(( (largura_terminal - ${#texto}) / 2 ))
+    printf "%*s%s\n" "$espacos" "" "$texto"
 }
-
 
 roxo="\033[35m"
 azul="\033[34m"
