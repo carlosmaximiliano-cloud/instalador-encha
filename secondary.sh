@@ -4,10 +4,21 @@
 #FERRAMENTAS VISUAIS
 
 centralizar() {
-    texto="$1"
+    # Usar 'local' é uma boa prática para evitar que variáveis "vazem" da função
+    local texto="$1"
+    local largura_terminal
     largura_terminal=$(tput cols)
-    espacos=$(( (largura_terminal - ${#texto}) / 2 ))
-    printf "%*s%s\n" "$espacos" "" "$texto"
+    local largura_texto=${#texto}
+
+    # Verifica se o terminal é mais estreito que o texto
+    if [ "$largura_terminal" -lt "$largura_texto" ]; then
+        # Se for, apenas imprime o texto alinhado à esquerda para evitar quebra
+        printf "%s\n" "$texto"
+    else
+        # Se houver espaço, centraliza normalmente
+        local espacos=$(( (largura_terminal - largura_texto) / 2 ))
+        printf "%*s%s\n" "$espacos" "" "$texto"
+    fi
 }
 
 roxo="\033[35m"
