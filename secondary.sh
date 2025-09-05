@@ -18488,26 +18488,26 @@ exibir_pagina2() {
     centralizar "--- UNLIMITED Página 2 de 2 ---"
     printf "\n"
     exibir_bloco_centralizado \
-        "${amarelo_escuro}[ 42 ]${reset} ${cinza}- Strapi                 | ${amarelo_escuro}[ 61 ]${reset} - WPPconnect${reset}" \
-        "${amarelo_escuro}[ 43 ]${reset} ${cinza}- MyphpAdmin             | ${amarelo_escuro}[ 62 ]${reset} - Browserless${reset}" \
-        "${amarelo_escuro}[ 44 ]${reset} ${cinza}- Supabase               | ${amarelo_escuro}[ 63 ]${reset} - Frappe ERPnext${reset}" \
-        "${amarelo_escuro}[ 45 ]${reset} ${cinza}- NTFY                   | ${amarelo_escuro}[ 64 ]${reset} - Clickhouse${reset}" \
-        "${amarelo_escuro}[ 46 ]${reset} ${cinza}- Lowcoder               | ${amarelo_escuro}[ 65 ]${reset} - Langfuse${reset}" \
-        "${amarelo_escuro}[ 47 ]${reset} ${cinza}- Openproject            | ${amarelo_escuro}[ 66 ]${reset} - UnoAPI${reset}" \
-        "${amarelo_escuro}[ 48 ]${reset} ${cinza}- ZEP                    | ${amarelo_escuro}[ 67 ]${reset} - Quepasa API${reset}" \
-        "${amarelo_escuro}[ 49 ]${reset} ${cinza}- Yourls                 | ${amarelo_escuro}[ 68 ]${reset} - Excalidraw${reset}" \
-        "${amarelo_escuro}[ 50 ]${reset} ${cinza}- WiseMapping            | ${amarelo_escuro}[ 69 ]${reset} - Easyapointments${reset}" \
-        "${amarelo_escuro}[ 51 ]${reset} ${cinza}- Evo AI                 | ${amarelo_escuro}[ 70 ]${reset} - Documenso${reset}" \
-        "${amarelo_escuro}[ 52 ]${reset} ${cinza}- Keycloak               | ${amarelo_escuro}[ 71 ]${reset} - Moodle${reset}" \
-        "${amarelo_escuro}[ 53 ]${reset} ${cinza}- Passbolt               | ${amarelo_escuro}[ 72 ]${reset} - Tooljet${reset}" \
-        "${amarelo_escuro}[ 54 ]${reset} ${cinza}- Gotenberg              | ${amarelo_escuro}[ 73 ]${reset} - Stirling PDF${reset}" \
-        "${amarelo_escuro}[ 55 ]${reset} ${cinza}- Wiki JS                | ${amarelo_escuro}[ 74 ]${reset} - RedisInsight${reset}" \
-        "${amarelo_escuro}[ 56 ]${reset} ${cinza}- Azuracast              | ${amarelo_escuro}[ 75 ]${reset} - Traccar${reset}" \
-        "${amarelo_escuro}[ 57 ]${reset} ${cinza}- Rustdesk               | ${amarelo_escuro}[ 76 ]${reset} - Firecrawl${reset}" \
-        "${amarelo_escuro}[ 58 ]${reset} ${cinza}- Hoppscotch             | ${amarelo_escuro}[ 77 ]${reset} - Wuzapi${reset}" \
-        "${amarelo_escuro}[ 59 ]${reset} ${cinza}- Bolt                   | ${amarelo_escuro}[ 78 ]${reset} - Krayin CRM${reset}" \
-        "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Planka                 | ${amarelo_escuro}[ 79 ]${reset} - Shlink${reset}" \
-        "                                                                 | ${amarelo_escuro}[ 80 ]${reset} ${cinza}- Duplicati"
+        "${amarelo_escuro}[ 42 ]${reset} ${cinza}- Strapi               | ${amarelo_escuro}[ 61 ]${reset} - WPPconnect${reset}" \
+        "${amarelo_escuro}[ 43 ]${reset} ${cinza}- MyphpAdmin           | ${amarelo_escuro}[ 62 ]${reset} - Browserless${reset}" \
+        "${amarelo_escuro}[ 44 ]${reset} ${cinza}- Supabase             | ${amarelo_escuro}[ 63 ]${reset} - Frappe ERPnext${reset}" \
+        "${amarelo_escuro}[ 45 ]${reset} ${cinza}- NTFY                 | ${amarelo_escuro}[ 64 ]${reset} - Clickhouse${reset}" \
+        "${amarelo_escuro}[ 46 ]${reset} ${cinza}- Lowcoder             | ${amarelo_escuro}[ 65 ]${reset} - Langfuse${reset}" \
+        "${amarelo_escuro}[ 47 ]${reset} ${cinza}- Openproject          | ${amarelo_escuro}[ 66 ]${reset} - UnoAPI${reset}" \
+        "${amarelo_escuro}[ 48 ]${reset} ${cinza}- ZEP                  | ${amarelo_escuro}[ 67 ]${reset} - Quepasa API${reset}" \
+        "${amarelo_escuro}[ 49 ]${reset} ${cinza}- Yourls               | ${amarelo_escuro}[ 68 ]${reset} - Excalidraw${reset}" \
+        "${amarelo_escuro}[ 50 ]${reset} ${cinza}- WiseMapping          | ${amarelo_escuro}[ 69 ]${reset} - Easyapointments${reset}" \
+        "${amarelo_escuro}[ 51 ]${reset} ${cinza}- Evo AI               | ${amarelo_escuro}[ 70 ]${reset} - Documenso${reset}" \
+        "${amarelo_escuro}[ 52 ]${reset} ${cinza}- Keycloak             | ${amarelo_escuro}[ 71 ]${reset} - Moodle${reset}" \
+        "${amarelo_escuro}[ 53 ]${reset} ${cinza}- Passbolt             | ${amarelo_escuro}[ 72 ]${reset} - Tooljet${reset}" \
+        "${amarelo_escuro}[ 54 ]${reset} ${cinza}- Gotenberg            | ${amarelo_escuro}[ 73 ]${reset} - Stirling PDF${reset}" \
+        "${amarelo_escuro}[ 55 ]${reset} ${cinza}- Wiki JS              | ${amarelo_escuro}[ 74 ]${reset} - RedisInsight${reset}" \
+        "${amarelo_escuro}[ 56 ]${reset} ${cinza}- Azuracast            | ${amarelo_escuro}[ 75 ]${reset} - Traccar${reset}" \
+        "${amarelo_escuro}[ 57 ]${reset} ${cinza}- Rustdesk             | ${amarelo_escuro}[ 76 ]${reset} - Firecrawl${reset}" \
+        "${amarelo_escuro}[ 58 ]${reset} ${cinza}- Hoppscotch           | ${amarelo_escuro}[ 77 ]${reset} - Wuzapi${reset}" \
+        "${amarelo_escuro}[ 59 ]${reset} ${cinza}- Bolt                 | ${amarelo_escuro}[ 78 ]${reset} - Krayin CRM${reset}" \
+        "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Planka               | ${amarelo_escuro}[ 79 ]${reset} - Shlink${reset}" \
+        "                                 | ${amarelo_escuro}[ 80 ]${reset} ${cinza}- Duplicati${reset}"
 }
 
 # --- Função Principal do Menu ---
