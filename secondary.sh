@@ -18201,8 +18201,6 @@ instalar_plano_nano_automatico() {
         if verificar_stack "evolution${opcao2:+_$opcao2}"; then
             echo -e "${verde}✔ Evolution API já está instalada.${reset}"
         else
-            # A verificação 'verificar_docker_e_portainer_traefik' já foi feita acima,
-            # mas é uma boa prática garantir aqui também.
             if verificar_docker_e_portainer_traefik; then
                 STACK_NAME="evolution${opcao2:+_$opcao2}"
                 if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
