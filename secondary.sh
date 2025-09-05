@@ -18649,7 +18649,7 @@ instalar_ferramenta_n8n() {
   local porta_smtp_n8n="$7"
 
   ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
-  if [ "$porta_smtp_typebot" -eq 465 ]; then
+  if [ "$porta_smtp_n8n" -eq 465 ]; then
     smtp_secure_smtp_n8n=true
   else
     smtp_secure_smtp_n8n=false
@@ -18672,13 +18672,13 @@ sleep 1
       echo "✅ 1/3 - Postgres já está instalado."
       pegar_senha_postgres > /dev/null 2>&1
       echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
-      criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-      echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+      criar_banco_postgres_da_stack "n8n_queue"
+      echo "🛠️  3/3 - Banco de dados 'n8n_queue' criado com sucesso."
       echo ""
   else
       ferramenta_postgres
       pegar_senha_postgres > /dev/null 2>&1
-      criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
+      criar_banco_postgres_da_stack "n8n_queue"
   fi
 
   ## Mensagem de Passo
@@ -18704,7 +18704,7 @@ sleep 1
   encryption_key=$(openssl rand -hex 16)
 
   ## Criando a stack n8n.yaml
-  cat > n8n${1:+_$1}.yaml <<EOL
+  cat > n8n.yaml <<EOL
 version: "3.7"
 services:
 
@@ -18712,7 +18712,7 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  n8n${1:+_$1}_editor:
+  n8n_editor:
     image: n8nio/n8n:latest ## Versão do N8N
     command: start
 
@@ -18722,7 +18722,7 @@ services:
     environment:
       ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
@@ -18797,19 +18797,19 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n${1:+_$1}_editor.rule=Host(\`$url_editorn8n\`) ## Url do Editor do N8N
-        - traefik.http.routers.n8n${1:+_$1}_editor.entrypoints=websecure
-        - traefik.http.routers.n8n${1:+_$1}_editor.priority=1
-        - traefik.http.routers.n8n${1:+_$1}_editor.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.n8n${1:+_$1}_editor.service=n8n${1:+_$1}_editor
-        - traefik.http.services.n8n${1:+_$1}_editor.loadbalancer.server.port=5678
-        - traefik.http.services.n8n${1:+_$1}_editor.loadbalancer.passHostHeader=1
+        - traefik.http.routers.n8n_editor.rule=Host(\`$url_editorn8n\`) ## Url do Editor do N8N
+        - traefik.http.routers.n8n_editor.entrypoints=websecure
+        - traefik.http.routers.n8n_editor.priority=1
+        - traefik.http.routers.n8n_editor.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.n8n_editor.service=n8n_editor
+        - traefik.http.services.n8n_editor.loadbalancer.server.port=5678
+        - traefik.http.services.n8n_editor.loadbalancer.passHostHeader=1
 
 # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  n8n${1:+_$1}_webhook:
+  n8n_webhook:
     image: n8nio/n8n:latest ## Versão do N8N
     command: webhook
 
@@ -18819,7 +18819,7 @@ services:
     environment:
       ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
@@ -18894,19 +18894,19 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n${1:+_$1}_webhook.rule=(Host(\`$url_webhookn8n\`)) ## Url do Webhook do N8N
-        - traefik.http.routers.n8n${1:+_$1}_webhook.entrypoints=websecure
-        - traefik.http.routers.n8n${1:+_$1}_webhook.priority=1
-        - traefik.http.routers.n8n${1:+_$1}_webhook.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.n8n${1:+_$1}_webhook.service=n8n${1:+_$1}_webhook
-        - traefik.http.services.n8n${1:+_$1}_webhook.loadbalancer.server.port=5678
-        - traefik.http.services.n8n${1:+_$1}_webhook.loadbalancer.passHostHeader=1
+        - traefik.http.routers.n8n_webhook.rule=(Host(\`$url_webhookn8n\`)) ## Url do Webhook do N8N
+        - traefik.http.routers.n8n_webhook.entrypoints=websecure
+        - traefik.http.routers.n8n_webhook.priority=1
+        - traefik.http.routers.n8n_webhook.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.n8n_webhook.service=n8n_webhook
+        - traefik.http.services.n8n_webhook.loadbalancer.server.port=5678
+        - traefik.http.services.n8n_webhook.loadbalancer.passHostHeader=1
 
 # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  n8n${1:+_$1}_worker:
+  n8n_worker:
     image: n8nio/n8n:latest ## Versão do N8N
     command: worker --concurrency=10
 
@@ -18916,7 +18916,7 @@ services:
     environment:
       ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
@@ -19006,7 +19006,7 @@ EOL
       echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
   fi
 
-  STACK_NAME="n8n${1:+_$1}"
+  STACK_NAME="n8n"
   stack_editavel 
 
   ## Mensagem de Passo
@@ -19018,13 +19018,13 @@ EOL
   pull n8nio/n8n:latest
 
   ## Usa o serviço wait_n8n para verificar se o serviço esta online
-  wait_stack n8n${1:+_$1}_n8n${1:+_$1}_editor n8n${1:+_$1}_n8n${1:+_$1}_webhook n8n${1:+_$1}_n8n${1:+_$1}_worker
+  wait_stack n8n_n8n_editor n8n_n8n_webhook n8n_n8n_worker
 
 
 
   cd dados_vps
 
-cat > dados_n8n${1:+_$1} <<EOL
+cat > dados_n8n <<EOL
 [ N8N ]
 
 Dominio do N8N: https://$url_editorn8n
@@ -19082,13 +19082,13 @@ if [ $? -eq 0 ]; then
     echo "🔍 Etapa 1/3: Verificando instalação do Postgres... [OK]"
     pegar_senha_postgres > /dev/null 2>&1
     echo "🔐 Etapa 2/3: Copiando a senha do Postgres... [OK]"
-    criar_banco_postgres_da_stack "evolution${1:+_$1}"
-    echo "🛠️ Etapa 3/3: Criando o banco de dados 'evolution${1:+_$1}'... [OK]"
+    criar_banco_postgres_da_stack "evolution"
+    echo "🛠️ Etapa 3/3: Criando o banco de dados 'evolution'... [OK]"
     echo ""
 else
     ferramenta_postgres
     pegar_senha_postgres > /dev/null 2>&1
-    criar_banco_postgres_da_stack "evolution${1:+_$1}"
+    criar_banco_postgres_da_stack "evolution"
 fi
 
 pegar_senha_postgres > /dev/null 2>&1
@@ -19104,7 +19104,7 @@ sleep 1
 apikeyglobal=$(openssl rand -hex 16)
 
 ## Criando a stack evolution.yaml
-cat > evolution${1:+_$1}.yaml <<EOL
+cat > evolution.yaml <<EOL
 version: "3.7"
 services:
 
@@ -19112,11 +19112,11 @@ services:
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  evolution${1:+_$1}_api:
+  evolution_api:
     image: evoapicloud/evolution-api:latest ## Versão da Evolution API
 
     volumes:
-      - evolution${1:+_$1}_instances:/evolution/instances
+      - evolution_instances:/evolution/instances
 
     networks:
       - $nome_rede_interna ## Nome da rede interna
@@ -19139,8 +19139,8 @@ services:
       ## 🗄️ Configuração do Banco de Dados
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://postgres:$senha_postgres@postgres:5432/evolution${1:+_$1}
-      - DATABASE_CONNECTION_CLIENT_NAME=evolution${1:+_$1}
+      - DATABASE_CONNECTION_URI=postgresql://postgres:$senha_postgres@postgres:5432/evolution
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution
       - DATABASE_SAVE_DATA_INSTANCE=true
       - DATABASE_SAVE_DATA_NEW_MESSAGE=true
       - DATABASE_SAVE_MESSAGE_UPDATE=true
@@ -19174,7 +19174,7 @@ services:
       
       ## 🧊 Configuração do Cache
       - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://evolution${1:+_$1}_redis:6379/1
+      - CACHE_REDIS_URI=redis://evolution_redis:6379/1
       - CACHE_REDIS_PREFIX_KEY=evolution
       - CACHE_REDIS_SAVE_INSTANCES=false
       - CACHE_LOCAL_ENABLED=false
@@ -19213,7 +19213,7 @@ services:
       ## 🐇 Configuração do RabbitMQ
       - RABBITMQ_ENABLED=false
       - RABBITMQ_FRAME_MAX=8192
-      - RABBITMQ_URI=amqp://USER:PASS@rabbitmq:5672/evolution${1:+_$1}
+      - RABBITMQ_URI=amqp://USER:PASS@rabbitmq:5672/evolution
       - RABBITMQ_EXCHANGE_NAME=evolution
       - RABBITMQ_GLOBAL_ENABLED=false
       - RABBITMQ_EVENTS_APPLICATION_STARTUP=false
@@ -19287,7 +19287,7 @@ services:
       - PROVIDER_ENABLED=false
       - PROVIDER_HOST=127.0.0.1
       - PROVIDER_PORT=5656
-      - PROVIDER_PREFIX=evolution${1:+_$1}
+      - PROVIDER_PREFIX=evolution
       
     deploy:
       mode: replicated
@@ -19297,19 +19297,19 @@ services:
         - node.role == manager
       labels:
         - traefik.enable=1
-        - traefik.http.routers.evolution${1:+_$1}.rule=Host(\`$url_evolution\`) ## Url da Evolution API
-        - traefik.http.routers.evolution${1:+_$1}.entrypoints=websecure
-        - traefik.http.routers.evolution${1:+_$1}.priority=1
-        - traefik.http.routers.evolution${1:+_$1}.tls.certresolver=letsencryptresolver
-        - traefik.http.routers.evolution${1:+_$1}.service=evolution${1:+_$1}
-        - traefik.http.services.evolution${1:+_$1}.loadbalancer.server.port=8080
-        - traefik.http.services.evolution${1:+_$1}.loadbalancer.passHostHeader=true
+        - traefik.http.routers.evolution.rule=Host(\`$url_evolution\`) ## Url da Evolution API
+        - traefik.http.routers.evolution.entrypoints=websecure
+        - traefik.http.routers.evolution.priority=1
+        - traefik.http.routers.evolution.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.evolution.service=evolution
+        - traefik.http.services.evolution.loadbalancer.server.port=8080
+        - traefik.http.services.evolution.loadbalancer.passHostHeader=true
 
 # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
 # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
-  evolution${1:+_$1}_redis:
+  evolution_redis:
     image: redis:latest  ## Versão do Redis
     command: [
         "redis-server",
@@ -19320,7 +19320,7 @@ services:
       ]
 
     volumes:
-      - evolution${1:+_$1}_redis:/data
+      - evolution_redis:/data
 
     networks:
       - $nome_rede_interna ## Nome da rede interna
@@ -19343,12 +19343,12 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
-  evolution${1:+_$1}_instances:
+  evolution_instances:
     external: true
-    name: evolution${1:+_$1}_instances
-  evolution${1:+_$1}_redis:
+    name: evolution_instances
+  evolution_redis:
     external: true
-    name: evolution${1:+_$1}_redis
+    name: evolution_redis
 
 networks:
   $nome_rede_interna: ## Nome da rede interna
@@ -19361,7 +19361,7 @@ else
     echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API"
     echo -e "⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
 fi
-STACK_NAME="evolution${1:+_$1}"
+STACK_NAME="evolution"
 stack_editavel 
 
 
@@ -19378,7 +19378,7 @@ sleep 1
 pull redis:latest evoapicloud/evolution-api:latest
 
 ## Usa o serviço wait_evolution para verificar se o serviço esta online
-wait_stack evolution${1:+_$1}_evolution${1:+_$1}_redis evolution${1:+_$1}_evolution${1:+_$1}_api
+wait_stack evolution_evolution_redis evolution_evolution_api
 
 
 cd dados_vps
