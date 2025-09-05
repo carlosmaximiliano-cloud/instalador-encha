@@ -18645,15 +18645,13 @@ instalar_ferramenta_n8n() {
   msg_n8n
   dados
 
-  local msg_n8n="$1"
-  local dados="$2"
-  local url_editorn8n="$3"
-  local url_webhookn8n="$4"
-  local email_smtp_n8n="$5"
-  local usuario_smtp_n8n="$6"
-  local senha_smtp_n8n="$7"
-  local host_smtp_n8n="$8"
-  local porta_smtp_n8n="$9"
+  local url_editorn8n="$1"
+  local url_webhookn8n="$2"
+  local email_smtp_n8n="$3"
+  local usuario_smtp_n8n="$4"
+  local senha_smtp_n8n="$5"
+  local host_smtp_n8n="$6"
+  local porta_smtp_n8n="$7"
 
   ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
   if [ "$porta_smtp_typebot" -eq 465 ]; then
