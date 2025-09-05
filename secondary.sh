@@ -7026,35 +7026,92 @@ ferramenta_qdrant(){
   msg_qdrant
   dados
 
+  while true; do
+    read -r ip _ <<<$(hostname -I)
+    echo -e "\e[97mPasso$amarelo 1/2\e[0m"
+    echo -en "\e[33mDigite o ip da vps (seu ip: $ip) ou dominio para Qdrant (ex: qdrant.oriondesign.art.br): \e[0m" && read -r ip_vps
+    echo ""
+    echo -e "\e[97mPasso$amarelo 2/2\e[0m"
+    echo -en "\e[33mDigite quantos Nodes você deseja (recomendado: 5): \e[0m" && read -r nodes_qdrant
+
+    clear
+    msg_qdrant
+
+    echo -e "\e[33mIp da VPS ou Dominio:\e[97m $ip_vps\e[0m"
+    echo ""
+    echo -e "\e[33mQuantidade de Nodes:\e[97m $nodes_qdrant\e[0m"
+    echo ""
+    read -p "As respostas estão corretas? (Y/N): " confirmacao
+
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_qdrant; fi
+  done
+
   echo -e "\e[97m🚀 Iniciando a instalação do Qdrant...\e[0m"
 
-  cat > qdrant.yaml <<EOL
+  cat <<EOL > qdrant.yaml
 version: "3.7"
 services:
+EOL
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+  for ((i=0; i< $nodes_qdrant; i++)); do
+    node_name="qdrant_node_$i"
+    volume_name="qdrant_data_$i"
 
-  qdrant:
-    image: qdrant/qdrant:latest
+    cat <<EOL >> qdrant.yaml
+
+  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  $node_name:
+    image: qdrant/qdrant:latest ## Versão do Qdrant
+
     volumes:
-      - qdrant_data:/qdrant/storage
+      - $volume_name:/qdrant
+
     networks:
-      - ${nome_rede_interna}
+      - $nome_rede_interna
+
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "$((6333 + i * 10)):6333"
+      - "$((6334 + i * 10)):6334"
+
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__CLUSTER__ENABLED=true
+      - QDRANT__CLUSTER__P2P__PORT=6335
+      - QDRANT__CLUSTER__CONSENSUS__MAX_MESSAGE_QUEUE_SIZE=5000
+      - QDRANT__LOG_LEVEL=debug,raft=info
+
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 2048M
+          cpus: "0.3"
+EOL
+
+    if ((i == 0)); then
+      echo "    command: ./qdrant --uri 'http://qdrant_node_0:6335'" >> qdrant.yaml
+    else
+      echo "    command: bash -c \"sleep $((10 + i * 3)) && ./qdrant --bootstrap 'http://qdrant_node_0:6335' --uri 'http://qdrant_node_$i:6335'\"" >> qdrant.yaml
+    fi
+
+    echo "" >> qdrant.yaml
+  done
+
+  cat <<EOL >> qdrant.yaml
+## --------------------------- ORION --------------------------- ##
+
 volumes:
-  qdrant_data:
+EOL
+
+for ((i=0; i< $nodes_qdrant; i++)); do
+  volume_name="qdrant_data_$i"
+  echo "  $volume_name:" >> qdrant.yaml
+done
+
+cat <<EOL >> qdrant.yaml
 networks:
-  ${nome_rede_interna}:
-    external: true
+  $nome_rede_interna:
 EOL
 
   STACK_NAME="qdrant"
@@ -7067,19 +7124,15 @@ EOL
   cat > dados_qdrant <<EOL
 [ QDRANT ]
 
-Host: ${ip}
-Porta gRPC: 6334
-Porta REST: 6333
-Dashboard: http://${ip}:6333/dashboard
+Dominio: https://$ip_vps:6333/dashboard{ip}:6333/dashboard
 EOL
 
   cd
 
   msg_resumo_informacoes
   echo "✅ Qdrant instalado com sucesso!"
-  echo "Host: ${ip}"
+  echo -e "\e[33mDashboard:\e[97m http://$ip_vps:6333/dashboard\e[0m"
   echo "Porta REST API: 6333"
-  echo "Acesse o Dashboard em: http://${ip}:6333/dashboard"
   msg_retorno_menu
 
 }
