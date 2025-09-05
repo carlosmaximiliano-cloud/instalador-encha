@@ -18097,76 +18097,153 @@ exibir_bloco_centralizado() {
 }
 
 
-exibir_menu_nano () {
-    centralizar "--- NANO ---"
+# exibir_menu_nano () {
+#     centralizar "--- NANO ---"
+#     printf "\n"
+#     exibir_bloco_centralizado \
+#         "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer${reset}" \
+#         "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API${reset}" \
+#         "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N${reset}" \
+#         "" \
+#         "${amarelo_escuro}[ V ]${reset}  ${cinza}- Voltar ao Menu Principal${reset}"
+# }
+
+# processar_menu_nano() {
+#     while true; do
+#         clear
+#         banner
+#         exibir_menu_nano
+#         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
+#         read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_nano
+
+#         case $opcao_nano in
+#             01|1)
+#                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
+#                 ferramenta_traefik_e_portainer
+#                 ;;
+#             02|2)
+#                 verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
+#                 if verificar_docker_e_portainer_traefik; then
+#                     STACK_NAME="evolution${opcao2:+_$opcao2}"
+#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+#                         ferramenta_evolution "$opcao2"
+#                     else
+#                         APP_ENCHA="ferramenta_evolution"
+#                         verificar_arquivo
+#                     fi
+#                 fi
+#                 ;;
+#             03|3)
+#                 verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
+#                 if verificar_docker_e_portainer_traefik; then
+#                     STACK_NAME="n8n${opcao2:+_$opcao2}"
+#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+#                         ferramenta_n8n "$opcao2"
+#                     else
+#                         APP_ENCHA="ferramenta_n8n"
+#                         verificar_arquivo
+#                     fi
+#                 fi
+#                 ;;
+#             99)
+#                 verificar_status_servicos
+#                 echo "Aperte ENTER para retornar ao menu de ferramentas"
+#                 read
+#                 sleep 2
+#                 ;;
+#             100)
+#                 echo -e "\n${verde}Saindo do menu...${reset}"
+#                 sleep 1
+#                 exit 0
+#                 ;;
+#             V|v)
+#                 echo "Voltando ao menu principal..."
+#                 sleep 1
+#                 return
+#                 ;;
+#             *)
+#                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
+#                 sleep 2
+#                 ;;
+#         esac
+#     done
+# }
+
+
+instalar_plano_nano_automatico() {
+    clear
+    banner
+    centralizar "--- INSTALANDO STACKS DO PLANO NANO ---"
     printf "\n"
-    exibir_bloco_centralizado \
-        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer${reset}" \
-        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API${reset}" \
-        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N${reset}" \
-        "" \
-        "${amarelo_escuro}[ V ]${reset}  ${cinza}- Voltar ao Menu Principal${reset}"
-}
+    
+    # Variável para controlar se podemos prosseguir
+    local pre_requisitos_ok=true
 
-processar_menu_nano() {
-    while true; do
-        clear
-        banner
-        exibir_menu_nano
-        echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-        read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_nano
+    # --- 1. Instalação do Traefik & Portainer ---
+    echo -e "${amarelo_escuro}[ 1/3 ]${reset} ${cinza}Verificando e instalando Traefik & Portainer...${reset}"
+    if verificar_stack "portainer${opcao2:+_$opcao2}"; then
+        echo -e "${verde}✔ Traefik & Portainer já estão instalados.${reset}"
+    else
+        ferramenta_traefik_e_portainer
+        # Verifica se a instalação foi bem-sucedida antes de continuar
+        if ! verificar_docker_e_portainer_traefik; then
+            echo -e "${vermelho}❌ Falha na instalação ou configuração do Traefik & Portainer. Abortando as outras instalações.${reset}"
+            pre_requisitos_ok=false
+        else
+             echo -e "${verde}✔ Traefik & Portainer instalados com sucesso.${reset}"
+        fi
+    fi
+    printf "\n"
 
-        case $opcao_nano in
-            01|1)
-                verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
-                ferramenta_traefik_e_portainer
-                ;;
-            02|2)
-                verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="evolution${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_evolution "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_evolution"
-                        verificar_arquivo
-                    fi
+    # --- 2. Instalação da Evolution API ---
+    if [ "$pre_requisitos_ok" = true ]; then
+        echo -e "${amarelo_escuro}[ 2/3 ]${reset} ${cinza}Verificando e instalando Evolution API...${reset}"
+        if verificar_stack "evolution${opcao2:+_$opcao2}"; then
+            echo -e "${verde}✔ Evolution API já está instalada.${reset}"
+        else
+            # A verificação 'verificar_docker_e_portainer_traefik' já foi feita acima,
+            # mas é uma boa prática garantir aqui também.
+            if verificar_docker_e_portainer_traefik; then
+                STACK_NAME="evolution${opcao2:+_$opcao2}"
+                if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                    # A variável $opcao2 provavelmente estará vazia neste contexto,
+                    # o que é o comportamento esperado para uma instalação padrão.
+                    ferramenta_evolution "$opcao2"
+                else
+                    APP_ENCHA="ferramenta_evolution"
+                    verificar_arquivo
                 fi
-                ;;
-            03|3)
-                verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
-                    STACK_NAME="n8n${opcao2:+_$opcao2}"
-                    if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                        ferramenta_n8n "$opcao2"
-                    else
-                        APP_ENCHA="ferramenta_n8n"
-                        verificar_arquivo
-                    fi
+                echo -e "${verde}✔ Evolution API instalada com sucesso.${reset}"
+            else
+                echo -e "${vermelho}❌ Pré-requisitos (Traefik/Portainer) não atendidos. Pulando Evolution API.${reset}"
+            fi
+        fi
+    fi
+    printf "\n"
+
+    # --- 3. Instalação do N8N ---
+    if [ "$pre_requisitos_ok" = true ]; then
+        echo -e "${amarelo_escuro}[ 3/3 ]${reset} ${cinza}Verificando e instalando N8N...${reset}"
+        if verificar_stack "n8n${opcao2:+_$opcao2}"; then
+            echo -e "${verde}✔ N8N já está instalado.${reset}"
+        else
+            if verificar_docker_e_portainer_traefik; then
+                STACK_NAME="n8n${opcao2:+_$opcao2}"
+                if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
+                    ferramenta_n8n "$opcao2"
+                else
+                    APP_ENCHA="ferramenta_n8n"
+                    verificar_arquivo
                 fi
-                ;;
-            99)
-                verificar_status_servicos
-                echo "Aperte ENTER para retornar ao menu de ferramentas"
-                read
-                sleep 2
-                ;;
-            100)
-                echo -e "\n${verde}Saindo do menu...${reset}"
-                sleep 1
-                exit 0
-                ;;
-            V|v)
-                echo "Voltando ao menu principal..."
-                sleep 1
-                return
-                ;;
-            *)
-                echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-                sleep 2
-                ;;
-        esac
-    done
+                 echo -e "${verde}✔ N8N instalado com sucesso.${reset}"
+            else
+                echo -e "${vermelho}❌ Pré-requisitos (Traefik/Portainer) não atendidos. Pulando N8N.${reset}"
+            fi
+        fi
+    fi
+    
+    echo -e "\n\n${verde}Instalação do Plano NANO concluída!${reset}"
+    read -p "Pressione ENTER para voltar ao menu principal..."
 }
 
 
@@ -19117,6 +19194,7 @@ processar_menu_unlimited() {
 }
 
 menu_principal() {
+
     while true; do
         clear
         banner
@@ -19138,7 +19216,7 @@ menu_principal() {
 
         case $escolha_plano in
             1)
-                processar_menu_nano
+                instalar_plano_nano_automatico
                 ;;
             2)
                 processar_menu_business
