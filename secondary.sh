@@ -18204,8 +18204,6 @@ instalar_plano_nano_automatico() {
             if verificar_docker_e_portainer_traefik; then
                 STACK_NAME="evolution${opcao2:+_$opcao2}"
                 if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-                    # A variável $opcao2 provavelmente estará vazia neste contexto,
-                    # o que é o comportamento esperado para uma instalação padrão.
                     ferramenta_evolution "$opcao2"
                 else
                     APP_ENCHA="ferramenta_evolution"
