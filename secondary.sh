@@ -18256,10 +18256,10 @@ instalar_plano_nano_completo() {
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
 
         echo -e "${amarelo_escuro}PARTE 1/3: Servidor e Portainer${reset}\n"
-        read -p "Digite o domínio para o Portainer (ex: portainer.meudominio.com): " url_portainer
+        read -p "Digite o domínio para o Portainer (ex: porto.encha.ai): " url_portainer
         read -p "Digite um nome para o seu servidor (ex: EnchaServer): " nome_servidor
         read -p "Digite um nome para a rede interna Docker (ex: EnchaNet): " nome_rede_interna
-        read -p "Digite seu e-mail para o certificado SSL (Let's Encrypt): " email_ssl
+        read -p "Digite seu e-mail para o certificado SSL (ex: instalador@encha.ai): " email_ssl
         read -p "Digite um nome de usuário para o Portainer: " user_portainer
 
         while true; do
@@ -18270,12 +18270,12 @@ instalar_plano_nano_completo() {
         echo ""
 
         echo -e "${amarelo_escuro}PARTE 2/3: Evolution API${reset}\n"
-        read -p "Digite o domínio para a Evolution API (ex: evolution.meudominio.com): " url_evolution
+        read -p "Digite o domínio para a Evolution API (ex: evo.encha.ai): " url_evolution
         echo ""
 
         echo -e "${amarelo_escuro}PARTE 3/3: N8N${reset}\n"
-        read -p "Digite o domínio para o Editor do N8N (ex: n8n.meudominio.com): " url_editorn8n
-        read -p "Digite o domínio para o Webhook do N8N (ex: webhook.meudominio.com): " url_webhookn8n
+        read -p "Digite o domínio para o Editor do N8N (ex: n8n.encha.ai): " url_editorn8n
+        read -p "Digite o domínio para o Webhook do N8N (ex: webhook.encha.ai): " url_webhookn8n
         echo -e "\n${cinza}Agora, configure o SMTP para o N8N (para recuperação de senha, etc.)${reset}"
         read -p "E-mail remetente do SMTP (ex: contato@meudominio.com): " email_smtp_n8n
         read -p "Usuário do SMTP (pode ser o mesmo e-mail): " usuario_smtp_n8n
@@ -18309,9 +18309,7 @@ instalar_plano_nano_completo() {
     banner
     echo -e "${verde}Ótimo! Iniciando a instalação completa do Plano Nano. Isso pode levar vários minutos...${reset}\n"
 
-    #################################################################
-    # ➡️ ETAPA 1/5: INSTALANDO TRAEFIK E PORTAINER
-    #################################################################
+    # ETAPA 1/5: INSTALANDO TRAEFIK E PORTAINER
     echo -e "--- ETAPA 1/5: Instalando Traefik e Portainer ---\n"
     
     cd ~ || exit 1
@@ -18414,14 +18412,16 @@ networks:
 EOL
     sudo docker stack deploy -c portainer.yaml portainer > /dev/null 2>&1
 
-    echo -e "\n⏳  Aguardando serviços e criando usuário Portainer..."
+    echo -e "\n⏳  Aguardando serviços, certificado SSL e API do Portainer (isso pode levar até 2 minutos)..."
     wait_stack "traefik_traefik" && wait_stack "portainer_portainer"
-    sleep 30
+    sleep 90 # TEMPO DE ESPERA AUMENTADO PARA 90 SEGUNDOS
     
     MAX_RETRIES=4; DELAY=15; CONTA_CRIADA=false
     for i in $(seq 1 $MAX_RETRIES); do
-        RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" -H "Content-Type: application/json" -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
-        if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
+        RESPONSE=$(curl --fail -k -s -X POST "https://$url_portainer/api/users/admin/init" -H "Content-Type: application/json" -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+        CURL_EXIT_CODE=$?
+
+        if [ $CURL_EXIT_CODE -eq 0 ] && echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
             echo -e "  [\e[32mOK\e[0m] - Conta de administrador do Portainer criada."
             CONTA_CRIADA=true; break
         else
@@ -18441,7 +18441,15 @@ EOL
             token=""
         fi
     else
+        # MENSAGEM DE ERRO MELHORADA
         echo -e "  [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador do Portainer."
+        if [ $CURL_EXIT_CODE -ne 0 ]; then
+            echo -e "  ⚠️  \e[31mCausa Provável: Erro de Conexão (Código Curl: $CURL_EXIT_CODE).\e[0m"
+            echo -e "     \e[33mVerifique se o domínio '$url_portainer' está apontando corretamente para o IP ($ip) deste servidor.\e[0m"
+        else
+            echo -e "  ⚠️  \e[31mCausa Provável: A API do Portainer retornou um erro.\e[0m"
+            echo -e "     \e[33mResposta do Servidor: $RESPONSE\e[0m"
+        fi
     fi
     
     cd dados_vps
@@ -18456,18 +18464,14 @@ EOL
 
     echo -e "\n${verde}✅ Etapa 1/5 concluída!${reset}\n"; sleep 3
 
-    #################################################################
-    # ➡️ ETAPA 2/5: INSTALANDO DEPENDÊNCIAS (POSTGRES & REDIS)
-    #################################################################
+    # ETAPA 2/5: INSTALANDO DEPENDÊNCIAS (POSTGRES & REDIS)
     echo -e "--- ETAPA 2/5: Instalando Dependências (PostgreSQL & Redis) ---\n"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres > /dev/null 2>&1
     verificar_container_redis || ferramenta_redis
     echo -e "\n${verde}✅ Etapa 2/5 concluída!${reset}\n"; sleep 3
 
-    #################################################################
-    # ➡️ ETAPA 3/5: INSTALANDO EVOLUTION API VIA PORTAINER API
-    #################################################################
+    # ETAPA 3/5: INSTALANDO EVOLUTION API VIA PORTAINER API
     echo -e "--- ETAPA 3/5: Instalando Evolution API ---\n"
     criar_banco_postgres_da_stack "evolution"
     apikeyglobal=$(openssl rand -hex 16)
@@ -18543,9 +18547,7 @@ EOL
     cd ~
     echo -e "\n${verde}✅ Etapa 3/5 concluída!${reset}\n"; sleep 3
     
-    #################################################################
-    # ➡️ ETAPA 4/5: INSTALANDO N8N VIA PORTAINER API
-    #################################################################
+    # ETAPA 4/5: INSTALANDO N8N VIA PORTAINER API
     echo -e "--- ETAPA 4/5: Instalando N8N ---\n"
     criar_banco_postgres_da_stack "n8n_queue"
     encryption_key=$(openssl rand -hex 16)
@@ -18655,9 +18657,7 @@ EOL
     cd ~
     echo -e "\n${verde}✅ Etapa 4/5 concluída!${reset}\n"; sleep 3
 
-    #################################################################
-    # ➡️ ETAPA 5/5: RESUMO FINAL
-    #################################################################
+    # ETAPA 5/5: RESUMO FINAL
     clear
     banner
     msg_resumo_informacoes
