@@ -18247,7 +18247,6 @@ exibir_bloco_centralizado() {
 instalar_traefik_e_portainer() {
 
   msg_traefik_portainer
-  dados
 
   local url_portainer="$1"
   local user_portainer="$2"
