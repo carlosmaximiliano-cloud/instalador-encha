@@ -18246,6 +18246,9 @@ exibir_bloco_centralizado() {
 
 instalar_traefik_e_portainer() {
 
+  msg_traefik_portainer
+  dados
+
   local url_portainer="$1"
   local user_portainer="$2"
   local pass_portainer="$3"
@@ -18253,7 +18256,7 @@ instalar_traefik_e_portainer() {
   local nome_rede_interna="$5"
   local email_ssl="$6"
 
-  msg_traefik_portainer
+  
 
   echo -e "⚙️ \e[97mIniciando a instalação do Traefik \e[33m[1/9]\e[0m\n"
   sleep 1
@@ -18639,6 +18642,9 @@ sleep 2
 }
 
 instalar_ferramenta_n8n() {
+
+  msg_n8n
+  dados
 
   local msg_n8n="$1"
   local dados="$2"
@@ -19052,6 +19058,9 @@ wait_30_sec
 
 
 instalar_ferramenta_evolution() {
+
+  msg_evolution_api
+  dados
 
   local url_evolution="$1"
 
@@ -19488,13 +19497,8 @@ instalar_ambiente_completo() {
     # =================================================================
     clear
     msg_evolution_api # Supondo que esta função exiba um banner para a Evolution
-    echo -e "\e[97mPasso$amarelo 1/2\e[0m"
+    echo -e "\e[97mPasso$amarelo 1/1\e[0m"
     echo -ne "\e[33m🌐 Informe o domínio para a Evolution API (ex: api.encha.ai): \e[0m" && read -r url_evolution
-    echo ""
-
-    echo -e "\e[97mPasso$amarelo 2/2\e[0m"
-    echo -e "$amarelo➡️ Esta será a chave GLOBAL para acessar sua API."
-    echo -ne "\e[33m🔑 Informe uma Chave da API (API Key) segura: \e[0m" && read -r apikey_evolution
     echo ""
 
     # =================================================================
@@ -19524,7 +19528,7 @@ instalar_ambiente_completo() {
     echo ""
     echo -e "\e[97mConfigurações da Evolution API:\e[0m"
     echo -e "  - Domínio Evolution: \e[32m$url_evolution\e[0m"
-    echo -e "  - API Key Global:    \e[32m$apikey_evolution\e[0m"
+    echo -e "  - API Key Global:    \e[32mdentro do arquivo em dados_vps\e[0m"
     echo ""
     echo -e "\e[33m================================================================\e[0m"
 
@@ -19545,7 +19549,7 @@ instalar_ambiente_completo() {
 
   echo "Iniciando a instalação do ambiente..."
 
-  instalar_traefik_e_portainer "$url_portainer" "$user_portainer" "$pass_portainer" "$nome_servidor" "$email_ssl" "$nome_rede_interna"
+  instalar_traefik_e_portainer "$url_portainer" "$user_portainer" "$pass_portainer" "$nome_servidor" "$nome_rede_interna" "$email_ssl" 
   instalar_ferramenta_n8n "$url_editorn8n" "$url_webhookn8n" "$email_smtp_n8n" "$usuario_smtp_n8n" "$senha_smtp_n8n" "$host_smtp_n8n" "$porta_smtp_n8n"
   instalar_ferramenta_evolution "$url_evolution"
 
