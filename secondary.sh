@@ -18246,8 +18246,6 @@ exibir_menu_business () {
 
     centralizar "--- BUSINESS ---"
     printf "\n"
-
-
     exibir_bloco_centralizado \
         "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer     | ${amarelo_escuro}[ 11 ]${reset} - Grafana + Prometeus + Advisor${reset}" \
         "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API           | ${amarelo_escuro}[ 12 ]${reset} - PgAdmin 4${reset}" \
@@ -18259,10 +18257,6 @@ exibir_menu_business () {
         "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 18 ]${reset} - RedisInsight${reset}" \
         "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 19 ]${reset} - Stirling PDF${reset}" \
         "${amarelo_escuro}[ 10 ]${reset} ${cinza}- Chatwoot${reset}"
-
-
-
-
 
     echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
     printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
