@@ -18872,6 +18872,7 @@ EOL
   msg_retorno_menu
 }
 
+
 instalar_ambiente_completo() {
 
   clear
@@ -18883,30 +18884,47 @@ instalar_ambiente_completo() {
   while true; do
     # --- DADOS DA BASE ---
     echo -e "\n\e[33m[ PARÂMETROS DA BASE: TRAEFIK E PORTAINER ]\e[0m"
-    echo -ne "\e[36m(1/16) Domínio para o Portainer (ex: portainer.seusite.com):\e[0m " && read -r url_portainer
-    echo -ne "\e[36m(2/16) Usuário para o Portainer (ex: admin):\e[0m " && read -r user_portainer
-    echo -ne "\e[36m(3/16) Senha para o Portainer (mínimo 12 caracteres):\e[0m " && read -r pass_portainer
-    echo -ne "\e[36m(4/16) Nome para o servidor (ex: MeuServidor):\e[0m " && read -r nome_servidor
-    echo -ne "\e[36m(5/16) Nome para a rede interna (ex: MinhaRede):\e[0m " && read -r nome_rede_interna
-    echo -ne "\e[36m(6/16) Email para o certificado SSL (Let's Encrypt):\e[0m " && read -r email_ssl
+    echo -ne "\e[36m(1/15) Domínio para o Portainer (ex: portainer.seusite.com):\e[0m " && read -r url_portainer
+    echo -ne "\e[36m(2/15) Usuário para o Portainer (ex: admin):\e[0m " && read -r user_portainer
+    
+    # --- LOOP DE VALIDAÇÃO DA SENHA DO PORTAINER ---
+    while true; do
+      echo -ne "\e[36m(3/15) Senha para o Portainer:\e[0m " && read -r pass_portainer
+      if [[ ${#pass_portainer} -ge 12 && "$pass_portainer" == *[A-Z]* && "$pass_portainer" == *[a-z]* && "$pass_portainer" == *[0-9]* && "$pass_portainer" == *[!@#\$%^\&*\(\)_+-=]* ]]; then
+        break # Senha válida, sai do loop
+      else
+        echo -e "\e[31mSenha inválida! A senha deve atender a TODOS os critérios abaixo:\e[0m"
+        echo -e "\e[33m  - No mínimo 12 caracteres.\e[0m"
+        echo -e "\e[33m  - Pelo menos uma letra MAIÚSCULA.\e[0m"
+        echo -e "\e[33m  - Pelo menos uma letra minúscula.\e[0m"
+        echo -e "\e[33m  - Pelo menos um NÚMERO.\e[0m"
+        echo -e "\e[33m  - Pelo menos um CARACTERE ESPECIAL (ex: @, #, _, -, !).\e[0m"
+        echo -e "\e[36mTente novamente.\e[0m"
+      fi
+    done
+    # --- FIM DA VALIDAÇÃO ---
+
+    echo -ne "\e[36m(4/15) Nome para o servidor (ex: MeuServidor):\e[0m " && read -r nome_servidor
+    echo -ne "\e[36m(5/15) Nome para a rede interna (ex: MinhaRede):\e[0m " && read -r nome_rede_interna
+    echo -ne "\e[36m(6/15) Email para o certificado SSL (Let's Encrypt):\e[0m " && read -r email_ssl
 
     # --- DADOS DO N8N ---
     echo -e "\n\e[33m[ PARÂMETROS DO N8N ]\e[0m"
-    echo -ne "\e[36m(7/16) Domínio do editor do n8n (ex: n8n.seusite.com):\e[0m " && read -r url_editorn8n
-    echo -ne "\e[36m(8/16) Domínio do webhook do n8n (ex: webhook.seusite.com):\e[0m " && read -r url_webhookn8n
-    echo -ne "\e[36m(9/16) Email para SMTP (ex: contato@seusite.com):\e[0m " && read -r email_smtp_n8n
-    echo -ne "\e[36m(10/16) Usuário para SMTP (pode ser o próprio email):\e[0m " && read -r usuario_smtp_n8n
-    echo -ne "\e[36m(11/16) Senha do SMTP:\e[0m " && read -r senha_smtp_n8n
-    echo -ne "\e[36m(12/16) Host SMTP (ex: smtp.hostinger.com):\e[0m " && read -r host_smtp_n8n
-    echo -ne "\e[36m(13/16) Porta SMTP (ex: 465 ou 587):\e[0m " && read -r porta_smtp_n8n
+    echo -ne "\e[36m(7/15) Domínio do editor do n8n (ex: n8n.seusite.com):\e[0m " && read -r url_editorn8n
+    echo -ne "\e[36m(8/15) Domínio do webhook do n8n (ex: webhook.seusite.com):\e[0m " && read -r url_webhookn8n
+    echo -ne "\e[36m(9/15) Email para SMTP (ex: contato@seusite.com):\e[0m " && read -r email_smtp_n8n
+    echo -ne "\e[36m(10/15) Usuário para SMTP (pode ser o próprio email):\e[0m " && read -r usuario_smtp_n8n
+    echo -ne "\e[36m(11/15) Senha do SMTP:\e[0m " && read -r senha_smtp_n8n
+    echo -ne "\e[36m(12/15) Host SMTP (ex: smtp.hostinger.com):\e[0m " && read -r host_smtp_n8n
+    echo -ne "\e[36m(13/15) Porta SMTP (ex: 465 ou 587):\e[0m " && read -r porta_smtp_n8n
 
     # --- DADOS DA EVOLUTION API ---
     echo -e "\n\e[33m[ PARÂMETROS DA EVOLUTION API ]\e[0m"
-    echo -ne "\e[36m(14/16) Domínio para a Evolution API (ex: evo.seusite.com):\e[0m " && read -r url_evolution
+    echo -ne "\e[36m(14/15) Domínio para a Evolution API (ex: evo.seusite.com):\e[0m " && read -r url_evolution
 
     # --- DADOS DO BANCO DE DADOS (COMPARTILHADO) ---
     echo -e "\n\e[33m[ PARÂMETROS DO BANCO DE DADOS (PostgreSQL) ]\e[0m"
-    echo -ne "\e[36m(15/16) Defina uma senha segura para o banco de dados PostgreSQL:\e[0m " && read -r senha_postgres
+    echo -ne "\e[36m(15/15) Defina uma senha para o banco de dados PostgreSQL:\e[0m " && read -r senha_postgres
 
     # --- TELA ÚNICA DE CONFIRMAÇÃO ---
     clear
@@ -18915,6 +18933,7 @@ instalar_ambiente_completo() {
     echo "━━━━━━━━━━━━━━━━━━[ AMBIENTE BASE ]━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m- Domínio Portainer:\e[0m   $url_portainer"
     echo -e "\e[33m- Usuário Portainer:\e[0m  $user_portainer"
+    echo -e "\e[33m- Senha Portainer:\e[0m    $pass_portainer"
     echo -e "\e[33m- Nome do Servidor:\e[0m    $nome_servidor"
     echo -e "\e[33m- Rede Interna:\e[0m        $nome_rede_interna"
     echo -e "\e[33m- Email SSL:\e[0m           $email_ssl\n"
@@ -18922,15 +18941,16 @@ instalar_ambiente_completo() {
     echo "━━━━━━━━━━━━━━━━━━━━━━[ N8N ]━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m- Domínio Editor:\e[0m      $url_editorn8n"
     echo -e "\e[33m- Domínio Webhook:\e[0m     $url_webhookn8n"
-    echo -e "\e[33m- SMTP Host:\e[0m           $host_smtp_n8n:$porta_smtp_n8n\n"
+    echo -e "\e[33m- SMTP Host:\e[0m           $host_smtp_n8n:$porta_smtp_n8n"
+    echo -e "\e[33m- SMTP Senha:\e[0m          $senha_smtp_n8n\n"
 
     echo "━━━━━━━━━━━━━━━━━[ EVOLUTION API ]━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m- Domínio API:\e[0m         $url_evolution\n"
 
     echo "━━━━━━━━━━━━━━━━━[ BANCO DE DADOS ]━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m- Senha do Postgres:\e[0m   [OCULTA]\n"
+    echo -e "\e[33m- Senha do Postgres:\e[0m   $senha_postgres\n"
 
-    read -p $'\e[32m(16/16) As informações estão corretas e prontas para a instalação? (Y/N):\e[0m ' confirmacao
+    read -p $'\e[32mAs informações estão corretas e prontas para a instalação? (Y/N):\e[0m ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
       break # Sai do loop se as informações estiverem corretas
     else
@@ -18975,6 +18995,10 @@ instalar_ambiente_completo() {
   echo -e "  - \e[36mURL do Manager:\e[0m https://$url_evolution/manager"
   echo -e "  - \e[36mChave Global API Key:\e[0m Será exibida no final da instalação da Evolution.\n"
 
+  echo -e "\e[33m[ OUTRAS INFORMAÇÕES ]\e[0m"
+  echo -e "  - \e[36mSenha SMTP (n8n):\e[0m $senha_smtp_n8n"
+  echo -e "  - \e[36mSenha PostgreSQL:\e[0m $senha_postgres\n"
+  
   echo "──────────────────────────────────────────────────────────"
   msg_retorno_menu
   
