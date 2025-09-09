@@ -161,8 +161,7 @@ centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═════�
                 banner_agradecimento
                 echo ""
 
-                cat << EOF
-${amarelo}# ==================================================================================================
+                echo -e "${amarelo}# ==================================================================================================
 # Este auto-instalador foi desenvolvido para auxiliar na instalação das principais aplicações
 # disponíveis no mercado open source. Os créditos originais de cada aplicação pertencem
 # aos respectivos desenvolvedores.
@@ -175,8 +174,9 @@ ${amarelo}# ====================================================================
 # integrar, publicar, distribuir e/ou vender cópias dos produtos finais, desde que mantenha
 # este aviso e declare, de forma visível, que ${ciano}OrionDesign${amarelo} é o autor original e que foi refatorado
 # pela ${verde}Encha AI${amarelo}, incluindo os links para https://oriondesign.art.br/setup e https://encha.ai.
-# ==================================================================================================${reset}
-EOF
+# ==================================================================================================${reset}"
+                
+                echo ""
                 echo ""
                 echo -e "${ciano}Prosseguindo com a instalação em 5 segundos...${reset}"
                 sleep 5
