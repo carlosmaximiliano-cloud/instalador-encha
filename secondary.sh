@@ -19476,7 +19476,7 @@ instalar_ambiente_completo() {
     clear
     msg_n8n # Supondo que esta função exiba um banner para o N8N
     echo -e "\e[97mPasso$amarelo 1/7\e[0m"
-    echo -ne "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
+    echo -ne "\e[33m🌐 Informe o domínio para o N8N (ex: teste.encha.ai): \e[0m" && read -r url_editorn8n
     echo ""
 
     echo -e "\e[97mPasso$amarelo 2/7\e[0m"
@@ -19582,7 +19582,35 @@ instalar_ambiente_completo() {
     fi
                
   # validar informações
+  clear
+  echo -e "\e[33m================================================================\e[0m"
+  echo -e "\e[36mFerramentas Instaladas com Sucesso:\e[0m"
+  echo -e "\e[33m================================================================\e[0m"
+  echo ""
+  echo -e "\e[97mConfigurações Gerais e Portainer:\e[0m"
+  echo -e "  - Domínio Portainer: \e[32m$url_portainer\e[0m"
+  echo -e "  - Usuário Portainer: \e[32m$user_portainer\e[0m"
+  echo -e "  - Senha Portainer:   \e[32m$pass_portainer\e[0m"
+  echo -e "  - Nome do Servidor:  \e[32m$nome_servidor\e[0m"
+  echo -e "  - Rede Interna:      \e[32m$nome_rede_interna\e[0m"
+  echo -e "  - Email para SSL:    \e[32m$email_ssl\e[0m"
+  echo ""
+  echo -e "\e[97mConfigurações do N8N:\e[0m"
+  echo -e "  - Domínio N8N:         \e[32m$url_editorn8n\e[0m"
+  echo -e "  - Domínio Webhook N8N: \e[32m$url_webhookn8n\e[0m"
+  echo -e "  - SMTP Email:          \e[32m$email_smtp_n8n\e[0m"
+  echo -e "  - SMTP Usuário:        \e[32m$usuario_smtp_n8n\e[0m"
+  echo -e "  - SMTP Senha:          \e[32m$usuario_smtp_n8ne[0m"
+  echo -e "  - SMTP Host:           \e[32m$host_smtp_n8n\e[0m"
+  echo -e "  - SMTP Porta:          \e[32m$porta_smtp_n8n\e[0m"
+  echo ""
+  echo -e "\e[97mConfigurações da Evolution API:\e[0m"
+  echo -e "  - Domínio Evolution: \e[32m$url_evolution\e[0m"
+  echo -e "  - API Key Global:    \e[32mdentro do arquivo em dados_vps\e[0m"
+  echo ""
+  echo -e "\e[33m================================================================\e[0m"
   msg_retorno_menu
+  
 }
 
 processar_menu_business() {
