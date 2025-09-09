@@ -141,8 +141,33 @@ centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═════�
 
         case "$confirmacao" in
             [Yy])
-                echo -e "${verde}✔ Termos aceitos. Prosseguindo com a instalação...${reset}"
-                sleep 3
+                echo -e "${verde}✔ Termos aceitos. um momento...${reset}"
+                sleep 2
+
+                # Seção de agradecimentos
+                clear
+                centralizar "AGRADECIMENTOS E CRÉDITOS"
+                echo ""
+
+                cat << EOF
+${amarelo}# ==================================================================================================
+# Este auto-instalador foi desenvolvido para auxiliar na instalação das principais aplicações
+# disponíveis no mercado open source. Os créditos originais de cada aplicação pertencem
+# aos respectivos desenvolvedores.
+#
+# Este script foi criado originalmente pela ${ciano}OrionDesign${amarelo} (contato@oriondesign.art.br | https://oriondesign.art.br/setup)
+# e posteriormente refatorado pela ${verde}Encha AI${amarelo} (instalador@encha.ai | https://encha.ai), uma ferramenta
+# de IA para automação de tarefas e otimização de processos.
+#
+# Este Setup é licenciado sob a Licença MIT Modificada. Você pode usar, copiar, modificar,
+# integrar, publicar, distribuir e/ou vender cópias dos produtos finais, desde que mantenha
+# este aviso e declare, de forma visível, que ${ciano}OrionDesign${amarelo} é o autor original e que foi refatorado
+# pela ${verde}Encha AI${amarelo}, incluindo os links para https://oriondesign.art.br/setup e https://encha.ai.
+# ==================================================================================================${reset}
+EOF
+                echo ""
+                echo -e "${ciano}Prosseguindo com a instalação em 5 segundos...${reset}"
+                sleep 5
                 break
                 ;;
             [Nn])
@@ -288,7 +313,7 @@ fi
 
 # Baixar novo script
 status_info "Baixando o Instalador Encha da fonte oficial..."
-if curl -fsSL --retry 3 --connect-timeout 10 https://raw.githubusercontent.com/Nanashii76/Instalador-Encha/refs/heads/main/secondary.sh -o SetupEnchaAI; then
+if curl -fsSL --retry 3 --connect-timeout 10 https://raw.githubusercontent.com/Encha-Ai/Instalador-Encha/main/secondary.sh -o SetupEnchaAI; then
     chmod +x SetupEnchaAI
     status_ok "Instalador Encha baixado com sucesso"
     
