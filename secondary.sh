@@ -18242,28 +18242,6 @@ exibir_bloco_centralizado() {
 #     read -p "Pressione ENTER para voltar ao menu principal..."
 # }
 
-exibir_menu_business () {
-
-    centralizar "--- BUSINESS ---"
-    printf "\n"
-    exibir_bloco_centralizado \
-        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer     | ${amarelo_escuro}[ 11 ]${reset} - Grafana + Prometeus + Advisor${reset}" \
-        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API           | ${amarelo_escuro}[ 12 ]${reset} - PgAdmin 4${reset}" \
-        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N                     | ${amarelo_escuro}[ 13 ]${reset} - Minio${reset}" \
-        "${amarelo_escuro}[ 04 ]${reset} ${cinza}- N8N Formação Encha      | ${amarelo_escuro}[ 14 ]${reset} - Mautic${reset}" \
-        "${amarelo_escuro}[ 05 ]${reset} ${cinza}- RabbitMQ                | ${amarelo_escuro}[ 15 ]${reset} - Qdrant${reset}" \
-        "${amarelo_escuro}[ 06 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ 16 ]${reset} - Duplicati${reset}" \
-        "${amarelo_escuro}[ 07 ]${reset} ${cinza}- Directus                | ${amarelo_escuro}[ 17 ]${reset} - Easyapointments${reset}" \
-        "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 18 ]${reset} - RedisInsight${reset}" \
-        "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 19 ]${reset} - Stirling PDF${reset}" \
-        "${amarelo_escuro}[ 10 ]${reset} ${cinza}- Chatwoot${reset}"
-
-    echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
-    printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
-    echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-
-}
-
 
 instalar_traefik_e_portainer() {
 
@@ -19610,8 +19588,32 @@ instalar_ambiente_completo() {
   echo ""
   echo -e "\e[33m================================================================\e[0m"
   msg_retorno_menu
+  menu_principal
   
 }
+
+exibir_menu_business () {
+
+    centralizar "--- BUSINESS ---"
+    printf "\n"
+    exibir_bloco_centralizado \
+        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer     | ${amarelo_escuro}[ 11 ]${reset} - Grafana + Prometeus + Advisor${reset}" \
+        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API           | ${amarelo_escuro}[ 12 ]${reset} - PgAdmin 4${reset}" \
+        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N                     | ${amarelo_escuro}[ 13 ]${reset} - Minio${reset}" \
+        "${amarelo_escuro}[ 04 ]${reset} ${cinza}- N8N Formação Encha      | ${amarelo_escuro}[ 14 ]${reset} - Mautic${reset}" \
+        "${amarelo_escuro}[ 05 ]${reset} ${cinza}- RabbitMQ                | ${amarelo_escuro}[ 15 ]${reset} - Qdrant${reset}" \
+        "${amarelo_escuro}[ 06 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ 16 ]${reset} - Duplicati${reset}" \
+        "${amarelo_escuro}[ 07 ]${reset} ${cinza}- Directus                | ${amarelo_escuro}[ 17 ]${reset} - Easyapointments${reset}" \
+        "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 18 ]${reset} - RedisInsight${reset}" \
+        "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 19 ]${reset} - Stirling PDF${reset}" \
+        "${amarelo_escuro}[ 10 ]${reset} ${cinza}- Chatwoot${reset}"
+
+    echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
+    printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+    echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
+
+}
+
 
 processar_menu_business() {
     declare -A OPCOES
@@ -20558,17 +20560,17 @@ menu_nano_inicial() {
             ""
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
-        read -p "Deseja continuar com a instalação? [S]im / [N]ão / Ver [M]enu completo: " escolha
+        read -p "Deseja continuar com a instalação? [Y] Sim / [N] Não / [V] Voltar para Menu completo: " escolha
 
         case $escolha in
-            [Ss])
+            [Yy])
                 instalar_ambiente_completo
                 # Após a instalação, podemos sair ou voltar ao menu
                 echo "Instalação concluída. Saindo do script."
                 sleep 3
                 exit 0
                 ;;
-            [Mm])
+            [Vv])
                 menu_principal
                 ;;
             [Nn])
