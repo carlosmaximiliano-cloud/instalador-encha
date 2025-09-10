@@ -2074,12 +2074,12 @@ while true; do
 
     echo -e "Passo \e[33m4/6\e[0m 🖥️"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: Encha): \e[0m" && read -r nome_servidor
+    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
     echo ""
 
     echo -e "Passo \e[33m5/6\e[0m 🌐"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mDigite um nome para sua rede interna (ex: EnchaNet): \e[0m" && read -r nome_rede_interna
+    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
     echo ""
 
     echo -e "Passo \e[33m6/6\e[0m 📧"
@@ -5257,7 +5257,7 @@ while true; do
     ## Passo 3 - Usuário do MinIO
     echo -e "\e[97mPasso$amarelo 3/4\e[0m"
     echo -e "$amarelo➡️  Evite os caracteres especiais: \! # \$ e espaços"
-    echo -en "\e[33m👤 Informe um nome de usuário para o MinIO (ex: Encha || Admin): \e[0m" && read -r user_minio
+    echo -en "\e[33m👤 Informe um nome de usuário para o MinIO (ex: encha || admin): \e[0m" && read -r user_minio
     echo ""
 
 
@@ -6292,7 +6292,7 @@ ferramenta_nocobase() {
     echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
     echo -en "📧 \e[33mDigite um email para o NocoBase (ex: admin@encha.ai): \e[0m" && read -r mail_nocobase
     echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
-    echo -en "👤 \e[33mDigite um nome de usuário (ex: EnchaAdmin): \e[0m" && read -r user_nocobase
+    echo -en "👤 \e[33mDigite um nome de usuário (ex: enchaAdmin): \e[0m" && read -r user_nocobase
     echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
     echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_nocobase
     echo ""
@@ -6869,7 +6869,7 @@ ferramenta_mautic(){
     echo -e "\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
     echo -en "🔗 \e[33mDigite o domínio para o Mautic (ex: mautic.encha.ai): \e[0m" && read -r url_mautic
     echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
-    echo -en "👤 \e[33mDigite um usuário admin (ex: EnchaAdmin): \e[0m" && read -r user_mautic
+    echo -en "👤 \e[33mDigite um usuário admin (ex: enchaAdmin): \e[0m" && read -r user_mautic
     echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
     echo -en "📧 \e[33mDigite o email do admin (ex: admin@encha.ai): \e[0m" && read -r email_mautic
     echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
@@ -10562,7 +10562,7 @@ ferramenta_supabase() {
 
     ##Pergunta o Dominio do Viewer
     echo -e "\e[97mPasso$amarelo 2/3\e[0m"
-    echo -en "\e[33mDigite o Usuario para o Supabase (ex: Encha || Admin): \e[0m" && read -r user_supabase
+    echo -en "\e[33mDigite o Usuario para o Supabase (ex: encha || admin): \e[0m" && read -r user_supabase
     echo ""
 
     ##Pergunta a versão da ferramenta
@@ -16579,7 +16579,7 @@ ferramenta_stirling() {
     echo -en "🔗 \e[33mDigite o domínio para o Stirling PDF (ex: stirling.encha.ai): \e[0m" && read -r url_stirling
     echo ""
     echo -e "\n📍 Passo 2/3"
-    echo -en "\e[33mDigite o nome para o App (ex: EnchaPdf): \e[0m" && read -r name_stirlingpdf
+    echo -en "\e[33mDigite o nome para o App (ex: enchaPdf): \e[0m" && read -r name_stirlingpdf
     echo ""
     echo -e "\n📍 Passo 3/3"
     echo -en "\e[33mDigite uma descrição para o App (ex: Meu app de PDF): \e[0m" && read -r desc_stirlingpdf
@@ -19436,12 +19436,12 @@ instalar_ambiente_completo() {
 
     echo -e "Passo \e[33m4/6\e[0m 🖥️"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: Encha): \e[0m" && read -r nome_servidor
+    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
     echo ""
 
     echo -e "Passo \e[33m5/6\e[0m 🌐"
     echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mDigite um nome para sua rede interna (ex: EnchaNet): \e[0m" && read -r nome_rede_interna
+    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
     echo ""
 
     echo -e "Passo \e[33m6/6\e[0m 📧"
