@@ -20560,7 +20560,7 @@ menu_nano_inicial() {
             ""
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
-        read -p "Deseja continuar com a instalação? [Y] Sim / [N] Não / Ver [M] Menu completo: " escolha
+        read -p "Deseja continuar com a instalação? [Y] Sim / [N] Não / [M] Menu completo: " escolha
 
         case $escolha in
             [Yy])
