@@ -18416,6 +18416,7 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
+        - "traefik.swarm.mode=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
         - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
         - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
@@ -18497,11 +18498,12 @@ services:
         constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
+        - "traefik.swarm.mode=true"
         - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.portainer.service=portainer"
-        - "traefik.docker.network=$nome_rede_interna"
+        # - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
         - "traefik.http.routers.portainer.priority=1"
 
@@ -18546,7 +18548,7 @@ EOL
 
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 120
+  sleep 30
 
 ## Tenta criar usuário no Portainer até 4 vezes
 MAX_RETRIES=4
