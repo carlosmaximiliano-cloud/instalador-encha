@@ -18546,7 +18546,7 @@ EOL
 
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 60
+  sleep 120
 
 ## Tenta criar usuário no Portainer até 4 vezes
 MAX_RETRIES=4
@@ -18554,7 +18554,7 @@ DELAY=15  # Delay de 15 segundos entre as tentativas
 CONTA_CRIADA=false
 
 for i in $(seq 1 $MAX_RETRIES); do
-  RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
+  RESPONSE=$(curl -k -s -v -X POST "https://$url_portainer/api/users/admin/init" \
     -H "Content-Type: application/json" \
     -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
 
