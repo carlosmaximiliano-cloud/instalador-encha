@@ -18416,7 +18416,6 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
-        - "traefik.swarm.mode=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
         - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
         - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
@@ -18498,12 +18497,11 @@ services:
         constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
-        - "traefik.swarm.mode=true"
         - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.portainer.service=portainer"
-        # - "traefik.docker.network=$nome_rede_interna"
+        - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
         - "traefik.http.routers.portainer.priority=1"
 
@@ -18556,7 +18554,7 @@ DELAY=15  # Delay de 15 segundos entre as tentativas
 CONTA_CRIADA=false
 
 for i in $(seq 1 $MAX_RETRIES); do
-  RESPONSE=$(curl -k -s -v -X POST "https://$url_portainer/api/users/admin/init" \
+  RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
     -H "Content-Type: application/json" \
     -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
 
@@ -18583,7 +18581,7 @@ done
 if [ "$CONTA_CRIADA" = true ]; then
   sleep 5
   ## Cria primeiro token do Portainer
-  token=$(curl -k -s -v -X POST "https://$url_portainer/api/auth" \
+  token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
     -H "Content-Type: application/json" \
     -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
   
