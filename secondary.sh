@@ -18581,7 +18581,7 @@ done
 if [ "$CONTA_CRIADA" = true ]; then
   sleep 5
   ## Cria primeiro token do Portainer
-  token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
+  token=$(curl -k -s -v -X POST "https://$url_portainer/api/auth" \
     -H "Content-Type: application/json" \
     -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
   
