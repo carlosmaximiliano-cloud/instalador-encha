@@ -18546,7 +18546,7 @@ EOL
 
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 30
+  sleep 60
 
 ## Tenta criar usuário no Portainer até 4 vezes
 MAX_RETRIES=4
