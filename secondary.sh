@@ -19825,7 +19825,7 @@ exibir_pagina1() {
         "$(printf "${amarelo_escuro}[ 03 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 24 ]${reset} - Mattermost${reset}" "Evolution API")" \
         "$(printf "${amarelo_escuro}[ 04 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 25 ]${reset} - Outline${reset}" "N8N")" \
         "$(printf "${amarelo_escuro}[ 05 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 26 ]${reset} - Focalboard${reset}" "Chatwoot")" \
-        "$(printf "${amarelo_escuro}[ 06 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 27 ]${reset} - GLPI${reset}" "N8N Formação Encha")" \
+        "$(printf "${amarelo_escuro}[ 06 ]${reset} ${cinza}- %-${width}s   | ${amarelo_escuro}[ 27 ]${reset} - GLPI${reset}" "N8N Formação Encha")" \
         "$(printf "${amarelo_escuro}[ 07 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 28 ]${reset} - Flowise${reset}" "Minio")" \
         "$(printf "${amarelo_escuro}[ 08 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 29 ]${reset} - Langflow${reset}" "Typebot")" \
         "$(printf "${amarelo_escuro}[ 09 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 30 ]${reset} - Ollama${reset}" "Directus")" \
