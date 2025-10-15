@@ -19808,11 +19808,41 @@ instalar_ambiente_completo() {
 #     done
 # }
 
+# helper: remove ANSI colors e retorna string "limpa"
+_strip_ansi() {
+    # recebe string via $1 (expandida com printf %b)
+    printf '%b' "$1" | sed -r 's/\x1b\[[0-9;]*m//g'
+}
+
+# helper: imprime um array de linhas centralizado no terminal
+_print_centered_block() {
+    local -n _lines=$1
+    local cols
+    cols=$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")
+
+    for ln in "${_lines[@]}"; do
+        # medir comprimento visível (sem ANSI)
+        local visible
+        visible=$(_strip_ansi "$ln")
+        local len=$(( ${#visible} ))
+        if (( len < cols )); then
+            local pad=$(( (cols - len) / 2 ))
+            printf '%*s%s\n' "$pad" '' "$ln"
+        else
+            # se maior que terminal: imprime sem centralizar (evita truncar)
+            printf '%s\n' "$ln"
+        fi
+    done
+}
+
+# Ajuste a largura da primeira coluna aqui (experimente 40..55 conforme seu terminal)
+COL_WIDTH=45
+
 exibir_pagina1() {
     centralizar "--- UNLIMITED Página 1 de 2 ---"
     printf "\n"
 
-    local esquerda=(
+    local esquerda=( 
         "[ 00 ] - Testar SMPT"
         "[ 01 ] - Instalar nano (Portainer, n8n, evolution)"
         "[ 02 ] - Traefik & Portainer"
@@ -19861,12 +19891,22 @@ exibir_pagina1() {
         "[ 42 ] - Nextcloud"
     )
 
+    local lines=()
     for i in "${!esquerda[@]}"; do
-        printf "${amarelo_escuro}%-45s${reset} | ${amarelo_escuro}%s${reset}\n" \
-            "${esquerda[$i]}" "${direita[$i]}"
-    done
-}
+        # formata a coluna esquerda com largura fixa (visível)
+        local left_fmt
+        left_fmt=$(printf "%-${COL_WIDTH}s" "${esquerda[$i]}")
 
+        # constrói a linha colorida (use %b para expandir sequências)
+        # cor apenas na parte que quiser; aqui eu coloco cor nas duas colunas
+        local line
+        line="$(printf '%b' "${amarelo_escuro}${left_fmt}${reset} | ${amarelo_escuro}${direita[$i]}${reset}")"
+
+        lines+=("$line")
+    done
+
+    _print_centered_block lines
+}
 
 exibir_pagina2() {
     centralizar "--- UNLIMITED Página 2 de 2 ---"
@@ -19892,7 +19932,7 @@ exibir_pagina2() {
         "[ 59 ] - Hoppscotch"
         "[ 60 ] - Bolt"
         "[ 61 ] - Planka"
-        ""
+        ""  # placeholder se necessário para balancear linhas
     )
 
     local direita=(
@@ -19918,12 +19958,17 @@ exibir_pagina2() {
         "[ 81 ] - Duplicati"
     )
 
+    local lines=()
     for i in "${!direita[@]}"; do
-        printf "${amarelo_escuro}%-45s${reset} | ${amarelo_escuro}%s${reset}\n" \
-            "${esquerda[$i]}" "${direita[$i]}"
+        local left_fmt
+        left_fmt=$(printf "%-${COL_WIDTH}s" "${esquerda[$i]}")
+        local line
+        line="$(printf '%b' "${amarelo_escuro}${left_fmt}${reset} | ${amarelo_escuro}${direita[$i]}${reset}")"
+        lines+=("$line")
     done
-}
 
+    _print_centered_block lines
+}
 
 # --- Função Principal do Menu ---
 processar_menu_unlimited() {
