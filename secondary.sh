@@ -19817,7 +19817,7 @@ exibir_pagina1() {
 
     exibir_bloco_centralizado \
         "$(printf "${amarelo_escuro}[ 00 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 22 ]${reset} - WoofedCRM${reset}" "Testar SMPT")" \
-        "$(printf "${amarelo_escuro}[ 01 ]${reset} ${cinza}- %-${width}s |" "Instalar nano (Portainer, n8n, evolution)")" \
+        "$(printf "${amarelo_escuro}[ 01 ]${reset} ${cinza}- %-${width}s |" "Nano (Portainer, n8n, evolution)")" \
         "$(printf "${amarelo_escuro}[ 02 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 23 ]${reset} - TwentyCRM${reset}" "Traefik & Portainer")" \
         "$(printf "${amarelo_escuro}[ 03 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 24 ]${reset} - Mattermost${reset}" "Evolution API")" \
         "$(printf "${amarelo_escuro}[ 04 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 25 ]${reset} - Outline${reset}" "N8N")" \
