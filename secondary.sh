@@ -7029,7 +7029,7 @@ ferramenta_qdrant(){
   while true; do
     read -r ip _ <<<$(hostname -I)
     echo -e "\e[97mPasso$amarelo 1/2\e[0m"
-    echo -en "\e[33mDigite o ip da vps (seu ip: $ip) ou dominio para Qdrant (ex: qdrant.oriondesign.art.br): \e[0m" && read -r ip_vps
+    echo -en "\e[33mDigite o ip da vps (seu ip: $ip) ou dominio para Qdrant (ex: qdrant.encha.ai): \e[0m" && read -r ip_vps
     echo ""
     echo -e "\e[97mPasso$amarelo 2/2\e[0m"
     echo -en "\e[33mDigite quantos Nodes você deseja (recomendado: 5): \e[0m" && read -r nodes_qdrant
@@ -7099,7 +7099,10 @@ EOL
   done
 
   cat <<EOL >> qdrant.yaml
-## --------------------------- ORION --------------------------- ##
+
+  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
 volumes:
 EOL
@@ -9608,11 +9611,11 @@ services:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=false
       - AUTHENTICATION_APIKEY_ENABLED=true
       - AUTHENTICATION_APIKEY_ALLOWED_KEYS=$token_weaviate
-      - AUTHENTICATION_APIKEY_USERS=contato@oriondesign.art.br
+      - AUTHENTICATION_APIKEY_USERS=contato@encha.ai
 
     ## Autorização
       - AUTHORIZATION_ADMINLIST_ENABLED=true
-      - AUTHORIZATION_ADMINLIST_USERS=contato@oriondesign.art.br
+      - AUTHORIZATION_ADMINLIST_USERS=contato@encha.ai
 
     ## Configurações do Cluster
       - CLUSTER_HOSTNAME=node1
@@ -10967,8 +10970,8 @@ services:
       - NEXT_ANALYTICS_BACKEND_PROVIDER=postgres
 
     ## Configuração de Branding
-      - DEFAULT_ORGANIZATION_NAME=OrionDesign
-      - DEFAULT_PROJECT_NAME=SetupOrion
+      - DEFAULT_ORGANIZATION_NAME=Encha
+      - DEFAULT_PROJECT_NAME=Encha
 
     ## Configuração do Banco de Dados PostgreSQL
       - POSTGRES_PASSWORD=$Senha_Postgres
@@ -15536,7 +15539,7 @@ services:
       - QUEPASA_BASIC_AUTH_PASSWORD=$email_quepasa
 
       ## Titulo no celular
-      - APP_TITLE=OrionDesign ## Mude aqui o nome que vai aparecer no celular.
+      - APP_TITLE=Encha ## Mude aqui o nome que vai aparecer no celular.
 
       ## TimeZone
       - TZ=America/Sao_Paulo
@@ -16006,7 +16009,7 @@ services:
       - PORT=3000
       - NEXTAUTH_URL=https://$url_documenso
       - NEXT_PUBLIC_WEBAPP_URL=https://$url_documenso
-      - NEXT_PUBLIC_MARKETING_URL=https://oriondesign.art.br
+      - NEXT_PUBLIC_MARKETING_URL=https://encha.ai/
 
       ## Secret Keys
       - NEXTAUTH_SECRET=$key_documenso1
@@ -16217,9 +16220,9 @@ services:
       ## Dados MarinaDB
       - MOODLE_DATABASE_HOST=moodle${1:+_$1}_mariadb
       - MOODLE_DATABASE_PORT_NUMBER=3306
-      - MOODLE_DATABASE_USER=orion_moodle
+      - MOODLE_DATABASE_USER=encha_moodle
       - MOODLE_DATABASE_PASSWORD=$senha_marinadb
-      - MOODLE_DATABASE_NAME=orionbase_moodle
+      - MOODLE_DATABASE_NAME=enchabase_moodle
       - ALLOW_EMPTY_PASSWORD=no
 
     deploy:
@@ -16256,9 +16259,9 @@ services:
 
     environment:  
       ## Dados MarinaDB
-      - MARIADB_USER=orion_moodle
+      - MARIADB_USER=encha_moodle
       - MARIADB_ROOT_PASSWORD=$senha_marinadb
-      - MARIADB_DATABASE=orionbase_moodle
+      - MARIADB_DATABASE=enchabase_moodle
       - MARIADB_PASSWORD=$senha_marinadb
       - MARIADB_CHARACTER_SET=utf8mb4
       - MARIADB_COLLATE=utf8mb4_unicode_ci
@@ -16333,7 +16336,7 @@ ferramenta_tooljet() {
     echo -en "🔗 \e[33mDigite o domínio para o ToolJet (ex: tooljet.encha.ai): \e[0m" && read -r url_tooljet
     echo ""
     echo -e "\n📍 Passo 2/6"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@oriondesign.art.br): \e[0m" && read -r email_smtp_tooljet
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_smtp_tooljet
     echo ""
     echo -e "\n📍 Passo 3/6"
     echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
@@ -17018,7 +17021,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   firecrawl${1:+_$1}_api:
-    image: oriondesign/firecrawl-api:latest
+    image: encha/firecrawl-api:latest
     command: [ "pnpm", "run", "start:production" ]
 
     networks:
@@ -17081,7 +17084,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   firecrawl${1:+_$1}_worker:
-    image: oriondesign/firecrawl-api:latest
+    image: encha/firecrawl-api:latest
     command: [ "pnpm", "run", "workers" ]
 
     networks:
@@ -17136,7 +17139,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   firecrawl${1:+_$1}_playwright:
-    image: oriondesign/firecrawl-playwright-service:latest
+    image: encha/firecrawl-playwright-service:latest
 
     networks:
      - $nome_rede_interna ## Nome da rede interna
@@ -17175,7 +17178,7 @@ EOL
   echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
   echo ""
 
-  pull oriondesign/firecrawl-api:latest oriondesign/firecrawl-api:latest oriondesign/firecrawl-playwright-service:latest
+  pull encha/firecrawl-api:latest encha/firecrawl-api:latest encha/firecrawl-playwright-service:latest
   wait_stack firecrawl${1:+_$1}_firecrawl${1:+_$1}_api firecrawl${1:+_$1}_firecrawl${1:+_$1}_worker firecrawl${1:+_$1}_firecrawl${1:+_$1}_playwright
 
   cd /root/dados_vps
@@ -17419,7 +17422,7 @@ services:
       - krayin_CADDY_ADDRESSES=:80
 
     ## Configurações Globais da Aplicação
-      - APP_NAME=Krayin CRM - Orion
+      - APP_NAME=Krayin CRM - Encha
       - APP_LOCALE=pt_BR
       - APP_CURRENCY=BRL
       - APP_TIMEZONE=America/Sao_Paulo
@@ -20304,7 +20307,7 @@ processar_menu_unlimited() {
                 ;;
             45)
                 verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
-                if verificar_docker_e_portainer_traefik; then
+                if verificar_docker_e_portainer_traefik && verificar_minio; then
                     ferramenta_supabase
                 fi
                 ;;
