@@ -19812,57 +19812,118 @@ exibir_pagina1() {
     centralizar "--- UNLIMITED Página 1 de 2 ---"
     printf "\n"
 
-    exibir_bloco_centralizado \
-        "${amarelo_escuro}[ 00 ]${reset} ${cinza}- Testar SMPT               | ${amarelo_escuro}[ 22 ]${reset} - WoofedCRM${reset}" \
-        "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Instalar nano (Portainer, n8n, evolution)${reset}" \
-        "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Traefik & Portainer       | ${amarelo_escuro}[ 23 ]${reset} - TwentyCRM${reset}" \
-        "${amarelo_escuro}[ 03 ]${reset} ${cinza}- Evolution API             | ${amarelo_escuro}[ 24 ]${reset} - Mattermost${reset}" \
-        "${amarelo_escuro}[ 04 ]${reset} ${cinza}- N8N                       | ${amarelo_escuro}[ 25 ]${reset} - Outline${reset}" \
-        "${amarelo_escuro}[ 05 ]${reset} ${cinza}- Chatwoot                  | ${amarelo_escuro}[ 26 ]${reset} - Focalboard${reset}" \
-        "${amarelo_escuro}[ 06 ]${reset} ${cinza}- N8N Formação Encha        | ${amarelo_escuro}[ 27 ]${reset} - GLPI${reset}" \
-        "${amarelo_escuro}[ 07 ]${reset} ${cinza}- Minio                     | ${amarelo_escuro}[ 28 ]${reset} - Flowise${reset}" \
-        "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Typebot                   | ${amarelo_escuro}[ 29 ]${reset} - Langflow${reset}" \
-        "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Directus                  | ${amarelo_escuro}[ 30 ]${reset} - Ollama${reset}" \
-        "${amarelo_escuro}[ 10 ]${reset} ${cinza}- Odoo                      | ${amarelo_escuro}[ 31 ]${reset} - AnythingLLM${reset}" \
-        "${amarelo_escuro}[ 11 ]${reset} ${cinza}- PgAdmin                   | ${amarelo_escuro}[ 32 ]${reset} - Nocodb${reset}" \
-        "${amarelo_escuro}[ 12 ]${reset} ${cinza}- Nocobase                  | ${amarelo_escuro}[ 33 ]${reset} - Humhub${reset}" \
-        "${amarelo_escuro}[ 13 ]${reset} ${cinza}- Botpress                  | ${amarelo_escuro}[ 34 ]${reset} - Wordpress${reset}" \
-        "${amarelo_escuro}[ 14 ]${reset} ${cinza}- Baserow                   | ${amarelo_escuro}[ 35 ]${reset} - Formbricks${reset}" \
-        "${amarelo_escuro}[ 15 ]${reset} ${cinza}- MongoDB                   | ${amarelo_escuro}[ 36 ]${reset} - Metabase${reset}" \
-        "${amarelo_escuro}[ 16 ]${reset} ${cinza}- RabbitMQ                  | ${amarelo_escuro}[ 37 ]${reset} - Docuseal${reset}" \
-        "${amarelo_escuro}[ 17 ]${reset} ${cinza}- UptimeKuma                | ${amarelo_escuro}[ 38 ]${reset} - Grafana + Prometheus + Advisor${reset}" \
-        "${amarelo_escuro}[ 18 ]${reset} ${cinza}- Calcom                    | ${amarelo_escuro}[ 39 ]${reset} - Dify${reset}" \
-        "${amarelo_escuro}[ 19 ]${reset} ${cinza}- Mautic                    | ${amarelo_escuro}[ 40 ]${reset} - Affine${reset}" \
-        "${amarelo_escuro}[ 20 ]${reset} ${cinza}- Appsmith                  | ${amarelo_escuro}[ 41 ]${reset} - Vaultwarden${reset}" \
-        "${amarelo_escuro}[ 21 ]${reset} ${cinza}- Qdrant                    | ${amarelo_escuro}[ 42 ]${reset} - Nextcloud${reset}"
+    local esquerda=(
+        "[ 00 ] - Testar SMPT"
+        "[ 01 ] - Instalar nano (Portainer, n8n, evolution)"
+        "[ 02 ] - Traefik & Portainer"
+        "[ 03 ] - Evolution API"
+        "[ 04 ] - N8N"
+        "[ 05 ] - Chatwoot"
+        "[ 06 ] - N8N Formação Encha"
+        "[ 07 ] - Minio"
+        "[ 08 ] - Typebot"
+        "[ 09 ] - Directus"
+        "[ 10 ] - Odoo"
+        "[ 11 ] - PgAdmin"
+        "[ 12 ] - Nocobase"
+        "[ 13 ] - Botpress"
+        "[ 14 ] - Baserow"
+        "[ 15 ] - MongoDB"
+        "[ 16 ] - RabbitMQ"
+        "[ 17 ] - UptimeKuma"
+        "[ 18 ] - Calcom"
+        "[ 19 ] - Mautic"
+        "[ 20 ] - Appsmith"
+        "[ 21 ] - Qdrant"
+    )
+
+    local direita=(
+        "[ 22 ] - Woofedcrm"
+        "[ 23 ] - TwentyCRM"
+        "[ 24 ] - Mattermost"
+        "[ 25 ] - Outline"
+        "[ 26 ] - Focalboard"
+        "[ 27 ] - GLPI"
+        "[ 28 ] - Flowise"
+        "[ 29 ] - Langflow"
+        "[ 30 ] - Ollama"
+        "[ 31 ] - AnythingLLM"
+        "[ 32 ] - Nocodb"
+        "[ 33 ] - Humhub"
+        "[ 34 ] - Wordpress"
+        "[ 35 ] - Formbricks"
+        "[ 36 ] - Metabase"
+        "[ 37 ] - Docuseal"
+        "[ 38 ] - Grafana + Prometheus + Advisor"
+        "[ 39 ] - Dify"
+        "[ 40 ] - Affine"
+        "[ 41 ] - Vaultwarden"
+        "[ 42 ] - Nextcloud"
+    )
+
+    for i in "${!esquerda[@]}"; do
+        printf "${amarelo_escuro}%-45s${reset} | ${amarelo_escuro}%s${reset}\n" \
+            "${esquerda[$i]}" "${direita[$i]}"
+    done
 }
+
 
 exibir_pagina2() {
     centralizar "--- UNLIMITED Página 2 de 2 ---"
     printf "\n"
 
-    exibir_bloco_centralizado \
-        "${amarelo_escuro}[ 43 ]${reset} ${cinza}- Strapi                    | ${amarelo_escuro}[ 62 ]${reset} - WPPConnect${reset}" \
-        "${amarelo_escuro}[ 44 ]${reset} ${cinza}- MyphpAdmin                | ${amarelo_escuro}[ 63 ]${reset} - Browserless${reset}" \
-        "${amarelo_escuro}[ 45 ]${reset} ${cinza}- Supabase                  | ${amarelo_escuro}[ 64 ]${reset} - Frappe ERPnext${reset}" \
-        "${amarelo_escuro}[ 46 ]${reset} ${cinza}- NTFY                      | ${amarelo_escuro}[ 65 ]${reset} - Clickhouse${reset}" \
-        "${amarelo_escuro}[ 47 ]${reset} ${cinza}- Lowcoder                  | ${amarelo_escuro}[ 66 ]${reset} - Langfuse${reset}" \
-        "${amarelo_escuro}[ 48 ]${reset} ${cinza}- Openproject               | ${amarelo_escuro}[ 67 ]${reset} - UnoAPI${reset}" \
-        "${amarelo_escuro}[ 49 ]${reset} ${cinza}- ZEP                       | ${amarelo_escuro}[ 68 ]${reset} - Quepasa API${reset}" \
-        "${amarelo_escuro}[ 50 ]${reset} ${cinza}- Yourls                    | ${amarelo_escuro}[ 69 ]${reset} - Excalidraw${reset}" \
-        "${amarelo_escuro}[ 51 ]${reset} ${cinza}- WiseMapping               | ${amarelo_escuro}[ 70 ]${reset} - EasyAppointments${reset}" \
-        "${amarelo_escuro}[ 52 ]${reset} ${cinza}- Evo AI                    | ${amarelo_escuro}[ 71 ]${reset} - Documenso${reset}" \
-        "${amarelo_escuro}[ 53 ]${reset} ${cinza}- Keycloak                  | ${amarelo_escuro}[ 72 ]${reset} - Moodle${reset}" \
-        "${amarelo_escuro}[ 54 ]${reset} ${cinza}- Passbolt                  | ${amarelo_escuro}[ 73 ]${reset} - Tooljet${reset}" \
-        "${amarelo_escuro}[ 55 ]${reset} ${cinza}- Gotenberg                 | ${amarelo_escuro}[ 74 ]${reset} - Stirling PDF${reset}" \
-        "${amarelo_escuro}[ 56 ]${reset} ${cinza}- Wiki JS                   | ${amarelo_escuro}[ 75 ]${reset} - RedisInsight${reset}" \
-        "${amarelo_escuro}[ 57 ]${reset} ${cinza}- Azuracast                 | ${amarelo_escuro}[ 76 ]${reset} - Traccar${reset}" \
-        "${amarelo_escuro}[ 58 ]${reset} ${cinza}- Rustdesk                  | ${amarelo_escuro}[ 77 ]${reset} - Firecrawl${reset}" \
-        "${amarelo_escuro}[ 59 ]${reset} ${cinza}- Hoppscotch                | ${amarelo_escuro}[ 78 ]${reset} - Wuzapi${reset}" \
-        "${amarelo_escuro}[ 60 ]${reset} ${cinza}- Bolt                      | ${amarelo_escuro}[ 79 ]${reset} - Krayin CRM${reset}" \
-        "${amarelo_escuro}[ 61 ]${reset} ${cinza}- Planka                    | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" \
-        "                                 | ${amarelo_escuro}[ 81 ]${reset} ${cinza}- Duplicati${reset}"
+    local esquerda=(
+        "[ 43 ] - Strapi"
+        "[ 44 ] - MyphpAdmin"
+        "[ 45 ] - Supabase"
+        "[ 46 ] - NTFY"
+        "[ 47 ] - Lowcoder"
+        "[ 48 ] - Openproject"
+        "[ 49 ] - ZEP"
+        "[ 50 ] - Yourls"
+        "[ 51 ] - WiseMapping"
+        "[ 52 ] - Evo AI"
+        "[ 53 ] - Keycloak"
+        "[ 54 ] - Passbolt"
+        "[ 55 ] - Gotenberg"
+        "[ 56 ] - Wiki JS"
+        "[ 57 ] - Azuracast"
+        "[ 58 ] - Rustdesk"
+        "[ 59 ] - Hoppscotch"
+        "[ 60 ] - Bolt"
+        "[ 61 ] - Planka"
+        ""
+    )
+
+    local direita=(
+        "[ 62 ] - WPPconnect"
+        "[ 63 ] - Browserless"
+        "[ 64 ] - Frappe ERPnext"
+        "[ 65 ] - Clickhouse"
+        "[ 66 ] - Langfuse"
+        "[ 67 ] - UnoAPI"
+        "[ 68 ] - Quepasa API"
+        "[ 69 ] - Excalidraw"
+        "[ 70 ] - Easyappointments"
+        "[ 71 ] - Documenso"
+        "[ 72 ] - Moodle"
+        "[ 73 ] - Tooljet"
+        "[ 74 ] - Stirling PDF"
+        "[ 75 ] - RedisInsight"
+        "[ 76 ] - Traccar"
+        "[ 77 ] - Firecrawl"
+        "[ 78 ] - Wuzapi"
+        "[ 79 ] - Krayin CRM"
+        "[ 80 ] - Shlink"
+        "[ 81 ] - Duplicati"
+    )
+
+    for i in "${!direita[@]}"; do
+        printf "${amarelo_escuro}%-45s${reset} | ${amarelo_escuro}%s${reset}\n" \
+            "${esquerda[$i]}" "${direita[$i]}"
+    done
 }
+
 
 # --- Função Principal do Menu ---
 processar_menu_unlimited() {
