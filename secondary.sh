@@ -2046,6 +2046,34 @@ pegar_user_senha_rabbitmq() {
     fi
 }
 
+wait_ssl() {
+  local domain_name="$1"
+  local max_time=300 # 5 minutos
+  local start_time=$(date +%s)
+  local current_time=$start_time
+  local timeout=$((start_time + max_time))
+
+  echo -e "\e[33mAguardando o certificado SSL (Let's Encrypt) para $domain_name...\e[0m"
+
+  while [ "$current_time" -lt "$timeout" ]; do
+    # Verifica se o arquivo acme.json contém o certificado para o domínio
+    if sudo cat vol_certificates/acme.json 2>/dev/null | grep -q "\"Certificates\":"; then
+      if sudo cat vol_certificates/acme.json 2>/dev/null | grep -q "$domain_name"; then
+        echo -e "\e[32m[OK] Certificado SSL encontrado para $domain_name. Roteamento pronto.\e[0m"
+        return 0
+      fi
+    fi
+    
+    # Se ainda não estiver pronto
+    echo -e "⏳ \e[33mAguardando SSL... Tentando novamente em 15 segundos.\e[0m"
+    sleep 15
+    current_time=$(date +%s)
+  done
+
+  echo -e "\e[31m[FALHA] Timeout. O certificado SSL não foi emitido após 5 minutos. Verifique as configurações de DNS.\e[0m"
+  return 1
+}
+
 ferramenta_traefik_e_portainer() {
 
   msg_traefik_portainer
@@ -18477,6 +18505,12 @@ EOL
 
   wait_30_sec
 
+  wait_ssl "$url_portainer" 
+  if [ $? -ne 0 ]; then
+      echo -e "\e[31m[ERRO CRÍTICO] Falha na emissão do certificado. A instalação pode continuar, mas o acesso via HTTPS falhará.\e[0m"
+  fi
+
+  echo ""
   echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m\n"
   sleep 1
 
