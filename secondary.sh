@@ -2048,29 +2048,42 @@ pegar_user_senha_rabbitmq() {
 
 wait_ssl() {
   local domain_name="$1"
-  local max_time=300 # 5 minutos
+  local max_time=480 # 8 minutos para ser bem generoso com o LE
   local start_time=$(date +%s)
-  local current_time=$start_time
-  local timeout=$((start_time + max_time))
+  
+  echo -e "\n\e[97m⏳ AGUARDANDO EMISSÃO DO CERTIFICADO SSL (Let's Encrypt) para $domain_name...\e[0m"
 
-  echo -e "\e[33mAguardando o certificado SSL (Let's Encrypt) para $domain_name...\e[0m"
-
-  while [ "$current_time" -lt "$timeout" ]; do
+  # Entra na pasta vol_certificates, assumindo que foi criada no ~
+  cd ~ || return 1
+  
+  # A pasta do volume deve existir no diretório raiz do usuário que executa o docker
+  if [ ! -d "vol_certificates" ]; then
+    echo -e "\e[31m[ERRO] Diretório 'vol_certificates' não encontrado. Verifique a criação do volume no passo [5/9].\e[0m"
+    return 1
+  fi
+  
+  # CORREÇÃO: Entramos na pasta dados_vps para o loop de verificação
+  if [ ! -d "dados_vps" ]; then
+    echo -e "\e[31m[ERRO] Diretório 'dados_vps' não encontrado.\e[0m"
+    return 1
+  fi
+  
+  while [ $(date +%s) -lt "$((start_time + max_time))" ]; do
     # Verifica se o arquivo acme.json contém o certificado para o domínio
+    # A verificação é feita no volume mapeado vol_certificates/acme.json
     if sudo cat vol_certificates/acme.json 2>/dev/null | grep -q "\"Certificates\":"; then
-      if sudo cat vol_certificates/acme.json 2>/dev/null | grep -q "$domain_name"; then
-        echo -e "\e[32m[OK] Certificado SSL encontrado para $domain_name. Roteamento pronto.\e[0m"
+      if sudo cat vol_certificates/acme.me.json 2>/dev/null | grep -q "$domain_name"; then
+        echo -e "\e[32m[OK] Certificado SSL encontrado para $domain_name. Roteamento HTTPS pronto.\e[0m"
         return 0
       fi
     fi
     
-    # Se ainda não estiver pronto
-    echo -e "⏳ \e[33mAguardando SSL... Tentando novamente em 15 segundos.\e[0m"
+    local elapsed_time=$($(date +%s) - $start_time)
+    echo -e "⏳ \e[33m[$elapsed_time segundos] Aguardando SSL... Tentando novamente em 15 segundos.\e[0m"
     sleep 15
-    current_time=$(date +%s)
   done
 
-  echo -e "\e[31m[FALHA] Timeout. O certificado SSL não foi emitido após 5 minutos. Verifique as configurações de DNS.\e[0m"
+  echo -e "\e[31m[FALHA] Timeout. O certificado SSL não foi emitido após 8 minutos.\e[0m"
   return 1
 }
 
