@@ -2220,8 +2220,6 @@ EOL
   sleep 1
 
 
-  # Criar arquivo traefik.yaml (mantive seu conteúdo original)
-
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
@@ -2233,7 +2231,7 @@ services:
       - "--providers.swarm=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna"
+      - "--providers.docker.network=$nome_rede_interna" ## Nome da rede interna
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
@@ -2243,7 +2241,7 @@ services:
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
+      - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl" ## Email para receber as notificações
       - "--log.level=DEBUG"
       - "--log.format=common"
       - "--log.filePath=/var/log/traefik/traefik.log"
@@ -2255,7 +2253,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
     networks:
-      - $nome_rede_interna
+      - $nome_rede_interna ## Nome da rede interna
 
     ports:
       - target: 80
@@ -2287,10 +2285,10 @@ volumes:
     name: volume_swarm_certificates
 
 networks:
-  $nome_rede_interna:
+  $nome_rede_interna: ## Nome da rede interna
     external: true
     attachable: true
-    name: $nome_rede_interna
+    name: $nome_rede_interna ## Nome da rede interna
 EOL
 
   if [ $? -eq 0 ]; then
@@ -2315,6 +2313,10 @@ EOL
   echo -e "⏳ \e[97mEsperando o Traefik ficar online \e[33m[6/9]\e[0m\n"
   sleep 1
 
+  pull ghcr.io/traefik/traefik:v3.4.0
+
+  docker tag ghcr.io/traefik/traefik:v3.4.0 traefik/traefik:v3.4.0
+
   wait_stack "traefik"  # Certifique-se que essa função existe
 
  
@@ -2331,24 +2333,30 @@ version: "3.7"
 services:
 
   agent:
-    image: portainer/agent:latest
+    image: portainer/agent:latest ## Versão Agent do Portainer
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/volumes:/var/lib/docker/volumes
+
     networks:
-      - $nome_rede_interna
+      - $nome_rede_interna ## Nome da rede interna
+
     deploy:
       mode: global
       placement:
         constraints: [node.platform.os == linux]
 
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:latest ## Versão do Portainer
     command: -H tcp://tasks.agent:9001 --tlsskipverify
+
     volumes:
       - portainer_data:/data
+
     networks:
-      - $nome_rede_interna
+      - $nome_rede_interna ## Nome da rede interna
+
     deploy:
       mode: replicated
       replicas: 1
@@ -2356,11 +2364,11 @@ services:
         constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)"
+        - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)" ## Dominio do Portainer
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.portainer.service=portainer"
-        - "traefik.docker.network=$nome_rede_interna"
+        - "traefik.docker.network=$nome_rede_interna" ## Nome da rede interna
         - "traefik.http.routers.portainer.entrypoints=websecure"
         - "traefik.http.routers.portainer.priority=1"
 
@@ -2370,10 +2378,10 @@ volumes:
     name: portainer_data
 
 networks:
-  $nome_rede_interna:
+  $nome_rede_interna: ## Nome da rede interna
     external: true
     attachable: true
-    name: $nome_rede_interna
+    name: $nome_rede_interna ## Nome da rede interna
 EOL
 
   if [ $? -eq 0 ]; then
@@ -2398,6 +2406,7 @@ EOL
   echo -e "⏳ \e[97mEsperando o Portainer ficar online \e[33m[8/9]\e[0m\n"
   sleep 1
 
+  pull portainer/portainer-ce:latest
   wait_stack "portainer"  # Certifique-se que essa função existe
 
   sleep 5
