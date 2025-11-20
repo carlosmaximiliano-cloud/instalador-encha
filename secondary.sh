@@ -2055,7 +2055,14 @@ while true; do
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
 
-    url_portainer=$(echo "$raw_url_portainer" | sed -e 's|^[^/]*//||' -e 's|/.*$||' | tr -d ' ')
+    # --- LIMPEZA DE URL OBRIGATÓRIA ---
+    # 1. Remove http:// ou https://
+    url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g')
+    # 2. Remove barras no final (/)
+    url_portainer=$(echo "$url_portainer" | sed 's/\/$//g')
+    # 3. Remove qualquer espaço em branco acidental
+    url_portainer=$(echo "$url_portainer" | tr -d ' ')
+    
     echo -e "\e[32mURL formatada para: $url_portainer\e[0m"
     echo ""
 
