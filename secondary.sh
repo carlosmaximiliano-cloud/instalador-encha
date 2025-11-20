@@ -2048,34 +2048,27 @@ pegar_user_senha_rabbitmq() {
 
 wait_ssl() {
   local domain_name="$1"
-  local max_time=480 # 8 minutos para ser bem generoso com o LE
+  local max_time=480 # 8 minutos para ser generoso
   local start_time=$(date +%s)
   
+  # A pasta do volume no sistema de arquivos é /var/lib/docker/volumes/[Nome_do_Volume]/_data/
+  local VOLUME_NAME="volume_swarm_certificates"
+  local ACME_PATH="/var/lib/docker/volumes/${VOLUME_NAME}/_data/acme.json"
+
   echo -e "\n\e[97m⏳ AGUARDANDO EMISSÃO DO CERTIFICADO SSL (Let's Encrypt) para $domain_name...\e[0m"
 
-  # Entra na pasta vol_certificates, assumindo que foi criada no ~
-  cd ~ || return 1
-  
-  # A pasta do volume deve existir no diretório raiz do usuário que executa o docker
-  if [ ! -d "vol_certificates" ]; then
-    echo -e "\e[31m[ERRO] Diretório 'vol_certificates' não encontrado. Verifique a criação do volume no passo [5/9].\e[0m"
-    return 1
-  fi
-  
-  # CORREÇÃO: Entramos na pasta dados_vps para o loop de verificação
-  if [ ! -d "dados_vps" ]; then
-    echo -e "\e[31m[ERRO] Diretório 'dados_vps' não encontrado.\e[0m"
-    return 1
-  fi
-  
   while [ $(date +%s) -lt "$((start_time + max_time))" ]; do
-    # Verifica se o arquivo acme.json contém o certificado para o domínio
-    # A verificação é feita no volume mapeado vol_certificates/acme.json
-    if sudo cat vol_certificates/acme.json 2>/dev/null | grep -q "\"Certificates\":"; then
-      if sudo cat vol_certificates/acme.me.json 2>/dev/null | grep -q "$domain_name"; then
-        echo -e "\e[32m[OK] Certificado SSL encontrado para $domain_name. Roteamento HTTPS pronto.\e[0m"
-        return 0
-      fi
+    # Verifica se o arquivo existe
+    if [ ! -f "$ACME_PATH" ]; then
+        echo -e "⏳ \e[33mArquivo acme.json ainda não criado. Aguardando Traefik...\e[0m"
+    else
+        # Verifica se o arquivo acme.json contém o certificado para o domínio
+        if sudo cat "$ACME_PATH" 2>/dev/null | grep -q "\"Certificates\":"; then
+          if sudo cat "$ACME_PATH" 2>/dev/null | grep -q "$domain_name"; then
+            echo -e "\e[32m[OK] Certificado SSL encontrado para $domain_name. Roteamento HTTPS pronto.\e[0m"
+            return 0
+          fi
+        fi
     fi
     
     local elapsed_time=$($(date +%s) - $start_time)
