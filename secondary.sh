@@ -2055,14 +2055,16 @@ while true; do
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
 
-    # --- LIMPEZA DE URL OBRIGATÓRIA ---
-    # 1. Remove http:// ou https://
-    url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g')
-    # 2. Remove barras no final (/)
-    url_portainer=$(echo "$url_portainer" | sed 's/\/$//g')
-    # 3. Remove qualquer espaço em branco acidental
-    url_portainer=$(echo "$url_portainer" | tr -d ' ')
+    # 1. Remove http:// ou https://, barras no final e espaços
+    url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
     
+    # 2. Verificação de segurança: Se estiver vazio, avisa e pede de novo
+    while [ -z "$url_portainer" ]; do
+        echo -e "\e[31m❌ Erro: O domínio não pode ficar vazio.\e[0m"
+        echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r raw_url_portainer
+        url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+    done
+
     echo -e "\e[32mURL formatada para: $url_portainer\e[0m"
     echo ""
 
