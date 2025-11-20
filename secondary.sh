@@ -2053,17 +2053,20 @@ ferramenta_traefik_e_portainer() {
   while true; do
 
     echo -e "Passo \e[33m1/6\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r raw_url_portainer
-    
-    # --- CORREÇÃO 1: LIMPEZA E VALIDAÇÃO DE URL ---
-    # 1. Remove http:// ou https://, barras no final e espaços
-    url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+    # Lê diretamente para a variável url_portainer
+    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
+    echo ""
 
-    # Loop de verificação: não deixa passar vazio
+    # --- LIMPEZA ---
+    # Remove http/https, barras no final e espaços
+    url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+
+    # --- VERIFICAÇÃO ---
     while [ -z "$url_portainer" ]; do
         echo -e "\e[31m❌ Erro: O domínio não pode ficar vazio.\e[0m"
-        echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r raw_url_portainer
-        url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+        echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r url_portainer
+        echo ""
+        url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
     done
 
     echo -e "\e[32mURL formatada para: $url_portainer\e[0m"
@@ -2159,51 +2162,29 @@ EOL
   echo -e "✅ VPS Atualizada e Configurada."
   echo ""
 
-  echo -e "⚙️ \e[97mInstalando Docker Swarm \e[33m[3/9]\e[0m\n"
+  echo -e "⚙️ \e[97mVerificando Docker Swarm \e[33m[3/9]\e[0m\n"
   sleep 1
   
   # Pegando IP válido
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
 
-  if [ -n "$ip" ]; then
-      echo -e "1/3 - [\e[32mOK\e[0m] - IP obtido: \e[33m$ip\e[0m"
-  else
-      echo -e "1/3 - [\e[31mFALHOU\e[0m] - Não foi possível obter o IP"
-      exit 1
-  fi
-
-  # --- CORREÇÃO 2: REMOÇÃO DE VERSÕES ANTIGAS E INSTALAÇÃO LIMPA ---
-  echo -e "🧹 Removendo versões antigas do Docker (para compatibilidade com Traefik v3)..."
-  sudo apt-get remove -y docker docker-engine docker.io containerd runc > /dev/null 2>&1
-  sudo apt-get update > /dev/null 2>&1
-
-  echo -e "⬇️  Baixando e instalando a versão mais recente do Docker..."
-  curl -fsSL https://get.docker.com | sudo sh > /dev/null 2>&1
-
-  if [ $? -eq 0 ]; then
-      echo -e "2/3 - [\e[32mOK\e[0m] - Docker instalado com sucesso"
-  else
-      echo -e "2/3 - [\e[31mFALHOU\e[0m] - Erro ao instalar o Docker"
-      exit 1
-  fi
-
-  sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
 
+  # Apenas inicia o Swarm se necessário (PULA A INSTALAÇÃO DO DOCKER)
   max_attempts=3
   attempt=1
 
   while [ $attempt -le $max_attempts ]; do
+      if docker info | grep -q "Swarm: active"; then
+             echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm já estava ativo"
+             break
+      fi
+      
       sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
       if [ $? -eq 0 ]; then
           echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm iniciado com sucesso"
           break
       else
-          # Verifica se já faz parte de um swarm
-          if docker info | grep -q "Swarm: active"; then
-             echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm já estava ativo"
-             break
-          fi
           echo -e "Tentativa $attempt de $max_attempts..."
           attempt=$((attempt + 1))
           sleep 5
@@ -2355,7 +2336,6 @@ EOL
   
   wait_stack "portainer"
 
-  # --- CORREÇÃO 3: TEMPO DE PROPAGAÇÃO ---
   echo -e "\e[36m⏳ Aguardando 20 segundos para propagação do DNS/Traefik...\e[0m"
   sleep 20
 
