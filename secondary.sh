@@ -2055,6 +2055,10 @@ while true; do
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
 
+    url_portainer=$(echo "$raw_url_portainer" | sed -e 's|^[^/]*//||' -e 's|/.*$||' | tr -d ' ')
+    echo -e "\e[32mURL formatada para: $url_portainer\e[0m"
+    echo ""
+
     echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
     echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
     echo ""
@@ -2409,41 +2413,48 @@ EOL
   pull portainer/portainer-ce:latest
   wait_stack "portainer"  # Certifique-se que essa função existe
 
-  sleep 5
-
-
+  echo -e "\e[36m⏳ Aguardando 15 segundos para propagação do DNS/Traefik...\e[0m"
+  sleep 15
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
   sleep 30
 
 ## Tenta criar usuário no Portainer até 4 vezes
-MAX_RETRIES=4
+MAX_RETRIES=5
 DELAY=15  # Delay de 15 segundos entre as tentativas
 CONTA_CRIADA=false
 
 for i in $(seq 1 $MAX_RETRIES); do
-  RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
-    -H "Content-Type: application/json" \
-    -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+    # Adicionado -L para seguir redirecionamentos e verificar status HTTP
+    HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "https://$url_portainer/api/users/admin/init")
+    
+    echo -e "🔎 Tentativa $i/$MAX_RETRIES - Status HTTP: $HTTP_STATUS"
 
-  # Verificar se o campo "Username" existe na resposta
-  if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-    echo -e "1/2 - [\e[32mOK\e[0m] - Conta de administrador criada com sucesso! 🎉"
-    CONTA_CRIADA=true
-    break
-  else
-    echo -e "⏳ Tentando criar conta no Portainer \e[33m$i/4\e[0m..."
-    # Se for a última tentativa, exibe mensagem de erro final
+    if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
+        RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
+          -H "Content-Type: application/json" \
+          -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+
+        if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
+          echo -e "1/2 - [\e[32mOK\e[0m] - Conta de administrador criada com sucesso! 🎉"
+          CONTA_CRIADA=true
+          break
+        elif echo "$RESPONSE" | grep -q "User already exists"; then
+           echo -e "⚠️ Conta já existe. Prosseguindo..."
+           CONTA_CRIADA=true
+           break
+        fi
+    else
+        echo -e "\e[33m⚠️ O serviço ainda não respondeu corretamente (Erro $HTTP_STATUS). Aguardando...\e[0m"
+    fi
+
     if [ $i -eq $MAX_RETRIES ]; then
-      echo -e "❌ [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador após \e[33m$MAX_RETRIES\e[0m tentativas."
-      echo -e "⚠️ Erro retornado: \e[31m$RESPONSE\e[0m"
-      echo -e "ℹ️ \e[33mApós a conclusão da instalação, por favor, crie uma conta acessando o link do seu Portainer.\e[0m"
+      echo -e "❌ [\e[31mFALHOU\e[0m] - Não foi possível criar a conta automaticamente."
+      echo -e "ℹ️ \e[33mACESSE MANUALMENTE: https://$url_portainer e crie a conta.\e[0m"
       CONTA_CRIADA=false
-      sleep 10
     fi
     sleep $DELAY
-  fi
-done
+  done
 
 # Só tenta criar o token se a conta foi criada com sucesso
 if [ "$CONTA_CRIADA" = true ]; then
