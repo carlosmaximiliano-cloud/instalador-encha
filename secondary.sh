@@ -2064,7 +2064,7 @@ while true; do
         echo -e "\e[31m❌ Erro: O domínio não pode ficar vazio.\e[0m"
         echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r url_portainer
         echo ""
-        # Limpa novamente a nova entrada
+        # Limpa novamente a nova entradaa
         url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
     done
 
