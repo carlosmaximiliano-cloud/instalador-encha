@@ -2169,25 +2169,9 @@ EOL
       
       # Limpa possíveis restos antigos
       sudo apt-get remove -y docker docker-engine docker.io containerd runc > /dev/null 2>&1
-      sudo rm /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
       
-      # Instala dependências
-      sudo apt-get update > /dev/null 2>&1
-      sudo apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1
-
-      # Adiciona chaves e repositório (Forçando BOOKWORM para funcionar no Trixie)
-      sudo install -m 0755 -d /etc/apt/keyrings
-      sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-      sudo chmod a+r /etc/apt/keyrings/docker.asc
-      
-      echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-        bookworm stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-      # Instala o Docker Engine
-      sudo apt-get update > /dev/null 2>&1
-      sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
+      # Executa o script oficial FORÇANDO o codinome 'bookworm' para contornar o erro do Trixie
+      curl -fsSL https://get.docker.com | VERSION_CODENAME=bookworm sudo sh > /dev/null 2>&1
       
       if command -v docker &> /dev/null; then
          echo -e "✅ Docker instalado com sucesso!"
@@ -2233,41 +2217,55 @@ EOL
   sleep 1
 
   # --- ARQUIVO TRAEFIK.YAML ---
-  cat > traefik.yaml << EOL
+cat > traefik.yaml << EOL
 version: "3.7"
 services:
   traefik:
     image: traefik:v3.4.0
-    # --- COMPATIBILIDADE COM DOCKER v29 ---
+
+    # --- A SOLUÇÃO PARA O DOCKER NOVO ---
     environment:
-      - DOCKER_API_VERSION=1.45
-    # -------------------------------------
+      - DOCKER_API_VERSION=1.44
+    # ------------------------------------
+
     command:
       - "--api.dashboard=true"
+      
+      # Provider Swarm
       - "--providers.swarm=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=$nome_rede_interna" 
+      # ^^^ ISSO É ESSENCIAL PARA O ROTEAMENTO FUNCIONAR
+
+      # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
+
+      # SSL
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
+
+      # Logs
       - "--log.level=DEBUG"
       - "--log.format=common"
       - "--log.filePath=/var/log/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access-log"
+
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
     networks:
       - $nome_rede_interna
+
     ports:
       - target: 80
         published: 80
@@ -2275,6 +2273,7 @@ services:
       - target: 443
         published: 443
         mode: host
+
     deploy:
       placement:
         constraints:
