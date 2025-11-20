@@ -2053,12 +2053,10 @@ ferramenta_traefik_e_portainer() {
   while true; do
 
     echo -e "Passo \e[33m1/6\e[0m 📡"
-    # Lê diretamente para a variável url_portainer
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
 
-    # --- LIMPEZA ---
-    # Remove http/https, barras no final e espaços
+    # --- LIMPEZA DE URL ---
     url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
 
     # --- VERIFICAÇÃO ---
@@ -2130,16 +2128,11 @@ ferramenta_traefik_e_portainer() {
   sleep 1
 
   cd ~ || exit 1
-
-  if [ ! -d "dados_vps" ]; then
-      mkdir dados_vps
-  fi
-
+  if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
   cd dados_vps || exit 1
 
   cat > dados_vps << EOL
 [DADOS DA VPS]
-
 Nome do Servidor: $nome_servidor
 Rede interna: $nome_rede_interna
 Email para SSL: $email_ssl
@@ -2151,7 +2144,6 @@ EOL
   ## Atualizando e configurando VPS
   echo -e "Passo \e[33m2/9\e[0m ⚙️"
   echo -e "\e[33m--> Atualizando e configurando a VPS...\e[0m\n"
-  
   sudo apt-get update -y > /dev/null 2>&1
   sudo apt-get upgrade -y > /dev/null 2>&1
   sudo timedatectl set-timezone America/Sao_Paulo > /dev/null 2>&1
@@ -2162,24 +2154,61 @@ EOL
   echo -e "✅ VPS Atualizada e Configurada."
   echo ""
 
-  echo -e "⚙️ \e[97mVerificando Docker Swarm \e[33m[3/9]\e[0m\n"
+  # ---------------------------------------------------------
+  # INSTALAÇÃO AUTOMÁTICA DO DOCKER (CORRIGIDA PARA DEBIAN TRIXIE)
+  # ---------------------------------------------------------
+  echo -e "⚙️ \e[97mVerificando/Instalando Docker Swarm \e[33m[3/9]\e[0m\n"
   sleep 1
   
   # Pegando IP válido
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
 
+  # Se o comando docker não existe, instala
+  if ! command -v docker &> /dev/null; then
+      echo -e "⬇️  Docker não encontrado. Instalando versão compatível..."
+      
+      # Limpa possíveis restos antigos
+      sudo apt-get remove -y docker docker-engine docker.io containerd runc > /dev/null 2>&1
+      sudo rm /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
+      
+      # Instala dependências
+      sudo apt-get update > /dev/null 2>&1
+      sudo apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1
+
+      # Adiciona chaves e repositório (Forçando BOOKWORM para funcionar no Trixie)
+      sudo install -m 0755 -d /etc/apt/keyrings
+      sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+      sudo chmod a+r /etc/apt/keyrings/docker.asc
+      
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        bookworm stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+      # Instala o Docker Engine
+      sudo apt-get update > /dev/null 2>&1
+      sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
+      
+      if command -v docker &> /dev/null; then
+         echo -e "✅ Docker instalado com sucesso!"
+      else
+         echo -e "❌ Erro crítico na instalação do Docker."
+         exit 1
+      fi
+  else
+      echo -e "✅ Docker já está instalado."
+  fi
+
   sudo systemctl start docker > /dev/null 2>&1
 
-  # Apenas inicia o Swarm se necessário (PULA A INSTALAÇÃO DO DOCKER)
+  # Inicia o Swarm
   max_attempts=3
   attempt=1
-
   while [ $attempt -le $max_attempts ]; do
       if docker info | grep -q "Swarm: active"; then
              echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm já estava ativo"
              break
       fi
-      
       sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
       if [ $? -eq 0 ]; then
           echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm iniciado com sucesso"
@@ -2190,6 +2219,7 @@ EOL
           sleep 5
       fi
   done
+  # ---------------------------------------------------------
 
   echo ""
   echo -e "🔗 \e[97mCriando rede interna \e[33m[4/9]\e[0m\n"
@@ -2202,11 +2232,16 @@ EOL
   echo -e "🚀 \e[97mInstalando Traefik \e[33m[5/9]\e[0m\n"
   sleep 1
 
+  # --- ARQUIVO TRAEFIK.YAML ---
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
   traefik:
     image: traefik:v3.4.0
+    # --- COMPATIBILIDADE COM DOCKER v29 ---
+    environment:
+      - DOCKER_API_VERSION=1.45
+    # -------------------------------------
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
@@ -2346,7 +2381,6 @@ EOL
   CONTA_CRIADA=false
 
   for i in $(seq 1 $MAX_RETRIES); do
-    # Verifica status HTTP primeiro
     HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "https://$url_portainer/api/users/admin/init")
     
     echo -e "🔎 Tentativa $i/$MAX_RETRIES - Status HTTP: $HTTP_STATUS"
