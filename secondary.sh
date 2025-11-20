@@ -2056,13 +2056,16 @@ while true; do
     echo ""
 
     # 1. Remove http:// ou https://, barras no final e espaços
-    url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
-    
-    # 2. Verificação de segurança: Se estiver vazio, avisa e pede de novo
+    url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+
+    # --- VERIFICAÇÃO ---
+    # Se a variável ficou vazia (ou o usuário deu enter sem digitar), entra no loop
     while [ -z "$url_portainer" ]; do
         echo -e "\e[31m❌ Erro: O domínio não pode ficar vazio.\e[0m"
-        echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r raw_url_portainer
-        url_portainer=$(echo "$raw_url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
+        echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r url_portainer
+        echo ""
+        # Limpa novamente a nova entrada
+        url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
     done
 
     echo -e "\e[32mURL formatada para: $url_portainer\e[0m"
