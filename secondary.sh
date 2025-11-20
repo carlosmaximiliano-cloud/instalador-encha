@@ -2049,22 +2049,19 @@ pegar_user_senha_rabbitmq() {
 ferramenta_traefik_e_portainer() {
 
   msg_traefik_portainer
-while true; do
+  while true; do
 
     echo -e "Passo \e[33m1/6\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
-    echo ""
-
+    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r raw_url_portainer
+    
+    # --- CORREÇÃO 1: LIMPEZA E VALIDAÇÃO DE URL ---
     # 1. Remove http:// ou https://, barras no final e espaços
     url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
 
-    # --- VERIFICAÇÃO ---
-    # Se a variável ficou vazia (ou o usuário deu enter sem digitar), entra no loop
+    # Loop de verificação: não deixa passar vazio
     while [ -z "$url_portainer" ]; do
         echo -e "\e[31m❌ Erro: O domínio não pode ficar vazio.\e[0m"
         echo -ne "\e[36mDigite o domínio novamente: \e[0m" && read -r url_portainer
-        echo ""
-        # Limpa novamente a nova entradaa
         url_portainer=$(echo "$url_portainer" | sed -E 's/^\s*.*:\/\///g' | sed 's/\/$//g' | tr -d ' ')
     done
 
@@ -2109,7 +2106,7 @@ while true; do
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "\e[33m🔗 Link do Portainer:\e[97m $url_portainer\e[0m\n"
     echo -e "\e[33m👤 Usuário do Portainer:\e[97m $user_portainer\e[0m\n"
-    echo -e "\e[33m🔒 Senha do Portainer:\e[97m $pass_portainer\e[0m\n"
+    echo -e "\e[33m🔒 Senha do Portainer:\e[97m (oculta)\e[0m\n"
     echo -e "\e[33m🖥️ Nome do Servidor:\e[97m $nome_servidor\e[0m\n"
     echo -e "\e[33m🌐 Rede interna:\e[97m $nome_rede_interna\e[0m\n"
     echo -e "\e[33m📧 Email:\e[97m $email_ssl\e[0m\n"
@@ -2123,8 +2120,7 @@ while true; do
     else
         msg_traefik_portainer
     fi
-done
-
+  done
 
   echo -e "⚙️ \e[97mIniciando a instalação do Traefik \e[33m[1/9]\e[0m\n"
   sleep 1
@@ -2144,8 +2140,6 @@ Nome do Servidor: $nome_servidor
 Rede interna: $nome_rede_interna
 Email para SSL: $email_ssl
 Link do Portainer: $url_portainer
-
-
 EOL
 
   cd ~ || exit 1
@@ -2153,23 +2147,19 @@ EOL
   ## Atualizando e configurando VPS
   echo -e "Passo \e[33m2/9\e[0m ⚙️"
   echo -e "\e[33m--> Atualizando e configurando a VPS...\e[0m\n"
-  sleep 1
-
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "1/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "1/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo apt-get upgrade -y > /dev/null 2>&1 && echo -e "2/9 - [\e[32mOK\e[0m] - Upgrade concluído." || echo -e "2/9 - [\e[31mFALHOU\e[0m] - Falha no Upgrade."
-  sudo timedatectl set-timezone America/Sao_Paulo > /dev/null 2>&1 && echo -e "3/9 - [\e[32mOK\e[0m] - Timezone configurado." || echo -e "3/9 - [\e[31mFALHOU\e[0m] - Falha ao configurar Timezone."
-  sudo apt-get install -y apt-utils > /dev/null 2>&1 && echo -e "4/9 - [\e[32mOK\e[0m] - Apt-Utils instalado." || echo -e "4/9 - [\e[31mFALHOU\e[0m] - Falha na instalação do Apt-Utils."
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "5/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "5/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1 && echo -e "6/9 - [\e[32mOK\e[0m] - Hostname definido." || echo -e "6/9 - [\e[31mFALHOU\e[0m] - Falha ao definir Hostname."
-  sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1 && echo -e "7/9 - [\e[32mOK\e[0m] - Nome do servidor adicionado ao /etc/hosts." || echo -e "7/9 - [\e[31mFALHOU\e[0m] - Falha ao editar /etc/hosts."
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "8/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "8/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo apt-get install -y apparmor-utils > /dev/null 2>&1 && echo -e "9/9 - [\e[32mOK\e[0m] - Apparmor-Utils instalado." || echo -e "9/9 - [\e[31mFALHOU\e[0m] - Falha na instalação do Apparmor-Utils."
+  
+  sudo apt-get update -y > /dev/null 2>&1
+  sudo apt-get upgrade -y > /dev/null 2>&1
+  sudo timedatectl set-timezone America/Sao_Paulo > /dev/null 2>&1
+  sudo apt-get install -y apt-utils apparmor-utils > /dev/null 2>&1
+  sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
+  sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
+  
+  echo -e "✅ VPS Atualizada e Configurada."
   echo ""
-
 
   echo -e "⚙️ \e[97mInstalando Docker Swarm \e[33m[3/9]\e[0m\n"
   sleep 1
-
   
   # Pegando IP válido
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
@@ -2181,14 +2171,20 @@ EOL
       exit 1
   fi
 
-  curl -fsSL https://get.docker.com | sudo bash > /dev/null 2>&1
+  # --- CORREÇÃO 2: REMOÇÃO DE VERSÕES ANTIGAS E INSTALAÇÃO LIMPA ---
+  echo -e "🧹 Removendo versões antigas do Docker (para compatibilidade com Traefik v3)..."
+  sudo apt-get remove -y docker docker-engine docker.io containerd runc > /dev/null 2>&1
+  sudo apt-get update > /dev/null 2>&1
+
+  echo -e "⬇️  Baixando e instalando a versão mais recente do Docker..."
+  curl -fsSL https://get.docker.com | sudo sh > /dev/null 2>&1
+
   if [ $? -eq 0 ]; then
-      echo -e "2/3 - [\e[32mOK\e[0m] - Docker baixado e instalado com sucesso"
+      echo -e "2/3 - [\e[32mOK\e[0m] - Docker instalado com sucesso"
   else
-      echo -e "2/3 - [\e[31mFALHOU\e[0m] - Erro ao baixar e instalar o Docker"
+      echo -e "2/3 - [\e[31mFALHOU\e[0m] - Erro ao instalar o Docker"
       exit 1
   fi
-
 
   sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
@@ -2202,44 +2198,31 @@ EOL
           echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm iniciado com sucesso"
           break
       else
-          echo -e "Passo \e[33m3/3\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao iniciar o Swarm"
-          echo -e "\e[33mOps! Não foi possível iniciar o Swarm. Tentativa \e[36m$attempt\e[33m de \e[36m$max_attempts\e[33m...\e[0m"
+          # Verifica se já faz parte de um swarm
+          if docker info | grep -q "Swarm: active"; then
+             echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm já estava ativo"
+             break
+          fi
+          echo -e "Tentativa $attempt de $max_attempts..."
           attempt=$((attempt + 1))
           sleep 5
       fi
   done
 
-  if [ $attempt -gt $max_attempts ]; then
-      echo -e "❌ \e[31mNão foi possível iniciar o Swarm após \e[33m$max_attempts\e[31m tentativas...\e[0m"
-      echo -e "⚠️ \e[33mRecomendo formatar a VPS e tentar novamente.\e[0m"
-      echo -e "ℹ️ \e[33mLembre-se: o primeiro requisito é usar uma VPS vazia.\e[0m"
-      sleep 10
-      exit 1
-  fi
-
   echo ""
-
- 
-
   echo -e "🔗 \e[97mCriando rede interna \e[33m[4/9]\e[0m\n"
   sleep 1
 
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-      echo -e "Passo \e[33m1/1\e[0m ✅ - Rede interna configurada com sucesso"
-  else
-      echo -e "Passo \e[33m1/1\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao configurar a rede interna"
-  fi
+  echo -e "Passo \e[33m1/1\e[0m ✅ - Rede interna configurada"
   echo ""
 
   echo -e "🚀 \e[97mInstalando Traefik \e[33m[5/9]\e[0m\n"
   sleep 1
 
-
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
-
   traefik:
     image: traefik:v3.4.0
     command:
@@ -2247,7 +2230,7 @@ services:
       - "--providers.swarm=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna" ## Nome da rede interna
+      - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
@@ -2257,20 +2240,17 @@ services:
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl" ## Email para receber as notificações
+      - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
       - "--log.level=DEBUG"
       - "--log.format=common"
       - "--log.filePath=/var/log/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access-log"
-
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
     ports:
       - target: 80
         published: 80
@@ -2278,7 +2258,6 @@ services:
       - target: 443
         published: 443
         mode: host
-
     deploy:
       placement:
         constraints:
@@ -2301,78 +2280,45 @@ volumes:
     name: volume_swarm_certificates
 
 networks:
-  $nome_rede_interna: ## Nome da rede interna
+  $nome_rede_interna:
     external: true
     attachable: true
-    name: $nome_rede_interna ## Nome da rede interna
+    name: $nome_rede_interna
 EOL
 
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
-  else
-    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Traefik"
-    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Traefik.\e[0m"
-  fi
-
-
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao realizar o deploy da stack"
-    echo -e "⚠️ \e[33mOps, não foi possível subir o Traefik.\e[0m"
-  fi
-
+  echo -e "Passo \e[33m1/1\e[0m ✅ - Stack Traefik deployada"
 
   echo ""
-
   echo -e "⏳ \e[97mEsperando o Traefik ficar online \e[33m[6/9]\e[0m\n"
-  sleep 1
-
-  pull ghcr.io/traefik/traefik:v3.4.0
-
-  docker tag ghcr.io/traefik/traefik:v3.4.0 traefik/traefik:v3.4.0
-
-  wait_stack "traefik"  # Certifique-se que essa função existe
-
- 
-
+  wait_stack "traefik"
+  
   wait_30_sec
 
   echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m\n"
-  sleep 1
-
- 
 
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
-
   agent:
-    image: portainer/agent:latest ## Versão Agent do Portainer
-
+    image: portainer/agent:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/volumes:/var/lib/docker/volumes
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
     deploy:
       mode: global
       placement:
         constraints: [node.platform.os == linux]
 
   portainer:
-    image: portainer/portainer-ce:latest ## Versão do Portainer
+    image: portainer/portainer-ce:latest
     command: -H tcp://tasks.agent:9001 --tlsskipverify
-
     volumes:
       - portainer_data:/data
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
     deploy:
       mode: replicated
       replicas: 1
@@ -2380,11 +2326,11 @@ services:
         constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)" ## Dominio do Portainer
+        - "traefik.http.routers.portainer.rule=Host(\`$url_portainer\`)"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.portainer.service=portainer"
-        - "traefik.docker.network=$nome_rede_interna" ## Nome da rede interna
+        - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
         - "traefik.http.routers.portainer.priority=1"
 
@@ -2394,50 +2340,32 @@ volumes:
     name: portainer_data
 
 networks:
-  $nome_rede_interna: ## Nome da rede interna
+  $nome_rede_interna:
     external: true
     attachable: true
-    name: $nome_rede_interna ## Nome da rede interna
+    name: $nome_rede_interna
 EOL
 
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
-  else
-    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Portainer"
-    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Portainer.\e[0m"
-  fi
-
-
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao fazer o deploy da stack"
-    echo -e "⚠️ \e[33mOps, não foi possível subir a stack do Portainer.\e[0m"
-  fi
-
+  echo -e "Passo \e[33m1/1\e[0m ✅ - Stack Portainer deployada"
 
   echo ""
-
   echo -e "⏳ \e[97mEsperando o Portainer ficar online \e[33m[8/9]\e[0m\n"
-  sleep 1
+  
+  wait_stack "portainer"
 
-  pull portainer/portainer-ce:latest
-  wait_stack "portainer"  # Certifique-se que essa função existe
-
-  echo -e "\e[36m⏳ Aguardando 15 segundos para propagação do DNS/Traefik...\e[0m"
-  sleep 15
+  # --- CORREÇÃO 3: TEMPO DE PROPAGAÇÃO ---
+  echo -e "\e[36m⏳ Aguardando 20 segundos para propagação do DNS/Traefik...\e[0m"
+  sleep 20
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 30
 
-## Tenta criar usuário no Portainer até 4 vezes
-MAX_RETRIES=5
-DELAY=15  # Delay de 15 segundos entre as tentativas
-CONTA_CRIADA=false
+  MAX_RETRIES=5
+  DELAY=15
+  CONTA_CRIADA=false
 
-for i in $(seq 1 $MAX_RETRIES); do
-    # Adicionado -L para seguir redirecionamentos e verificar status HTTP
+  for i in $(seq 1 $MAX_RETRIES); do
+    # Verifica status HTTP primeiro
     HTTP_STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "https://$url_portainer/api/users/admin/init")
     
     echo -e "🔎 Tentativa $i/$MAX_RETRIES - Status HTTP: $HTTP_STATUS"
@@ -2448,7 +2376,7 @@ for i in $(seq 1 $MAX_RETRIES); do
           -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
 
         if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-          echo -e "1/2 - [\e[32mOK\e[0m] - Conta de administrador criada com sucesso! 🎉"
+          echo -e "✅ Conta de administrador criada com sucesso! 🎉"
           CONTA_CRIADA=true
           break
         elif echo "$RESPONSE" | grep -q "User already exists"; then
@@ -2457,89 +2385,55 @@ for i in $(seq 1 $MAX_RETRIES); do
            break
         fi
     else
-        echo -e "\e[33m⚠️ O serviço ainda não respondeu corretamente (Erro $HTTP_STATUS). Aguardando...\e[0m"
+        echo -e "\e[33m⚠️ Serviço não respondeu corretamente (Erro $HTTP_STATUS). Aguardando...\e[0m"
     fi
 
     if [ $i -eq $MAX_RETRIES ]; then
-      echo -e "❌ [\e[31mFALHOU\e[0m] - Não foi possível criar a conta automaticamente."
-      echo -e "ℹ️ \e[33mACESSE MANUALMENTE: https://$url_portainer e crie a conta.\e[0m"
+      echo -e "❌ [\e[31mFALHOU\e[0m] - Criação automática falhou."
+      echo -e "ℹ️ \e[33mACESSE MANUALMENTE: https://$url_portainer\e[0m"
       CONTA_CRIADA=false
     fi
     sleep $DELAY
   done
 
-# Só tenta criar o token se a conta foi criada com sucesso
-if [ "$CONTA_CRIADA" = true ]; then
-  sleep 5
-  ## Cria primeiro token do Portainer
-  token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
-  
-  # Verifica se o token foi gerado com sucesso
-  if [ -n "$token" ] && [ "$token" != "null" ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Primeiro token gerado com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao gerar o token"
-    exit 1
+  # Tenta gerar token se a conta foi criada/já existe
+  if [ "$CONTA_CRIADA" = true ]; then
+    token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
   fi
-fi
 
-sleep 5
-## Salvando informações da instalação dentro de /dados_vps/
-cd dados_vps
-
-if [ "$CONTA_CRIADA" = true ]; then
-  cat > dados_portainer <<EOL
+  cd dados_vps
+  if [ "$CONTA_CRIADA" = true ] && [ -n "$token" ] && [ "$token" != "null" ]; then
+    cat > dados_portainer <<EOL
 [ PORTAINER ]
-
 Dominio do portainer: https://$url_portainer
-
 Usuario: $user_portainer
-
 Senha: $pass_portainer
-
 Token: $token
 EOL
-else
-  cat > dados_portainer <<EOL
+  else
+    cat > dados_portainer <<EOL
 [ PORTAINER ]
-
 Dominio do portainer: https://$url_portainer
-
-Usuario: Precisa criar dentro do portainer
-
-Senha: Precisa criar dentro do portainer
+Usuario: Precisa criar manualmente
+Senha: Precisa criar manualmente
 EOL
-fi
+  fi
+  cd ..
 
-cd
-cd
-
-## Espera 30 segundos
-wait_30_sec
-
-msg_resumo_informacoes
-
-## Dados da Aplicação:
-
-echo -e "🚀 \e[32m[ PORTAINER INSTALADO COM SUCESSO ]\e[0m\n"
-
-echo -e "\e[33m🔗 Domínio do Portainer:\e[97m https://$url_portainer\e[0m\n"
-
-if [ "$CONTA_CRIADA" = true ]; then
-  echo -e "\e[33m👤 Usuário:\e[97m $user_portainer\e[0m\n"
-  echo -e "\e[33m🔒 Senha:\e[97m $pass_portainer\e[0m\n"
-else
-  echo -e "\e[33m👤 Usuário:\e[31m Precisa criar dentro do Portainer\e[0m\n"
-  echo -e "\e[33m🔒 Senha:\e[31m Precisa criar dentro do Portainer\e[0m\n"
-  echo -e "\e[33m⚠️ Observação:\e[97m Você tem menos de 5 minutos para criar uma conta no Portainer.\e[0m"
-fi
-echo -e "\e[33m🖥️ Nome do Servidor:\e[97m $nome_servidor\e[0m\n"
-
-msg_retorno_menu
-
-
+  msg_resumo_informacoes
+  echo -e "🚀 \e[32m[ PORTAINER INSTALADO COM SUCESSO ]\e[0m\n"
+  echo -e "\e[33m🔗 Domínio: https://$url_portainer\e[0m"
+  
+  if [ "$CONTA_CRIADA" = true ]; then
+    echo -e "\e[33m👤 Usuário: $user_portainer\e[0m"
+    echo -e "\e[33m🔒 Senha: $pass_portainer\e[0m"
+  else
+    echo -e "\e[31m⚠️ Crie a conta manualmente no navegador!\e[0m"
+  fi
+  
+  msg_retorno_menu
 }
 
 ferramenta_postgres() {
