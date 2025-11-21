@@ -2235,12 +2235,12 @@ EOL
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
-
   traefik:
     image: traefik:v3.4.0
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
+      - "--providers.docker.apiVersion=1.45"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=$nome_rede_interna"
