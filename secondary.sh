@@ -2227,14 +2227,15 @@ version: "3.7"
 services:
 
   traefik:
-    image: traefik:v2.11
+    image: traefik:v2.10
+    # Configuração via Variável de Ambiente (CORRETO)
+    environment:
+      - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.swarmMode=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      # AQUI ESTÁ A CORREÇÃO QUE FUNCIONA NO V2
-      - "--providers.docker.apiVersion=1.44"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
