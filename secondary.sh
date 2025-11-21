@@ -2227,32 +2227,26 @@ version: "3.7"
 services:
 
   traefik:
-    image: traefik:v3.4.0
-    environment:
-      - DOCKER_API_VERSION=1.44
+    image: traefik:v2.11
     command:
       - "--api.dashboard=true"
-      # ATIVANDO APENAS O SWARM
-      - "--providers.swarm=true"
-      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
-      - "--providers.swarm.exposedbydefault=false"
-      - "--providers.swarm.network=$nome_rede_interna"
-      # -----------------------
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      # AQUI ESTÁ A CORREÇÃO QUE FUNCIONA NO V2
+      - "--providers.docker.apiVersion=1.44"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
       - "--log.level=DEBUG"
-      - "--log.format=common"
-      - "--log.filePath=/var/log/traefik/traefik.log"
       - "--accesslog=true"
-      - "--accesslog.filepath=/var/log/traefik/access-log"
 
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
@@ -2276,11 +2270,9 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-        - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
         - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
         - "traefik.http.routers.http-catchall.entrypoints=web"
         - "traefik.http.routers.http-catchall.middlewares=redirect-https@docker"
-        - "traefik.http.routers.http-catchall.priority=1"
 
 volumes:
   vol_shared:
