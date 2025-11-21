@@ -2232,10 +2232,12 @@ services:
       - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
+      # ATIVANDO APENAS O SWARM
       - "--providers.swarm=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=$nome_rede_interna"
+      # -----------------------
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
