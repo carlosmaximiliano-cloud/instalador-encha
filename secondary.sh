@@ -2222,19 +2222,26 @@ EOL
 
   # Criar arquivo traefik.yaml (mantive seu conteúdo original)
 
+  echo -e "⚙️ \e[97mBaixando imagem oficial do Traefik (Fix Orion) \e[33m[Extra]\e[0m\n"
+  
+  # 1. O Orion baixa do GHCR para evitar problemas do Docker Hub
+  docker pull ghcr.io/traefik/traefik:v3.4.0 > /dev/null 2>&1
+  # 2. Renomeia para a tag que o arquivo yaml vai usar
+  docker tag ghcr.io/traefik/traefik:v3.4.0 traefik:v3.4.0 > /dev/null 2>&1
+
+  # Criar arquivo traefik.yaml
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
 
   traefik:
-    image: traefik:v2.10
-    # O SEGREDO ESTÁ AQUI: Forçamos a versão via Variável e NÃO por comando
+    image: traefik:v3.4.0
+    # AQUI ESTÁ A CORREÇÃO CRÍTICA PARA VPS NOVA
     environment:
       - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.swarmMode=true"
+      - "--providers.swarm=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=$nome_rede_interna"
@@ -2243,12 +2250,16 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
       - "--log.level=DEBUG"
+      - "--log.format=common"
+      - "--log.filePath=/var/log/traefik/traefik.log"
       - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access-log"
 
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
@@ -2272,9 +2283,11 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
         - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
         - "traefik.http.routers.http-catchall.entrypoints=web"
         - "traefik.http.routers.http-catchall.middlewares=redirect-https@docker"
+        - "traefik.http.routers.http-catchall.priority=1"
 
 volumes:
   vol_shared:
@@ -2295,11 +2308,12 @@ EOL
     echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
   else
     echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Traefik"
-    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Traefik.\e[0m"
   fi
 
-
+  # O Orion usa a flag --resolve-image always, mas como baixamos manualmente, o ideal é usar 'never' ou 'changed'
+  # Mas manteremos o padrão para compatibilidade
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
+  
   if [ $? -eq 0 ]; then
     echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
   else
