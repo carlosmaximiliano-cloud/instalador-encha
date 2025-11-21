@@ -2228,7 +2228,7 @@ services:
 
   traefik:
     image: traefik:v2.10
-    # Configuração via Variável de Ambiente (CORRETO)
+    # O SEGREDO ESTÁ AQUI: Forçamos a versão via Variável e NÃO por comando
     environment:
       - DOCKER_API_VERSION=1.44
     command:
@@ -2241,6 +2241,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
