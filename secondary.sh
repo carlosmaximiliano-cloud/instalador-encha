@@ -2094,7 +2094,7 @@ ferramenta_traefik_e_portainer() {
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else msg_traefik_portainer; fi
   done
 
-  # --- CONFIGURAÇÃO VPS E DOCKER ---
+  # --- CONFIGURAÇÃO VPS ---
   cd ~ || exit 1
   if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
   cat > dados_vps/dados_vps << EOL
@@ -2112,43 +2112,80 @@ EOL
   # Pegando IP
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
 
-  # Verificação simples do Docker (já que instalamos manualmente)
+  # --- INSTALAÇÃO AUTOMÁTICA DO DOCKER (CORRIGIDA) ---
   if ! command -v docker &> /dev/null; then
-      echo -e "\e[31m❌ Docker não detectado! Instale manualmente antes de rodar.\e[0m"
-      exit 1
+      echo -e "⬇️  Docker não encontrado. Instalando versão compatível (Bookworm)..."
+      
+      # Remove versões velhas
+      sudo apt-get remove -y docker docker-engine docker.io containerd runc > /dev/null 2>&1
+      
+      # Instala dependências
+      sudo apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1
+      
+      # Adiciona Chave GPG
+      sudo install -m 0755 -d /etc/apt/keyrings
+      sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+      sudo chmod a+r /etc/apt/keyrings/docker.asc
+      
+      # Adiciona Repositório (FORÇANDO BOOKWORM)
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        bookworm stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        
+      # Instala Docker Engine
+      sudo apt-get update > /dev/null 2>&1
+      sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
+      
+      if ! command -v docker &> /dev/null; then
+          echo -e "\e[31m❌ Erro crítico: Falha ao instalar o Docker.\e[0m"
+          exit 1
+      fi
+  else
+      echo -e "✅ Docker já instalado."
   fi
   
   sudo systemctl start docker > /dev/null 2>&1
   
-  # Inicia Swarm se necessário
-  if ! docker info | grep -q "Swarm: active"; then
-      docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
-  fi
+  # Inicia Swarm
+  max_attempts=3
+  attempt=1
+  while [ $attempt -le $max_attempts ]; do
+      if docker info | grep -q "Swarm: active"; then
+             echo -e "✅ Swarm já ativo."
+             break
+      fi
+      sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
+      if [ $? -eq 0 ]; then
+          echo -e "✅ Swarm iniciado."
+          break
+      else
+          echo -e "Tentativa $attempt de $max_attempts iniciar Swarm..."
+          attempt=$((attempt + 1))
+          sleep 5
+      fi
+  done
 
   echo -e "🔗 \e[97mConfigurando Rede... \e[33m[4/9]\e[0m"
-  # Remove a rede se já existir para evitar conflito
   docker network rm $nome_rede_interna > /dev/null 2>&1
   docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
 
-  # --- LIMPEZA AGRESSIVA DE STACKS ANTIGAS ---
   echo -e "🧹 \e[97mLimpando instalações anteriores... \e[33m[AGUARDE]\e[0m"
   docker stack rm traefik > /dev/null 2>&1
   docker stack rm portainer > /dev/null 2>&1
-  sleep 10 # Tempo para o Swarm limpar
+  sleep 10 
   docker volume rm portainer_data > /dev/null 2>&1
   
   echo -e "🚀 \e[97mInstalando Traefik \e[33m[5/9]\e[0m"
 
-  # --- ARQUIVO TRAEFIK.YAML BLINDADO ---
+  # --- ARQUIVO TRAEFIK.YAML COM DOCKER_API_VERSION ---
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
   traefik:
     image: traefik:v3.4.0
-    # --- AQUI ESTÁ A CORREÇÃO DA VERSÃO ---
     environment:
       - DOCKER_API_VERSION=1.45
-    # -------------------------------------
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
@@ -2160,6 +2197,7 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
@@ -2188,7 +2226,6 @@ services:
         - "traefik.http.routers.dashboard.middlewares=auth"
         - "traefik.http.routers.dashboard.entrypoints=websecure"
         - "traefik.http.routers.dashboard.tls.certresolver=letsencryptresolver"
-        # Dummy service para redirecionamento global
         - "traefik.http.routers.http-catchall.rule=HostRegexp(\`{host:.+}\`)"
         - "traefik.http.routers.http-catchall.entrypoints=web"
         - "traefik.http.routers.http-catchall.middlewares=redirect-https@docker"
@@ -2196,6 +2233,9 @@ services:
         - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
 
 volumes:
+  vol_shared:
+    external: true
+    name: volume_swarm_shared
   vol_certificates:
     external: true
     name: volume_swarm_certificates
@@ -2207,17 +2247,10 @@ networks:
     name: $nome_rede_interna
 EOL
 
-  # --- DEBUG: MOSTRAR QUE A VARIÁVEL FOI INSERIDA ---
-  echo -e "\e[36m🔍 Verificando arquivo gerado (Procure por DOCKER_API_VERSION):\e[0m"
-  grep "DOCKER_API_VERSION" traefik.yaml
-  sleep 3
-
   docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
   
   echo -e "⏳ \e[97mAguardando Traefik iniciar... \e[33m[6/9]\e[0m"
   wait_stack "traefik"
-  
-  # Pausa extra para garantir que o Traefik leu o socket
   sleep 15
 
   echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m"
@@ -2257,6 +2290,7 @@ services:
         - "traefik.http.routers.portainer.service=portainer"
         - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
+        - "traefik.http.routers.portainer.priority=1"
 
 volumes:
   portainer_data:
@@ -2278,7 +2312,6 @@ EOL
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m"
   
-  # --- TENTATIVA DE CRIAÇÃO COM DEBUG DE STATUS ---
   MAX_RETRIES=5
   CONTA_CRIADA=false
   
@@ -2286,7 +2319,7 @@ EOL
       HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" "https://$url_portainer/api/users/admin/init")
       echo -e "🔎 Tentativa $i/$MAX_RETRIES - Status HTTP: $HTTP_CODE"
       
-      if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then # 409 = Conflict (Ja existe)
+      if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then 
           RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
             -H "Content-Type: application/json" \
             -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
@@ -2300,7 +2333,6 @@ EOL
       sleep 15
   done
 
-  # Finalização e Token
   cd dados_vps
   if [ "$CONTA_CRIADA" = true ]; then
       token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
@@ -2314,7 +2346,7 @@ Usuario: $user_portainer
 Senha: $pass_portainer
 Token: $token
 EOL
-      echo -e "\e[32m🚀 SUCESSO! Portainer instalado e configurado.\e[0m"
+      echo -e "\e[32m🚀 SUCESSO! Portainer instalado.\e[0m"
   else
       cat > dados_portainer <<EOL
 [ PORTAINER ]
@@ -2322,8 +2354,7 @@ Dominio: https://$url_portainer
 Usuario: Criar Manualmente
 Senha: Criar Manualmente
 EOL
-      echo -e "\e[31m⚠️ Não foi possível criar o usuário automaticamente.\e[0m"
-      echo -e "Acesse \e[33mhttps://$url_portainer\e[0m e crie a conta manualmente."
+      echo -e "\e[31m⚠️ Não foi possível criar o usuário automaticamente. Acesse manualmente.\e[0m"
   fi
   cd ..
   
