@@ -2229,12 +2229,11 @@ services:
   traefik:
     image: traefik:v3.4.0
     environment:
-      - DOCKER_API_VERSION=1.44
+      - TRAEFIK_PROVIDERS_DOCKER_APIVERSION=1.44
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      - "--providers.docker.apiVersion=1.44"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
