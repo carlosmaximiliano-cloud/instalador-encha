@@ -2229,7 +2229,7 @@ services:
   traefik:
     image: traefik:v3.4.0
     environment:
-      - TRAEFIK_PROVIDERS_DOCKER_APIVERSION=1.44
+      - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
