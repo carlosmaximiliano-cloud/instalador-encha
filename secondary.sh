@@ -2234,6 +2234,7 @@ services:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.apiVersion=1.44"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
