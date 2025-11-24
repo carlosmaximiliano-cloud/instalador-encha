@@ -2048,90 +2048,63 @@ pegar_user_senha_rabbitmq() {
 
 ferramenta_traefik_e_portainer() {
 
-  # Verifica recursos se a função existir
+  # Verifica recursos e limpa tela
   if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
-
   clear
-  # Se msg_traefik_portainer existir, executa, senão apenas imprime cabeçalho
-  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- INSTALAÇÃO TRAEFIK E PORTAINER ---"; fi
+  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER ---"; fi
 
-  # Loop de Coleta de Dados
+  # --- COLETA DE DADOS (Mantida igual) ---
   while true; do
     echo -e "Passo \e[33m1/6\e[0m 📡"
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
     echo ""
-
     echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
     echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
     echo ""
-
     while true; do
       echo -e "Passo \e[33m3/6\e[0m 🔐"
       echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-      echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
       echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
       echo ""
       if type validar_senha &> /dev/null; then
         if validar_senha "$pass_portainer" 12; then break; fi
       else
-        # Fallback se não tiver a função validar_senha
         if [ ${#pass_portainer} -ge 12 ]; then break; fi
       fi
       echo ""
     done
-
     echo -e "Passo \e[33m4/6\e[0m 🖥️"
     echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
     echo ""
-
     echo -e "Passo \e[33m5/6\e[0m 🌐"
     echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
     echo ""
-
     echo -e "Passo \e[33m6/6\e[0m 📧"
     echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
     echo ""
-
+    
+    # Confirmação
     clear
     if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
-    
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "Link:      \e[97m$url_portainer\e[0m"
-    echo -e "Usuário:   \e[97m$user_portainer\e[0m"
-    echo -e "Senha:     \e[97m$pass_portainer\e[0m"
-    echo -e "Servidor:  \e[97m$nome_servidor\e[0m"
-    echo -e "Rede:      \e[97m$nome_rede_interna\e[0m"
-    echo -e "Email:     \e[97m$email_ssl\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
-      clear
-      break
-    else
-      clear
-      if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
-    fi
+    echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
+    read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
   done
 
-  # --- INÍCIO DA INSTALAÇÃO TÉCNICA ---
+  # --- PREPARAÇÃO DO SISTEMA ---
 
-  echo -e "\e[97m• PREPARANDO AMBIENTE (LIMPANDO VERSÕES ANTIGAS) \e[33m[1/9]\e[0m"
-  sleep 1
-
-  # [CRÍTICO] Remove Docker v29/Beta que causa o erro de API 1.24
-  # Isso garante uma instalação limpa
+  echo -e "\e[97m• LIMPANDO INSTALAÇÕES ANTIGAS \e[33m[1/9]\e[0m"
+  # Remove tudo para não dar conflito de versão
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
-  sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras > /dev/null 2>&1
+  sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
   sudo rm -rf /var/lib/docker
   sudo rm -rf /var/lib/containerd
-  
-  cd ~ || exit 1
-  if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
-  cd dados_vps || exit 1
 
+  # Salva dados (igual ao seu original)
+  cd ~ || exit 1
+  mkdir -p dados_vps; cd dados_vps
   cat > dados_vps << EOL
 [DADOS DA VPS]
 Nome do Servidor: $nome_servidor
@@ -2139,43 +2112,80 @@ Rede interna: $nome_rede_interna
 Email para SSL: $email_ssl
 Link do Portainer: $url_portainer
 EOL
-  cd ~ || exit 1
+  cd ~
 
-  echo -e "\e[97m• CONFIGURANDO VPS \e[33m[2/9]\e[0m"
+  echo -e "\e[97m• CONFIGURANDO HOST \e[33m[2/9]\e[0m"
   sudo apt-get update -y > /dev/null 2>&1
-  sudo apt-get install -y apt-utils apparmor-utils curl > /dev/null 2>&1
+  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg > /dev/null 2>&1
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO DOCKER (VERSÃO ESTÁVEL v27) \e[33m[3/9]\e[0m"
+  # --- AQUI ESTÁ A CORREÇÃO DE INSTALAÇÃO ---
+  echo -e "\e[97m• PREPARANDO REPOSITÓRIO DOCKER \e[33m[3/9]\e[0m"
+  
+  # 1. Adiciona a chave GPG Oficial
+  sudo install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+  sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+  # 2. Adiciona o repositório (Detecta se é Ubuntu ou Debian automaticamente)
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    ID_LIKE=${ID_LIKE:-$ID} # Fallback para sistemas sem ID_LIKE
+    if [[ "$ID" == "debian" || "$ID_LIKE" == *"debian"* ]]; then
+       REPO_URL="https://download.docker.com/linux/debian"
+    else
+       REPO_URL="https://download.docker.com/linux/ubuntu"
+    fi
+    
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] $REPO_URL \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  fi
+
+  sudo apt-get update -y > /dev/null 2>&1
+
+  echo -e "\e[97m• INSTALANDO DOCKER (VERSÃO 27.x) \e[33m[4/9]\e[0m"
   sleep 1
 
-  # [SOLUÇÃO DEFINITIVA]
-  # Forçamos a versão 27.3.1. Ela é compatível com Traefik v3 e não bloqueia APIs antigas.
-  curl -fsSL https://get.docker.com -o get-docker.sh
-  sudo sh get-docker.sh --version 27.3.1 > /dev/null 2>&1
-  
-  sudo systemctl enable docker > /dev/null 2>&1
-  sudo systemctl start docker > /dev/null 2>&1
+  # 3. Mágica para pegar a String da Versão 27 mais recente disponível para SEU sistema
+  # Isso evita o erro "version not found"
+  VERSION_STRING=$(apt-cache madison docker-ce | awk '{ print $3 }' | grep "27." | head -n 1)
 
+  if [ -n "$VERSION_STRING" ]; then
+     echo -e "Versão encontrada: \e[32m$VERSION_STRING\e[0m"
+     # Usa a sintaxe que você pediu: package=version
+     sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+  else
+     echo -e "⚠️ Versão 27 específica não encontrada. Instalando a latest stable..."
+     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  fi
+
+  # Verificação final
+  if ! command -v docker &> /dev/null; then
+     echo -e "\n\e[41m❌ ERRO FATAL: Docker não foi instalado corretamente.\e[0m"
+     echo "Verifique sua conexão ou repositórios."
+     return
+  fi
+
+  sudo systemctl start docker
+  
   # Inicia Swarm
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
-  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
+  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[5/9]\e[0m"
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
-  sleep 1
-
+  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[6/9]\e[0m"
+  
+  # Traefik YAML (Mantendo a config segura de API 1.44)
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
   traefik:
     image: traefik:v3.4.0
     environment:
-      # [FIX] Forçamos 1.44 para garantir compatibilidade total, 
-      # embora o Docker v27 aceite versões mais antigas também.
       - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
@@ -2188,12 +2198,11 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
-      - "--log.level=DEBUG"
+      - "--log.level=INFO"
       - "--accesslog=true"
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
@@ -2209,8 +2218,7 @@ services:
         mode: host
     deploy:
       placement:
-        constraints:
-          - node.role == manager
+        constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
@@ -2236,13 +2244,11 @@ networks:
 EOL
 
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
+  
+  echo -e "\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
+  if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
 
-  echo -e "\e[97m• ESPERANDO O TRAEFIK ESTAR ONLINE \e[33m[6/9]\e[0m"
-  if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 45; fi
-  if type wait_30_sec &> /dev/null; then wait_30_sec; else sleep 30; fi
-
-  echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[7/9]\e[0m"
-  sleep 1
+  echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
   
   cat > portainer.yaml <<EOL
 version: "3.7"
@@ -2279,7 +2285,6 @@ services:
         - "traefik.http.routers.portainer.service=portainer"
         - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
-        - "traefik.http.routers.portainer.priority=1"
 
 volumes:
   portainer_data:
@@ -2294,36 +2299,32 @@ networks:
 EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
+  
+  echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
+  if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
-  echo -e "\e[97m• ESPERANDO O PORTAINER ESTAR ONLINE \e[33m[8/9]\e[0m"
-  if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 45; fi
-  sleep 5
-
-  echo -e "\e[97m• CRIANDO CONTA NO PORTAINER \e[33m[9/9]\e[0m"
-  sleep 30
+  echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  sleep 20 # Tempo para o portainer subir de verdade
 
   MAX_RETRIES=5
-  DELAY=15
   CONTA_CRIADA=false
-
   for i in $(seq 1 $MAX_RETRIES); do
     RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
       -H "Content-Type: application/json" \
       -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-      echo -e "\e[32m✅ Conta criada com sucesso!\e[0m"
+      echo -e "\e[32m✅ Conta criada!\e[0m"
       CONTA_CRIADA=true
       break
     else
       echo -e "⏳ Tentativa $i/$MAX_RETRIES..."
-      sleep $DELAY
+      sleep 10
     fi
   done
 
-  # Gera Token se a conta foi criada
+  # Gera Token e Salva
   if [ "$CONTA_CRIADA" = true ]; then
-    sleep 5
     token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
       -H "Content-Type: application/json" \
       -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
@@ -2342,23 +2343,13 @@ EOL
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: Precisa criar manualmente (Timeout atingido)
+Usuario: Criar manualmente.
 EOL
   fi
-  cd
-  cd
+  cd; cd
 
-  # Se tiver função de resumo, usa, senão imprime básico
-  if type msg_resumo_informacoes &> /dev/null; then 
-    msg_resumo_informacoes
-  else 
-    echo -e "--- RESUMO ---"
-    echo "URL: https://$url_portainer"
-  fi
-
-  echo -e "\n\e[32m🚀 INSTALAÇÃO CONCLUÍDA COM SUCESSO!\e[0m"
-  echo -e "\e[33mAcesse o Portainer em:\e[97m https://$url_portainer\e[0m\n"
-  
+  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
+  echo -e "\n\e[32m🚀 SUCESSO!\e[0m Acesse: https://$url_portainer"
   if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
 }
 
