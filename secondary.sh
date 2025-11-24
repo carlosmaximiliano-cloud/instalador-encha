@@ -2051,9 +2051,9 @@ ferramenta_traefik_e_portainer() {
   # Verifica recursos e limpa tela
   if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
   clear
-  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER ---"; fi
+  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER (UNIVERSAL) ---"; fi
 
-  # --- COLETA DE DADOS (Mantida igual) ---
+  # --- COLETA DE DADOS ---
   while true; do
     echo -e "Passo \e[33m1/6\e[0m 📡"
     echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
@@ -2083,7 +2083,6 @@ ferramenta_traefik_e_portainer() {
     echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
     echo ""
     
-    # Confirmação
     clear
     if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
@@ -2092,17 +2091,17 @@ ferramenta_traefik_e_portainer() {
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
   done
 
-  # --- PREPARAÇÃO DO SISTEMA ---
+  # --- INSTALAÇÃO INTELIGENTE ---
 
-  echo -e "\e[97m• LIMPANDO INSTALAÇÕES ANTIGAS \e[33m[1/9]\e[0m"
-  # Remove tudo para não dar conflito de versão
+  echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
+  # Remove versões antigas para garantir instalação limpa
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
   sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
   sudo rm -rf /var/lib/docker
   sudo rm -rf /var/lib/containerd
+  sudo rm /etc/apt/sources.list.d/docker.list 2>/dev/null
 
-  # Salva dados (igual ao seu original)
   cd ~ || exit 1
   mkdir -p dados_vps; cd dados_vps
   cat > dados_vps << EOL
@@ -2114,72 +2113,70 @@ Link do Portainer: $url_portainer
 EOL
   cd ~
 
-  echo -e "\e[97m• CONFIGURANDO HOST \e[33m[2/9]\e[0m"
+  echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
   sudo apt-get update -y > /dev/null 2>&1
-  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg > /dev/null 2>&1
+  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release > /dev/null 2>&1
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
-  # --- AQUI ESTÁ A CORREÇÃO DE INSTALAÇÃO ---
-  echo -e "\e[97m• PREPARANDO REPOSITÓRIO DOCKER \e[33m[3/9]\e[0m"
+  echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
   
-  # 1. Adiciona a chave GPG Oficial
-  sudo install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
-  sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
+  OS_CODENAME=$(lsb_release -cs)
+  echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
 
-  # 2. Adiciona o repositório (Detecta se é Ubuntu ou Debian automaticamente)
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    ID_LIKE=${ID_LIKE:-$ID} # Fallback para sistemas sem ID_LIKE
-    if [[ "$ID" == "debian" || "$ID_LIKE" == *"debian"* ]]; then
-       REPO_URL="https://download.docker.com/linux/debian"
-    else
-       REPO_URL="https://download.docker.com/linux/ubuntu"
-    fi
-    
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] $REPO_URL \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  fi
+  if [[ "$OS_CODENAME" == "trixie" ]] || [[ "$OS_CODENAME" == "sid" ]] || [[ "$OS_CODENAME" == "n/a" ]]; then
+      # --- CASO PROBLEMÁTICO (DEBIAN 13/TESTING) ---
+      echo -e "⚠️  Debian Testing detectado. Aplicando correção de repositório..."
+      
+      sudo install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+      sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-  sudo apt-get update -y > /dev/null 2>&1
+      # Força repositório do Bookworm (Estável)
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      
+      sudo apt-get update -y > /dev/null 2>&1
+      # Instala versão específica compatível do Bookworm
+      VERSION_STRING="5:27.3.1-1~debian.12~bookworm"
+      sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+      sudo apt-mark hold docker-ce docker-ce-cli > /dev/null 2>&1 # Trava versão
 
-  echo -e "\e[97m• INSTALANDO DOCKER (VERSÃO 27.x) \e[33m[4/9]\e[0m"
-  sleep 1
-
-  # 3. Mágica para pegar a String da Versão 27 mais recente disponível para SEU sistema
-  # Isso evita o erro "version not found"
-  VERSION_STRING=$(apt-cache madison docker-ce | awk '{ print $3 }' | grep "27." | head -n 1)
-
-  if [ -n "$VERSION_STRING" ]; then
-     echo -e "Versão encontrada: \e[32m$VERSION_STRING\e[0m"
-     # Usa a sintaxe que você pediu: package=version
-     sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
   else
-     echo -e "⚠️ Versão 27 específica não encontrada. Instalando a latest stable..."
-     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      # --- CASO PADRÃO (DEBIAN 11/12, UBUNTU 20/22/24) ---
+      echo -e "✅ Sistema estável detectado. Usando instalação nativa..."
+      
+      # Tenta instalar via script oficial travando na versão 27 (compatível com todos)
+      curl -fsSL https://get.docker.com -o install_docker.sh
+      sudo sh install_docker.sh --version 27.3.1 > /dev/null 2>&1
+      
+      # Se falhar (alguns sistemas não suportam o script), tenta apt padrão
+      if ! command -v docker &> /dev/null; then
+         echo "⚠️ Fallback para apt repository..."
+         sudo apt-get update -y > /dev/null 2>&1
+         sudo apt-get install -y docker.io > /dev/null 2>&1
+      fi
   fi
 
-  # Verificação final
+  # Verificação Final
   if ! command -v docker &> /dev/null; then
-     echo -e "\n\e[41m❌ ERRO FATAL: Docker não foi instalado corretamente.\e[0m"
-     echo "Verifique sua conexão ou repositórios."
+     echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
      return
   fi
-
-  sudo systemctl start docker
   
-  # Inicia Swarm
+  sudo systemctl enable docker > /dev/null 2>&1
+  sudo systemctl start docker > /dev/null 2>&1
+
+  echo -e "⚙️  Iniciando Swarm..."
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
-  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[5/9]\e[0m"
+  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[6/9]\e[0m"
+  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
   
-  # Traefik YAML (Mantendo a config segura de API 1.44)
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
@@ -2304,7 +2301,7 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
   echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  sleep 20 # Tempo para o portainer subir de verdade
+  sleep 20 
 
   MAX_RETRIES=5
   CONTA_CRIADA=false
@@ -2323,7 +2320,6 @@ EOL
     fi
   done
 
-  # Gera Token e Salva
   if [ "$CONTA_CRIADA" = true ]; then
     token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
       -H "Content-Type: application/json" \
@@ -2349,7 +2345,7 @@ EOL
   cd; cd
 
   if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
-  echo -e "\n\e[32m🚀 SUCESSO!\e[0m Acesse: https://$url_portainer"
+  echo -e "\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://$url_portainer"
   if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
 }
 
