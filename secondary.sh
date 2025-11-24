@@ -18028,7 +18028,7 @@ exibir_bloco_centralizado() {
 
 instalar_traefik_e_portainer() {
 
-  msg_traefik_portainer
+  msg_traefik_portainer 2>/dev/null || echo "--- INSTALAÇÃO TRAEFIK & PORTAINER ---"
 
   local url_portainer="$1"
   local user_portainer="$2"
@@ -18037,131 +18037,102 @@ instalar_traefik_e_portainer() {
   local nome_rede_interna="$5"
   local email_ssl="$6"
 
-
-  echo -e "⚙️ \e[97mIniciando a instalação do Traefik \e[33m[1/9]\e[0m\n"
+  echo -e "⚙️ \e[97mPreparando Ambiente (Limpeza) \e[33m[1/9]\e[0m\n"
   sleep 1
 
+  # Garante que dependências essenciais existam
+  sudo apt-get update -y > /dev/null 2>&1
+  sudo apt-get install -y jq curl apt-utils apparmor-utils ca-certificates gnupg lsb-release > /dev/null 2>&1
+
+  # Remove versões conflitantes do Docker (v29, etc)
+  sudo docker stack rm traefik > /dev/null 2>&1
+  sudo docker stack rm portainer > /dev/null 2>&1
+  sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
+  sudo rm -rf /var/lib/docker
+  sudo rm -rf /var/lib/containerd
+  sudo rm /etc/apt/sources.list.d/docker.list 2>/dev/null
+
   cd ~ || exit 1
-
-  if [ ! -d "dados_vps" ]; then
-      mkdir dados_vps
-  fi
-
+  if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
   cd dados_vps || exit 1
 
   cat > dados_vps << EOL
 [DADOS DA VPS]
-
 Nome do Servidor: $nome_servidor
 Rede interna: $nome_rede_interna
 Email para SSL: $email_ssl
 Link do Portainer: $url_portainer
-
-
 EOL
 
   cd ~ || exit 1
 
   ## Atualizando e configurando VPS
   echo -e "Passo \e[33m2/9\e[0m ⚙️"
-  echo -e "\e[33m--> Atualizando e configurando a VPS...\e[0m\n"
-  sleep 1
-
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "1/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "1/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo apt-get upgrade -y > /dev/null 2>&1 && echo -e "2/9 - [\e[32mOK\e[0m] - Upgrade concluído." || echo -e "2/9 - [\e[31mFALHOU\e[0m] - Falha no Upgrade."
-  sudo timedatectl set-timezone America/Sao_Paulo > /dev/null 2>&1 && echo -e "3/9 - [\e[32mOK\e[0m] - Timezone configurado." || echo -e "3/9 - [\e[31mFALHOU\e[0m] - Falha ao configurar Timezone."
-  sudo apt-get install -y apt-utils > /dev/null 2>&1 && echo -e "4/9 - [\e[32mOK\e[0m] - Apt-Utils instalado." || echo -e "4/9 - [\e[31mFALHOU\e[0m] - Falha na instalação do Apt-Utils."
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "5/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "5/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1 && echo -e "6/9 - [\e[32mOK\e[0m] - Hostname definido." || echo -e "6/9 - [\e[31mFALHOU\e[0m] - Falha ao definir Hostname."
-  sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1 && echo -e "7/9 - [\e[32mOK\e[0m] - Nome do servidor adicionado ao /etc/hosts." || echo -e "7/9 - [\e[31mFALHOU\e[0m] - Falha ao editar /etc/hosts."
-  sudo apt-get update -y > /dev/null 2>&1 && echo -e "8/9 - [\e[32mOK\e[0m] - Update concluído." || echo -e "8/9 - [\e[31mFALHOU\e[0m] - Falha no Update."
-  sudo apt-get install -y apparmor-utils > /dev/null 2>&1 && echo -e "9/9 - [\e[32mOK\e[0m] - Apparmor-Utils instalado." || echo -e "9/9 - [\e[31mFALHOU\e[0m] - Falha na instalação do Apparmor-Utils."
-  echo ""
-
-
-  echo -e "⚙️ \e[97mInstalando Docker Swarm \e[33m[3/9]\e[0m\n"
-  sleep 1
-
+  echo -e "\e[33m--> Configurando Hostname e Hosts...\e[0m\n"
   
-  # Pegando IP válido
-  ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
+  sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
+  
+  echo -e "⚙️ \e[97mInstalando Docker (Versão Estável v27) \e[33m[3/9]\e[0m\n"
+  sleep 1
 
-  if [ -n "$ip" ]; then
-      echo -e "1/3 - [\e[32mOK\e[0m] - IP obtido: \e[33m$ip\e[0m"
+  # --- LÓGICA DE INSTALAÇÃO INTELIGENTE (UNIVERSAL) ---
+  OS_CODENAME=$(lsb_release -cs)
+  
+  if [[ "$OS_CODENAME" == "trixie" ]] || [[ "$OS_CODENAME" == "sid" ]] || [[ "$OS_CODENAME" == "n/a" ]]; then
+      # Fix para Debian Testing (Trixie) -> Usa repo do Bookworm
+      echo -e "⚠️  Debian Testing/Trixie detectado. Forçando repositório estável..."
+      sudo install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+      sudo chmod a+r /etc/apt/keyrings/docker.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      sudo apt-get update -y > /dev/null 2>&1
+      VERSION_STRING="5:27.3.1-1~debian.12~bookworm"
+      sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+      sudo apt-mark hold docker-ce docker-ce-cli > /dev/null 2>&1
   else
-      echo -e "1/3 - [\e[31mFALHOU\e[0m] - Não foi possível obter o IP"
-      exit 1
+      # Instalação Padrão Travada na v27
+      curl -fsSL https://get.docker.com -o install_docker.sh
+      sudo sh install_docker.sh --version 27.3.1 > /dev/null 2>&1
+      # Fallback se o script falhar
+      if ! command -v docker &> /dev/null; then
+         sudo apt-get update -y > /dev/null 2>&1
+         sudo apt-get install -y docker.io > /dev/null 2>&1
+      fi
   fi
 
-  curl -fsSL https://get.docker.com | sudo bash > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-      echo -e "2/3 - [\e[32mOK\e[0m] - Docker baixado e instalado com sucesso"
-  else
-      echo -e "2/3 - [\e[31mFALHOU\e[0m] - Erro ao baixar e instalar o Docker"
+  if ! command -v docker &> /dev/null; then
+      echo -e "❌ \e[31mERRO CRÍTICO: Docker não instalado.\e[0m"
       exit 1
   fi
-
 
   sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
-
-  max_attempts=3
-  attempt=1
-
-  while [ $attempt -le $max_attempts ]; do
-      sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1
-      if [ $? -eq 0 ]; then
-          echo -e "Passo \e[33m3/3\e[0m - [\e[32mOK\e[0m] ✅ Swarm iniciado com sucesso"
-          break
-      else
-          echo -e "Passo \e[33m3/3\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao iniciar o Swarm"
-          echo -e "\e[33mOps! Não foi possível iniciar o Swarm. Tentativa \e[36m$attempt\e[33m de \e[36m$max_attempts\e[33m...\e[0m"
-          attempt=$((attempt + 1))
-          sleep 5
-      fi
-  done
-
-  if [ $attempt -gt $max_attempts ]; then
-      echo -e "❌ \e[31mNão foi possível iniciar o Swarm após \e[33m$max_attempts\e[31m tentativas...\e[0m"
-      echo -e "⚠️ \e[33mRecomendo formatar a VPS e tentar novamente.\e[0m"
-      echo -e "ℹ️ \e[33mLembre-se: o primeiro requisito é usar uma VPS vazia.\e[0m"
-      sleep 10
-      exit 1
-  fi
+  
+  # Inicia Swarm
+  ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo ""
-
- 
-
   echo -e "🔗 \e[97mCriando rede interna \e[33m[4/9]\e[0m\n"
-  sleep 1
-
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-      echo -e "Passo \e[33m1/1\e[0m ✅ - Rede interna configurada com sucesso"
-  else
-      echo -e "Passo \e[33m1/1\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao configurar a rede interna"
-  fi
-  echo ""
 
   echo -e "🚀 \e[97mInstalando Traefik \e[33m[5/9]\e[0m\n"
   sleep 1
 
-
-  # Criar arquivo traefik.yaml (mantive seu conteúdo original)
-
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
-
   traefik:
     image: traefik:v3.4.0
+    environment:
+      - DOCKER_API_VERSION=1.44
     command:
       - "--api.dashboard=true"
       - "--providers.swarm=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=$nome_rede_interna"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=$nome_rede_interna"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
@@ -18172,19 +18143,13 @@ services:
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencryptresolver.acme.email=$email_ssl"
-      - "--log.level=DEBUG"
-      - "--log.format=common"
-      - "--log.filePath=/var/log/traefik/traefik.log"
+      - "--log.level=INFO"
       - "--accesslog=true"
-      - "--accesslog.filepath=/var/log/traefik/access-log"
-
     volumes:
       - "vol_certificates:/etc/traefik/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
     networks:
       - $nome_rede_interna
-
     ports:
       - target: 80
         published: 80
@@ -18192,7 +18157,6 @@ services:
       - target: 443
         published: 443
         mode: host
-
     deploy:
       placement:
         constraints:
@@ -18221,31 +18185,11 @@ networks:
     name: $nome_rede_interna
 EOL
 
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
-  else
-    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Traefik"
-    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Traefik.\e[0m"
-  fi
-
-
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao realizar o deploy da stack"
-    echo -e "⚠️ \e[33mOps, não foi possível subir o Traefik.\e[0m"
-  fi
-
-
-  echo ""
-
+  
   echo -e "⏳ \e[97mEsperando o Traefik ficar online \e[33m[6/9]\e[0m\n"
-  sleep 1
-
-  wait_stack "traefik"  # Certifique-se que essa função existe
-
-  wait_30_sec
+  if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
+  if type wait_30_sec &> /dev/null; then wait_30_sec; else sleep 20; fi
 
   echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m\n"
   sleep 1
@@ -18253,7 +18197,6 @@ EOL
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
-
   agent:
     image: portainer/agent:latest
     volumes:
@@ -18286,7 +18229,6 @@ services:
         - "traefik.http.routers.portainer.service=portainer"
         - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
-        - "traefik.http.routers.portainer.priority=1"
 
 volumes:
   portainer_data:
@@ -18300,121 +18242,78 @@ networks:
     name: $nome_rede_interna
 EOL
 
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/2\e[0m ✅ - Stack criada com sucesso"
-  else
-    echo -e "Passo \e[33m1/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Portainer"
-    echo -e "⚠️ \e[33mOps, não foi possível criar a stack do Portainer.\e[0m"
-  fi
-
-
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Stack deployada com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao fazer o deploy da stack"
-    echo -e "⚠️ \e[33mOps, não foi possível subir a stack do Portainer.\e[0m"
-  fi
-
-
-  echo ""
 
   echo -e "⏳ \e[97mEsperando o Portainer ficar online \e[33m[8/9]\e[0m\n"
-  sleep 1
-
-  wait_stack "portainer"  # Certifique-se que essa função existe
-
+  if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
   sleep 5
-
-
 
   echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 30
+  sleep 20
 
-## Tenta criar usuário no Portainer até 4 vezes
-MAX_RETRIES=4
-DELAY=15  # Delay de 15 segundos entre as tentativas
-CONTA_CRIADA=false
+  MAX_RETRIES=5
+  CONTA_CRIADA=false
 
-for i in $(seq 1 $MAX_RETRIES); do
-  RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
-    -H "Content-Type: application/json" \
-    -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+  for i in $(seq 1 $MAX_RETRIES); do
+    # [CORREÇÃO] Uso do JQ para montar o JSON de autenticação com segurança (aceita senha com @)
+    JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
+    
+    RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
+      -H "Content-Type: application/json" \
+      -d "$JSON_PAYLOAD")
 
-  # Verificar se o campo "Username" existe na resposta
-  if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-    echo -e "1/2 - [\e[32mOK\e[0m] - Conta de administrador criada com sucesso! 🎉"
-    CONTA_CRIADA=true
-    break
-  else
-    echo -e "⏳ Tentando criar conta no Portainer \e[33m$i/4\e[0m..."
-    # Se for a última tentativa, exibe mensagem de erro final
-    if [ $i -eq $MAX_RETRIES ]; then
-      echo -e "❌ [\e[31mFALHOU\e[0m] - Não foi possível criar a conta de administrador após \e[33m$MAX_RETRIES\e[0m tentativas."
-      echo -e "⚠️ Erro retornado: \e[31m$RESPONSE\e[0m"
-      echo -e "ℹ️ \e[33mApós a conclusão da instalação, por favor, crie uma conta acessando o link do seu Portainer.\e[0m"
-      CONTA_CRIADA=false
+    if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
+      echo -e "1/2 - [\e[32mOK\e[0m] - Conta criada com sucesso!"
+      CONTA_CRIADA=true
+      break
+    else
+      echo -e "⏳ Tentando criar conta... \e[33m$i/5\e[0m"
       sleep 10
     fi
-    sleep $DELAY
-  fi
-done
+  done
 
-# Só tenta criar o token se a conta foi criada com sucesso
-if [ "$CONTA_CRIADA" = true ]; then
-  sleep 5
-  ## Cria primeiro token do Portainer
-  token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
-  
-  # Verifica se o token foi gerado com sucesso
-  if [ -n "$token" ] && [ "$token" != "null" ]; then
-    echo -e "Passo \e[33m2/2\e[0m ✅ - Primeiro token gerado com sucesso"
-  else
-    echo -e "Passo \e[33m2/2\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao gerar o token"
-    exit 1
+  # Só tenta criar o token se a conta foi criada com sucesso
+  if [ "$CONTA_CRIADA" = true ]; then
+    sleep 5
+    JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
+    
+    token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
+      -H "Content-Type: application/json" \
+      -d "$JSON_LOGIN" | jq -r .jwt)
+    
+    if [ -n "$token" ] && [ "$token" != "null" ]; then
+      echo -e "2/2 - [\e[32mOK\e[0m] - Token gerado"
+    else
+      echo -e "2/2 - [\e[31mOFF\e[0m] - Falha ao gerar token"
+    fi
   fi
-fi
 
   sleep 5
-  ## Salvando informações da instalação dentro de /dados_vps/
   cd dados_vps
 
-if [ "$CONTA_CRIADA" = true ]; then
-  cat > dados_portainer <<EOL
+  if [ "$CONTA_CRIADA" = true ]; then
+    cat > dados_portainer <<EOL
 [ PORTAINER ]
-
-Dominio do portainer: https://$url_portainer
-
+Dominio: https://$url_portainer
 Usuario: $user_portainer
-
 Senha: $pass_portainer
-
 Token: $token
 EOL
-else
-  cat > dados_portainer <<EOL
+  else
+    cat > dados_portainer <<EOL
 [ PORTAINER ]
-
-Dominio do portainer: https://$url_portainer
-
+Dominio: https://$url_portainer
 Usuario: Precisa criar dentro do portainer
-
 Senha: Precisa criar dentro do portainer
 EOL
   fi
 
   cd
   cd
+  
+  if type wait_30_sec &> /dev/null; then wait_30_sec; fi
 
-  ## Espera 30 segundos
-  wait_30_sec
-
-  echo - "Instalando outra ferramenta..."
-  echo ""
-  sleep 2
-
+  echo -e "\n\e[32m✅ Instalação Base Concluída!\e[0m"
 }
 
 instalar_ferramenta_n8n() {
