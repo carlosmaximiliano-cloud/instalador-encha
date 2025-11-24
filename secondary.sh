@@ -1423,147 +1423,97 @@ esconder_senha() {
 
 stack_editavel(){
 
-    ## Instalar jq
-    sudo apt install jq -y > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo "2/10 - [ OK ] - Instalando JQ Método 1/2"
-    else
-        echo "2/10 - [ OFF ] - Erro ao instalar JQ Método 1/2"
+    # --- 1. VERIFICAÇÃO DE DEPENDÊNCIAS ---
+    # Garante que o jq está instalado para ler o JSON sem erros
+    if ! command -v jq &> /dev/null; then
+        sudo apt-get update -y > /dev/null 2>&1
+        sudo apt-get install -y jq > /dev/null 2>&1
     fi
 
-    sudo apt-get install -y jq > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo "3/10 - [ OK ] - Instalando JQ Método 2/2"
-    else
-        echo "3/10 - [ OFF ] - Erro ao instalar JQ Método 2/2"
-    fi
-
-    ## Definindo o diretório do arquivo dados_portainer
+    # --- 2. LEITURA DE DADOS ---
     arquivo="/root/dados_vps/dados_portainer"
 
-    ## Verifica se o arquivo existe
     if [ ! -f "$arquivo" ]; then
-        echo "Arquivo não encontrado: $arquivo"
-        sleep 2
-
-        ## Cria o arquivo caso não exista
-        criar_arquivo
+        echo "❌ Arquivo de credenciais não encontrado."
+        return 1
     fi
 
-    ## Remove o https:// caso existir
-    sed -i 's/Dominio do portainer: https:\/\/\(.*\)/Dominio do portainer: \1/' "$arquivo"
+    # Extrai os dados limpando caracteres invisíveis (\r) que causam erros
+    USUARIO=$(grep "Usuario: " "$arquivo" | awk -F "Usuario: " '{print $2}' | tr -d '\r')
+    SENHA=$(grep "Senha: " "$arquivo" | awk -F "Senha: " '{print $2}' | tr -d '\r')
+    # Remove o https:// para limpar a URL
+    PORTAINER_URL=$(grep "Dominio: " "$arquivo" | awk -F "Dominio: " '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
 
-    ## Pega o usuario do portainer
-    USUARIO=$(grep "Usuario: " /root/dados_vps/dados_portainer | awk -F "Usuario: " '{print $2}')
-    if [ $? -eq 0 ]; then
-        echo -e "4/10 - [ OK ] - Pegando usuario do portainer: $bege$USUARIO$reset"
-    else
-        echo "4/10 - [ OFF ] - Erro ao pegar usuario do portainer"
+    # Verifica se os dados são válidos
+    if [[ "$USUARIO" == *"Precisa criar"* ]]; then
+        echo "❌ Erro: As credenciais não foram salvas corretamente."
+        return 1
     fi
 
+    echo -e "4/10 - [ OK ] - Usuário: $USUARIO"
+    echo -e "5/10 - [ OK ] - Domínio: $PORTAINER_URL"
 
-    ## Pega a senha do portainer
-    SENHA=$(grep "Senha: " /root/dados_vps/dados_portainer | awk -F "Senha: " '{print $2}')
-    esconder_senha "$SENHA"
-    if [ $? -eq 0 ]; then
-        echo -e "5/10 - [ OK ] - Pegando a senha do portainer: $bege$SENHAOCULTA$reset"
-    else
-        echo "5/10 - [ OFF ] - Erro ao pegar senha do portainer"
-    fi
-
-    ## Pega a URL do portainer
-    PORTAINER_URL=$(grep "Dominio do portainer: " /root/dados_vps/dados_portainer | awk -F "Dominio do portainer: " '{print $2}')
-    if [ $? -eq 0 ]; then
-        echo -e "6/10 - [ OK ] - Pegando dominio do Portainer: $bege$PORTAINER_URL$reset"
-    else
-        echo "6/10 - [ OFF ] - Erro ao pegar dominio do Portainer"
-    fi
-
-    ## Usa o token do portainer
-    #TOKEN=$(grep "Token: " /root/dados_vps/dados_portainer | awk -F "Token: " '{print $2}')
-    
-    ## Pega um token do portainer
-    #TOKEN=$(curl -k -X POST -H "Content-Type: application/json" -d "{\"username\":\"$USUARIO\",\"password\":\"$SENHA\"}" https://$PORTAINER_URL/api/auth | jq -r .jwt)
-
+    # --- 3. AUTENTICAÇÃO (TOKEN) ---
     TOKEN=""
     Tentativa_atual=0
-    Maximo_de_tentativas=6
+    Maximo_de_tentativas=5
     
+    # Loop de tentativa de Token
     while [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; do
-        TOKEN=$(curl -k -s -X POST -H "Content-Type: application/json" -d "{\"username\":\"$USUARIO\",\"password\":\"$SENHA\"}" https://$PORTAINER_URL/api/auth | jq -r .jwt)
+        
+        # [CORREÇÃO] Usa jq para criar o JSON. Isso corrige o erro com a senha contendo "@"
+        JSON_PAYLOAD=$(jq -n --arg u "$USUARIO" --arg p "$SENHA" '{username: $u, password: $p}')
+        
+        TOKEN=$(curl -k -s -X POST -H "Content-Type: application/json" \
+        -d "$JSON_PAYLOAD" \
+        "https://$PORTAINER_URL/api/auth" | jq -r .jwt)
     
-        Tentativa_atual=$((Tentativa_atual + 1))
-    
-        ## Verifica se atingiu o número máximo de tentativas
-        if [ "$Tentativa_atual" -ge "$Maximo_de_tentativas" ]; then
-            clear
-            erro_msg
-            echo "7/10 - [ OFF ] - Erro: Falha ao obter token após $Maximo_de_tentativas tentativas."
-            echo "Verifique suas credenciais do Portainer para conseguirmos realizar o deploy."
-            sleep 5
-            criar_arquivo
-            return
-            #exit 1
-        fi
-    
-        ## Se o token foi obtido com sucesso, sair do loop
         if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
             break
         fi
-    
-        ## Aguarda alguns segundos antes de tentar novamente
-        echo -e "Tentando gerar token do portainer. Tentativa atual $bege$Tentativa_atual/5$reset"
-        sleep 5
+
+        Tentativa_atual=$((Tentativa_atual + 1))
+        if [ "$Tentativa_atual" -ge "$Maximo_de_tentativas" ]; then
+            echo -e "7/10 - [ OFF ] - Falha ao autenticar. Verifique se o Portainer está online."
+            return 1
+        fi
+        sleep 3
     done
     
-    if [ $? -eq 0 ]; then
-        esconder_senha "$TOKEN"
-        echo -e "7/10 - [ OK ] - Pegando token do Portainer: $bege$SENHAOCULTA$reset"
-    fi
+    echo -e "7/10 - [ OK ] - Autenticação realizada com sucesso."
+
+    # --- 4. OBTENÇÃO DOS IDs ---
+    # Pega o Endpoint ID (Geralmente é 1 ou 2)
+    ENDPOINT_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
     
-
-    ### Verifica se o token veio vazio
-    #if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
-    #    echo "Erro: Falha ao obter token. Preencha com suas credenciais do portainer a seguir."
-    #    sleep 5
-    #    criar_arquivo
-    #    #exit 1
-    #fi
-
-    ## Salva dados no arquivo do portainer
-    echo -e "[ PORTAINER ]\nDominio do portainer: $PORTAINER_URL\n\nUsuario: $USUARIO\n\nSenha: $SENHA\n\nToken: $TOKEN" > "/root/dados_vps/dados_portainer"
-
-    ## Pegando o id do portainer
-    ENDPOINT_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" https://$PORTAINER_URL/api/endpoints | jq -r '.[] | select(.Name == "primary") | .Id')
-    if [ $? -eq 0 ]; then
-        echo -e "8/10 - [ OK ] - Pegando ID do Portainer: $bege$ENDPOINT_ID$reset"
+    if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" == "null" ]; then
+        echo "8/10 - [ OFF ] - Erro ao pegar ID do Endpoint."
+        return 1
     else
-        echo "8/10 - [ OFF ] - Erro ao pegar ID do Portainer"
+        echo -e "8/10 - [ OK ] - Endpoint ID: $ENDPOINT_ID"
     fi
 
-    ## Definindo id 1 do Portainer
-    #ENDPOINT_ID=1
-    
-    ## Pegando o ID do Swarm
+    # Pega o Swarm ID
     SWARM_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
-    if [ $? -eq 0 ]; then
-        echo -e "9/10 - [ OK ] - Pegando ID do Swarm: $bege$SWARM_ID$reset"
-    else
-        echo "9/10 - [ OFF ] - Erro ao pegar ID do Swarm"
+    
+    if [ -z "$SWARM_ID" ] || [ "$SWARM_ID" == "null" ]; then
+         # Tenta pegar sem especificar endpoint caso falhe
+         SWARM_ID=$(docker info --format '{{.Swarm.Cluster.ID}}')
+    fi
+    echo -e "9/10 - [ OK ] - Swarm ID: $SWARM_ID"
+
+    # --- 5. DEPLOY DA STACK ---
+    if [ -z "$STACK_NAME" ]; then
+        echo "❌ Erro: Nome da stack não definido."
+        return 1
     fi
 
-    ## Testa o Swarm
-    SWARM_STATUS=$(docker info --format '{{.Swarm.LocalNodeState}}')
-    if [ "$SWARM_STATUS" != "active" ]; then
-        echo "Erro: Docker Swarm não está ativo."
-        exit 1
-    fi
+    echo -e "🔄 Iniciando deploy de: $STACK_NAME..."
 
-    # Arquivo temporário para capturar a saída de erro e a resposta
+    # Arquivos temporários para captura de erro
     erro_output=$(mktemp)
     response_output=$(mktemp)
 
-    ## Fazendo deploy da stack pelo portainer
     http_code=$(curl -s -o "$response_output" -w "%{http_code}" -k -X POST \
     -H "Authorization: Bearer $TOKEN" \
     -F "Name=$STACK_NAME" \
@@ -1575,24 +1525,15 @@ stack_editavel(){
     response_body=$(cat "$response_output")
 
     if [ "$http_code" -eq 200 ]; then
-        # Verifica o conteúdo da resposta para garantir que o deploy foi bem-sucedido
-        if echo "$response_body" | grep -q "\"Id\""; then
-            echo -e "10/10 - [ OK ] - Deploy da stack $bege$STACK_NAME$reset feito com sucesso!"
-        else
-            echo -e "10/10 - [ OFF ] - Erro, resposta inesperada do servidor ao tentar efetuar deploy da stack $bege$STACK_NAME$reset."
-            echo "Resposta do servidor: $(echo "$response_body" | jq .)"
-        fi
+        echo -e "10/10 - [ OK ] - ✅ Deploy realizado com sucesso!"
+    elif [ "$http_code" -eq 409 ]; then
+        echo -e "10/10 - [ AVISO ] - A stack já existe. (Ignorando erro 409)"
     else
-        echo "10/10 - [ OFF ] - Erro ao efetuar deploy. Resposta HTTP: $http_code"
-        echo "Mensagem de erro: $(cat "$erro_output")"
-        echo "Detalhes: $(echo "$response_body" | jq .)"
+        echo -e "10/10 - [ OFF ] - Erro no Deploy ($http_code)"
+        echo "Detalhe: $response_body"
     fi
 
-    echo ""
-
-    # Remove os arquivos temporários
-    rm "$erro_output"
-    rm "$response_output"
+    rm "$erro_output" "$response_output"
 }
 
 verificar_container_postgres() {
