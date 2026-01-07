@@ -3881,7 +3881,7 @@ ferramenta_n8n() {
         echo -en "\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_n8n
         echo ""
 
-        ## Verifica se a porta é 465 (CORREÇÃO APLICADA AQUI: estava porta_smtp_typebot)
+        ## Verifica se a porta é 465
         if [ "$porta_smtp_n8n" -eq 465 ]; then
             smtp_secure_smtp_n8n=true
         else
@@ -3993,8 +3993,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
@@ -4012,7 +4010,8 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
       - N8N_AI_PROVIDER=openai
-      - N8N_SECURE_COOKIE=false 
+      - N8N_SECURE_COOKIE=true
+      - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
     deploy:
@@ -4062,8 +4061,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
@@ -4080,7 +4077,8 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
-      - N8N_SECURE_COOKIE=false
+      - N8N_SECURE_COOKIE=true
+      - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
     deploy:
@@ -4130,8 +4128,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
@@ -4148,7 +4144,8 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
-      - N8N_SECURE_COOKIE=false
+      - N8N_SECURE_COOKIE=true
+      - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
     deploy:
@@ -4232,6 +4229,7 @@ EOL
     msg_retorno_menu
 
 }
+
 
 ferramenta_n8n_formacao_encha() {
 msg_n8n_formacao_encha
