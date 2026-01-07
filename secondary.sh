@@ -4008,10 +4008,11 @@ services:
       - N8N_AI_ENABLED=true
       - N8N_AI_PROVIDER=openai
       # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=false
+      - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     deploy:
       mode: replicated
       replicas: 1
@@ -4073,10 +4074,11 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
       # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=false
+      - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     deploy:
       mode: replicated
       replicas: 1
@@ -4138,10 +4140,11 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
       # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=false
+      - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     deploy:
       mode: replicated
       replicas: 1
@@ -4442,7 +4445,12 @@ services:
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       # Reinstalar os Community Nodes
       - N8N_REINSTALL_MISSING_PACKAGES=true
+      # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     # Configura o Modo de Deploy da Aplicação
     deploy:
       # O editor será executado no modo de replicação
@@ -4626,7 +4634,12 @@ services:
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       # Reinstalar os Community Nodes
       - N8N_REINSTALL_MISSING_PACKAGES=true
+      # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     # Configura o Modo de Deploy da Aplicação
     deploy:
       # O editor será executado no modo de replicação
@@ -4792,7 +4805,12 @@ services:
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       # Reinstalar os Community Nodes
       - N8N_REINSTALL_MISSING_PACKAGES=true
+      # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
     # Configura o Modo de Deploy da Aplicação
     deploy:
       # O editor será executado no modo de replicação
@@ -18324,6 +18342,13 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
 
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+
     deploy:
       mode: replicated
       replicas: 1
@@ -18393,6 +18418,13 @@ services:
       - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
+
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
       
     deploy:
       mode: replicated
@@ -18463,6 +18495,13 @@ services:
       - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
+
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
       
     deploy:
       mode: replicated
