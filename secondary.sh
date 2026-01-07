@@ -3993,9 +3993,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -4010,7 +4007,13 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
       - N8N_AI_PROVIDER=openai
+      
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE=""
       - N8N_SECURE_COOKIE=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
@@ -4061,9 +4064,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -4077,7 +4077,13 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
+      
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE=""
       - N8N_SECURE_COOKIE=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
@@ -4128,9 +4134,6 @@ services:
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -4144,7 +4147,13 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
+      
+      # --- COMPATIBILIDADE N8N V2.0 ---
+      - N8N_RUNNERS_ENABLED=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE=""
       - N8N_SECURE_COOKIE=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_LOG_LEVEL=info
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
@@ -4229,7 +4238,6 @@ EOL
     msg_retorno_menu
 
 }
-
 
 ferramenta_n8n_formacao_encha() {
 msg_n8n_formacao_encha
