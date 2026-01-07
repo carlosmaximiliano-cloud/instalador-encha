@@ -4007,16 +4007,11 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
       - N8N_AI_PROVIDER=openai
-      
       # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=false
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE=""
-      - N8N_SECURE_COOKIE=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_LOG_LEVEL=info
-      - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
     deploy:
       mode: replicated
       replicas: 1
@@ -4077,16 +4072,11 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
-      
       # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=false
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE=""
-      - N8N_SECURE_COOKIE=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_LOG_LEVEL=info
-      - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
     deploy:
       mode: replicated
       replicas: 1
@@ -4147,16 +4137,11 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
       - N8N_AI_ENABLED=true
-      
       # --- COMPATIBILIDADE N8N V2.0 ---
       - N8N_RUNNERS_ENABLED=false
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE=""
-      - N8N_SECURE_COOKIE=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_LOG_LEVEL=info
-      - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
+      - NODES_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
     deploy:
       mode: replicated
       replicas: 1
