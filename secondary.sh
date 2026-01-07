@@ -3835,155 +3835,133 @@ wait_stack "redis_formacao_encha"
 echo ""
 }
 
-
 ferramenta_n8n() {
 
-
-msg_n8n
-
-
-## Ativa a função dados para pegar os dados da vps
-dados
-
-## Inicia um Loop até os dados estarem certos
-while true; do
-
-    ## Pergunta o domínio do N8N
-    echo -e "\e[97mPasso$amarelo 1/7\e[0m"
-    echo -en "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
-    echo ""
-
-    ## Pergunta o domínio do Webhook
-    echo -e "\e[97mPasso$amarelo 2/7\e[0m"
-    echo -en "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
-    echo ""
-
-    ## Pergunta o Email SMTP
-    echo -e "\e[97mPasso$amarelo 3/7\e[0m"
-    echo -en "\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_n8n
-    echo ""
-
-    ## Pergunta o usuário do Email SMTP
-    echo -e "\e[97mPasso$amarelo 4/7\e[0m"
-    echo -e "$amarelo➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
-    echo -en "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_smtp_n8n
-    echo ""
-
-    ## Pergunta a senha do SMTP
-    echo -e "\e[97mPasso$amarelo 5/7\e[0m"
-    echo -en "\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m" && read -r senha_smtp_n8n
-    echo ""
-
-    ## Pergunta o Host SMTP do email
-    echo -e "\e[97mPasso$amarelo 6/7\e[0m"
-    echo -en "\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_n8n
-    echo ""
-
-    ## Pergunta a porta SMTP do email
-    echo -e "\e[97mPasso$amarelo 7/7\e[0m"
-    echo -en "\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_n8n
-    echo ""
-
-
-    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
-    if [ "$porta_smtp_typebot" -eq 465 ]; then
-    smtp_secure_smtp_n8n=true
-    else
-    smtp_secure_smtp_n8n=false
-    fi
-        
-    ## Limpa o terminal
-    clear
-    
-  
     msg_n8n
-    echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
-    echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
-    echo -e "\e[33m📧 Email SMTP:               \e[97m$email_smtp_n8n\e[0m"
-    echo -e "\e[33m👤 Usuário SMTP:             \e[97m$usuario_smtp_n8n\e[0m"
-    echo -e "\e[33m🔑 Senha SMTP:               \e[97m$senha_smtp_n8n\e[0m"
-    echo -e "\e[33m🖥️  Host SMTP:               \e[97m$host_smtp_n8n\e[0m"
-    echo -e "\e[33m🔌 Porta SMTP:               \e[97m$porta_smtp_n8n\e[0m"
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
-    if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
 
-        ## Digitou Y para confirmar que as informações estão corretas
+    ## Ativa a função dados para pegar os dados da vps
+    dados
 
-        ## Limpar o terminal
+    ## Inicia um Loop até os dados estarem certos
+    while true; do
+
+        ## Pergunta o domínio do N8N
+        echo -e "\e[97mPasso$amarelo 1/7\e[0m"
+        echo -en "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
+        echo ""
+
+        ## Pergunta o domínio do Webhook
+        echo -e "\e[97mPasso$amarelo 2/7\e[0m"
+        echo -en "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
+        echo ""
+
+        ## Pergunta o Email SMTP
+        echo -e "\e[97mPasso$amarelo 3/7\e[0m"
+        echo -en "\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_n8n
+        echo ""
+
+        ## Pergunta o usuário do Email SMTP
+        echo -e "\e[97mPasso$amarelo 4/7\e[0m"
+        echo -e "$amarelo➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
+        echo -en "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_smtp_n8n
+        echo ""
+
+        ## Pergunta a senha do SMTP
+        echo -e "\e[97mPasso$amarelo 5/7\e[0m"
+        echo -en "\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m" && read -r senha_smtp_n8n
+        echo ""
+
+        ## Pergunta o Host SMTP do email
+        echo -e "\e[97mPasso$amarelo 6/7\e[0m"
+        echo -en "\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_n8n
+        echo ""
+
+        ## Pergunta a porta SMTP do email
+        echo -e "\e[97mPasso$amarelo 7/7\e[0m"
+        echo -en "\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_n8n
+        echo ""
+
+        ## Verifica se a porta é 465 (CORREÇÃO APLICADA AQUI: estava porta_smtp_typebot)
+        if [ "$porta_smtp_n8n" -eq 465 ]; then
+            smtp_secure_smtp_n8n=true
+        else
+            smtp_secure_smtp_n8n=false
+        fi
+            
+        ## Limpa o terminal
         clear
-
-        ## Mostrar mensagem de Instalando
-
-        ## Sai do Loop
-        break
-    else
-
-        ## Digitou N para dizer que as informações não estão corretas.
         
-        ## Limpar o terminal
         msg_n8n
+        echo ""
+        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
+        echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
+        echo -e "\e[33m📧 Email SMTP:               \e[97m$email_smtp_n8n\e[0m"
+        echo -e "\e[33m👤 Usuário SMTP:             \e[97m$usuario_smtp_n8n\e[0m"
+        echo -e "\e[33m🔑 Senha SMTP:               \e[97m$senha_smtp_n8n\e[0m"
+        echo -e "\e[33m🖥️  Host SMTP:               \e[97m$host_smtp_n8n\e[0m"
+        echo -e "\e[33m🔌 Porta SMTP:               \e[97m$porta_smtp_n8n\e[0m"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
+            clear
+            break
+        else
+            msg_n8n
+        fi
+    done
 
+    ## Mensagem de Passo
+    echo -e "\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m"
+    echo ""
+    sleep 1
 
+    ## Mensagem de Passo
+    echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+    echo ""
+    sleep 1
+
+    ## Verifica se tem postgres
+    verificar_container_postgres
+    if [ $? -eq 0 ]; then
+        echo "✅ 1/3 - Postgres já está instalado."
+        pegar_senha_postgres > /dev/null 2>&1
+        echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+        criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
+        echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+        echo ""
+    else
+        ferramenta_postgres
+        pegar_senha_postgres > /dev/null 2>&1
+        criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
     fi
-done
 
-## Mensagem de Passo
-echo -e "\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m"
-echo ""
-sleep 1
-
-
-## NADA
-
-## Mensagem de Passo
-echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
-echo ""
-sleep 1
-
-## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
-verificar_container_postgres
-if [ $? -eq 0 ]; then
-    echo "✅ 1/3 - Postgres já está instalado."
-    pegar_senha_postgres > /dev/null 2>&1
-    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
-    criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-    echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+    ## Mensagem de Passo
+    echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
     echo ""
-else
-    ferramenta_postgres
-    pegar_senha_postgres > /dev/null 2>&1
-    criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-fi
+    sleep 1
 
-## Mensagem de Passo
-echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
-echo ""
-sleep 1
+    ## Verifica/instala o Redis
+    verificar_container_redis
+    if [ $? -eq 0 ]; then
+        echo "✅ 1/1 - Redis já está instalado."
+        echo ""
+    else
+        ferramenta_redis
+    fi
 
-## Verifica/instala o Redis
-verificar_container_redis
-if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - Redis já está instalado."
+    ## Mensagem de Passo
+    echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
     echo ""
-else
-    ferramenta_redis
-fi
+    sleep 1
 
-## Mensagem de Passo
-echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
-echo ""
-sleep 1
+    ## Criando key Aleatória
+    encryption_key=$(openssl rand -hex 16)
 
-## Criando key Aleatória
-encryption_key=$(openssl rand -hex 16)
-
-## Criando a stack n8n.yaml
+    ## Criando a stack n8n.yaml
 cat > n8n${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -3993,78 +3971,50 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n${1:+_$1}_editor:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: start
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data${1:+_$1}:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
+      - N8N_AI_ENABLED=true
       - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_SECURE_COOKIE=false 
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
-
     deploy:
       mode: replicated
       replicas: 1
@@ -4077,7 +4027,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n${1:+_$1}_editor.rule=Host(\`$url_editorn8n\`) ## Url do Editor do N8N
+        - traefik.http.routers.n8n${1:+_$1}_editor.rule=Host(\`$url_editorn8n\`)
         - traefik.http.routers.n8n${1:+_$1}_editor.entrypoints=websecure
         - traefik.http.routers.n8n${1:+_$1}_editor.priority=1
         - traefik.http.routers.n8n${1:+_$1}_editor.tls.certresolver=letsencryptresolver
@@ -4090,78 +4040,49 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n${1:+_$1}_webhook:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: webhook
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data${1:+_$1}:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
-      - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_AI_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
-      
     deploy:
       mode: replicated
       replicas: 1
@@ -4174,7 +4095,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n${1:+_$1}_webhook.rule=(Host(\`$url_webhookn8n\`)) ## Url do Webhook do N8N
+        - traefik.http.routers.n8n${1:+_$1}_webhook.rule=Host(\`$url_webhookn8n\`)
         - traefik.http.routers.n8n${1:+_$1}_webhook.entrypoints=websecure
         - traefik.http.routers.n8n${1:+_$1}_webhook.priority=1
         - traefik.http.routers.n8n${1:+_$1}_webhook.tls.certresolver=letsencryptresolver
@@ -4187,78 +4108,49 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n${1:+_$1}_worker:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: worker --concurrency=10
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data${1:+_$1}:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
-      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
-      - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_AI_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
-      
     deploy:
       mode: replicated
       replicas: 1
@@ -4270,41 +4162,43 @@ services:
           cpus: "1"
           memory: 1024M
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+volumes:
+  n8n_data${1:+_$1}:
+    external: true
 
 networks:
-  $nome_rede_interna: ## Nome da rede interna
+  $nome_rede_interna:
     external: true
-    name: $nome_rede_interna ## Nome da rede interna
+    name: $nome_rede_interna
 EOL
-if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
-else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
-fi
 
-STACK_NAME="n8n${1:+_$1}"
-stack_editavel 
+    ## Cria o volume externo antes de subir a stack para garantir que não dê erro
+    docker volume create n8n_data${1:+_$1} > /dev/null 2>&1
 
-## Mensagem de Passo
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
-echo ""
-sleep 1
+    if [ $? -eq 0 ]; then
+        echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
+    else
+        echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
+        echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
+    fi
 
-## Baixando imagens:
-pull n8nio/n8n:latest
+    STACK_NAME="n8n${1:+_$1}"
+    stack_editavel 
 
-## Usa o serviço wait_n8n para verificar se o serviço esta online
-wait_stack n8n${1:+_$1}_n8n${1:+_$1}_editor n8n${1:+_$1}_n8n${1:+_$1}_webhook n8n${1:+_$1}_n8n${1:+_$1}_worker
+    ## Mensagem de Passo
+    echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+    echo ""
+    sleep 1
 
+    ## Baixando imagens:
+    pull n8nio/n8n:latest
 
+    ## Usa o serviço wait_n8n para verificar se o serviço esta online
+    wait_stack n8n${1:+_$1}_n8n${1:+_$1}_editor n8n${1:+_$1}_n8n${1:+_$1}_webhook n8n${1:+_$1}_n8n${1:+_$1}_worker
 
-cd dados_vps
+    cd dados_vps
 
-cat > dados_n8n${1:+_$1} <<EOL
+    cat > dados_n8n${1:+_$1} <<EOL
 [ N8N ]
 
 Dominio do N8N: https://$url_editorn8n
@@ -4317,25 +4211,25 @@ Senha: Precisa criar no primeiro acesso do N8N
 
 EOL
 
-cd
-cd
+    cd
+    cd
 
-## Espera 30 segundos
-wait_30_sec
+    ## Espera 30 segundos
+    wait_30_sec
 
-msg_resumo_informacoes
+    msg_resumo_informacoes
 
-## Dados da Aplicação:
-echo -e "\e[32m🚀 [ N8N INSTALADO COM SUCESSO ]\e[0m"
-echo ""
+    ## Dados da Aplicação:
+    echo -e "\e[32m🚀 [ N8N INSTALADO COM SUCESSO ]\e[0m"
+    echo ""
 
-echo -e "\e[33m🌐 Domínio do Editor:     \e[97mhttps://$url_editorn8n\e[0m"
-echo -e "\e[33m🔗 Domínio do Webhook:    \e[97mhttps://$url_webhookn8n\e[0m"
-echo -e "\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m"
-echo -e "\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m"
-echo ""
+    echo -e "\e[33m🌐 Domínio do Editor:     \e[97mhttps://$url_editorn8n\e[0m"
+    echo -e "\e[33m🔗 Domínio do Webhook:    \e[97mhttps://$url_webhookn8n\e[0m"
+    echo -e "\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m"
+    echo -e "\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m"
+    echo ""
 
-msg_retorno_menu
+    msg_retorno_menu
 
 }
 
