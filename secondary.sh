@@ -18237,9 +18237,9 @@ instalar_ferramenta_n8n() {
   sleep 1
 
 
-echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
-echo ""
-sleep 1
+  echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+  echo ""
+  sleep 1
 
   ## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
   verificar_container_postgres
@@ -18288,31 +18288,24 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n_editor:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: start
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
@@ -18320,43 +18313,23 @@ services:
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
-      - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_AI_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
 
@@ -18372,7 +18345,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n_editor.rule=Host(\`$url_editorn8n\`) ## Url do Editor do N8N
+        - traefik.http.routers.n8n_editor.rule=Host(\`$url_editorn8n\`)
         - traefik.http.routers.n8n_editor.entrypoints=websecure
         - traefik.http.routers.n8n_editor.priority=1
         - traefik.http.routers.n8n_editor.tls.certresolver=letsencryptresolver
@@ -18385,31 +18358,24 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n_webhook:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: webhook
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
@@ -18417,43 +18383,23 @@ services:
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
-      - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_AI_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
       
@@ -18469,7 +18415,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.n8n_webhook.rule=(Host(\`$url_webhookn8n\`)) ## Url do Webhook do N8N
+        - traefik.http.routers.n8n_webhook.rule=(Host(\`$url_webhookn8n\`))
         - traefik.http.routers.n8n_webhook.entrypoints=websecure
         - traefik.http.routers.n8n_webhook.priority=1
         - traefik.http.routers.n8n_webhook.tls.certresolver=letsencryptresolver
@@ -18482,31 +18428,24 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   n8n_worker:
-    image: n8nio/n8n:latest ## Versão do N8N
+    image: n8nio/n8n:latest
     command: worker --concurrency=10
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
+      - $nome_rede_interna
+    volumes:
+      - n8n_data:/home/node/.n8n
     environment:
-      ## 🗄️ Banco de Dados (PostgreSQL)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n_queue
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=$senha_postgres
-
-      ## 🔐 Criptografia
       - N8N_ENCRYPTION_KEY=$encryption_key
-
-      ## 🌐 URLs e Configurações de Acesso
       - N8N_HOST=$url_editorn8n
       - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
       - WEBHOOK_URL=https://$url_webhookn8n/
       - N8N_PROTOCOL=https
-
-      ## ⚙️ Ambiente de Execução
       - NODE_ENV=production
       - EXECUTIONS_MODE=queue
       - EXECUTIONS_TIMEOUT=3600
@@ -18514,43 +18453,23 @@ services:
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-
-      ## 📦 Pacotes e Nós Comunitários
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_NODE_PATH=/home/node/.n8n/nodes
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-
-      ## 📧 SMTP (Envio de E-mails)
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
       - N8N_SMTP_HOST=$host_smtp_n8n
       - N8N_SMTP_PORT=$porta_smtp_n8n
       - N8N_SMTP_SSL=$smtp_secure_smtp_n8n
-
-      ## 🔁 Redis (Fila de Execução)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
-
-      ## 📊 Métricas
-      - N8N_METRICS=true
-
-      ## ⏱️ Execuções e Limpeza
+      - N8N_METRICS=false
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
-
-      ## 🧠 Recursos de IA
-      - N8N_AI_ENABLED=false
-      - N8N_AI_PROVIDER=openai
-      - N8N_AI_OPENAI_API_KEY=
-
-      ## 🧰 Permissões em Funções Personalizadas
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-
-      ## 🕒 Fuso Horário
+      - N8N_AI_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
       
@@ -18565,15 +18484,19 @@ services:
           cpus: "1"
           memory: 1024M
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+volumes:
+  n8n_data:
+    external: true
 
 networks:
-  $nome_rede_interna: ## Nome da rede interna
+  $nome_rede_interna:
     external: true
-    name: $nome_rede_interna ## Nome da rede interna
+    name: $nome_rede_interna
 EOL
+
+  ## Cria o volume antes de rodar a stack
+  docker volume create n8n_data > /dev/null 2>&1
+
   if [ $? -eq 0 ]; then
       echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
   else
@@ -18622,7 +18545,6 @@ EOL
   sleep 2
 
 }
-
 
 instalar_ferramenta_evolution() {
 
