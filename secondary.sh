@@ -1988,30 +1988,53 @@ pegar_user_senha_rabbitmq() {
 }
 
 ferramenta_traefik_e_portainer() {
-  
-  # --- RECEBIMENTO DE PARÂMETROS ---
-  # Ordem: URL, Usuário, Senha, Nome Servidor, Nome Rede, Email
-  local url_portainer="$1"
-  local user_portainer="$2"
-  local pass_portainer="$3"
-  local nome_servidor="$4"
-  local nome_rede_interna="$5"
-  local email_ssl="$6"
 
-  # Validação simples para garantir que os parâmetros chegaram
-  if [ -z "$url_portainer" ] || [ -z "$pass_portainer" ] || [ -z "$email_ssl" ]; then
-    echo -e "\e[41m❌ ERRO: Parâmetros insuficientes.\e[0m"
-    echo "Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
-    return 1
-  fi
+  # Verifica recursos e limpa tela
+  if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
+  clear
+  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER (UNIVERSAL) ---"; fi
 
-  echo -e "--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
-  echo -e "Dados recebidos para: \e[33m$url_portainer\e[0m"
+  # --- COLETA DE DADOS ---
+  while true; do
+    echo -e "Passo \e[33m1/6\e[0m 📡"
+    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
+    echo ""
+    echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
+    echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
+    echo ""
+    while true; do
+      echo -e "Passo \e[33m3/6\e[0m 🔐"
+      echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
+      echo ""
+      if type validar_senha &> /dev/null; then
+        if validar_senha "$pass_portainer" 12; then break; fi
+      else
+        if [ ${#pass_portainer} -ge 12 ]; then break; fi
+      fi
+      echo ""
+    done
+    echo -e "Passo \e[33m4/6\e[0m 🖥️"
+    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
+    echo ""
+    echo -e "Passo \e[33m5/6\e[0m 🌐"
+    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
+    echo ""
+    echo -e "Passo \e[33m6/6\e[0m 📧"
+    echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
+    echo ""
+    
+    clear
+    if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
+    echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
+    echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
+    read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
+  done
 
-  # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
+  # --- INSTALAÇÃO INTELIGENTE ---
 
   echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
-  
   # Remove versões antigas para garantir instalação limpa
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
@@ -2033,9 +2056,7 @@ EOL
 
   echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
   sudo apt-get update -y > /dev/null 2>&1
-  # Adicionei 'jq' aqui pois você usa no final do script para pegar o token
-  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release jq > /dev/null 2>&1
-  
+  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release > /dev/null 2>&1
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
@@ -2225,14 +2246,10 @@ EOL
 
   MAX_RETRIES=5
   CONTA_CRIADA=false
-  
-  # Uso o JQ (instalado acima) para montar o JSON seguro (caso a senha tenha caracteres especiais)
-  JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
-
   for i in $(seq 1 $MAX_RETRIES); do
     RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
       -H "Content-Type: application/json" \
-      -d "$JSON_PAYLOAD")
+      -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
       echo -e "\e[32m✅ Conta criada!\e[0m"
@@ -2245,12 +2262,9 @@ EOL
   done
 
   if [ "$CONTA_CRIADA" = true ]; then
-    # JSON seguro para login
-    JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
-    
     token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
       -H "Content-Type: application/json" \
-      -d "$JSON_LOGIN" | jq -r .jwt)
+      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
   fi
 
   cd dados_vps
@@ -2274,6 +2288,103 @@ EOL
   if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
   echo -e "\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://$url_portainer"
   if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
+}
+
+ferramenta_postgres() {
+
+## Ativa a função dados para pegar os dados da vps
+dados
+
+
+## Gerando uma senha aleatória para o Postgres
+senha_postgres=$(openssl rand -hex 16)
+
+## Criando a stack postgres.yaml
+cat > postgres.yaml <<EOL
+version: "3.7"
+services:
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+  postgres:
+    image: postgres:14 ## Versão do postgres
+    command: >
+      postgres
+      -c max_connections=500
+      -c shared_buffers=512MB
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - $nome_rede_interna ## Nome da rede interna
+
+    ## Descomente as linhas abaixo para uso externo
+    #ports:
+    #  - 5432:5432
+
+    environment:
+      ## Senha do postgres 
+      - POSTGRES_PASSWORD=$senha_postgres
+
+      ## Timezone
+      - TZ=America/Sao_Paulo
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+
+# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
+# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
+# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
+
+volumes:
+  postgres_data:
+    external: true
+    name: postgres_data
+
+networks:
+  $nome_rede_interna: ## Nome da rede interna
+    external: true
+    name: $nome_rede_interna ## Nome da rede interna
+EOL
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres criada com sucesso"
+else
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
+    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres.\e[0m"
+fi
+STACK_NAME="postgres"
+stack_editavel #> /dev/null 2>&1
+
+cd dados_vps
+
+cat > dados_postgres <<EOL
+[ POSTGRES ]
+
+Dominio do postgres: postgres://postgres:5432
+
+Usuario: postgres
+
+Senha: $senha_postgres
+EOL
+
+cd
+cd
+
+## Espera 30 segundos
+wait_stack "postgres_postgres"
+
+echo ""
 }
 
 ferramenta_postgres() {
@@ -17916,9 +18027,9 @@ exibir_bloco_centralizado() {
 
 
 instalar_traefik_e_portainer() {
-
-  msg_traefik_portainer 2>/dev/null || echo "--- INSTALAÇÃO TRAEFIK & PORTAINER ---"
-
+  
+  # --- RECEBIMENTO DE PARÂMETROS ---
+  # Ordem: URL, Usuário, Senha, Nome Servidor, Nome Rede, Email
   local url_portainer="$1"
   local user_portainer="$2"
   local pass_portainer="$3"
@@ -17926,14 +18037,21 @@ instalar_traefik_e_portainer() {
   local nome_rede_interna="$5"
   local email_ssl="$6"
 
-  echo -e "⚙️ \e[97mPreparando Ambiente (Limpeza) \e[33m[1/9]\e[0m\n"
-  sleep 1
+  # Validação simples para garantir que os parâmetros chegaram
+  if [ -z "$url_portainer" ] || [ -z "$pass_portainer" ] || [ -z "$email_ssl" ]; then
+    echo -e "\e[41m❌ ERRO: Parâmetros insuficientes.\e[0m"
+    echo "Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+    return 1
+  fi
 
-  # Garante que dependências essenciais existam
-  sudo apt-get update -y > /dev/null 2>&1
-  sudo apt-get install -y jq curl apt-utils apparmor-utils ca-certificates gnupg lsb-release > /dev/null 2>&1
+  echo -e "--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
+  echo -e "Dados recebidos para: \e[33m$url_portainer\e[0m"
 
-  # Remove versões conflitantes do Docker (v29, etc)
+  # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
+
+  echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
+  
+  # Remove versões antigas para garantir instalação limpa
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
   sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
@@ -17942,9 +18060,7 @@ instalar_traefik_e_portainer() {
   sudo rm /etc/apt/sources.list.d/docker.list 2>/dev/null
 
   cd ~ || exit 1
-  if [ ! -d "dados_vps" ]; then mkdir dados_vps; fi
-  cd dados_vps || exit 1
-
+  mkdir -p dados_vps; cd dados_vps
   cat > dados_vps << EOL
 [DADOS DA VPS]
 Nome do Servidor: $nome_servidor
@@ -17952,63 +18068,74 @@ Rede interna: $nome_rede_interna
 Email para SSL: $email_ssl
 Link do Portainer: $url_portainer
 EOL
+  cd ~
 
-  cd ~ || exit 1
-
-  ## Atualizando e configurando VPS
-  echo -e "Passo \e[33m2/9\e[0m ⚙️"
-  echo -e "\e[33m--> Configurando Hostname e Hosts...\e[0m\n"
+  echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+  sudo apt-get update -y > /dev/null 2>&1
+  # Adicionei 'jq' aqui pois você usa no final do script para pegar o token
+  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release jq > /dev/null 2>&1
   
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
-  
-  echo -e "⚙️ \e[97mInstalando Docker (Versão Estável v27) \e[33m[3/9]\e[0m\n"
-  sleep 1
 
-  # --- LÓGICA DE INSTALAÇÃO INTELIGENTE (UNIVERSAL) ---
-  OS_CODENAME=$(lsb_release -cs)
+  echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
   
+  # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
+  OS_CODENAME=$(lsb_release -cs)
+  echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
+
   if [[ "$OS_CODENAME" == "trixie" ]] || [[ "$OS_CODENAME" == "sid" ]] || [[ "$OS_CODENAME" == "n/a" ]]; then
-      # Fix para Debian Testing (Trixie) -> Usa repo do Bookworm
-      echo -e "⚠️  Debian Testing/Trixie detectado. Forçando repositório estável..."
+      # --- CASO PROBLEMÁTICO (DEBIAN 13/TESTING) ---
+      echo -e "⚠️  Debian Testing detectado. Aplicando correção de repositório..."
+      
       sudo install -m 0755 -d /etc/apt/keyrings
       curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
       sudo chmod a+r /etc/apt/keyrings/docker.gpg
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+      # Força repositório do Bookworm (Estável)
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      
       sudo apt-get update -y > /dev/null 2>&1
+      # Instala versão específica compatível do Bookworm
       VERSION_STRING="5:27.3.1-1~debian.12~bookworm"
       sudo apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
-      sudo apt-mark hold docker-ce docker-ce-cli > /dev/null 2>&1
+      sudo apt-mark hold docker-ce docker-ce-cli > /dev/null 2>&1 # Trava versão
+
   else
-      # Instalação Padrão Travada na v27
+      # --- CASO PADRÃO (DEBIAN 11/12, UBUNTU 20/22/24) ---
+      echo -e "✅ Sistema estável detectado. Usando instalação nativa..."
+      
+      # Tenta instalar via script oficial travando na versão 27 (compatível com todos)
       curl -fsSL https://get.docker.com -o install_docker.sh
       sudo sh install_docker.sh --version 27.3.1 > /dev/null 2>&1
-      # Fallback se o script falhar
+      
+      # Se falhar (alguns sistemas não suportam o script), tenta apt padrão
       if ! command -v docker &> /dev/null; then
+         echo "⚠️ Fallback para apt repository..."
          sudo apt-get update -y > /dev/null 2>&1
          sudo apt-get install -y docker.io > /dev/null 2>&1
       fi
   fi
 
+  # Verificação Final
   if ! command -v docker &> /dev/null; then
-      echo -e "❌ \e[31mERRO CRÍTICO: Docker não instalado.\e[0m"
-      exit 1
+     echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
+     return
   fi
-
+  
   sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
-  
-  # Inicia Swarm
+
+  echo -e "⚙️  Iniciando Swarm..."
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
-  echo ""
-  echo -e "🔗 \e[97mCriando rede interna \e[33m[4/9]\e[0m\n"
+  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
   sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
 
-  echo -e "🚀 \e[97mInstalando Traefik \e[33m[5/9]\e[0m\n"
-  sleep 1
-
+  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+  
   cat > traefik.yaml << EOL
 version: "3.7"
 services:
@@ -18027,7 +18154,6 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=3600"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json"
@@ -18048,8 +18174,7 @@ services:
         mode: host
     deploy:
       placement:
-        constraints:
-          - node.role == manager
+        constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
@@ -18076,13 +18201,11 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
   
-  echo -e "⏳ \e[97mEsperando o Traefik ficar online \e[33m[6/9]\e[0m\n"
+  echo -e "\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
   if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
-  if type wait_30_sec &> /dev/null; then wait_30_sec; else sleep 20; fi
 
-  echo -e "📦 \e[97mInstalando Portainer \e[33m[7/9]\e[0m\n"
-  sleep 1
-
+  echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+  
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
@@ -18132,54 +18255,44 @@ networks:
 EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
-
-  echo -e "⏳ \e[97mEsperando o Portainer ficar online \e[33m[8/9]\e[0m\n"
+  
+  echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
-  sleep 5
 
-  echo -e "🛠️ \e[97mCriando conta no Portainer \e[33m[9/9]\e[0m\n"
-  sleep 20
+  echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  sleep 20 
 
   MAX_RETRIES=5
   CONTA_CRIADA=false
+  
+  # Uso o JQ (instalado acima) para montar o JSON seguro (caso a senha tenha caracteres especiais)
+  JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
 
   for i in $(seq 1 $MAX_RETRIES); do
-    # [CORREÇÃO] Uso do JQ para montar o JSON de autenticação com segurança (aceita senha com @)
-    JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
-    
     RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
       -H "Content-Type: application/json" \
       -d "$JSON_PAYLOAD")
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-      echo -e "1/2 - [\e[32mOK\e[0m] - Conta criada com sucesso!"
+      echo -e "\e[32m✅ Conta criada!\e[0m"
       CONTA_CRIADA=true
       break
     else
-      echo -e "⏳ Tentando criar conta... \e[33m$i/5\e[0m"
+      echo -e "⏳ Tentativa $i/$MAX_RETRIES..."
       sleep 10
     fi
   done
 
-  # Só tenta criar o token se a conta foi criada com sucesso
   if [ "$CONTA_CRIADA" = true ]; then
-    sleep 5
+    # JSON seguro para login
     JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
     
     token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
       -H "Content-Type: application/json" \
       -d "$JSON_LOGIN" | jq -r .jwt)
-    
-    if [ -n "$token" ] && [ "$token" != "null" ]; then
-      echo -e "2/2 - [\e[32mOK\e[0m] - Token gerado"
-    else
-      echo -e "2/2 - [\e[31mOFF\e[0m] - Falha ao gerar token"
-    fi
   fi
 
-  sleep 5
   cd dados_vps
-
   if [ "$CONTA_CRIADA" = true ]; then
     cat > dados_portainer <<EOL
 [ PORTAINER ]
@@ -18192,17 +18305,14 @@ EOL
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: Precisa criar dentro do portainer
-Senha: Precisa criar dentro do portainer
+Usuario: Criar manualmente.
 EOL
   fi
+  cd; cd
 
-  cd
-  cd
-  
-  if type wait_30_sec &> /dev/null; then wait_30_sec; fi
-
-  echo -e "\n\e[32m✅ Instalação Base Concluída!\e[0m"
+  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
+  echo -e "\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://$url_portainer"
+  if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
 }
 
 instalar_ferramenta_n8n() {
