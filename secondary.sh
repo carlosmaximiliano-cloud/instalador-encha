@@ -1988,53 +1988,30 @@ pegar_user_senha_rabbitmq() {
 }
 
 ferramenta_traefik_e_portainer() {
+  
+  # --- RECEBIMENTO DE PARÂMETROS ---
+  # Ordem: URL, Usuário, Senha, Nome Servidor, Nome Rede, Email
+  local url_portainer="$1"
+  local user_portainer="$2"
+  local pass_portainer="$3"
+  local nome_servidor="$4"
+  local nome_rede_interna="$5"
+  local email_ssl="$6"
 
-  # Verifica recursos e limpa tela
-  if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
-  clear
-  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER (UNIVERSAL) ---"; fi
+  # Validação simples para garantir que os parâmetros chegaram
+  if [ -z "$url_portainer" ] || [ -z "$pass_portainer" ] || [ -z "$email_ssl" ]; then
+    echo -e "\e[41m❌ ERRO: Parâmetros insuficientes.\e[0m"
+    echo "Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+    return 1
+  fi
 
-  # --- COLETA DE DADOS ---
-  while true; do
-    echo -e "Passo \e[33m1/6\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
-    echo ""
-    echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-    echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
-    echo ""
-    while true; do
-      echo -e "Passo \e[33m3/6\e[0m 🔐"
-      echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
-      echo ""
-      if type validar_senha &> /dev/null; then
-        if validar_senha "$pass_portainer" 12; then break; fi
-      else
-        if [ ${#pass_portainer} -ge 12 ]; then break; fi
-      fi
-      echo ""
-    done
-    echo -e "Passo \e[33m4/6\e[0m 🖥️"
-    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
-    echo ""
-    echo -e "Passo \e[33m5/6\e[0m 🌐"
-    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
-    echo ""
-    echo -e "Passo \e[33m6/6\e[0m 📧"
-    echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
-    echo ""
-    
-    clear
-    if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
-    echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
-    read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
-  done
+  echo -e "--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
+  echo -e "Dados recebidos para: \e[33m$url_portainer\e[0m"
 
-  # --- INSTALAÇÃO INTELIGENTE ---
+  # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
   echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
+  
   # Remove versões antigas para garantir instalação limpa
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
@@ -2056,7 +2033,9 @@ EOL
 
   echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
   sudo apt-get update -y > /dev/null 2>&1
-  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release > /dev/null 2>&1
+  # Adicionei 'jq' aqui pois você usa no final do script para pegar o token
+  sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release jq > /dev/null 2>&1
+  
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
@@ -2246,10 +2225,14 @@ EOL
 
   MAX_RETRIES=5
   CONTA_CRIADA=false
+  
+  # Uso o JQ (instalado acima) para montar o JSON seguro (caso a senha tenha caracteres especiais)
+  JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
+
   for i in $(seq 1 $MAX_RETRIES); do
     RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
       -H "Content-Type: application/json" \
-      -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+      -d "$JSON_PAYLOAD")
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
       echo -e "\e[32m✅ Conta criada!\e[0m"
@@ -2262,9 +2245,12 @@ EOL
   done
 
   if [ "$CONTA_CRIADA" = true ]; then
+    # JSON seguro para login
+    JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
+    
     token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
       -H "Content-Type: application/json" \
-      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
+      -d "$JSON_LOGIN" | jq -r .jwt)
   fi
 
   cd dados_vps
@@ -19403,7 +19389,7 @@ processar_menu_unlimited() {
     # --- Configuração do Menu ---
     declare -A OPCOES
     OPCOES[0]="Testar SMPT"
-    OPCOES[1]="Instalar nano (Portainer, n8n, evolution)" # NOVA OPÇÃO
+    OPCOES[1]="Instalar nano (Portainer, n8n, evolution)" 
     OPCOES[2]="Traefik & Portainer"
     OPCOES[3]="Evolution API"
     OPCOES[4]="N8N"
