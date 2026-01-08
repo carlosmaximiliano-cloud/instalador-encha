@@ -18310,9 +18310,11 @@ EOL
   fi
   cd; cd
 
-  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
-  echo -e "\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://$url_portainer"
-  if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
+
+  if type wait_30_sec &> /dev/null; then wait_30_sec; fi
+
+  echo -e "\n\e[32m✅ Instalação Base Concluída!\e[0m"
+
 }
 
 instalar_ferramenta_n8n() {
