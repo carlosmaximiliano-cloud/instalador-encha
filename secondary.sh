@@ -18306,11 +18306,9 @@ services:
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
-      - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -18328,7 +18326,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
 
-      # --- COMPATIBILIDADE N8N V2.0 ---
+      # --- COMPATIBILIDADE N8N V2.0 & CONFIGS EXTRAS ---
       - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
@@ -18383,11 +18381,9 @@ services:
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
-      - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -18405,7 +18401,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
 
-      # --- COMPATIBILIDADE N8N V2.0 ---
+      # --- COMPATIBILIDADE N8N V2.0 & CONFIGS EXTRAS ---
       - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
@@ -18460,11 +18456,9 @@ services:
       - EXECUTIONS_TIMEOUT=3600
       - EXECUTIONS_TIMEOUT_MAX=7200
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS=true
-      - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
       - N8N_REINSTALL_MISSING_PACKAGES=true
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SMTP_SENDER=$email_smtp_n8n
       - N8N_SMTP_USER=$usuario_smtp_n8n
       - N8N_SMTP_PASS=$senha_smtp_n8n
@@ -18482,7 +18476,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
 
-      # --- COMPATIBILIDADE N8N V2.0 ---
+      # --- COMPATIBILIDADE N8N V2.0 & CONFIGS EXTRAS ---
       - N8N_RUNNERS_ENABLED=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - NODES_EXCLUDE="[]"
