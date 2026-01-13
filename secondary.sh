@@ -4358,10 +4358,6 @@ while true; do
       fi
     done
 
-
-    
-    
-        
     ## Limpa o terminal
     clear
     msg_n8n_formacao_encha
@@ -4384,12 +4380,12 @@ while true; do
     fi
 done
 
-echo -e "\e[97m🚀 Iniciando a instalação do N8N da Formação Encha...\e[33m [Etapa 1 de 5]\e[0m"
+echo -e "\e[97m🚀 Iniciando a instalação do N8N da Formação Encha...\e[33m [Etapa 1 de 6]\e[0m"
 echo ""
 sleep 1
 
 
-echo -e "\e[97m📦 Verificando ou instalando o Postgres Formação Encha\e[33m [Etapa 2 de 5]\e[0m"
+echo -e "\e[97m📦 Verificando ou instalando o Postgres Formação Encha\e[33m [Etapa 2 de 6]\e[0m"
 echo ""
 sleep 1
 
@@ -4408,7 +4404,7 @@ else
     criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
 fi
 
-echo -e "\e[97m📦 Verificando ou instalando o Redis Formação Encha...\e[33m [Etapa 3 de 5]\e[0m"
+echo -e "\e[97m📦 Verificando ou instalando o Redis Formação Encha...\e[33m [Etapa 3 de 6]\e[0m"
 echo ""
 sleep 1
 verificar_container_redis_formacao_encha
@@ -4419,181 +4415,96 @@ else
     ferramenta_redis_formacao_encha
 fi
 
-echo -e "\e[97m⚙️ Instalando o N8N Formação Encha...\e[33m [Etapa 4 de 5]\e[0m"
+echo -e "\e[97m⚙️ Instalando o N8N Formação Encha...\e[33m [Etapa 4 de 6]\e[0m"
 echo ""
 sleep 1
 
+# Gera chaves de segurança
 encryption_key=$(openssl rand -hex 16)
+runners_token=$(openssl rand -hex 16)
 
-
+# ==============================================================================================
+# EDITOR SERVICE (BROKER)
+# ==============================================================================================
 cat > n8n_editor_formacao_encha.yaml <<EOL
 version: "3.7"
-# Definição dos Serviços
 services:
-  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-  # Definição do Serviço do Editor
   n8n_editor_formacao_encha:
-    # imagem do docker
-    # se possível, não use a latest .. deixe uma versão fixa
-    # https://hub.docker.com/r/n8nio/n8n/tags
     image: n8nio/n8n:latest
-    # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
-    # comando padrão para subir o servidor web do editor
     command: start
-    # configura a rede do serviço
     networks:
       - $nome_rede_interna
-    # configura as variáveis de ambiente
     environment:
-      #########################################################
-      #########################################################
-      # Configuração Gerais do N8N ############################
-      #########################################################
-      #########################################################
-      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
-      - N8N_ENCRYPTION_KEY=encryption_key
-      # Configura o ambiente de execução do N8N
+      - N8N_ENCRYPTION_KEY=$encryption_key
       - NODE_ENV=production
-      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
       - N8N_PAYLOAD_SIZE_MAX=16
-      # Configura o nível de log do N8N
       - N8N_LOG_LEVEL=info
-      # Configura o Timezone do N8N
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      # Configura a Permissão do Arquivo de Configuração
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Banco de Dados ########################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define o Tipo de Banco de Dados para Postgres
-      - DB_TYPE=postgresdb
-      # Configura o Nome do Banco de Dados
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
-      # Configura o Host do Banco de Dados
-      - DB_POSTGRESDB_HOST=postgres_formacao_encha
-      # Configura a Porta do Banco de Dados
-      - DB_POSTGRESDB_PORT=5432
-      # Configura o Usuário do Banco de Dados
-      - DB_POSTGRESDB_USER=postgres
-      # Configura a Senha do Banco de Dados
-      - DB_POSTGRESDB_PASSWORD=$senha_postgres
-      # Define o Schema para o Banco de Dados
-      - DB_POSTGRESDB_SCHEMA=public
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Endereço do N8N #######################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define a Porta http para o N8N (padrão: 5678)
-      - N8N_PORT=5678
-      # Configura o Host do Editor do N8N
-      - N8N_HOST=$url_editorn8n
-      # Configura o Endereço competo do Editor (tem que deixar / no final)
-      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
-      # Força o uso de SSL nas URL internas do N8N
-      - N8N_PROTOCOL=https
-      # Configura o Endereço do Webhook
-      # Pode ser subdomínio ou outro domínio
-      - WEBHOOK_URL=https://$url_webhookn8n/
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração da Modo de Execução do N8N (fila) ########
-      #########################################################
-      #########################################################
-      #########################################################
-      - EXECUTIONS_MODE=queue
-      # Configura o host do Redis
-      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
-      # Configura a porta do Redis
-      - QUEUE_BULL_REDIS_PORT=6379
-      # Configura o indice do banco de dados do Redis
-      - QUEUE_BULL_REDIS_DB=2
-      # Configura a senha do Redis (caso você use senha no redis)
-      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
-      #########################################################
-      #########################################################
-      # Configuração da Manutenção e Limpeza do N8N ###########
-      #########################################################
-      #########################################################
-      # Configura a limpeza dos dados de execução
-      - EXECUTIONS_DATA_PRUNE=true
-      # Configura o tempo máximo de armazenamento dos dados de execução
-      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
-      #########################################################
-      #########################################################
-      # Configuração de Bibliotecas do N8N ####################
-      #########################################################
-      #########################################################
-      # Configura quais bibliotecas nativas podem ser importardas no node Code
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      # Configura as bibliotecas externas que serão utilizadas
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-      # Habilita o uso de pacotes da comunidade
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      # Reinstalar os Community Nodes
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
-    # Configura o Modo de Deploy da Aplicação
+      
+      # Banco de Dados
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      - DB_POSTGRESDB_SCHEMA=public
+
+      # URLs e Portas
+      - N8N_PORT=5678
+      - N8N_HOST=$url_editorn8n
+      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://$url_webhookn8n/
+
+      # Modo Queue (Redis)
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=2
+      
+      # Manutenção
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+
+      # Bibliotecas
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+
+      # --- CONFIGURAÇÃO TASK RUNNERS (Broker) ---
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=external
+      - N8N_RUNNERS_AUTH_TOKEN=$runners_token
+      - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0
+      - N8N_NATIVE_PYTHON_RUNNER=true
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
+
     deploy:
-      # O editor será executado no modo de replicação
       mode: replicated
-      # Vamos ter apenas uma instância do editor
       replicas: 1
-      # Configura o local de execução
       placement:
         constraints:
-          # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
           - node.role == manager
-          # - node.hostname == worker1
-          # - node.labels.app == http # nome do label: app, valor do label: http
-      # Limitação
       resources:
-        # Definição dos Limites de Recursos deste Serviço
         limits:
-          # Define a quantidade de CPU para o N8N para evitar travamento do Host
           cpus: "1"
-          # Define a quantidade de RAM para o N8N para evitar travamento do Host
           memory: 1024M
-      # Define os Labels do Serviço
       labels:
-        # Configura o Roteamento do Traefik
         - traefik.enable=true
-        # Define o enderço do Editor do N8N
         - traefik.http.routers.n8n_editor_formacao_encha.rule=Host(\`$url_editorn8n\`)
-        # Redireciona o endereço para HTTPS
         - traefik.http.routers.n8n_editor_formacao_encha.entrypoints=websecure
-        # Define o certificado SSL
         - traefik.http.routers.n8n_editor_formacao_encha.tls.certresolver=letsencryptresolver
-        # Define o serviço do Editor
         - traefik.http.routers.n8n_editor_formacao_encha.service=n8n_editor_formacao_encha
-        # Define a porta do serviço do Editor
         - traefik.http.services.n8n_editor_formacao_encha.loadbalancer.server.port=5678
-        # Define o uso do Host Header
         - traefik.http.services.n8n_editor_formacao_encha.loadbalancer.passHostHeader=true
-      # Configura o modo de atualização do serviço
       update_config:
-        # Configura o paralelismo de atualização
         parallelism: 1
-        # Configura o tempo de espera entre as atualizações
         delay: 30s
-        # Configura a ação em caso de falha
         order: start-first
-        # Configura a ação em caso de falha
         failure_action: rollback
 networks:
   $nome_rede_interna:
@@ -4605,167 +4516,75 @@ if [ $? -eq 0 ]; then
     echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Editor criada com sucesso"
 else
     echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Editor"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Editor.\e[0m"
 fi
-
 
 STACK_NAME="n8n_editor_formacao_encha"
 stack_editavel 
-
 wait_services="n8n_editor_formacao_encha_n8n_editor_formacao_encha"
 wait_stack $wait_services
 
+
+# ==============================================================================================
+# WORKER SERVICE
+# ==============================================================================================
 cat > n8n_worker_formacao_encha.yaml <<EOL
 version: "3.7"
-# Definição dos Serviços
 services:
-  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-  # Definição do Serviço do Worker
   n8n_worker_formacao_encha:
-    # imagem do docker
-    # se possível, não use a latest .. deixe uma versão fixa
-    # https://hub.docker.com/r/n8nio/n8n/tags
     image: n8nio/n8n:latest
-    # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
-    # comando padrão para subir o servidor web
     command: worker --concurrency=$concurrencyQuantity
-    # configura a rede do serviço
     networks:
       - $nome_rede_interna
-    # configura as variáveis de ambiente
     environment:
-#########################################################
-      #########################################################
-      # Configuração Gerais do N8N ############################
-      #########################################################
-      #########################################################
-      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
-      - N8N_ENCRYPTION_KEY=encryption_key
-      # Configura o ambiente de execução do N8N
+      - N8N_ENCRYPTION_KEY=$encryption_key
       - NODE_ENV=production
-      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
-      - N8N_PAYLOAD_SIZE_MAX=16
-      # Configura o nível de log do N8N
       - N8N_LOG_LEVEL=info
-      # Configura o Timezone do N8N
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      # Configura a Permissão do Arquivo de Configuração
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Banco de Dados ########################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define o Tipo de Banco de Dados para Postgres
-      - DB_TYPE=postgresdb
-      # Configura o Nome do Banco de Dados
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
-      # Configura o Host do Banco de Dados
-      - DB_POSTGRESDB_HOST=postgres_formacao_encha
-      # Configura a Porta do Banco de Dados
-      - DB_POSTGRESDB_PORT=5432
-      # Configura o Usuário do Banco de Dados
-      - DB_POSTGRESDB_USER=postgres
-      # Configura a Senha do Banco de Dados
-      - DB_POSTGRESDB_PASSWORD=$senha_postgres
-      # Define o Schema para o Banco de Dados
-      - DB_POSTGRESDB_SCHEMA=public
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Endereço do N8N #######################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define a Porta http para o N8N (padrão: 5678)
-      - N8N_PORT=5678
-      # Configura o Host do Editor do N8N
-      - N8N_HOST=$url_editorn8n
-      # Configura o Endereço competo do Editor (tem que deixar / no final)
-      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
-      # Força o uso de SSL nas URL internas do N8N
-      - N8N_PROTOCOL=https
-      # Configura o Endereço do Webhook
-      # Pode ser subdomínio ou outro domínio
-      - WEBHOOK_URL=https://$url_webhookn8n/
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração da Modo de Execução do N8N (fila) ########
-      #########################################################
-      #########################################################
-      #########################################################
-      - EXECUTIONS_MODE=queue
-      # Configura o host do Redis
-      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
-      # Configura a porta do Redis
-      - QUEUE_BULL_REDIS_PORT=6379
-      # Configura o indice do banco de dados do Redis
-      - QUEUE_BULL_REDIS_DB=2
-      # Configura a senha do Redis (caso você use senha no redis)
-      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
-      #########################################################
-      #########################################################
-      # Configuração da Manutenção e Limpeza do N8N ###########
-      #########################################################
-      #########################################################
-      # Configura a limpeza dos dados de execução
-      - EXECUTIONS_DATA_PRUNE=true
-      # Configura o tempo máximo de armazenamento dos dados de execução
-      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
-      #########################################################
-      #########################################################
-      # Configuração de Bibliotecas do N8N ####################
-      #########################################################
-      #########################################################
-      # Configura quais bibliotecas nativas podem ser importardas no node Code
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      # Configura as bibliotecas externas que serão utilizadas
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-      # Habilita o uso de pacotes da comunidade
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      # Reinstalar os Community Nodes
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
-    # Configura o Modo de Deploy da Aplicação
+      
+      # Banco de Dados
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      - DB_POSTGRESDB_SCHEMA=public
+
+      # Modo Queue
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=2
+
+      # Bibliotecas
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+
+      # --- CONFIGURAÇÃO TASK RUNNERS (Cliente) ---
+      # Aponta para o Editor na porta interna 5679
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=external
+      - N8N_RUNNERS_AUTH_TOKEN=$runners_token
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+
     deploy:
-      # O editor será executado no modo de replicação
       mode: replicated
-      # Vamos ter apenas uma instância do editor
       replicas: 1
-      # Configura o local de execução
       placement:
-        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
         constraints:
           - node.role == manager
-          # - node.hostname == worker1
-          # - node.labels.app == webhooks # nome do label: app, valor do label: webhooks
       resources:
-        # Definição dos Limites de Recursos deste Serviço
         limits:
-          # Define a quantidade de CPU para o N8N para evitar travamento do Host
           cpus: "1"
-          # Define a quantidade de RAM para o N8N para evitar travamento do Host
           memory: 1024M
-      # Configura o modo de atualização do serviço
       update_config:
-        # Configura o paralelismo de atualização
         parallelism: 1
-        # Configura o tempo de espera entre as atualizações
         delay: 30s
-        # Configura a ação em caso de falha
         order: start-first
-        # Configura a ação em caso de falha
         failure_action: rollback
 networks:
   $nome_rede_interna:
@@ -4776,183 +4595,85 @@ if [ $? -eq 0 ]; then
     echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Worker criada com sucesso"
 else
     echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Worker"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Worker.\e[0m"
 fi
-
 
 STACK_NAME="n8n_worker_formacao_encha"
 stack_editavel
-
 wait_services="n8n_worker_formacao_encha_n8n_worker_formacao_encha"
 wait_stack $wait_services
 
+
+# ==============================================================================================
+# WEBHOOK SERVICE
+# ==============================================================================================
 cat > n8n_webhook_formacao_encha.yaml <<EOL
 version: "3.7"
-# Definição dos Serviços
 services:
-  # ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-  # ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-  # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-  # Definição do Serviço do Worker
   n8n_webhook_formacao_encha:
-    # imagem do docker
-    # se possível, não use a latest .. deixe uma versão fixa
-    # https://hub.docker.com/r/n8nio/n8n/tags
     image: n8nio/n8n:latest
-    # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
-    # comando padrão para subir o servidor web
     command: webhook
-    # configura a rede do serviço
     networks:
       - $nome_rede_interna
-    # configura as variáveis de ambiente
     environment:
- #########################################################
-      #########################################################
-      # Configuração Gerais do N8N ############################
-      #########################################################
-      #########################################################
-      # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
       - N8N_ENCRYPTION_KEY=$encryption_key
-      # Configura o ambiente de execução do N8N
       - NODE_ENV=production
-      # Configura o Tamanho do Payload aceito pelo N8N (em MB)
       - N8N_PAYLOAD_SIZE_MAX=16
-      # Configura o nível de log do N8N
       - N8N_LOG_LEVEL=info
-      # Configura o Timezone do N8N
       - GENERIC_TIMEZONE=America/Sao_Paulo
-      # Configura a Permissão do Arquivo de Configuração
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Banco de Dados ########################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define o Tipo de Banco de Dados para Postgres
-      - DB_TYPE=postgresdb
-      # Configura o Nome do Banco de Dados
-      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
-      # Configura o Host do Banco de Dados
-      - DB_POSTGRESDB_HOST=postgres_formacao_encha
-      # Configura a Porta do Banco de Dados
-      - DB_POSTGRESDB_PORT=5432
-      # Configura o Usuário do Banco de Dados
-      - DB_POSTGRESDB_USER=postgres
-      # Configura a Senha do Banco de Dados
-      - DB_POSTGRESDB_PASSWORD=$senha_postgres
-      # Define o Schema para o Banco de Dados
-      - DB_POSTGRESDB_SCHEMA=public
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração do Endereço do N8N #######################
-      #########################################################
-      #########################################################
-      #########################################################
-      # Define a Porta http para o N8N (padrão: 5678)
-      - N8N_PORT=5678
-      # Configura o Host do Editor do N8N
-      - N8N_HOST=$url_editorn8n
-      # Configura o Endereço competo do Editor (tem que deixar / no final)
-      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
-      # Força o uso de SSL nas URL internas do N8N
-      - N8N_PROTOCOL=https
-      # Configura o Endereço do Webhook
-      # Pode ser subdomínio ou outro domínio
-      - WEBHOOK_URL=https://$url_webhookn8n/
-      #########################################################
-      #########################################################
-      #########################################################
-      # Configuração da Modo de Execução do N8N (fila) ########
-      #########################################################
-      #########################################################
-      #########################################################
-      - EXECUTIONS_MODE=queue
-      # Configura o host do Redis
-      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
-      # Configura a porta do Redis
-      - QUEUE_BULL_REDIS_PORT=6379
-      # Configura o indice do banco de dados do Redis
-      - QUEUE_BULL_REDIS_DB=2
-      # Configura a senha do Redis (caso você use senha no redis)
-      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
-      #########################################################
-      #########################################################
-      # Configuração da Manutenção e Limpeza do N8N ###########
-      #########################################################
-      #########################################################
-      # Configura a limpeza dos dados de execução
-      - EXECUTIONS_DATA_PRUNE=true
-      # Configura o tempo máximo de armazenamento dos dados de execução
-      - EXECUTIONS_DATA_MAX_AGE=336 # 2 semanas
-      #########################################################
-      #########################################################
-      # Configuração de Bibliotecas do N8N ####################
-      #########################################################
-      #########################################################
-      # Configura quais bibliotecas nativas podem ser importardas no node Code
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      # Configura as bibliotecas externas que serão utilizadas
-      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
-      # Habilita o uso de pacotes da comunidade
-      - N8N_COMMUNITY_PACKAGES_ENABLED=true
-      # Reinstalar os Community Nodes
-      - N8N_REINSTALL_MISSING_PACKAGES=true
-      # --- COMPATIBILIDADE N8N V2.0 ---
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - NODES_EXCLUDE="[]"
-      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
-    # Configura o Modo de Deploy da Aplicação
+      
+      # Banco de Dados
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n_queue${1:+_$1}
+      - DB_POSTGRESDB_HOST=postgres_formacao_encha
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=$senha_postgres
+      - DB_POSTGRESDB_SCHEMA=public
+
+      # URLs
+      - N8N_PORT=5678
+      - N8N_HOST=$url_editorn8n
+      - N8N_EDITOR_BASE_URL=https://$url_editorn8n/
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://$url_webhookn8n/
+
+      # Modo Queue
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis_formacao_encha
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=2
+
+      # --- CONFIGURAÇÃO TASK RUNNERS (Cliente) ---
+      # Aponta para o Editor na porta interna 5679
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=external
+      - N8N_RUNNERS_AUTH_TOKEN=$runners_token
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+
     deploy:
-      # O editor será executado no modo de replicação
       mode: replicated
-      # Vamos ter apenas uma instância do editor
       replicas: $webhooksQuantity
-      # Configura o local de execução
       placement:
-        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
         constraints:
           - node.role == manager
-          # - node.hostname == worker1
-          # - node.labels.app == workers # nome do label: app, valor do label: workers
       resources:
-        # Definição dos Limites de Recursos deste Serviço
         limits:
-          # Define a quantidade de CPU para o N8N para evitar travamento do Host
           cpus: "1"
-          # Define a quantidade de RAM para o N8N para evitar travamento do Host
           memory: 1024M
-      # Define os Labels do Serviço
       labels:
-        # Configura o Roteamento do Traefik
         - traefik.enable=true
-        # Define o enderço do Webhook do N8N
         - traefik.http.routers.n8n_webhook_formacao_encha.rule=Host(\`$url_webhookn8n\`)
-        # Redireciona o endereço para HTTPS
         - traefik.http.routers.n8n_webhook_formacao_encha.entrypoints=websecure
-        # Define o certificado SSL
         - traefik.http.routers.n8n_webhook_formacao_encha.tls.certresolver=letsencryptresolver
-        # Define o serviço do Webhook
         - traefik.http.routers.n8n_webhook_formacao_encha.service=n8n_webhook_formacao_encha
-        # Define a porta do serviço do Webhook
         - traefik.http.services.n8n_webhook_formacao_encha.loadbalancer.server.port=5678
-        # Define o uso do Host Header
         - traefik.http.services.n8n_webhook_formacao_encha.loadbalancer.passHostHeader=true
-      # Configura o modo de atualização do serviço
       update_config:
-        # Configura o paralelismo de atualização
         parallelism: 1
-        # Configura o tempo de espera entre as atualizações
         delay: 30s
-        # Configura a ação em caso de falha
         order: start-first
-        # Configura a ação em caso de falha
         failure_action: rollback
 networks:
   $nome_rede_interna:
@@ -4964,23 +4685,67 @@ if [ $? -eq 0 ]; then
     echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Webhook criada com sucesso"
 else
     echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Webhook"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N Webhook.\e[0m"
 fi
-
 
 STACK_NAME="n8n_webhook_formacao_encha"
 stack_editavel
-
-
-
-pull n8nio/n8n:latest
-
-# Gera lista de serviços para o wait_stack
 wait_services="n8n_webhook_formacao_encha_n8n_webhook_formacao_encha"
 wait_stack $wait_services
 
+# ==============================================================================================
+# NOVO: TASK RUNNERS SERVICE (SIDECAR)
+# ==============================================================================================
+echo -e "\e[97m⚙️ Instalando o N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m"
+cat > n8n_task_runners_formacao_encha.yaml <<EOL
+version: "3.7"
+services:
+  n8n_task_runners_formacao_encha:
+    image: n8nio/runners:latest
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    networks:
+      - $nome_rede_interna
+    environment:
+      # Conecta ao Editor (Broker)
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+      - N8N_RUNNERS_AUTH_TOKEN=$runners_token
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
 
-echo -e "\e[97m🎯 Tudo pronto! \e[33m[Etapa 5 de 5]\e[0m"
+networks:
+  $nome_rede_interna:
+    name: $nome_rede_interna
+    external: true
+EOL
+
+if [ $? -eq 0 ]; then
+    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Task Runners criada com sucesso"
+else
+    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Task Runners"
+fi
+
+STACK_NAME="n8n_task_runners_formacao_encha"
+stack_editavel
+wait_services="n8n_task_runners_formacao_encha_n8n_task_runners_formacao_encha"
+wait_stack $wait_services
+
+# Pull da imagem para garantir
+pull n8nio/n8n:latest
+pull n8nio/runners:latest
+
+echo -e "\e[97m🎯 Tudo pronto! \e[33m[Etapa 6 de 6]\e[0m"
 
 cd dados_vps
 
@@ -4990,6 +4755,8 @@ cat > dados_n8n_formacao_encha${1:+_$1} <<EOL
 Dominio do N8N: https://$url_editorn8n
 
 Dominio do Webhook do N8N: https://$url_webhookn8n
+
+Token Runners (Interno): $runners_token
 
 Email: Precisa criar no primeiro acesso do N8N
 
