@@ -4470,11 +4470,14 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=336
 
-      # Bibliotecas
+      # Bibliotecas e Permissões JS/Python
       - NODE_FUNCTION_ALLOW_BUILTIN=*
       - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_REINSTALL_MISSING_PACKAGES=true
+      # --- PERMISSÕES PYTHON LIBERADAS ---
+      - N8N_PYTHON_ALLOW_STDLIB_MODULES=*
+      - N8N_PYTHON_ALLOW_PIP_MODULES=*
 
       # --- CONFIGURAÇÃO TASK RUNNERS (Broker) ---
       - N8N_RUNNERS_ENABLED=true
@@ -4562,11 +4565,14 @@ services:
       - QUEUE_BULL_REDIS_PORT=6379
       - QUEUE_BULL_REDIS_DB=2
 
-      # Bibliotecas
+      # Bibliotecas e Permissões JS/Python
       - NODE_FUNCTION_ALLOW_BUILTIN=*
       - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_REINSTALL_MISSING_PACKAGES=true
+      # --- PERMISSÕES PYTHON LIBERADAS ---
+      - N8N_PYTHON_ALLOW_STDLIB_MODULES=*
+      - N8N_PYTHON_ALLOW_PIP_MODULES=*
 
       # --- CONFIGURAÇÃO TASK RUNNERS (Cliente) ---
       - N8N_RUNNERS_ENABLED=true
