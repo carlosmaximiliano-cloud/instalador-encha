@@ -4429,7 +4429,8 @@ runners_token=$(openssl rand -hex 16)
 cat > n8n_editor_formacao_encha.yaml <<EOL
 version: "3.7"
 services:
-  n8n_editor_formacao_encha:
+  # NOME DO SERVIÇO ENCURTADO PARA: editor
+  editor:
     image: n8nio/n8n:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     command: start
@@ -4520,7 +4521,9 @@ fi
 
 STACK_NAME="n8n_editor_formacao_encha"
 stack_editavel 
-wait_services="n8n_editor_formacao_encha_n8n_editor_formacao_encha"
+
+# ATENÇÃO: Nome ajustado para o padrão Swarm (Stack_Serviço)
+wait_services="n8n_editor_formacao_encha_editor"
 wait_stack $wait_services
 
 
@@ -4530,7 +4533,8 @@ wait_stack $wait_services
 cat > n8n_worker_formacao_encha.yaml <<EOL
 version: "3.7"
 services:
-  n8n_worker_formacao_encha:
+  # NOME DO SERVIÇO ENCURTADO PARA: worker
+  worker:
     image: n8nio/n8n:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     command: worker --concurrency=$concurrencyQuantity
@@ -4565,11 +4569,11 @@ services:
       - N8N_REINSTALL_MISSING_PACKAGES=true
 
       # --- CONFIGURAÇÃO TASK RUNNERS (Cliente) ---
-      # Aponta para o Editor na porta interna 5679
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=external
       - N8N_RUNNERS_AUTH_TOKEN=$runners_token
-      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+      # CONECTA NO NOME DNS CORRETO DO EDITOR
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha_editor:5679
 
     deploy:
       mode: replicated
@@ -4599,7 +4603,8 @@ fi
 
 STACK_NAME="n8n_worker_formacao_encha"
 stack_editavel
-wait_services="n8n_worker_formacao_encha_n8n_worker_formacao_encha"
+# Nome ajustado para Stack_Serviço
+wait_services="n8n_worker_formacao_encha_worker"
 wait_stack $wait_services
 
 
@@ -4609,7 +4614,8 @@ wait_stack $wait_services
 cat > n8n_webhook_formacao_encha.yaml <<EOL
 version: "3.7"
 services:
-  n8n_webhook_formacao_encha:
+  # NOME DO SERVIÇO ENCURTADO PARA: webhook
+  webhook:
     image: n8nio/n8n:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     command: webhook
@@ -4646,11 +4652,11 @@ services:
       - QUEUE_BULL_REDIS_DB=2
 
       # --- CONFIGURAÇÃO TASK RUNNERS (Cliente) ---
-      # Aponta para o Editor na porta interna 5679
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=external
       - N8N_RUNNERS_AUTH_TOKEN=$runners_token
-      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+      # CONECTA NO NOME DNS CORRETO DO EDITOR
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha_editor:5679
 
     deploy:
       mode: replicated
@@ -4689,7 +4695,8 @@ fi
 
 STACK_NAME="n8n_webhook_formacao_encha"
 stack_editavel
-wait_services="n8n_webhook_formacao_encha_n8n_webhook_formacao_encha"
+# Nome ajustado para Stack_Serviço
+wait_services="n8n_webhook_formacao_encha_webhook"
 wait_stack $wait_services
 
 # ==============================================================================================
@@ -4699,14 +4706,15 @@ echo -e "\e[97m⚙️ Instalando o N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m
 cat > n8n_task_runners_formacao_encha.yaml <<EOL
 version: "3.7"
 services:
-  n8n_task_runners_formacao_encha:
+  # NOME DO SERVIÇO ENCURTADO PARA: runner
+  runner:
     image: n8nio/runners:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     networks:
       - $nome_rede_interna
     environment:
-      # Conecta ao Editor (Broker)
-      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha:5679
+      # Conecta ao Editor (Broker) usando o nome DNS correto
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha_editor:5679
       - N8N_RUNNERS_AUTH_TOKEN=$runners_token
     deploy:
       mode: replicated
@@ -4738,7 +4746,9 @@ fi
 
 STACK_NAME="n8n_task_runners_formacao_encha"
 stack_editavel
-wait_services="n8n_task_runners_formacao_encha_n8n_task_runners_formacao_encha"
+
+# Nome ajustado para Stack_Serviço
+wait_services="n8n_task_runners_formacao_encha_runner"
 wait_stack $wait_services
 
 # Pull da imagem para garantir
