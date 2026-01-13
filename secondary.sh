@@ -4706,7 +4706,7 @@ wait_services="n8n_webhook_formacao_encha_webhook"
 wait_stack $wait_services
 
 # ==============================================================================================
-# NOVO: TASK RUNNERS SERVICE (SIDECAR)
+# NOVO: TASK RUNNERS SERVICE (SIDECAR) - CORRIGIDO
 # ==============================================================================================
 echo -e "\e[97m⚙️ Instalando o N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m"
 cat > n8n_task_runners_formacao_encha.yaml <<EOL
@@ -4722,6 +4722,12 @@ services:
       # Conecta ao Editor (Broker) usando o nome DNS correto
       - N8N_RUNNERS_TASK_BROKER_URI=http://n8n_editor_formacao_encha_editor:5679
       - N8N_RUNNERS_AUTH_TOKEN=$runners_token
+      
+      # --- PERMISSÕES PYTHON OBRIGATÓRIAS PARA O RUNNER ---
+      # Sem isso, o Runner bloqueia qualquer importação (erro "Allowed stdlib modules: none")
+      - N8N_PYTHON_ALLOW_STDLIB_MODULES=*
+      - N8N_PYTHON_ALLOW_PIP_MODULES=*
+      
     deploy:
       mode: replicated
       replicas: 1
