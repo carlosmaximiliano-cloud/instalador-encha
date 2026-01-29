@@ -18812,218 +18812,113 @@ wait_30_sec
 
 }
 
-ferramenta_moltbot() {
-  # Verifica recursos
-  if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
-  clear
-  echo -e "--- INSTALAÇÃO MOLTBOT + CHROME REMOTO ---"
-  echo -e "\e[33mNecessário para manter sessões (Instagram/WhatsApp) logadas.\e[0m"
 
-  # Recupera rede interna
-  if [ -f "dados_vps/dados_vps" ]; then
-      nome_rede_interna=$(grep "Rede interna:" dados_vps/dados_vps | cut -d: -f2 | xargs)
-  else
-      nome_rede_interna="proxynet"
-  fi
+ferramenta_webtop() {
+  # Limpa tela e cabeçalho
+  clear
+  echo -e "--- INSTALADOR DE LINUX (WEBTOP) ---"
+  echo -e "\e[33mEsta ferramenta instalará um Linux Ubuntu XFCE com interface gráfica via Browser.\e[0m"
 
   # --- COLETA DE DADOS ---
   while true; do
-    echo -e "Passo \e[33m1/4\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Painel Moltbot (ex: bot.encha.ai): \e[0m" && read -r url_moltbot
-    echo ""
-    
-    echo -e "Passo \e[33m2/4\e[0m 🖥️"
-    echo -e "\e[33mPrecisamos de um link para você acessar o navegador e logar no Instagram.\e[0m"
-    echo -ne "\e[36mDigite o domínio para o Chrome (ex: chrome.encha.ai): \e[0m" && read -r url_chrome
+    echo -e "Passo \e[33m1/5\e[0m 🌐"
+    # Tenta adivinhar a rede se o usuário já rodou o script anterior na mesma sessão, senão pergunta
+    DEFAULT_NET=${nome_rede_interna:-"enchaNet"}
+    echo -ne "\e[36mQual o nome da rede interna (Overlay) do Traefik? [Padrão: $DEFAULT_NET]: \e[0m" && read -r input_rede
+    rede_interna="${input_rede:-$DEFAULT_NET}"
     echo ""
 
-    echo -e "Passo \e[33m3/4\e[0m 🧠"
-    echo -e "\e[33m(Opcional) Chave API (Anthropic/OpenAI).\e[0m"
-    echo -ne "\e[36mAPI Key: \e[0m" && read -r api_key_ai
+    echo -e "Passo \e[33m2/5\e[0m 🔗"
+    echo -ne "\e[36mDigite a URL completa para acessar o Linux (ex: linux.encha.ai): \e[0m" && read -r url_linux
     echo ""
 
-    token_gateway=$(openssl rand -hex 16)
-    
-    echo -e "Passo \e[33m4/4\e[0m 🔐"
-    echo -e "Token de acesso gerado: \e[97m$token_gateway\e[0m"
+    echo -e "Passo \e[33m3/5\e[0m 👤"
+    echo -ne "\e[36mDefina o usuário do Linux (ex: admin): \e[0m" && read -r user_linux
     echo ""
 
+    echo -e "Passo \e[33m4/5\e[0m 🔐"
+    echo -ne "\e[36mDefina a senha de acesso: \e[0m" && read -r pass_linux
+    echo ""
+
+    echo -e "Passo \e[33m5/5\e[0m 💾"
+    echo -ne "\e[36mNome da Stack no Portainer (ex: webtop): \e[0m" && read -r nome_stack
+    nome_stack="${nome_stack:-webtop}"
+    echo ""
+
+    clear
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "Bot: \e[97m$url_moltbot\e[0m"
-    echo -e "Chrome: \e[97m$url_chrome\e[0m"
-    echo -e "Rede: \e[97m$nome_rede_interna\e[0m"
-    read -p $'\e[32m✅ Confirma e inicia a compilação? (Y/N)\e[0m: ' confirmacao
+    echo -e "Rede Traefik: \e[97m$rede_interna\e[0m"
+    echo -e "Link de Acesso: \e[97m$url_linux\e[0m"
+    echo -e "Usuário/Pass: \e[97m$user_linux / ****\e[0m"
+    read -p $'\e[32m✅ Confirma e Instala? (Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
-  echo -e "\e[97m• BAIXANDO CÓDIGO FONTE \e[33m[1/5]\e[0m"
-  cd ~
-  rm -rf moltbot_src
-  # Instala git se não tiver
-  if ! command -v git &> /dev/null; then sudo apt-get install -y git > /dev/null 2>&1; fi
-  
-  git clone https://github.com/moltbot/moltbot.git moltbot_src
-  
-  if [ ! -d "moltbot_src" ]; then
-      echo -e "\e[41m❌ Erro ao clonar repositório.\e[0m"
-      return
-  fi
+  # --- GERAÇÃO DO ARQUIVO STACK ---
+  echo -e "\e[97m• GERANDO ARQUIVO STACK \e[33m[1/3]\e[0m"
 
-  echo -e "\e[97m• CONSTRUINDO IMAGEM LOCAL \e[33m[2/5]\e[0m"
-  cd moltbot_src
-  
-  # Build da imagem base que será usada pelo Gateway e CLI
-  if ! sudo docker build -t moltbot:local .; then
-      echo -e "\e[41m❌ Falha na construção da imagem Docker.\e[0m"
-      cd ~
-      return
-  fi
-  cd ~
-
-  echo -e "\e[97m• PREPARANDO VOLUMES \e[33m[3/5]\e[0m"
-  
-  # Volumes do Moltbot
-  sudo docker volume create vol_moltbot_config > /dev/null 2>&1
-  sudo docker volume create vol_moltbot_workspace > /dev/null 2>&1
-  # Volume CRÍTICO: Onde os cookies do Chrome ficam salvos
-  sudo docker volume create vol_chrome_data > /dev/null 2>&1
-
-  # Define variáveis de ambiente
-  if [ -z "$api_key_ai" ]; then
-      ENV_API_KEY=""
-  else
-      if [[ "$api_key_ai" == sk-ant* ]]; then
-          ENV_API_KEY="ANTHROPIC_API_KEY=$api_key_ai"
-      else
-          ENV_API_KEY="OPENAI_API_KEY=$api_key_ai"
-      fi
-  fi
-
-  cat > moltbot.yaml <<EOL
+  # Nota: Em Swarm, as labels do Traefik ficam dentro de 'deploy:'
+  cat > webtop.yaml <<EOL
 version: "3.7"
 services:
-  # --- O CÉREBRO (API) ---
-  moltbot-gateway:
-    image: moltbot:local
-    environment:
-      - NODE_ENV=production
-      - CLAWDBOT_GATEWAY_TOKEN=$token_gateway
-      - PORT=18789
-      - $ENV_API_KEY
-      # Aponta para o Chrome na rede interna
-      - PUPPETEER_WS_ENDPOINT=ws://chrome:3000
-    volumes:
-      - vol_moltbot_config:/home/node/.clawdbot
-      - vol_moltbot_workspace:/home/node/clawd
-    networks:
-      - $nome_rede_interna
-    command: ["node", "dist/index.js", "gateway", "--port", "18789"]
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.moltbot.rule=Host(\`$url_moltbot\`)"
-        - "traefik.http.routers.moltbot.entrypoints=websecure"
-        - "traefik.http.routers.moltbot.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.moltbot.loadbalancer.server.port=18789"
-        - "traefik.docker.network=$nome_rede_interna"
-
-  # --- O AGENTE (CLI) ---
-  moltbot-cli:
-    image: moltbot:local
-    environment:
-      - NODE_ENV=production
-      - CLAWDBOT_GATEWAY_TOKEN=$token_gateway
-      - $ENV_API_KEY
-      # Conecta no gateway pela rede interna
-      - CLAWDBOT_GATEWAY_URL=http://moltbot-gateway:18789
-    volumes:
-      - vol_moltbot_config:/home/node/.clawdbot
-      - vol_moltbot_workspace:/home/node/clawd
-    networks:
-      - $nome_rede_interna
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-
-  # --- O NAVEGADOR VISUAL (CHROME) ---
-  chrome:
-    image: lscr.io/linuxserver/chromium:latest
+  webtop:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Sao_Paulo
-      - CHROME_CLI=https://google.com
+      - SUBFOLDER=/
+      - TITLE=EnchaLinux
+      - CUSTOM_USER=$user_linux
+      - PASSWORD=$pass_linux
     volumes:
-      - vol_chrome_data:/config
+      - webtop_data:/config
+      - /var/run/docker.sock:/var/run/docker.sock # Opcional: permite controlar docker de dentro
     networks:
-      - $nome_rede_interna
-    ports:
-      - "3000"
-      - "3001"
+      - $rede_interna
     deploy:
       mode: replicated
       replicas: 1
-      placement:
-        constraints: [node.role == manager]
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.chrome.rule=Host(\`$url_chrome\`)"
-        - "traefik.http.routers.chrome.entrypoints=websecure"
-        - "traefik.http.routers.chrome.tls.certresolver=letsencryptresolver"
-        # Porta 3000 é a interface web do LinuxServer (KasmVNC)
-        - "traefik.http.services.chrome.loadbalancer.server.port=3000"
-        - "traefik.docker.network=$nome_rede_interna"
-        # Autenticação básica para proteger seu navegador (User: admin / Senha: password)
-        # Recomendo configurar middleware de auth aqui se possível
+        - "traefik.http.routers.$nome_stack.rule=Host(\`$url_linux\`)"
+        - "traefik.http.routers.$nome_stack.entrypoints=websecure"
+        - "traefik.http.routers.$nome_stack.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.$nome_stack.loadbalancer.server.port=3000"
+    shm_size: "1gb" # Importante para estabilidade do navegador interno
 
 volumes:
-  vol_moltbot_config:
-    external: true
-    name: vol_moltbot_config
-  vol_moltbot_workspace:
-    external: true
-    name: vol_moltbot_workspace
-  vol_chrome_data:
-    external: true
-    name: vol_chrome_data
+  webtop_data:
+    name: ${nome_stack}_data
 
 networks:
-  $nome_rede_interna:
+  $rede_interna:
     external: true
-    name: $nome_rede_interna
 EOL
 
-  echo -e "\e[97m• EXECUTANDO DEPLOY DA STACK COMPLETA \e[33m[4/5]\e[0m"
-  sudo docker stack deploy --prune --resolve-image never -c moltbot.yaml moltbot > /dev/null 2>&1
+  echo -e "\e[97m• DEPLOY NO SWARM \e[33m[2/3]\e[0m"
+  # Deploy usando stack deploy (igual ao Portainer)
+  sudo docker stack deploy --prune --resolve-image always -c webtop.yaml "$nome_stack" > /dev/null 2>&1
+
+  echo -e "\e[97m• AGUARDANDO INICIALIZAÇÃO \e[33m[3/3]\e[0m"
+  # Função simples de wait, caso não tenha a sua wait_stack carregada
+  sleep 10
   
-  if type wait_stack &> /dev/null; then wait_stack "moltbot"; else sleep 30; fi
-
-  # Salva informações
-  cd dados_vps
-  cat >> dados_vps <<EOL
-
-[ MOLTBOT ]
-Painel AI: https://$url_moltbot
-Navegador Remoto: https://$url_chrome
-Gateway Token: $token_gateway
-Obs: Acesse o Navegador Remoto para logar no Instagram/Email.
+  # --- FINALIZAÇÃO ---
+  echo -e "\n\e[32m🚀 LINUX INSTALADO COM SUCESSO!\e[0m"
+  echo -e "Acesse em: https://$url_linux"
+  echo -e "Login: $user_linux | Senha: (a que você definiu)"
+  
+  # Opcional: salvar credenciais no arquivo de dados
+  mkdir -p ~/dados_vps
+  cat >> ~/dados_vps/dados_webtop.txt <<EOL
+[ LINUX WEBTOP - $nome_stack ]
+URL: https://$url_linux
+User: $user_linux
+Pass: $pass_linux
 EOL
-  cd ..
-  rm moltbot.yaml
-  
-  echo -e "\n\e[32m🚀 INSTALAÇÃO CONCLUÍDA!\e[0m"
-  echo -e "1. Acesse \e[97mhttps://$url_chrome\e[0m"
-  echo -e "2. Você verá um desktop Linux no navegador."
-  echo -e "3. Abra o Chromium lá dentro, vá no Instagram e faça login."
-  echo -e "4. Feche a aba (não deslogue). O Moltbot usará essa sessão."
-  echo ""
-  read -p "Pressione ENTER para voltar."
+
+  read -p "Pressione ENTER para voltar..."
 }
 
 instalar_ambiente_completo() {
@@ -19488,7 +19383,7 @@ exibir_pagina2() {
         "$(printf "${amarelo_escuro}[ 59 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 79 ]${reset} - Krayin CRM${reset}" "Hoppscotch")" \
         "$(printf "${amarelo_escuro}[ 60 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" "Bolt")" \
         "$(printf "${amarelo_escuro}[ 61 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 81 ]${reset} - Duplicati${reset}" "Planka")" \
-        "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Moltbot${reset}" "WPPConnect")"
+        "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Webtop${reset}" "WPPConnect")"
 }
 
 # --- Função Principal do Menu ---
@@ -19577,7 +19472,7 @@ processar_menu_unlimited() {
     OPCOES[79]="Krayin CRM"
     OPCOES[80]="Shlink"
     OPCOES[81]="Duplicati"
-    OPCOES[82]="Moltbot"
+    OPCOES[82]="Webtop"
     # outras opções
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
@@ -20147,9 +20042,9 @@ processar_menu_unlimited() {
                 fi
                 ;;
             82)
-              verificar "moltbot${opcao2:+_$opcao2}" && continue || echo ""
+              verificar "webtop${opcao2:+_$opcao2}" && continue || echo ""
               if verificar_docker_e_portainer_traefik; then
-                ferramenta_moltbot
+                ferramenta_webtop
               fi
               ;;
             98)
