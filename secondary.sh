@@ -18663,9 +18663,23 @@ wait_30_sec
 }
 
 ferramenta_webtop() {
-  # Cabeçalho visual (se tiver uma função msg_webtop, pode usar aqui)
   clear
   echo -e "--- INSTALADOR DE LINUX (WEBTOP) ---"
+
+  # --- CORREÇÃO: CARREGAR DADOS DO PORTAINER ---
+  # Precisamos carregar o user/pass do Portainer para a função stack_editavel funcionar
+  if type dados &> /dev/null; then
+      dados
+  else
+      # Fallback: Tenta ler manualmente se a função 'dados' não existir
+      if [ -f ~/dados_vps/dados_portainer ]; then
+          # Gambiarra segura para ler o arquivo formatado do seu script
+          user_portainer=$(grep "Usuario:" ~/dados_vps/dados_portainer | cut -d' ' -f2)
+          pass_portainer=$(grep "Senha:" ~/dados_vps/dados_portainer | cut -d' ' -f2)
+          url_portainer=$(grep "Dominio:" ~/dados_vps/dados_portainer | cut -d'/' -f3)
+      fi
+  fi
+  # ---------------------------------------------
 
   # Tenta pegar a rede global ou define um padrão
   local rede_local=${nome_rede_interna:-"enchaNet"}
@@ -18700,15 +18714,9 @@ ferramenta_webtop() {
   clear
   echo -e "\e[97m🚀 Iniciando a instalação do Webtop...\e[0m"
   
-  # Gera o YAML com as configurações vitais para o Chrome (seccomp + shm)
   cat > webtop.yaml <<EOL
 version: "3.7"
 services:
-
-# ░█░█░█▀▀░█▀▄░▀█▀░█▀█░█▀█
-# ░█▄█░█▀▀░█▀▄░░█░░█░█░█▀▀
-# ░▀░▀░▀▀▀░▀▀░░░▀░░▀▀▀░▀░░
-
   webtop:
     image: lscr.io/linuxserver/webtop:ubuntu-xfce
     networks:
@@ -18740,10 +18748,6 @@ services:
         - "traefik.http.routers.webtop.tls.certresolver=letsencryptresolver"
     shm_size: "1gb"
 
-# ░█░█░█▀▀░█▀▄░▀█▀░█▀█░█▀█
-# ░█▄█░█▀▀░█▀▄░░█░░█░█░█▀▀
-# ░▀░▀░▀▀▀░▀▀░░░▀░░▀▀▀░▀░░
-
 volumes:
   webtop_config:
     external: true
@@ -18755,11 +18759,10 @@ networks:
     name: $rede_local
 EOL
 
-  # --- AQUI ESTÁ A MÁGICA ---
-  # Define o nome da stack e chama sua função de integração com Portainer
+  # Define o nome da stack para a função mágica pegar
   STACK_NAME="webtop"
   
-  # Verifica se a função existe antes de chamar, só por segurança
+  # Chama a função que envia para o Portainer
   if type stack_editavel &> /dev/null; then
       stack_editavel
   else
@@ -18770,22 +18773,18 @@ EOL
   echo -e "\n\e[97m• VERIFICANDO SERVIÇO...\e[0m"
   echo ""
 
-  # Comandos de suporte que você usa
   if type pull &> /dev/null; then pull lscr.io/linuxserver/webtop:ubuntu-xfce; fi
   if type wait_stack &> /dev/null; then wait_stack "webtop_webtop"; else sleep 10; fi
 
-  # Salva os dados
   mkdir -p /root/dados_vps
   cat > /root/dados_vps/dados_webtop <<EOL
 [ WEBTOP LINUX ]
-
 Dominio: https://$url_webtop
 Usuario: $user_webtop
 Senha: $pass_webtop
 Config: /var/lib/docker/volumes/webtop_config/_data
 EOL
 
-  # Finalização visual igual ao Duplicati
   if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; fi
   echo -e "\e[32m[ WEBTOP LINUX ]\e[0m\n"
   echo -e "\e[33m🌐 Domínio:\e[97m https://$url_webtop\e[0m"
