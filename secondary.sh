@@ -18813,60 +18813,101 @@ wait_30_sec
 }
 
 ferramenta_moltbot() {
-  # Verifica recursos e limpa tela
+  # Verifica recursos
   if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
   clear
-  echo -e "--- INSTALAÇÃO MOLTBOT (Agente AI) ---"
+  echo -e "--- INSTALAÇÃO MOLTBOT (Versão Build Local) ---"
+  echo -e "\e[33mNota: O Moltbot exige compilação local. Isso pode levar alguns minutos.\e[0m"
 
-  # Tenta recuperar o nome da rede interna do arquivo de dados
+  # Recupera rede interna
   if [ -f "dados_vps/dados_vps" ]; then
       nome_rede_interna=$(grep "Rede interna:" dados_vps/dados_vps | cut -d: -f2 | xargs)
   else
-      nome_rede_interna="proxynet" # Valor padrão caso falhe
+      nome_rede_interna="proxynet"
   fi
 
   # --- COLETA DE DADOS ---
   while true; do
-    echo -e "Passo \e[33m1/2\e[0m 📡"
+    echo -e "Passo \e[33m1/3\e[0m 📡"
     echo -ne "\e[36mDigite o domínio para o Moltbot (ex: bot.encha.ai): \e[0m" && read -r url_moltbot
     echo ""
     
-    # Gera um token aleatório seguro para o Gateway
+    echo -e "Passo \e[33m2/3\e[0m 🧠"
+    echo -e "\e[33m(Opcional) Cole sua chave API da Anthropic (Claude) ou OpenAI.\e[0m"
+    echo -e "Se deixar vazio, você precisará configurar depois no arquivo."
+    echo -ne "\e[36mAPI Key: \e[0m" && read -r api_key_ai
+    echo ""
+
     token_gateway=$(openssl rand -hex 16)
     
-    echo -e "Passo \e[33m2/2\e[0m 🔐"
-    echo -e "\e[33mGeramos um token de segurança automático para você.\e[0m"
-    echo -e "Token: \e[97m$token_gateway\e[0m"
+    echo -e "Passo \e[33m3/3\e[0m 🔐"
+    echo -e "Geramos um token de acesso seguro para você: \e[97m$token_gateway\e[0m"
     echo ""
 
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
     echo -e "Link: \e[97m$url_moltbot\e[0m | Rede: \e[97m$nome_rede_interna\e[0m"
-    read -p $'\e[32m✅ Confirma instalação? (Y/N)\e[0m: ' confirmacao
+    read -p $'\e[32m✅ Confirma e inicia a compilação? (Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
-  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/3]\e[0m"
+  echo -e "\e[97m• BAIXANDO CÓDIGO FONTE \e[33m[1/4]\e[0m"
+  cd ~
+  # Remove instalação anterior se existir para evitar conflito
+  rm -rf moltbot_src
+  sudo apt-get install -y git > /dev/null 2>&1
+  git clone https://github.com/moltbot/moltbot.git moltbot_src
   
-  # Cria volumes necessários
+  if [ ! -d "moltbot_src" ]; then
+      echo -e "\e[41m❌ Erro ao clonar repositório. Verifique sua internet.\e[0m"
+      return
+  fi
+
+  echo -e "\e[97m• CONSTRUINDO IMAGEM DOCKER (Isso demora!) \e[33m[2/4]\e[0m"
+  cd moltbot_src
+  
+  # Constrói a imagem localmente e a taggeia como 'moltbot:local'
+  if ! sudo docker build -t moltbot:local .; then
+      echo -e "\e[41m❌ Falha na construção da imagem Docker.\e[0m"
+      cd ~
+      return
+  fi
+  cd ~
+
+  echo -e "\e[97m• PREPARANDO AMBIENTE SWARM \e[33m[3/4]\e[0m"
+  
+  # Cria volumes para persistência
   sudo docker volume create vol_moltbot_config > /dev/null 2>&1
   sudo docker volume create vol_moltbot_workspace > /dev/null 2>&1
+  sudo docker volume create vol_moltbot_share > /dev/null 2>&1
 
-  echo -e "\e[97m• CRIANDO ARQUIVO STACK \e[33m[2/3]\e[0m"
-  
+  # Define variáveis de ambiente no Stack
+  if [ -z "$api_key_ai" ]; then
+      ENV_API_KEY=""
+  else
+      # Tenta adivinhar se é Anthropic ou OpenAI pelo formato
+      if [[ "$api_key_ai" == sk-ant* ]]; then
+          ENV_API_KEY="ANTHROPIC_API_KEY=$api_key_ai"
+      else
+          ENV_API_KEY="OPENAI_API_KEY=$api_key_ai"
+      fi
+  fi
+
   cat > moltbot.yaml <<EOL
 version: "3.7"
 services:
   moltbot:
-    image: moltbot/agent:latest
+    image: moltbot:local
     environment:
       - NODE_ENV=production
       - MOLTBOT_GATEWAY_TOKEN=$token_gateway
-      # Caso queira adicionar chaves de API fixas, descomente abaixo:
-      # - ANTHROPIC_API_KEY=sk-...
-      # - OPENAI_API_KEY=sk-...
+      - PORT=18789
+      - HOST=0.0.0.0
+      - $ENV_API_KEY
     volumes:
       - vol_moltbot_config:/home/node/.clawdbot
       - vol_moltbot_workspace:/home/node/clawd
+      # Volume necessário para compartilhar arquivos com o host se necessário
+      - vol_moltbot_share:/app/share
     networks:
       - $nome_rede_interna
     deploy:
@@ -18879,8 +18920,11 @@ services:
         - "traefik.http.routers.moltbot.rule=Host(\`$url_moltbot\`)"
         - "traefik.http.routers.moltbot.entrypoints=websecure"
         - "traefik.http.routers.moltbot.tls.certresolver=letsencryptresolver"
+        # Porta oficial do Moltbot
         - "traefik.http.services.moltbot.loadbalancer.server.port=18789"
         - "traefik.docker.network=$nome_rede_interna"
+        # Configurações de Sticky Session para Websockets (importante para bots)
+        - "traefik.http.services.moltbot.loadbalancer.sticky.cookie=true"
 
 volumes:
   vol_moltbot_config:
@@ -18889,6 +18933,9 @@ volumes:
   vol_moltbot_workspace:
     external: true
     name: vol_moltbot_workspace
+  vol_moltbot_share:
+    external: true
+    name: vol_moltbot_share
 
 networks:
   $nome_rede_interna:
@@ -18896,8 +18943,9 @@ networks:
     name: $nome_rede_interna
 EOL
 
-  echo -e "\e[97m• EXECUTANDO DEPLOY \e[33m[3/3]\e[0m"
-  sudo docker stack deploy --prune --resolve-image always -c moltbot.yaml moltbot > /dev/null 2>&1
+  echo -e "\e[97m• EXECUTANDO DEPLOY \e[33m[4/4]\e[0m"
+  # --resolve-image never é CRUCIAL aqui para ele usar a imagem local que acabamos de criar
+  sudo docker stack deploy --prune --resolve-image never -c moltbot.yaml moltbot > /dev/null 2>&1
   
   if type wait_stack &> /dev/null; then wait_stack "moltbot"; else sleep 30; fi
 
@@ -18908,14 +18956,14 @@ EOL
 [ MOLTBOT ]
 URL: https://$url_moltbot
 Gateway Token: $token_gateway
+Local dos arquivos: Volumes Docker (vol_moltbot_workspace)
 EOL
   cd ..
-
+  rm moltbot.yaml
+  
   echo -e "\n\e[32m🚀 MOLTBOT INSTALADO COM SUCESSO!\e[0m"
   echo -e "Acesse: https://$url_moltbot"
-  echo -e "Seu Token: $token_gateway (Salvo em dados_vps)"
-  
-  rm moltbot.yaml
+  echo -e "Seu Token: $token_gateway"
   read -p "Pressione ENTER para voltar."
 }
 
