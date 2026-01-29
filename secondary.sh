@@ -18812,6 +18812,113 @@ wait_30_sec
 
 }
 
+ferramenta_moltbot() {
+  # Verifica recursos e limpa tela
+  if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
+  clear
+  echo -e "--- INSTALAÇÃO MOLTBOT (Agente AI) ---"
+
+  # Tenta recuperar o nome da rede interna do arquivo de dados
+  if [ -f "dados_vps/dados_vps" ]; then
+      nome_rede_interna=$(grep "Rede interna:" dados_vps/dados_vps | cut -d: -f2 | xargs)
+  else
+      nome_rede_interna="proxynet" # Valor padrão caso falhe
+  fi
+
+  # --- COLETA DE DADOS ---
+  while true; do
+    echo -e "Passo \e[33m1/2\e[0m 📡"
+    echo -ne "\e[36mDigite o domínio para o Moltbot (ex: bot.encha.ai): \e[0m" && read -r url_moltbot
+    echo ""
+    
+    # Gera um token aleatório seguro para o Gateway
+    token_gateway=$(openssl rand -hex 16)
+    
+    echo -e "Passo \e[33m2/2\e[0m 🔐"
+    echo -e "\e[33mGeramos um token de segurança automático para você.\e[0m"
+    echo -e "Token: \e[97m$token_gateway\e[0m"
+    echo ""
+
+    echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
+    echo -e "Link: \e[97m$url_moltbot\e[0m | Rede: \e[97m$nome_rede_interna\e[0m"
+    read -p $'\e[32m✅ Confirma instalação? (Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
+  done
+
+  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/3]\e[0m"
+  
+  # Cria volumes necessários
+  sudo docker volume create vol_moltbot_config > /dev/null 2>&1
+  sudo docker volume create vol_moltbot_workspace > /dev/null 2>&1
+
+  echo -e "\e[97m• CRIANDO ARQUIVO STACK \e[33m[2/3]\e[0m"
+  
+  cat > moltbot.yaml <<EOL
+version: "3.7"
+services:
+  moltbot:
+    image: moltbot/agent:latest
+    environment:
+      - NODE_ENV=production
+      - MOLTBOT_GATEWAY_TOKEN=$token_gateway
+      # Caso queira adicionar chaves de API fixas, descomente abaixo:
+      # - ANTHROPIC_API_KEY=sk-...
+      # - OPENAI_API_KEY=sk-...
+    volumes:
+      - vol_moltbot_config:/home/node/.clawdbot
+      - vol_moltbot_workspace:/home/node/clawd
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.moltbot.rule=Host(\`$url_moltbot\`)"
+        - "traefik.http.routers.moltbot.entrypoints=websecure"
+        - "traefik.http.routers.moltbot.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.moltbot.loadbalancer.server.port=18789"
+        - "traefik.docker.network=$nome_rede_interna"
+
+volumes:
+  vol_moltbot_config:
+    external: true
+    name: vol_moltbot_config
+  vol_moltbot_workspace:
+    external: true
+    name: vol_moltbot_workspace
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+EOL
+
+  echo -e "\e[97m• EXECUTANDO DEPLOY \e[33m[3/3]\e[0m"
+  sudo docker stack deploy --prune --resolve-image always -c moltbot.yaml moltbot > /dev/null 2>&1
+  
+  if type wait_stack &> /dev/null; then wait_stack "moltbot"; else sleep 30; fi
+
+  # Salva informações
+  cd dados_vps
+  cat >> dados_vps <<EOL
+
+[ MOLTBOT ]
+URL: https://$url_moltbot
+Gateway Token: $token_gateway
+EOL
+  cd ..
+
+  echo -e "\n\e[32m🚀 MOLTBOT INSTALADO COM SUCESSO!\e[0m"
+  echo -e "Acesse: https://$url_moltbot"
+  echo -e "Seu Token: $token_gateway (Salvo em dados_vps)"
+  
+  rm moltbot.yaml
+  read -p "Pressione ENTER para voltar."
+}
+
 instalar_ambiente_completo() {
   amarelo="\e[33m"
 
@@ -19252,31 +19359,29 @@ exibir_pagina1() {
 exibir_pagina2() {
     centralizar "--- MENU PRINCIPAL Página 2 de 2 ---"
     printf "\n"
-
-    # Largura da primeira coluna definida por "WiseMapping" e "Openproject" (11 caracteres). Usei 15 para dar um respiro.
     local width=15
 
     exibir_bloco_centralizado \
-        "$(printf "${amarelo_escuro}[ 43 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 62 ]${reset} - WPPConnect${reset}" "Strapi")" \
-        "$(printf "${amarelo_escuro}[ 44 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 63 ]${reset} - Browserless${reset}" "MyphpAdmin")" \
-        "$(printf "${amarelo_escuro}[ 45 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 64 ]${reset} - Frappe ERPnext${reset}" "Supabase")" \
-        "$(printf "${amarelo_escuro}[ 46 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 65 ]${reset} - Clickhouse${reset}" "NTFY")" \
-        "$(printf "${amarelo_escuro}[ 47 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 66 ]${reset} - Langfuse${reset}" "Lowcoder")" \
-        "$(printf "${amarelo_escuro}[ 48 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 67 ]${reset} - UnoAPI${reset}" "Openproject")" \
-        "$(printf "${amarelo_escuro}[ 49 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 68 ]${reset} - Quepasa API${reset}" "ZEP")" \
-        "$(printf "${amarelo_escuro}[ 50 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 69 ]${reset} - Excalidraw${reset}" "Yourls")" \
-        "$(printf "${amarelo_escuro}[ 51 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 70 ]${reset} - EasyAppointments${reset}" "WiseMapping")" \
-        "$(printf "${amarelo_escuro}[ 52 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 71 ]${reset} - Documenso${reset}" "Evo AI")" \
-        "$(printf "${amarelo_escuro}[ 53 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 72 ]${reset} - Moodle${reset}" "Keycloak")" \
-        "$(printf "${amarelo_escuro}[ 54 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 73 ]${reset} - Tooljet${reset}" "Passbolt")" \
-        "$(printf "${amarelo_escuro}[ 55 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 74 ]${reset} - Stirling PDF${reset}" "Gotenberg")" \
-        "$(printf "${amarelo_escuro}[ 56 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 75 ]${reset} - RedisInsight${reset}" "Wiki JS")" \
-        "$(printf "${amarelo_escuro}[ 57 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 76 ]${reset} - Traccar${reset}" "Azuracast")" \
-        "$(printf "${amarelo_escuro}[ 58 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 77 ]${reset} - Firecrawl${reset}" "Rustdesk")" \
-        "$(printf "${amarelo_escuro}[ 59 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 78 ]${reset} - Wuzapi${reset}" "Hoppscotch")" \
-        "$(printf "${amarelo_escuro}[ 60 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 79 ]${reset} - Krayin CRM${reset}" "Bolt")" \
-        "$(printf "${amarelo_escuro}[ 61 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" "Planka")" \
-        "$(printf "%${width}s   | ${amarelo_escuro}[ 81 ]${reset} ${cinza}- Duplicati${reset}" "")"
+        "$(printf "${amarelo_escuro}[ 43 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 63 ]${reset} - Browserless${reset}" "Strapi")" \
+        "$(printf "${amarelo_escuro}[ 44 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 64 ]${reset} - Frappe ERPnext${reset}" "MyphpAdmin")" \
+        "$(printf "${amarelo_escuro}[ 45 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 65 ]${reset} - Clickhouse${reset}" "Supabase")" \
+        "$(printf "${amarelo_escuro}[ 46 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 66 ]${reset} - Langfuse${reset}" "NTFY")" \
+        "$(printf "${amarelo_escuro}[ 47 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 67 ]${reset} - UnoAPI${reset}" "Lowcoder")" \
+        "$(printf "${amarelo_escuro}[ 48 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 68 ]${reset} - Quepasa API${reset}" "Openproject")" \
+        "$(printf "${amarelo_escuro}[ 49 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 69 ]${reset} - Excalidraw${reset}" "ZEP")" \
+        "$(printf "${amarelo_escuro}[ 50 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 70 ]${reset} - EasyAppointments${reset}" "Yourls")" \
+        "$(printf "${amarelo_escuro}[ 51 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 71 ]${reset} - Documenso${reset}" "WiseMapping")" \
+        "$(printf "${amarelo_escuro}[ 52 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 72 ]${reset} - Moodle${reset}" "Evo AI")" \
+        "$(printf "${amarelo_escuro}[ 53 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 73 ]${reset} - Tooljet${reset}" "Keycloak")" \
+        "$(printf "${amarelo_escuro}[ 54 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 74 ]${reset} - Stirling PDF${reset}" "Passbolt")" \
+        "$(printf "${amarelo_escuro}[ 55 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 75 ]${reset} - RedisInsight${reset}" "Gotenberg")" \
+        "$(printf "${amarelo_escuro}[ 56 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 76 ]${reset} - Traccar${reset}" "Wiki JS")" \
+        "$(printf "${amarelo_escuro}[ 57 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 77 ]${reset} - Firecrawl${reset}" "Azuracast")" \
+        "$(printf "${amarelo_escuro}[ 58 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 78 ]${reset} - Wuzapi${reset}" "Rustdesk")" \
+        "$(printf "${amarelo_escuro}[ 59 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 79 ]${reset} - Krayin CRM${reset}" "Hoppscotch")" \
+        "$(printf "${amarelo_escuro}[ 60 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" "Bolt")" \
+        "$(printf "${amarelo_escuro}[ 61 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 81 ]${reset} - Duplicati${reset}" "Planka")" \
+        "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Moltbot${reset}" "WPPConnect")"
 }
 
 # --- Função Principal do Menu ---
@@ -19365,6 +19470,7 @@ processar_menu_unlimited() {
     OPCOES[79]="Krayin CRM"
     OPCOES[80]="Shlink"
     OPCOES[81]="Duplicati"
+    OPCOES[82]="Moltbot"
     # outras opções
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
@@ -19933,6 +20039,12 @@ processar_menu_unlimited() {
                   ferramenta_duplicati
                 fi
                 ;;
+            82)
+              verificar "moltbot${opcao2:+_$opcao2}" && continue || echo ""
+              if verificar_docker_e_portainer_traefik; then
+                ferramenta_moltbot
+              fi
+              ;;
             98)
                 if verificar_docker_e_portainer_traefik; then
                     liberar_chatwoot
@@ -19961,96 +20073,6 @@ processar_menu_unlimited() {
         esac
     done
 }
-
-# menu_nano_inicial() {
-#     while true; do
-#         clear
-#         banner
-#         centralizar "BEM-VINDO AO INSTALADOR DO MENU NANO"
-#         printf "\n"
-#         echo -e "${cinza}Este script irá instalar e configurar o ambiente completo para você.${reset}"
-#         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
-#         exibir_bloco_centralizado \
-#             "" \
-#             "${verde}As seguintes stacks serão instaladas:${reset}" \
-#             "  ${cinza}- Traefik & Portainer (Gerenciador)${reset}" \
-#             "  ${cinza}- Evolution API (WhatsApp API)${reset}" \
-#             "  ${cinza}- N8N (Automação)${reset}" \
-#             "  ${cinza}- PostgreSQL (Banco de Dados)${reset}" \
-#             "  ${cinza}- Redis (Cache)${reset}" \
-#             ""
-#         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
-        
-#         read -p "Deseja continuar com a instalação? [Y] Sim / [N] Não / [M] Menu completo: " escolha
-
-#         case $escolha in
-#             [Yy])
-#                 instalar_ambiente_completo
-#                 # Após a instalação, podemos sair ou voltar ao menu
-#                 echo "Instalação concluída. Saindo do script."
-#                 sleep 3
-#                 exit 0
-#                 ;;
-#             [Mm])
-#                 menu_principal
-#                 ;;
-#             [Nn])
-#                 echo -e "\n${verde}Instalação cancelada. Até logo!${reset}"
-#                 sleep 1
-#                 exit 0
-#                 ;;
-#             *)
-#                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-#                 sleep 2
-#                 ;;
-#         esac
-#     done
-# }
-
-# menu_principal() {
-
-#     while true; do
-#         clear
-#         banner
-#         printf "\n"
-#         centralizar "BEM-VINDO AO SISTEMA DE DEPLOY"
-#         centralizar "Por favor, selecione um plano para continuar"
-#         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
-#         exibir_bloco_centralizado \
-#             "" \
-#             "${amarelo_escuro}[ 1 ]${reset} ${cinza}- Menu NANO${reset}" \
-#             "${amarelo_escuro}[ 2 ]${reset} ${cinza}- Menu BUSINESS${reset}" \
-#             "${amarelo_escuro}[ 3 ]${reset} ${cinza}- Menu UNLIMITED${reset}" \
-#             "" \
-#             "${amarelo_escuro}[ 4 ]${reset} ${cinza}- Sair do Script${reset}" \
-#             ""
-#         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
-        
-#         read -p "Digite a opção desejada: " escolha_plano
-
-#         case $escolha_plano in
-#             1)
-#                 menu_nano_inicial
-#                 ;;
-#             2)
-#                 processar_menu_business
-#                 ;;
-#             3)
-#                 # Esta é a sua função de menu original e complexa
-#                 processar_menu_unlimited 
-#                 ;;
-#             4)
-#                 echo -e "\n${verde}Saindo do sistema. Até logo!${reset}"
-#                 sleep 1
-#                 exit 0
-#                 ;;
-#             *)
-#                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-#                 sleep 2
-#                 ;;
-#         esac
-#     done
-# }
 
 main() {
     processar_menu_unlimited
