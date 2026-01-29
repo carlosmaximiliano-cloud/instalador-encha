@@ -18665,11 +18665,8 @@ wait_30_sec
 ferramenta_webtop() {
   clear
   echo -e "--- INSTALADOR DE LINUX (WEBTOP) - VIA API PORTAINER ---"
-  echo -e "\e[33mEsta ferramenta instalará o Linux via API para garantir controle total no Portainer.\e[0m"
 
   if ! command -v jq &> /dev/null; then
-    echo -e "\e[31mErro: O pacote 'jq' é necessário para processar JSON.\e[0m"
-    echo "Instalando jq..."
     sudo apt-get install -y jq > /dev/null 2>&1
   fi
 
@@ -18712,7 +18709,7 @@ ferramenta_webtop() {
     -d "{\"username\":\"$api_user\",\"password\":\"$api_pass\"}" | jq -r .jwt)
 
   if [[ "$JWT" == "null" || -z "$JWT" ]]; then
-    echo -e "\e[41m❌ Erro de autenticação no Portainer. Verifique senha/usuário.\e[0m"
+    echo -e "\e[41m❌ Erro de autenticação no Portainer.\e[0m"
     read -p "Enter para sair..."
     return
   fi
@@ -18726,6 +18723,8 @@ version: "3.7"
 services:
   webtop:
     image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    security_opt:
+      - seccomp:unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -18778,7 +18777,7 @@ EOL
 
   if [[ "$STACK_ID" != "null" ]]; then
     echo -e "\n\e[32m🚀 SUCESSO! Stack criada via API (Editável).\e[0m"
-    echo -e "Acesse o Portainer para editar visualmente se necessário."
+    echo -e "Acesse o Portainer para editar visualmente."
     echo -e "Linux disponível em: https://$url_linux"
     
     mkdir -p ~/dados_vps
@@ -18796,6 +18795,7 @@ EOL
 
   msg_retorno_menu
   wait_30_sec
+
 }
 
 instalar_ambiente_completo() {
