@@ -18663,139 +18663,136 @@ wait_30_sec
 }
 
 ferramenta_webtop() {
+  # Cabeçalho visual (se tiver uma função msg_webtop, pode usar aqui)
   clear
-  echo -e "--- INSTALADOR DE LINUX (WEBTOP) - VIA API PORTAINER ---"
+  echo -e "--- INSTALADOR DE LINUX (WEBTOP) ---"
 
-  if ! command -v jq &> /dev/null; then
-    sudo apt-get install -y jq > /dev/null 2>&1
-  fi
+  # Tenta pegar a rede global ou define um padrão
+  local rede_local=${nome_rede_interna:-"enchaNet"}
 
-  while true; do
-    echo -e "\n\e[1m--- DADOS DA NOVA STACK ---\e[0m"
-    DEFAULT_NET=${nome_rede_interna:-"enchaNet"}
-    echo -ne "Passo 1: Nome da rede interna (Overlay)? [Padrão: $DEFAULT_NET]: " && read -r input_rede
-    rede_interna="${input_rede:-$DEFAULT_NET}"
+  while true; do 
+    echo -e "\n📍 \e[97mPasso \e[33m1/3\e[0m"
+    echo -en "🔗 \e[33mDigite o domínio para acessar o Linux (ex: linux.encha.ai): \e[0m" && read -r url_webtop
+    echo ""
 
-    echo -ne "Passo 2: URL para acessar o Linux (ex: linux.encha.ai): " && read -r url_linux
-    echo -ne "Passo 3: Usuário do Linux (ex: admin): " && read -r user_linux
-    echo -ne "Passo 4: Senha do Linux: " && read -r pass_linux
-    
-    echo -ne "Passo 5: Nome da Stack no Portainer (ex: webtop): " && read -r nome_stack
-    nome_stack="${nome_stack:-webtop}"
+    echo -e "\n📍 \e[97mPasso \e[33m2/3\e[0m"
+    echo -e "👤 \e[33mDigite o nome de usuário para o Linux (ex: admin): \e[0m"
+    read -r user_webtop
+    echo ""
 
-    echo -e "\n\e[1m--- AUTENTICAÇÃO API PORTAINER ---\e[0m"
-    DEFAULT_PORTAINER_URL=${url_portainer:-"portainer.seudominio.com"}
-    echo -ne "URL do Portainer (sem https://): [Padrão: $DEFAULT_PORTAINER_URL]: " && read -r input_p_url
-    api_url="${input_p_url:-$DEFAULT_PORTAINER_URL}"
-    
-    DEFAULT_USER=${user_portainer:-"admin"}
-    echo -ne "Usuário Admin do Portainer [Padrão: $DEFAULT_USER]: " && read -r input_p_user
-    api_user="${input_p_user:-$DEFAULT_USER}"
-
-    echo -ne "Senha do Admin do Portainer: " && read -r api_pass
+    echo -e "\n📍 \e[97mPasso \e[33m3/3\e[0m"
+    echo -e "🔑 \e[33mDigite a senha de acesso (ex: Mudar@123): \e[0m"
+    read -r pass_webtop
+    echo ""
 
     clear
-    echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "Stack: \e[97m$nome_stack\e[0m | URL App: \e[97m$url_linux\e[0m"
-    echo -e "API Portainer: \e[97m$api_url\e[0m | User: \e[97m$api_user\e[0m"
-    read -p $'\e[32m✅ Confirma e Envia para API? (Y/N)\e[0m: ' confirmacao
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_webtop\e[0m"
+    echo -e "👤 \e[33mUsuário:\e[97m $user_webtop\e[0m"
+    echo -e "🔑 \e[33mSenha:\e[97m $pass_webtop\e[0m"
+    echo -e "📡 \e[33mRede:\e[97m $rede_local\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
-  echo -e "\e[97m• AUTENTICANDO NO PORTAINER... \e[33m[1/4]\e[0m"
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do Webtop...\e[0m"
   
-  JWT=$(curl -s -k -X POST "https://$api_url/api/auth" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$api_user\",\"password\":\"$api_pass\"}" | jq -r .jwt)
-
-  if [[ "$JWT" == "null" || -z "$JWT" ]]; then
-    echo -e "\e[41m❌ Erro de autenticação no Portainer.\e[0m"
-    read -p "Enter para sair..."
-    return
-  fi
-
-  ENDPOINT_ID=$(curl -s -k -H "Authorization: Bearer $JWT" "https://$api_url/api/endpoints" | jq '.[0].Id')
-
-  echo -e "\e[97m• GERANDO CONFIGURAÇÃO \e[33m[2/4]\e[0m"
-
-  read -r -d '' STACK_CONTENT <<EOL
+  # Gera o YAML com as configurações vitais para o Chrome (seccomp + shm)
+  cat > webtop.yaml <<EOL
 version: "3.7"
 services:
+
+# ░█░█░█▀▀░█▀▄░▀█▀░█▀█░█▀█
+# ░█▄█░█▀▀░█▀▄░░█░░█░█░█▀▀
+# ░▀░▀░▀▀▀░▀▀░░░▀░░▀▀▀░▀░░
+
   webtop:
     image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    networks:
+      - $rede_local
     security_opt:
-      - seccomp:unconfined
+      - seccomp:unconfined 
+    volumes:
+      - webtop_config:/config
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Sao_Paulo
       - SUBFOLDER=/
       - TITLE=EnchaLinux
-      - CUSTOM_USER=$user_linux
-      - PASSWORD=$pass_linux
-    volumes:
-      - webtop_data:/config
-      - /var/run/docker.sock:/var/run/docker.sock 
-    networks:
-      - $rede_interna
+      - CUSTOM_USER=${user_webtop}
+      - PASSWORD=${pass_webtop}
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.$nome_stack.rule=Host(\`$url_linux\`)"
-        - "traefik.http.routers.$nome_stack.entrypoints=websecure"
-        - "traefik.http.routers.$nome_stack.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.$nome_stack.loadbalancer.server.port=3000"
+        - "traefik.http.routers.webtop.rule=Host(\`${url_webtop}\`)"
+        - "traefik.http.services.webtop.loadbalancer.server.port=3000"
+        - "traefik.http.routers.webtop.entrypoints=websecure"
+        - "traefik.http.routers.webtop.tls.certresolver=letsencryptresolver"
     shm_size: "1gb"
 
+# ░█░█░█▀▀░█▀▄░▀█▀░█▀█░█▀█
+# ░█▄█░█▀▀░█▀▄░░█░░█░█░█▀▀
+# ░▀░▀░▀▀▀░▀▀░░░▀░░▀▀▀░▀░░
+
 volumes:
-  webtop_data:
-    name: ${nome_stack}_data
+  webtop_config:
+    external: true
+    name: webtop_config
 
 networks:
-  $rede_interna:
+  $rede_local:
     external: true
+    name: $rede_local
 EOL
 
-  echo -e "\e[97m• ENVIANDO PARA API DO PORTAINER \e[33m[3/4]\e[0m"
-
-  JSON_PAYLOAD=$(jq -n \
-                  --arg name "$nome_stack" \
-                  --arg file "$STACK_CONTENT" \
-                  --argjson env "[]" \
-                  '{name: $name, SwarmID: "primary", StackFileContent: $file, Env: $env, type: 1, method: "string"}')
-
-  RESPONSE=$(curl -s -k -X POST "https://$api_url/api/stacks?type=1&method=string&endpointId=$ENDPOINT_ID" \
-    -H "Authorization: Bearer $JWT" \
-    -H "Content-Type: application/json" \
-    -d "$JSON_PAYLOAD")
-
-  echo -e "\e[97m• FINALIZANDO \e[33m[4/4]\e[0m"
+  # --- AQUI ESTÁ A MÁGICA ---
+  # Define o nome da stack e chama sua função de integração com Portainer
+  STACK_NAME="webtop"
   
-  STACK_ID=$(echo "$RESPONSE" | jq -r .Id)
-
-  if [[ "$STACK_ID" != "null" ]]; then
-    echo -e "\n\e[32m🚀 SUCESSO! Stack criada via API (Editável).\e[0m"
-    echo -e "Acesse o Portainer para editar visualmente."
-    echo -e "Linux disponível em: https://$url_linux"
-    
-    mkdir -p ~/dados_vps
-    cat >> ~/dados_vps/dados_webtop.txt <<EOL
-[ LINUX WEBTOP - $nome_stack ]
-URL: https://$url_linux
-User: $user_linux
-Pass: $pass_linux
-Modo: API Portainer (Editável)
-EOL
+  # Verifica se a função existe antes de chamar, só por segurança
+  if type stack_editavel &> /dev/null; then
+      stack_editavel
   else
-    echo -e "\n\e[41m⚠️ ERRO AO CRIAR STACK NA API\e[0m"
-    echo "Resposta do servidor: $RESPONSE"
+      echo -e "\e[41mFunção 'stack_editavel' não encontrada. Fazendo deploy manual...\e[0m"
+      docker stack deploy -c webtop.yaml webtop
   fi
 
-  msg_retorno_menu
-  wait_30_sec
+  echo -e "\n\e[97m• VERIFICANDO SERVIÇO...\e[0m"
+  echo ""
 
+  # Comandos de suporte que você usa
+  if type pull &> /dev/null; then pull lscr.io/linuxserver/webtop:ubuntu-xfce; fi
+  if type wait_stack &> /dev/null; then wait_stack "webtop_webtop"; else sleep 10; fi
+
+  # Salva os dados
+  mkdir -p /root/dados_vps
+  cat > /root/dados_vps/dados_webtop <<EOL
+[ WEBTOP LINUX ]
+
+Dominio: https://$url_webtop
+Usuario: $user_webtop
+Senha: $pass_webtop
+Config: /var/lib/docker/volumes/webtop_config/_data
+EOL
+
+  # Finalização visual igual ao Duplicati
+  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; fi
+  echo -e "\e[32m[ WEBTOP LINUX ]\e[0m\n"
+  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_webtop\e[0m"
+  echo -e "\e[33m👤 Login:\e[97m $user_webtop\e[0m"
+  echo -e "\e[33m🔑 Senha:\e[97m $pass_webtop\e[0m"
+  
+  if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; else read -p "Enter para sair..."; fi
 }
 
 instalar_ambiente_completo() {
