@@ -17668,153 +17668,6 @@ exibir_bloco_centralizado() {
     done
 }
 
-
-# exibir_menu_nano () {
-#     centralizar "--- NANO ---"
-#     printf "\n"
-#     exibir_bloco_centralizado \
-#         "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer${reset}" \
-#         "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API${reset}" \
-#         "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N${reset}" \
-#         "" \
-#         "${amarelo_escuro}[ V ]${reset}  ${cinza}- Voltar ao Menu Principal${reset}"
-# }
-
-# processar_menu_nano() {
-#     while true; do
-#         clear
-#         banner
-#         exibir_menu_nano
-#         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-#         read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_nano
-
-#         case $opcao_nano in
-#             01|1)
-#                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
-#                 ferramenta_traefik_e_portainer
-#                 ;;
-#             02|2)
-#                 verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="evolution${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_evolution "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_evolution"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             03|3)
-#                 verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="n8n${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_n8n "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_n8n"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             99)
-#                 verificar_status_servicos
-#                 echo "Aperte ENTER para retornar ao menu de ferramentas"
-#                 read
-#                 sleep 2
-#                 ;;
-#             100)
-#                 echo -e "\n${verde}Saindo do menu...${reset}"
-#                 sleep 1
-#                 exit 0
-#                 ;;
-#             V|v)
-#                 echo "Voltando ao menu principal..."
-#                 sleep 1
-#                 return
-#                 ;;
-#             *)
-#                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-#                 sleep 2
-#                 ;;
-#         esac
-#     done
-# }
-
-
-# instalar_plano_nano_automatico() {
-#     clear
-#     banner
-#     centralizar "--- INSTALANDO STACKS DO PLANO NANO ---"
-#     printf "\n"
-    
-#     # Variável para controlar se podemos prosseguir
-#     local pre_requisitos_ok=true
-
-#     # --- 1. Instalação do Traefik & Portainer ---
-#     echo -e "${amarelo_escuro}[ 1/3 ]${reset} ${cinza}Verificando e instalando Traefik & Portainer...${reset}"
-#     if verificar_stack "portainer${opcao2:+_$opcao2}"; then
-#         echo -e "${verde}✔ Traefik & Portainer já estão instalados.${reset}"
-#     else
-#         ferramenta_traefik_e_portainer
-#         # Verifica se a instalação foi bem-sucedida antes de continuar
-#         if ! verificar_docker_e_portainer_traefik; then
-#             echo -e "${vermelho}❌ Falha na instalação ou configuração do Traefik & Portainer. Abortando as outras instalações.${reset}"
-#             pre_requisitos_ok=false
-#         else
-#              echo -e "${verde}✔ Traefik & Portainer instalados com sucesso.${reset}"
-#         fi
-#     fi
-#     printf "\n"
-
-#     # --- 2. Instalação da Evolution API ---
-#     if [ "$pre_requisitos_ok" = true ]; then
-#         echo -e "${amarelo_escuro}[ 2/3 ]${reset} ${cinza}Verificando e instalando Evolution API...${reset}"
-#         if verificar_stack "evolution${opcao2:+_$opcao2}"; then
-#             echo -e "${verde}✔ Evolution API já está instalada.${reset}"
-#         else
-#             if verificar_docker_e_portainer_traefik; then
-#                 STACK_NAME="evolution${opcao2:+_$opcao2}"
-#                 if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                     ferramenta_evolution "$opcao2"
-#                 else
-#                     APP_ENCHA="ferramenta_evolution"
-#                     verificar_arquivo
-#                 fi
-#                 echo -e "${verde}✔ Evolution API instalada com sucesso.${reset}"
-#             else
-#                 echo -e "${vermelho}❌ Pré-requisitos (Traefik/Portainer) não atendidos. Pulando Evolution API.${reset}"
-#             fi
-#         fi
-#     fi
-#     printf "\n"
-
-#     # --- 3. Instalação do N8N ---
-#     if [ "$pre_requisitos_ok" = true ]; then
-#         echo -e "${amarelo_escuro}[ 3/3 ]${reset} ${cinza}Verificando e instalando N8N...${reset}"
-#         if verificar_stack "n8n${opcao2:+_$opcao2}"; then
-#             echo -e "${verde}✔ N8N já está instalado.${reset}"
-#         else
-#             if verificar_docker_e_portainer_traefik; then
-#                 STACK_NAME="n8n${opcao2:+_$opcao2}"
-#                 if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                     ferramenta_n8n "$opcao2"
-#                 else
-#                     APP_ENCHA="ferramenta_n8n"
-#                     verificar_arquivo
-#                 fi
-#                  echo -e "${verde}✔ N8N instalado com sucesso.${reset}"
-#             else
-#                 echo -e "${vermelho}❌ Pré-requisitos (Traefik/Portainer) não atendidos. Pulando N8N.${reset}"
-#             fi
-#         fi
-#     fi
-    
-#     echo -e "\n\n${verde}Instalação do Plano NANO concluída!${reset}"
-#     read -p "Pressione ENTER para voltar ao menu principal..."
-# }
-
-
 instalar_traefik_e_portainer() {
   
   # --- RECEBIMENTO DE PARÂMETROS ---
@@ -18772,9 +18625,6 @@ fi
 STACK_NAME="evolution"
 stack_editavel 
 
-
-
-
 sleep 10
 
 ## Mensagem de Passo
@@ -18812,53 +18662,66 @@ wait_30_sec
 
 }
 
-
 ferramenta_webtop() {
-  # Limpa tela e cabeçalho
   clear
-  echo -e "--- INSTALADOR DE LINUX (WEBTOP) ---"
-  echo -e "\e[33mEsta ferramenta instalará um Linux Ubuntu XFCE com interface gráfica via Browser.\e[0m"
+  echo -e "--- INSTALADOR DE LINUX (WEBTOP) - VIA API PORTAINER ---"
+  echo -e "\e[33mEsta ferramenta instalará o Linux via API para garantir controle total no Portainer.\e[0m"
 
-  # --- COLETA DE DADOS ---
+  if ! command -v jq &> /dev/null; then
+    echo -e "\e[31mErro: O pacote 'jq' é necessário para processar JSON.\e[0m"
+    echo "Instalando jq..."
+    sudo apt-get install -y jq > /dev/null 2>&1
+  fi
+
   while true; do
-    echo -e "Passo \e[33m1/5\e[0m 🌐"
-    # Tenta adivinhar a rede se o usuário já rodou o script anterior na mesma sessão, senão pergunta
+    echo -e "\n\e[1m--- DADOS DA NOVA STACK ---\e[0m"
     DEFAULT_NET=${nome_rede_interna:-"enchaNet"}
-    echo -ne "\e[36mQual o nome da rede interna (Overlay) do Traefik? [Padrão: $DEFAULT_NET]: \e[0m" && read -r input_rede
+    echo -ne "Passo 1: Nome da rede interna (Overlay)? [Padrão: $DEFAULT_NET]: " && read -r input_rede
     rede_interna="${input_rede:-$DEFAULT_NET}"
-    echo ""
 
-    echo -e "Passo \e[33m2/5\e[0m 🔗"
-    echo -ne "\e[36mDigite a URL completa para acessar o Linux (ex: linux.encha.ai): \e[0m" && read -r url_linux
-    echo ""
-
-    echo -e "Passo \e[33m3/5\e[0m 👤"
-    echo -ne "\e[36mDefina o usuário do Linux (ex: admin): \e[0m" && read -r user_linux
-    echo ""
-
-    echo -e "Passo \e[33m4/5\e[0m 🔐"
-    echo -ne "\e[36mDefina a senha de acesso: \e[0m" && read -r pass_linux
-    echo ""
-
-    echo -e "Passo \e[33m5/5\e[0m 💾"
-    echo -ne "\e[36mNome da Stack no Portainer (ex: webtop): \e[0m" && read -r nome_stack
+    echo -ne "Passo 2: URL para acessar o Linux (ex: linux.encha.ai): " && read -r url_linux
+    echo -ne "Passo 3: Usuário do Linux (ex: admin): " && read -r user_linux
+    echo -ne "Passo 4: Senha do Linux: " && read -r pass_linux
+    
+    echo -ne "Passo 5: Nome da Stack no Portainer (ex: webtop): " && read -r nome_stack
     nome_stack="${nome_stack:-webtop}"
-    echo ""
+
+    echo -e "\n\e[1m--- AUTENTICAÇÃO API PORTAINER ---\e[0m"
+    DEFAULT_PORTAINER_URL=${url_portainer:-"portainer.seudominio.com"}
+    echo -ne "URL do Portainer (sem https://): [Padrão: $DEFAULT_PORTAINER_URL]: " && read -r input_p_url
+    api_url="${input_p_url:-$DEFAULT_PORTAINER_URL}"
+    
+    DEFAULT_USER=${user_portainer:-"admin"}
+    echo -ne "Usuário Admin do Portainer [Padrão: $DEFAULT_USER]: " && read -r input_p_user
+    api_user="${input_p_user:-$DEFAULT_USER}"
+
+    echo -ne "Senha do Admin do Portainer: " && read -r api_pass
 
     clear
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "Rede Traefik: \e[97m$rede_interna\e[0m"
-    echo -e "Link de Acesso: \e[97m$url_linux\e[0m"
-    echo -e "Usuário/Pass: \e[97m$user_linux / ****\e[0m"
-    read -p $'\e[32m✅ Confirma e Instala? (Y/N)\e[0m: ' confirmacao
+    echo -e "Stack: \e[97m$nome_stack\e[0m | URL App: \e[97m$url_linux\e[0m"
+    echo -e "API Portainer: \e[97m$api_url\e[0m | User: \e[97m$api_user\e[0m"
+    read -p $'\e[32m✅ Confirma e Envia para API? (Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
-  # --- GERAÇÃO DO ARQUIVO STACK ---
-  echo -e "\e[97m• GERANDO ARQUIVO STACK \e[33m[1/3]\e[0m"
+  echo -e "\e[97m• AUTENTICANDO NO PORTAINER... \e[33m[1/4]\e[0m"
+  
+  JWT=$(curl -s -k -X POST "https://$api_url/api/auth" \
+    -H "Content-Type: application/json" \
+    -d "{\"username\":\"$api_user\",\"password\":\"$api_pass\"}" | jq -r .jwt)
 
-  # Nota: Em Swarm, as labels do Traefik ficam dentro de 'deploy:'
-  cat > webtop.yaml <<EOL
+  if [[ "$JWT" == "null" || -z "$JWT" ]]; then
+    echo -e "\e[41m❌ Erro de autenticação no Portainer. Verifique senha/usuário.\e[0m"
+    read -p "Enter para sair..."
+    return
+  fi
+
+  ENDPOINT_ID=$(curl -s -k -H "Authorization: Bearer $JWT" "https://$api_url/api/endpoints" | jq '.[0].Id')
+
+  echo -e "\e[97m• GERANDO CONFIGURAÇÃO \e[33m[2/4]\e[0m"
+
+  read -r -d '' STACK_CONTENT <<EOL
 version: "3.7"
 services:
   webtop:
@@ -18873,7 +18736,7 @@ services:
       - PASSWORD=$pass_linux
     volumes:
       - webtop_data:/config
-      - /var/run/docker.sock:/var/run/docker.sock # Opcional: permite controlar docker de dentro
+      - /var/run/docker.sock:/var/run/docker.sock 
     networks:
       - $rede_interna
     deploy:
@@ -18885,7 +18748,7 @@ services:
         - "traefik.http.routers.$nome_stack.entrypoints=websecure"
         - "traefik.http.routers.$nome_stack.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.$nome_stack.loadbalancer.server.port=3000"
-    shm_size: "1gb" # Importante para estabilidade do navegador interno
+    shm_size: "1gb"
 
 volumes:
   webtop_data:
@@ -18896,38 +18759,49 @@ networks:
     external: true
 EOL
 
-  echo -e "\e[97m• DEPLOY NO SWARM \e[33m[2/3]\e[0m"
-  # Deploy usando stack deploy (igual ao Portainer)
-  sudo docker stack deploy --prune --resolve-image always -c webtop.yaml "$nome_stack" > /dev/null 2>&1
+  echo -e "\e[97m• ENVIANDO PARA API DO PORTAINER \e[33m[3/4]\e[0m"
 
-  echo -e "\e[97m• AGUARDANDO INICIALIZAÇÃO \e[33m[3/3]\e[0m"
-  # Função simples de wait, caso não tenha a sua wait_stack carregada
-  sleep 10
+  JSON_PAYLOAD=$(jq -n \
+                  --arg name "$nome_stack" \
+                  --arg file "$STACK_CONTENT" \
+                  --argjson env "[]" \
+                  '{name: $name, SwarmID: "primary", StackFileContent: $file, Env: $env, type: 1, method: "string"}')
+
+  RESPONSE=$(curl -s -k -X POST "https://$api_url/api/stacks?type=1&method=string&endpointId=$ENDPOINT_ID" \
+    -H "Authorization: Bearer $JWT" \
+    -H "Content-Type: application/json" \
+    -d "$JSON_PAYLOAD")
+
+  echo -e "\e[97m• FINALIZANDO \e[33m[4/4]\e[0m"
   
-  # --- FINALIZAÇÃO ---
-  echo -e "\n\e[32m🚀 LINUX INSTALADO COM SUCESSO!\e[0m"
-  echo -e "Acesse em: https://$url_linux"
-  echo -e "Login: $user_linux | Senha: (a que você definiu)"
-  
-  # Opcional: salvar credenciais no arquivo de dados
-  mkdir -p ~/dados_vps
-  cat >> ~/dados_vps/dados_webtop.txt <<EOL
+  STACK_ID=$(echo "$RESPONSE" | jq -r .Id)
+
+  if [[ "$STACK_ID" != "null" ]]; then
+    echo -e "\n\e[32m🚀 SUCESSO! Stack criada via API (Editável).\e[0m"
+    echo -e "Acesse o Portainer para editar visualmente se necessário."
+    echo -e "Linux disponível em: https://$url_linux"
+    
+    mkdir -p ~/dados_vps
+    cat >> ~/dados_vps/dados_webtop.txt <<EOL
 [ LINUX WEBTOP - $nome_stack ]
 URL: https://$url_linux
 User: $user_linux
 Pass: $pass_linux
+Modo: API Portainer (Editável)
 EOL
+  else
+    echo -e "\n\e[41m⚠️ ERRO AO CRIAR STACK NA API\e[0m"
+    echo "Resposta do servidor: $RESPONSE"
+  fi
 
-  read -p "Pressione ENTER para voltar..."
+  msg_retorno_menu
+  wait_30_sec
 }
 
 instalar_ambiente_completo() {
   amarelo="\e[33m"
 
   while true; do
-    # =================================================================
-    # DADOS GERAIS E PORTAINER
-    # =================================================================
     clear
     msg_traefik_portainer
     echo -e "Passo \e[33m1/6\e[0m 📡"
@@ -18945,7 +18819,6 @@ instalar_ambiente_completo() {
       echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
       echo ""
 
-      # Supondo que você tenha uma função 'validar_senha' em seu script
       if validar_senha "$pass_portainer" 12; then
         break
       fi
@@ -19040,7 +18913,6 @@ instalar_ambiente_completo() {
     echo ""
     echo -e "\e[33m================================================================\e[0m"
 
-    # Pergunta ao usuário se as informações estão corretas
     echo -ne "\e[36mAs informações estão corretas? Deseja iniciar a instalação? (Y/n): \e[0m" && read -r confirmacao
 
     if [[ "$confirmacao" =~ ^[Yy]$ ]] || [[ -z "$confirmacao" ]]; then
@@ -19109,222 +18981,6 @@ instalar_ambiente_completo() {
   menu_principal
   
 }
-
-# exibir_menu_business () {
-
-#     centralizar "--- BUSINESS ---"
-#     printf "\n"
-#     exibir_bloco_centralizado \
-#         "${amarelo_escuro}[ 01 ]${reset} ${cinza}- Traefik & Portainer     | ${amarelo_escuro}[ 11 ]${reset} - Grafana + Prometeus + Advisor${reset}" \
-#         "${amarelo_escuro}[ 02 ]${reset} ${cinza}- Evolution API           | ${amarelo_escuro}[ 12 ]${reset} - PgAdmin 4${reset}" \
-#         "${amarelo_escuro}[ 03 ]${reset} ${cinza}- N8N                     | ${amarelo_escuro}[ 13 ]${reset} - Minio${reset}" \
-#         "${amarelo_escuro}[ 04 ]${reset} ${cinza}- N8N Formação Encha      | ${amarelo_escuro}[ 14 ]${reset} - Mautic${reset}" \
-#         "${amarelo_escuro}[ 05 ]${reset} ${cinza}- RabbitMQ                | ${amarelo_escuro}[ 15 ]${reset} - Qdrant${reset}" \
-#         "${amarelo_escuro}[ 06 ]${reset} ${cinza}- Baserow                 | ${amarelo_escuro}[ 16 ]${reset} - Duplicati${reset}" \
-#         "${amarelo_escuro}[ 07 ]${reset} ${cinza}- Directus                | ${amarelo_escuro}[ 17 ]${reset} - Easyapointments${reset}" \
-#         "${amarelo_escuro}[ 08 ]${reset} ${cinza}- Supabase                | ${amarelo_escuro}[ 18 ]${reset} - RedisInsight${reset}" \
-#         "${amarelo_escuro}[ 09 ]${reset} ${cinza}- Odoo                    | ${amarelo_escuro}[ 19 ]${reset} - Stirling PDF${reset}" \
-#         "${amarelo_escuro}[ 10 ]${reset} ${cinza}- Chatwoot${reset}"
-
-#     echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
-#     printf "      ${amarelo_escuro}[ 98 ]${reset} - %-22s | ${amarelo_escuro}[ 99 ]${reset} - %-22s | ${amarelo_escuro}[ V ]${reset}  - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
-#     echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-
-# }
-
-
-# processar_menu_business() {
-#     declare -A OPCOES
-#     OPCOES[98]="Liberar Chatwoot"
-#     OPCOES[99]="Verificar status"
-#     OPCOES[100]="Voltar ao Menu"
-
-#     while true; do
-#         clear
-#         banner
-#         exibir_menu_business
-
-#         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
-#         read -p "Digite o NÚMERO da opção desejada ou [V] para voltar: " opcao_business
-
-#         case $opcao_business in
-#             01|1)
-#                 verificar_stack "portainer${opcao2:+_$opcao2}" && continue || echo ""
-#                 ferramenta_traefik_e_portainer
-#                 ;;
-#             02|2)
-#                 verificar_stack "evolution${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="evolution${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_evolution "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_evolution"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             03|3)
-#                 verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="n8n${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_n8n "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_n8n"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             04|4)
-#                 verificar_stack "n8n_formacao_encha${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="n8n_formacao_encha${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_n8n_formacao_encha "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_n8n_formacao_encha"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             05|5) 
-#                 verificar_stack "rabbitmq" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_rabbitmq
-#                 fi
-#                 ;;
-#             06|6) 
-#                 verificar_stack "baserow" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_baserow
-#                 fi
-#                 ;;
-#             07|7) 
-#                 verificar_stack "directus${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik && verificar_minio; then
-#                     STACK_NAME="directus${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_directus "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_directus"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             08|8) 
-#                 verificar_stack "supabase${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_supabase
-#                 fi
-#                 ;;
-#             09|9) 
-#                 verificar_stack "odoo${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="odoo${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_odoo "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_odoo"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             10) 
-#                 verificar_stack "chatwoot${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="chatwoot${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_chatwoot "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_chatwoot"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             11) 
-#                 verificar_stack "monitor" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_monitor
-#                 fi
-#                 ;;
-#             12) 
-#                 verificar_stack "pgadmin" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_pgadmin
-#                 fi
-#                 ;;
-#             13) 
-#                 verificar_stack "minio${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     STACK_NAME="minio${opcao2:+_$opcao2}"
-#                     if grep -q "Token: .\+" /root/dados_vps/dados_portainer; then
-#                         ferramenta_minio "$opcao2"
-#                     else
-#                         APP_ENCHA="ferramenta_minio"
-#                         verificar_arquivo
-#                     fi
-#                 fi
-#                 ;;
-#             14) 
-#                 verificar_stack "mautic" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_mautic
-#                 fi
-#                 ;;
-#             15) 
-#                 verificar_stack "qdrant" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_qdrant
-#                 fi
-#                 ;;
-#             16) 
-#                 verificar "duplicati${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_duplicati
-#                 fi
-#                 ;;
-#             17) 
-#                 verificar_stack "easyappointments${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_easyappointments
-#                 fi
-#                 ;;
-#             18) 
-#                 verificar_stack "redisinsight${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_redisinsight
-#                 fi
-#                 ;;
-#             19) 
-#                 verificar_stack "stirling${opcao2:+_$opcao2}" && continue || echo ""
-#                 if verificar_docker_e_portainer_traefik; then
-#                     ferramenta_stirling
-#                 fi
-#                 ;;
-#             98)
-#                 if verificar_docker_e_portainer_traefik; then
-#                     liberar_chatwoot
-#                 fi
-#                 ;;
-#             99)
-#                 verificar_status_servicos
-#                 echo "Aperte ENTER para retornar ao menu de ferramentas"
-#                 read
-#                 sleep 2
-#                 ;;
-#             V|v)
-#                 echo "Voltando ao menu principal..."
-#                 sleep 1
-#                 return
-#                 ;;
-#             *)
-#                 echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
-#                 sleep 2
-#                 ;;
-#         esac
-#     done
-# }
 
 exibir_pagina1() {
     centralizar "--- MENU PRINCIPAL Página 1 de 2 ---"
