@@ -2158,7 +2158,7 @@ services:
       placement:
         constraints: [node.role == manager]
       labels:
-        - "traefik.enable=true"
+        - "traefik.enable=false"
         - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
         - "traefik.http.middlewares.redirect-https.redirectscheme.permanent=true"
         - "traefik.http.routers.http-catchall.rule=Host(\`{host:.+}\`)"
@@ -2221,7 +2221,7 @@ services:
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
         - "traefik.http.routers.portainer.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.portainer.service=portainer"
-        - "traefik.docker.network=$nome_rede_interna"
+        - "traefik.swarm.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
 
 volumes:
