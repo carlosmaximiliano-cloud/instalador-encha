@@ -18816,8 +18816,8 @@ ferramenta_moltbot() {
   # Verifica recursos
   if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
   clear
-  echo -e "--- INSTALAÇÃO MOLTBOT (Versão Build Local) ---"
-  echo -e "\e[33mNota: O Moltbot exige compilação local. Isso pode levar alguns minutos.\e[0m"
+  echo -e "--- INSTALAÇÃO MOLTBOT + CHROME REMOTO ---"
+  echo -e "\e[33mNecessário para manter sessões (Instagram/WhatsApp) logadas.\e[0m"
 
   # Recupera rede interna
   if [ -f "dados_vps/dados_vps" ]; then
@@ -18828,44 +18828,51 @@ ferramenta_moltbot() {
 
   # --- COLETA DE DADOS ---
   while true; do
-    echo -e "Passo \e[33m1/3\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Moltbot (ex: bot.encha.ai): \e[0m" && read -r url_moltbot
+    echo -e "Passo \e[33m1/4\e[0m 📡"
+    echo -ne "\e[36mDigite o domínio para o Painel Moltbot (ex: bot.encha.ai): \e[0m" && read -r url_moltbot
     echo ""
     
-    echo -e "Passo \e[33m2/3\e[0m 🧠"
-    echo -e "\e[33m(Opcional) Cole sua chave API da Anthropic (Claude) ou OpenAI.\e[0m"
-    echo -e "Se deixar vazio, você precisará configurar depois no arquivo."
+    echo -e "Passo \e[33m2/4\e[0m 🖥️"
+    echo -e "\e[33mPrecisamos de um link para você acessar o navegador e logar no Instagram.\e[0m"
+    echo -ne "\e[36mDigite o domínio para o Chrome (ex: chrome.encha.ai): \e[0m" && read -r url_chrome
+    echo ""
+
+    echo -e "Passo \e[33m3/4\e[0m 🧠"
+    echo -e "\e[33m(Opcional) Chave API (Anthropic/OpenAI).\e[0m"
     echo -ne "\e[36mAPI Key: \e[0m" && read -r api_key_ai
     echo ""
 
     token_gateway=$(openssl rand -hex 16)
     
-    echo -e "Passo \e[33m3/3\e[0m 🔐"
-    echo -e "Geramos um token de acesso seguro para você: \e[97m$token_gateway\e[0m"
+    echo -e "Passo \e[33m4/4\e[0m 🔐"
+    echo -e "Token de acesso gerado: \e[97m$token_gateway\e[0m"
     echo ""
 
     echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-    echo -e "Link: \e[97m$url_moltbot\e[0m | Rede: \e[97m$nome_rede_interna\e[0m"
+    echo -e "Bot: \e[97m$url_moltbot\e[0m"
+    echo -e "Chrome: \e[97m$url_chrome\e[0m"
+    echo -e "Rede: \e[97m$nome_rede_interna\e[0m"
     read -p $'\e[32m✅ Confirma e inicia a compilação? (Y/N)\e[0m: ' confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
-  echo -e "\e[97m• BAIXANDO CÓDIGO FONTE \e[33m[1/4]\e[0m"
+  echo -e "\e[97m• BAIXANDO CÓDIGO FONTE \e[33m[1/5]\e[0m"
   cd ~
-  # Remove instalação anterior se existir para evitar conflito
   rm -rf moltbot_src
-  sudo apt-get install -y git > /dev/null 2>&1
+  # Instala git se não tiver
+  if ! command -v git &> /dev/null; then sudo apt-get install -y git > /dev/null 2>&1; fi
+  
   git clone https://github.com/moltbot/moltbot.git moltbot_src
   
   if [ ! -d "moltbot_src" ]; then
-      echo -e "\e[41m❌ Erro ao clonar repositório. Verifique sua internet.\e[0m"
+      echo -e "\e[41m❌ Erro ao clonar repositório.\e[0m"
       return
   fi
 
-  echo -e "\e[97m• CONSTRUINDO IMAGEM DOCKER (Isso demora!) \e[33m[2/4]\e[0m"
+  echo -e "\e[97m• CONSTRUINDO IMAGEM LOCAL \e[33m[2/5]\e[0m"
   cd moltbot_src
   
-  # Constrói a imagem localmente e a taggeia como 'moltbot:local'
+  # Build da imagem base que será usada pelo Gateway e CLI
   if ! sudo docker build -t moltbot:local .; then
       echo -e "\e[41m❌ Falha na construção da imagem Docker.\e[0m"
       cd ~
@@ -18873,18 +18880,18 @@ ferramenta_moltbot() {
   fi
   cd ~
 
-  echo -e "\e[97m• PREPARANDO AMBIENTE SWARM \e[33m[3/4]\e[0m"
+  echo -e "\e[97m• PREPARANDO VOLUMES \e[33m[3/5]\e[0m"
   
-  # Cria volumes para persistência
+  # Volumes do Moltbot
   sudo docker volume create vol_moltbot_config > /dev/null 2>&1
   sudo docker volume create vol_moltbot_workspace > /dev/null 2>&1
-  sudo docker volume create vol_moltbot_share > /dev/null 2>&1
+  # Volume CRÍTICO: Onde os cookies do Chrome ficam salvos
+  sudo docker volume create vol_chrome_data > /dev/null 2>&1
 
-  # Define variáveis de ambiente no Stack
+  # Define variáveis de ambiente
   if [ -z "$api_key_ai" ]; then
       ENV_API_KEY=""
   else
-      # Tenta adivinhar se é Anthropic ou OpenAI pelo formato
       if [[ "$api_key_ai" == sk-ant* ]]; then
           ENV_API_KEY="ANTHROPIC_API_KEY=$api_key_ai"
       else
@@ -18895,21 +18902,22 @@ ferramenta_moltbot() {
   cat > moltbot.yaml <<EOL
 version: "3.7"
 services:
-  moltbot:
+  # --- O CÉREBRO (API) ---
+  moltbot-gateway:
     image: moltbot:local
     environment:
       - NODE_ENV=production
-      - MOLTBOT_GATEWAY_TOKEN=$token_gateway
+      - CLAWDBOT_GATEWAY_TOKEN=$token_gateway
       - PORT=18789
-      - HOST=0.0.0.0
       - $ENV_API_KEY
+      # Aponta para o Chrome na rede interna
+      - PUPPETEER_WS_ENDPOINT=ws://chrome:3000
     volumes:
       - vol_moltbot_config:/home/node/.clawdbot
       - vol_moltbot_workspace:/home/node/clawd
-      # Volume necessário para compartilhar arquivos com o host se necessário
-      - vol_moltbot_share:/app/share
     networks:
       - $nome_rede_interna
+    command: ["node", "dist/index.js", "gateway", "--port", "18789"]
     deploy:
       mode: replicated
       replicas: 1
@@ -18920,11 +18928,59 @@ services:
         - "traefik.http.routers.moltbot.rule=Host(\`$url_moltbot\`)"
         - "traefik.http.routers.moltbot.entrypoints=websecure"
         - "traefik.http.routers.moltbot.tls.certresolver=letsencryptresolver"
-        # Porta oficial do Moltbot
         - "traefik.http.services.moltbot.loadbalancer.server.port=18789"
         - "traefik.docker.network=$nome_rede_interna"
-        # Configurações de Sticky Session para Websockets (importante para bots)
-        - "traefik.http.services.moltbot.loadbalancer.sticky.cookie=true"
+
+  # --- O AGENTE (CLI) ---
+  moltbot-cli:
+    image: moltbot:local
+    environment:
+      - NODE_ENV=production
+      - CLAWDBOT_GATEWAY_TOKEN=$token_gateway
+      - $ENV_API_KEY
+      # Conecta no gateway pela rede interna
+      - CLAWDBOT_GATEWAY_URL=http://moltbot-gateway:18789
+    volumes:
+      - vol_moltbot_config:/home/node/.clawdbot
+      - vol_moltbot_workspace:/home/node/clawd
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+  # --- O NAVEGADOR VISUAL (CHROME) ---
+  chrome:
+    image: lscr.io/linuxserver/chromium:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - CHROME_CLI=https://google.com
+    volumes:
+      - vol_chrome_data:/config
+    networks:
+      - $nome_rede_interna
+    ports:
+      - "3000"
+      - "3001"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.chrome.rule=Host(\`$url_chrome\`)"
+        - "traefik.http.routers.chrome.entrypoints=websecure"
+        - "traefik.http.routers.chrome.tls.certresolver=letsencryptresolver"
+        # Porta 3000 é a interface web do LinuxServer (KasmVNC)
+        - "traefik.http.services.chrome.loadbalancer.server.port=3000"
+        - "traefik.docker.network=$nome_rede_interna"
+        # Autenticação básica para proteger seu navegador (User: admin / Senha: password)
+        # Recomendo configurar middleware de auth aqui se possível
 
 volumes:
   vol_moltbot_config:
@@ -18933,9 +18989,9 @@ volumes:
   vol_moltbot_workspace:
     external: true
     name: vol_moltbot_workspace
-  vol_moltbot_share:
+  vol_chrome_data:
     external: true
-    name: vol_moltbot_share
+    name: vol_chrome_data
 
 networks:
   $nome_rede_interna:
@@ -18943,8 +18999,7 @@ networks:
     name: $nome_rede_interna
 EOL
 
-  echo -e "\e[97m• EXECUTANDO DEPLOY \e[33m[4/4]\e[0m"
-  # --resolve-image never é CRUCIAL aqui para ele usar a imagem local que acabamos de criar
+  echo -e "\e[97m• EXECUTANDO DEPLOY DA STACK COMPLETA \e[33m[4/5]\e[0m"
   sudo docker stack deploy --prune --resolve-image never -c moltbot.yaml moltbot > /dev/null 2>&1
   
   if type wait_stack &> /dev/null; then wait_stack "moltbot"; else sleep 30; fi
@@ -18954,16 +19009,20 @@ EOL
   cat >> dados_vps <<EOL
 
 [ MOLTBOT ]
-URL: https://$url_moltbot
+Painel AI: https://$url_moltbot
+Navegador Remoto: https://$url_chrome
 Gateway Token: $token_gateway
-Local dos arquivos: Volumes Docker (vol_moltbot_workspace)
+Obs: Acesse o Navegador Remoto para logar no Instagram/Email.
 EOL
   cd ..
   rm moltbot.yaml
   
-  echo -e "\n\e[32m🚀 MOLTBOT INSTALADO COM SUCESSO!\e[0m"
-  echo -e "Acesse: https://$url_moltbot"
-  echo -e "Seu Token: $token_gateway"
+  echo -e "\n\e[32m🚀 INSTALAÇÃO CONCLUÍDA!\e[0m"
+  echo -e "1. Acesse \e[97mhttps://$url_chrome\e[0m"
+  echo -e "2. Você verá um desktop Linux no navegador."
+  echo -e "3. Abra o Chromium lá dentro, vá no Instagram e faça login."
+  echo -e "4. Feche a aba (não deslogue). O Moltbot usará essa sessão."
+  echo ""
   read -p "Pressione ENTER para voltar."
 }
 
