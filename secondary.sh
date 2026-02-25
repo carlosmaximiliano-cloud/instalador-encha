@@ -3201,15 +3201,12 @@ sleep 30
 
 echo ""
 }
-
 ferramenta_chatwoot() {
-
 
 msg_chatwoot
 
 ## Ativa a função dados para pegar os dados da vps
 dados
-
 
 ## Inicia um Loop até os dados estarem certos
 while true; do
@@ -3251,7 +3248,6 @@ while true; do
     echo -en "\e[33m🔌 Digite a porta do SMTP (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
 
     
-    
     ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
     if [ "$porta_smtp_chatwoot" -eq 465 ]; then
      sobre_ssl=true
@@ -3261,8 +3257,6 @@ while true; do
     
     ## Limpa o terminal
     clear
-    
-    
     
     ## Informação sobre URL
     msg_chatwoot
@@ -3279,43 +3273,22 @@ while true; do
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-
     ## Pergunta se as respostas estão corretas
     read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
-
         ## Digitou Y para confirmar que as informações estão corretas
-
-        ## Limpar o terminal
         clear
-
-        ## Mostrar mensagem de Instalando
-       
-
-        ## Sai do Loop
         break
     else
-
         ## Digitou N para dizer que as informações não estão corretas.
-
-        ## Limpar o terminal
         msg_chatwoot
-        ## Mostra o nome da ferramenta
-        
-
-        ## Mostra mensagem para preencher informações
-        
-
-    ## Volta para o inicio do loop com as perguntas
     fi
 done
-
 
 ## Mensagem de Passo
 echo -e "\e[97m🚀 Iniciando a instalação do Chatwoot...\e[33m [Etapa 1 de 6]\e[0m"
 echo ""
 sleep 1
-
 
 ## Ativa a função dados para pegar os dados da vps
 dados
@@ -3324,9 +3297,6 @@ dados
 echo -e "\e[97m📦 Verificando ou instalando a extensão PGVector...\e[33m [Etapa 2 de 6]\e[0m"
 echo ""
 sleep 1
-
-## Aqui vamos fazer uma verificação se já existe Postgres e redis instalado
-## Se tiver ele vai criar um banco de dados no postgres ou perguntar se deseja apagar o que já existe e criar outro
 
 ## Verifica container postgres e cria banco no postgres
 verificar_container_pgvector
@@ -3343,12 +3313,10 @@ else
     criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
 fi
 
-
 ## Mensagem de Passo
 echo -e "\e[97m⚙️ Instalando o Chatwoot...\e[33m [Etapa 3 de 6]\e[0m"
 echo ""
 sleep 1
-
 
 ## Criando key aleatória
 encryption_key=$(openssl rand -hex 16)
@@ -3358,87 +3326,52 @@ cat > chatwoot${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   chatwoot${1:+_$1}_app:
-    image: chatwoot/chatwoot:v4.1.0 ## Versão do Chatwoot
+    image: chatwoot/chatwoot:latest ## Atualizado para latest para evitar bugs antigos
     command: >
       sh -c "echo 'Rails.application.config.active_storage.variant_processor = :mini_magick' > /app/config/initializers/active_storage.rb && bundle exec rails s -p 3000 -b 0.0.0.0"
     entrypoint: docker/entrypoints/rails.sh
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage ## Arquivos de conversa
-      - chatwoot${1:+_$1}_public:/app/public ## Arquivos de logos
+      ## Volume PUBLIC removido para evitar SyntaxError no JS
+      #- chatwoot${1:+_$1}_public:/app/public 
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer ## Arquivos de email
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers ## Arquivos de emails
 
     networks:
-      - $nome_rede_interna ## Nome da rede interna
+      - $nome_rede_interna
     
     environment:
-      ## 🌐 Qualquer Url com # no final
       - CHATWOOT_HUB_URL=https://encha.ai#
-
-      ## 🏢 Nome da Empresa
       - INSTALLATION_NAME=$nome_empresa_chatwoot
-
-      ## 🔐 Secret key
       - SECRET_KEY_BASE=$encryption_key
-
-      ## 💬 Url Chatwoot
       - FRONTEND_URL=https://$url_chatwoot
       - FORCE_SSL=true
-
-      ## 🌍 Idioma/Localização padrão
       - DEFAULT_LOCALE=pt_BR
       - TZ=America/Sao_Paulo
-
-      ## ☁️ Google Cloud - Modifique de acordo com os seus dados
-      #- GOOGLE_OAUTH_CLIENT_ID=369777777777-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
-      #- GOOGLE_OAUTH_CLIENT_SECRET=ABCDEF-GHijklmnoPqrstuvwX-yz1234567
-      #- GOOGLE_OAUTH_CALLBACK_URL=https://<your-server-domain>/omniauth/google_oauth2/callback
-
-      ## 🧑‍💻 Dados do Redis
       - REDIS_URL=redis://chatwoot${1:+_$1}_redis:6379
-
-      ## 🗄️ Dados do Postgres
       - POSTGRES_HOST=pgvector
       - POSTGRES_USERNAME=postgres
-      - POSTGRES_PASSWORD=$senha_pgvector ## Senha do postgres
+      - POSTGRES_PASSWORD=$senha_pgvector
       - POSTGRES_DATABASE=chatwoot${1:+_$1}
-
-      ## 🏠 Armazenamento
-      - ACTIVE_STORAGE_SERVICE=local ## use s3_compatible para MinIO
-      #- STORAGE_BUCKET_NAME=chatwoot${1:+_$1}
-      #- STORAGE_ACCESS_KEY_ID=ACCESS_KEY_MINIO
-      #- STORAGE_SECRET_ACCESS_KEY=SECRET_KEY_MINIO
-      #- STORAGE_REGION=eu-south
-      #- STORAGE_ENDPOINT=https://s3.DOMINIO.COM
-      #- STORAGE_FORCE_PATH_STYLE=true
-
-      ## 📧 Dados do SMTP
-      - MAILER_SENDER_EMAIL=$email_admin_chatwoot <$email_admin_chatwoot> ## Email SMTP
-      - SMTP_DOMAIN=$dominio_smtp_chatwoot ## Dominio do email
-      - SMTP_ADDRESS=$smtp_email_chatwoot ## Host SMTP
-      - SMTP_PORT=$porta_smtp_chatwoot ## Porta SMTP
-      - SMTP_SSL=$sobre_ssl ## Se a porta for 465 = true | Se a porta for 587 = false
-      - SMTP_USERNAME=$user_smtp_chatwoot ## Usuario SMTP
-      - SMTP_PASSWORD=$senha_email_chatwoot ## Senha do SMTP
+      - ACTIVE_STORAGE_SERVICE=local
+      - MAILER_SENDER_EMAIL=$email_admin_chatwoot <$email_admin_chatwoot>
+      - SMTP_DOMAIN=$dominio_smtp_chatwoot
+      - SMTP_ADDRESS=$smtp_email_chatwoot
+      - SMTP_PORT=$porta_smtp_chatwoot
+      - SMTP_SSL=$sobre_ssl
+      - SMTP_USERNAME=$user_smtp_chatwoot
+      - SMTP_PASSWORD=$senha_email_chatwoot
       - SMTP_AUTHENTICATION=login
       - SMTP_ENABLE_STARTTLS_AUTO=true
       - SMTP_OPENSSL_VERIFY_MODE=peer
-      - MAILER_INBOUND_EMAIL_DOMAIN=$email_admin_chatwoot ## Email SMTP
-
-      ## ⚙️ Melhorias
+      - MAILER_INBOUND_EMAIL_DOMAIN=$email_admin_chatwoot
       - SIDEKIQ_CONCURRENCY=10
       - RACK_TIMEOUT_SERVICE_TIMEOUT=0
       - RAILS_MAX_THREADS=5
       - WEB_CONCURRENCY=2
       - ENABLE_RACK_ATTACK=false
-
-      ## ⚡ Outras configurações
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
@@ -3468,85 +3401,49 @@ services:
         - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https
         - traefik.http.routers.chatwoot${1:+_$1}_app.middlewares=sslheader
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   chatwoot${1:+_$1}_sidekiq:
-    image: chatwoot/chatwoot:v4.1.0 ## Versão do Chatwoot
+    image: chatwoot/chatwoot:latest
     command: bundle exec sidekiq -C config/sidekiq.yml
 
     volumes:
-      - chatwoot${1:+_$1}_storage:/app/storage ## Arquivos de conversa
-      - chatwoot${1:+_$1}_public:/app/public ## Arquivos de logos
-      - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer ## Arquivos de email
-      - chatwoot${1:+_$1}_mailers:/app/app/views/mailers ## Arquivos de emails
+      - chatwoot${1:+_$1}_storage:/app/storage
+      ## Volume PUBLIC removido aqui também
+      #- chatwoot${1:+_$1}_public:/app/public
+      - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
+      - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
 
     networks:
-      - $nome_rede_interna ## Nome da rede interna
+      - $nome_rede_interna
 
     environment:
-      ## 🌐 Qualquer Url com # no final
-      #- CHATWOOT_HUB_URL=https://encha.ai#
-
-      ## 🏢 Nome da Empresa
       - INSTALLATION_NAME=$nome_empresa_chatwoot
-
-      ## 🔐 Secret key
       - SECRET_KEY_BASE=$encryption_key
-
-      ## 💬 Url Chatwoot
       - FRONTEND_URL=https://$url_chatwoot
       - FORCE_SSL=true
-
-      ## 🌍 Idioma/Localização padrão
       - DEFAULT_LOCALE=pt_BR
       - TZ=America/Sao_Paulo
-
-      ## ☁️ Google Cloud - Modifique de acordo com os seus dados
-      #- GOOGLE_OAUTH_CLIENT_ID=369777777777-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
-      #- GOOGLE_OAUTH_CLIENT_SECRET=ABCDEF-GHijklmnoPqrstuvwX-yz1234567
-      #- GOOGLE_OAUTH_CALLBACK_URL=https://<your-server-domain>/omniauth/google_oauth2/callback
-
-      ## 🧑‍💻 Dados do Redis
       - REDIS_URL=redis://chatwoot${1:+_$1}_redis:6379
-
-      ## 🗄️ Dados do Postgres
       - POSTGRES_HOST=pgvector
       - POSTGRES_USERNAME=postgres
-      - POSTGRES_PASSWORD=$senha_pgvector ## Senha do postgres
+      - POSTGRES_PASSWORD=$senha_pgvector
       - POSTGRES_DATABASE=chatwoot${1:+_$1}
-
-      ## 🏠 Armazenamento
-      - ACTIVE_STORAGE_SERVICE=local ## use s3_compatible para MinIO
-      #- STORAGE_BUCKET_NAME=chatwoot${1:+_$1}
-      #- STORAGE_ACCESS_KEY_ID=ACCESS_KEY_MINIO
-      #- STORAGE_SECRET_ACCESS_KEY=SECRET_KEY_MINIO
-      #- STORAGE_REGION=eu-south
-      #- STORAGE_ENDPOINT=https://s3.DOMINIO.COM
-      #- STORAGE_FORCE_PATH_STYLE=true
-
-      ## 📧 Dados do SMTP
-      - MAILER_SENDER_EMAIL=$email_admin_chatwoot <$email_admin_chatwoot> ## Email SMTP
-      - SMTP_DOMAIN=$dominio_smtp_chatwoot ## Dominio do email
-      - SMTP_ADDRESS=$smtp_email_chatwoot ## Host SMTP
-      - SMTP_PORT=$porta_smtp_chatwoot ## Porta SMTP
-      - SMTP_SSL=$sobre_ssl ## Se a porta for 465 = true | Se a porta for 587 = false
-      - SMTP_USERNAME=$user_smtp_chatwoot ## Usuario SMTP
-      - SMTP_PASSWORD=$senha_email_chatwoot ## Senha do SMTP
+      - ACTIVE_STORAGE_SERVICE=local
+      - MAILER_SENDER_EMAIL=$email_admin_chatwoot <$email_admin_chatwoot>
+      - SMTP_DOMAIN=$dominio_smtp_chatwoot
+      - SMTP_ADDRESS=$smtp_email_chatwoot
+      - SMTP_PORT=$porta_smtp_chatwoot
+      - SMTP_SSL=$sobre_ssl
+      - SMTP_USERNAME=$user_smtp_chatwoot
+      - SMTP_PASSWORD=$senha_email_chatwoot
       - SMTP_AUTHENTICATION=login
       - SMTP_ENABLE_STARTTLS_AUTO=true
       - SMTP_OPENSSL_VERIFY_MODE=peer
-      - MAILER_INBOUND_EMAIL_DOMAIN=$email_admin_chatwoot ## Email SMTP
-
-      ## ⚙️ Melhorias
+      - MAILER_INBOUND_EMAIL_DOMAIN=$email_admin_chatwoot
       - SIDEKIQ_CONCURRENCY=10
       - RACK_TIMEOUT_SERVICE_TIMEOUT=0
       - RAILS_MAX_THREADS=5
       - WEB_CONCURRENCY=2
       - ENABLE_RACK_ATTACK=false
-
-      ## ⚡ Outras configurações
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
@@ -3565,30 +3462,13 @@ services:
           cpus: "1"
           memory: 1024M
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
   chatwoot${1:+_$1}_redis:
-    image: redis:latest  ## Versão do Redis
-    command: [
-        "redis-server",
-        "--appendonly",
-        "yes",
-        "--port",
-        "6379"
-      ]
-
+    image: redis:latest
+    command: ["redis-server", "--appendonly", "yes", "--port", "6379"]
     volumes:
       - chatwoot${1:+_$1}_redis:/data
-
     networks:
-      - $nome_rede_interna ## Nome da rede interna
-
-    ## Descomente as linhas abaixo para uso externo
-    #ports:
-    #  - 6379:6379
-
+      - $nome_rede_interna
     deploy:
       placement:
         constraints:
@@ -3598,33 +3478,27 @@ services:
           cpus: "1"
           memory: 2048M
 
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
 volumes:
   chatwoot${1:+_$1}_storage:
     external: true
     name: chatwoot${1:+_$1}_storage
-  chatwoot${1:+_$1}_public:
-    external: true
-    name: chatwoot${1:+_$1}_public
   chatwoot${1:+_$1}_mailer:
     external: true
     name: chatwoot${1:+_$1}_mailer
   chatwoot${1:+_$1}_mailers:
     external: true
     name: chatwoot${1:+_$1}_mailers
-  volumes:
   chatwoot${1:+_$1}_redis:
     external: true
     name: chatwoot${1:+_$1}_redis
+  ## Volumes Public removidos daqui também para não dar erro na criação da stack
 
 networks:
-  $nome_rede_interna: ## Nome da rede interna
+  $nome_rede_interna:
     external: true
-    name: $nome_rede_interna ## Nome da rede interna
+    name: $nome_rede_interna
 EOL
+
 if [ $? -eq 0 ]; then
     echo "1/10 - [ OK ] - Criando Stack"
 else
@@ -3632,9 +3506,7 @@ else
     echo "Não foi possivel criar a stack do Chatwoot"
 fi
 STACK_NAME="chatwoot${1:+_$1}"
-stack_editavel #> /dev/null 2>&1
-
-
+stack_editavel
 
 ## Mensagem de Passo
 echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 6]\e[0m"
@@ -3642,7 +3514,7 @@ echo ""
 sleep 1
 
 ## Baixando imagens:
-pull redis:latest chatwoot/chatwoot:v4.1.0
+pull redis:latest chatwoot/chatwoot:latest
 
 ## Usa o serviço wait_chatwoot para verificar se o serviço esta online
 wait_stack chatwoot${1:+_$1}_chatwoot${1:+_$1}_redis chatwoot${1:+_$1}_chatwoot${1:+_$1}_app chatwoot${1:+_$1}_chatwoot${1:+_$1}_sidekiq
@@ -3654,20 +3526,15 @@ echo -e "\e[97m🗄️ Migrando o banco de dados...\e[33m [Etapa 5 de 6]\e[0m"
 echo ""
 sleep 1
 
-## Aqui vamos estar migrando o banco de dados usando o comando "bundle exec rails db:chatwoot_prepare"
-
-## Basicamente voce poderia entrar no banco de dados do chatwoot e executar o comando por lá tambem
-
+## Loop para aguardar container estar UP
 container_name="chatwoot${1:+_$1}_chatwoot${1:+_$1}_app"
-
 max_wait_time=1200
-
-wait_interval=60
-
+wait_interval=10 ## Reduzi para 10s para verificar mais vezes
 elapsed_time=0
 
 while [ $elapsed_time -lt $max_wait_time ]; do
-  CONTAINER_ID=$(docker ps -q --filter "name=$container_name")
+  ## Pega o ID do container mais recente criado pelo serviço
+  CONTAINER_ID=$(docker ps -q --filter "name=$container_name" | head -n 1)
   if [ -n "$CONTAINER_ID" ]; then
     break
   fi
@@ -3680,13 +3547,22 @@ if [ -z "$CONTAINER_ID" ]; then
   exit 1
 fi
 
-docker exec -it "$CONTAINER_ID" bundle exec rails db:chatwoot_prepare > /dev/null 2>&1
+## Executa a preparação do Banco (Migrate + Seed)
+## Alterado para -i (sem t) para evitar erros de TTY em scripts
+## Removido o > /dev/null para você ver se der erro
+echo "Executando migração no container ID: $CONTAINER_ID"
+docker exec -i "$CONTAINER_ID" bundle exec rails db:chatwoot_prepare
+
 if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - [ OK ] - Comando executado no container: bundle exec rails db:chatwoot_prepare"
+    echo "✅ 1/1 - [ OK ] - Banco de dados migrado com sucesso."
 else
-    echo "❌ 1/1 - [ FALHA ] - Comando executado no container: bundle exec rails db:chatwoot_prepare"
-    echo "⚠️ Não foi possível migrar o banco de dados. Verifique os logs e tente novamente."
+    echo "❌ 1/1 - [ FALHA ] - Falha na migração do banco."
+    echo "⚠️ Tentando comando alternativo 'db:migrate'..."
+    docker exec -i "$CONTAINER_ID" bundle exec rails db:migrate
 fi
+
+## Limpa Cache por garantia
+docker exec -i "$CONTAINER_ID" bundle exec rails runner "Rails.cache.clear"
 
 echo ""
 ## Mensagem de Passo
@@ -3697,21 +3573,26 @@ sleep 1
 ##  Aqui vamos alterar um dado no postgres para liberar algumas funções ocultas no painel de super admin
 wait_for_pgvector
 
-docker exec -i $CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
+## O comando psql precisa apontar para o HOST onde o banco está rodando (-h pgvector) se estiver rodando o comando de fora
+## Mas aqui você está usando docker exec dentro do postgres container, então está certo usar -U postgres
+PG_CONTAINER_ID=$(docker ps -q --filter "name=pgvector" | head -n 1)
+
+if [ -n "$PG_CONTAINER_ID" ]; then
+    docker exec -i $PG_CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
 \c chatwoot${1:+_$1};
 update installation_configs set locked = false;
 \q
 EOF
-if [ $? -eq 0 ]; then
-    echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
+    if [ $? -eq 0 ]; then
+        echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
+    else
+        echo "❌ 1/1 - [ FALHA ] - Falha ao desbloquear configs."
+    fi
 else
-    echo "❌ 1/1 - [ FALHA ] - Tentativa de desbloquear a tabela installation_configs no PgVector falhou."
-    echo "⚠️ Não foi possível liberar as funções do Super Admin. Por favor, verifique os logs e tente novamente."
+    echo "⚠️ Container PgVector não encontrado para desbloqueio."
 fi
 
 echo ""
-
-
 
 ## Salvando informações da instalação dentro de /dados_vps/
 cd dados_vps
@@ -3731,7 +3612,6 @@ cd
 
 ## Espera 30 segundos
 wait_30_sec
-
 
 msg_resumo_informacoes
 
