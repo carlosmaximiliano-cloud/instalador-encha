@@ -3201,6 +3201,7 @@ sleep 30
 
 echo ""
 }
+
 ferramenta_chatwoot() {
 
 msg_chatwoot
@@ -3327,14 +3328,14 @@ version: "3.7"
 services:
 
   chatwoot${1:+_$1}_app:
-    image: chatwoot/chatwoot:latest ## Atualizado para latest para evitar bugs antigos
+    image: chatwoot/chatwoot:latest
     command: >
       sh -c "echo 'Rails.application.config.active_storage.variant_processor = :mini_magick' > /app/config/initializers/active_storage.rb && bundle exec rails s -p 3000 -b 0.0.0.0"
     entrypoint: docker/entrypoints/rails.sh
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage ## Arquivos de conversa
-      ## Volume PUBLIC removido para evitar SyntaxError no JS
+      ## Volume PUBLIC removido propositalmente para corrigir o erro de JS (SyntaxError)
       #- chatwoot${1:+_$1}_public:/app/public 
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer ## Arquivos de email
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers ## Arquivos de emails
@@ -3491,7 +3492,7 @@ volumes:
   chatwoot${1:+_$1}_redis:
     external: true
     name: chatwoot${1:+_$1}_redis
-  ## Volumes Public removidos daqui também para não dar erro na criação da stack
+  ## Volume chatwoot_public removido da definição de volumes também
 
 networks:
   $nome_rede_interna:
@@ -3519,52 +3520,52 @@ pull redis:latest chatwoot/chatwoot:latest
 ## Usa o serviço wait_chatwoot para verificar se o serviço esta online
 wait_stack chatwoot${1:+_$1}_chatwoot${1:+_$1}_redis chatwoot${1:+_$1}_chatwoot${1:+_$1}_app chatwoot${1:+_$1}_chatwoot${1:+_$1}_sidekiq
 
-sleep 30
+sleep 15
 echo ""
+
 ## Mensagem de Passo
 echo -e "\e[97m🗄️ Migrando o banco de dados...\e[33m [Etapa 5 de 6]\e[0m"
 echo ""
-sleep 1
+sleep 2
 
-## Loop para aguardar container estar UP
-container_name="chatwoot${1:+_$1}_chatwoot${1:+_$1}_app"
-max_wait_time=1200
-wait_interval=10 ## Reduzi para 10s para verificar mais vezes
-elapsed_time=0
+## Executa a migração usando um container temporário (Ephemeral)
+## Isso evita o problema do container principal ficar reiniciando antes de ter o banco pronto.
+## Usamos bin/rails pois o bundle exec não estava funcionando no seu ambiente.
 
-while [ $elapsed_time -lt $max_wait_time ]; do
-  ## Pega o ID do container mais recente criado pelo serviço
-  CONTAINER_ID=$(docker ps -q --filter "name=$container_name" | head -n 1)
-  if [ -n "$CONTAINER_ID" ]; then
-    break
-  fi
-  sleep $wait_interval
-  elapsed_time=$((elapsed_time + wait_interval))
-done
-
-if [ -z "$CONTAINER_ID" ]; then
-  echo "⚠️ O contêiner não foi encontrado após aguardar $max_wait_time segundos."
-  exit 1
-fi
-
-## Executa a preparação do Banco (Migrate + Seed)
-## Alterado para -i (sem t) para evitar erros de TTY em scripts
-## Removido o > /dev/null para você ver se der erro
-echo "Executando migração no container ID: $CONTAINER_ID"
-docker exec -i "$CONTAINER_ID" bundle exec rails db:chatwoot_prepare
+echo "Iniciando container temporário de migração..."
+docker run --rm \
+  --network $nome_rede_interna \
+  -e POSTGRES_HOST=pgvector \
+  -e POSTGRES_USERNAME=postgres \
+  -e POSTGRES_PASSWORD=$senha_pgvector \
+  -e POSTGRES_DATABASE=chatwoot${1:+_$1} \
+  -e RAILS_ENV=production \
+  -e SECRET_KEY_BASE=$encryption_key \
+  chatwoot/chatwoot:latest \
+  bin/rails db:chatwoot_prepare
 
 if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - [ OK ] - Banco de dados migrado com sucesso."
+    echo "✅ [ SUCESSO ] - Banco de dados migrado/preparado."
 else
-    echo "❌ 1/1 - [ FALHA ] - Falha na migração do banco."
-    echo "⚠️ Tentando comando alternativo 'db:migrate'..."
-    docker exec -i "$CONTAINER_ID" bundle exec rails db:migrate
+    echo "❌ [ FALHA ] - O comando de migração falhou."
+    echo "Tentando 'db:migrate' simples como fallback..."
+    
+    docker run --rm \
+      --network $nome_rede_interna \
+      -e POSTGRES_HOST=pgvector \
+      -e POSTGRES_USERNAME=postgres \
+      -e POSTGRES_PASSWORD=$senha_pgvector \
+      -e POSTGRES_DATABASE=chatwoot${1:+_$1} \
+      -e RAILS_ENV=production \
+      -e SECRET_KEY_BASE=$encryption_key \
+      chatwoot/chatwoot:latest \
+      bin/rails db:migrate
 fi
 
-## Limpa Cache por garantia
-docker exec -i "$CONTAINER_ID" bundle exec rails runner "Rails.cache.clear"
-
 echo ""
+echo "Aguardando o serviço principal estabilizar..."
+sleep 20
+
 ## Mensagem de Passo
 echo -e "\e[97m🔑 Ativando funções do Super Admin...\e[33m [Etapa 6 de 6]\e[0m"
 echo ""
@@ -3573,8 +3574,6 @@ sleep 1
 ##  Aqui vamos alterar um dado no postgres para liberar algumas funções ocultas no painel de super admin
 wait_for_pgvector
 
-## O comando psql precisa apontar para o HOST onde o banco está rodando (-h pgvector) se estiver rodando o comando de fora
-## Mas aqui você está usando docker exec dentro do postgres container, então está certo usar -U postgres
 PG_CONTAINER_ID=$(docker ps -q --filter "name=pgvector" | head -n 1)
 
 if [ -n "$PG_CONTAINER_ID" ]; then
@@ -3586,7 +3585,8 @@ EOF
     if [ $? -eq 0 ]; then
         echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
     else
-        echo "❌ 1/1 - [ FALHA ] - Falha ao desbloquear configs."
+        echo "❌ 1/1 - [ FALHA ] - Tentativa de desbloquear a tabela installation_configs no PgVector falhou."
+        echo "⚠️ Não foi possível liberar as funções do Super Admin. Por favor, verifique os logs e tente novamente."
     fi
 else
     echo "⚠️ Container PgVector não encontrado para desbloqueio."
