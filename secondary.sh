@@ -3204,61 +3204,49 @@ echo ""
 
 ferramenta_chatwoot() {
 
-## Verifica os recursos
-recursos 2 2 && continue || return
-
-## Limpa o terminal
-clear
+msg_chatwoot
 
 ## Ativa a função dados para pegar os dados da vps
 dados
 
-## Mostra o nome da aplicação
-nome_chatwoot
-
-## Mostra mensagem para preencher informações
-preencha_as_info
-
 ## Inicia um Loop até os dados estarem certos
 while true; do
 
-    ##Pergunta o Dominio para aplicação
-    echo -e "\e[97mPasso$amarelo 1/6\e[0m"
-    echo -en "\e[33mDigite o Dominio para o Chatwoot (ex: chatwoot.oriondesign.art.br): \e[0m" && read -r url_chatwoot
-    echo ""
-    
-    ## Pega o nome do dominio para ser o nome da empresa
-    nome_empresa_chatwoot="$nome_servidor"
-    
-    ## Pergunta o email SMTP
-    echo -e "\e[97mPasso$amarelo 2/6\e[0m"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@oriondesign.art.br): \e[0m" && read -r email_admin_chatwoot
+    ## Passo 1 - Domínio da aplicação
+    echo -e "\e[97m📍 Passo$amarelo 1/6 - Configuração do Domínio\e[0m"
+    echo -en "\e[33m🔗 Informe o domínio para o Chatwoot (ex: chatwoot.encha.ai): \e[0m" && read -r url_chatwoot
     echo ""
 
-    ## Define o dominio SMTP com o dominio do email
+    ## Define o nome da empresa com base no nome do servidor
+    nome_empresa_chatwoot="$nome_servidor"
+
+    ## Passo 2 - Email SMTP
+    echo -e "\e[97m📧 Passo$amarelo 2/6 - Email do Administrador\e[0m"
+    echo -en "\e[33m📥 Digite o email que será usado para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_admin_chatwoot
+    echo ""
+
+    ## Extrai domínio do SMTP
     dominio_smtp_chatwoot=$(echo "$email_admin_chatwoot" | cut -d "@" -f 2)
 
-    ##Pergunta o usuário do Email SMTP
-    echo -e "\e[97mPasso$amarelo 3/6\e[0m"
-    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: oriondesign ou contato@oriondesign.art.br): \e[0m" && read -r user_smtp_chatwoot
+    ## Passo 3 - Usuário SMTP
+    echo -e "\e[97m👤 Passo$amarelo 3/6 - Usuário SMTP\e[0m"
+    echo -e "$amareloℹ️  Caso não tenha um usuário específico, use o próprio email acima.\e[0m"
+    echo -en "\e[33m🧑‍💼 Digite o usuário do SMTP (ex: encha.ai ou instalador@encha.ai): \e[0m" && read -r user_smtp_chatwoot
     echo ""
-    
-    ## Pergunta a senha do SMTP
-    echo -e "\e[97mPasso$amarelo 4/6\e[0m"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_chatwoot
+
+    ## Passo 4 - Senha do SMTP
+    echo -e "\e[97m🔒 Passo$amarelo 4/6 - Senha SMTP\e[0m"
+    echo -en "\e[33m🔑 Digite a senha SMTP do email (ex: @Senha123_): \e[0m" && read -r senha_email_chatwoot
     echo ""
-    
-    ## Pergunta o Host SMTP do email
-    echo -e "\e[97mPasso$amarelo 5/6\e[0m"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_chatwoot
+
+    ## Passo 5 - Host SMTP
+    echo -e "\e[97m🌐 Passo$amarelo 5/6 - Host SMTP\e[0m"
+    echo -en "\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_chatwoot
     echo ""
-    
-    ## Pergunta a porta SMTP do email
-    echo -e "\e[97mPasso$amarelo 6/6\e[0m"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
-    
+
+    ## Passo 6 - Porta SMTP
+    echo -e "\e[97m📦 Passo$amarelo 6/6 - Porta SMTP\e[0m"
+    echo -en "\e[33m🔌 Digite a porta do SMTP (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
     
     ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
     if [ "$porta_smtp_chatwoot" -eq 465 ]; then
@@ -3270,83 +3258,54 @@ while true; do
     ## Limpa o terminal
     clear
     
-    ## Mostra o nome da aplicação
-    nome_chatwoot
-    
-    ## Mostra mensagem para verificar as informações
-    conferindo_as_info
-    
     ## Informação sobre URL
-    echo -e "\e[33mDominio do Chatwoot:\e[97m $url_chatwoot\e[0m"
+    msg_chatwoot
     echo ""
-
-    ## Informação sobre Nome da Empresa
-    echo -e "\e[33mNome da Empresa:\e[97m $nome_empresa_chatwoot\e[0m"
-    echo ""
-
-    ## Informação sobre Email de SMTP
-    echo -e "\e[33mEmail do SMTP:\e[97m $email_admin_chatwoot\e[0m"
-    echo ""
-
-    ## Informação sobre Usuario do SMTP
-    echo -e "\e[33mUser do SMTP:\e[97m $user_smtp_chatwoot\e[0m"
-    echo ""
-
-    ## Informação sobre Senha de SMTP
-    echo -e "\e[33mSenha do SMTP:\e[97m $senha_email_chatwoot\e[0m"
-    echo ""
-
-    ## Informação sobre Host SMTP
-    echo -e "\e[33mHost SMTP:\e[97m $smtp_email_chatwoot\e[0m"
-    echo ""
-
-    ## Informação sobre Porta SMTP
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_chatwoot\e[0m"
-    echo ""
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\e[33m🌐 Domínio do Chatwoot:      \e[97m$url_chatwoot\e[0m"
+    echo -e "\e[33m🏢 Nome da Empresa:         \e[97m$nome_empresa_chatwoot\e[0m"
+    echo -e "\e[33m📧 Email SMTP:              \e[97m$email_admin_chatwoot\e[0m"
+    echo -e "\e[33m👤 Usuário SMTP:            \e[97m$user_smtp_chatwoot\e[0m"
+    echo -e "\e[33m🔑 Senha SMTP:              \e[97m$senha_email_chatwoot\e[0m"
+    echo -e "\e[33m🖥️  Host SMTP:              \e[97m$smtp_email_chatwoot\e[0m"
+    echo -e "\e[33m🔌 Porta SMTP:              \e[97m$porta_smtp_chatwoot\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Pergunta se as respostas estão corretas
-    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
-
         ## Digitou Y para confirmar que as informações estão corretas
         clear
-
-        ## Mostrar mensagem de Instalando
-        instalando_msg
-
         break
     else
         ## Digitou N para dizer que as informações não estão corretas.
-        clear
-        nome_chatwoot
-        preencha_as_info
+        msg_chatwoot
     fi
 done
 
 ## Mensagem de Passo
-echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO CHATWOOT \e[33m[1/6]\e[0m"
+echo -e "\e[97m🚀 Iniciando a instalação do Chatwoot...\e[33m [Etapa 1 de 6]\e[0m"
 echo ""
 sleep 1
-
-telemetria Chatwoot iniciado
 
 ## Ativa a função dados para pegar os dados da vps
 dados
 
 ## Mensagem de Passo
-echo -e "\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m"
+echo -e "\e[97m📦 Verificando ou instalando a extensão PGVector...\e[33m [Etapa 2 de 6]\e[0m"
 echo ""
 sleep 1
 
 ## Verifica container postgres e cria banco no postgres
 verificar_container_pgvector
 if [ $? -eq 0 ]; then
-    echo "1/3 - [ OK ] - PgVector já instalado"
+    echo -e "Passo \e[32m1/3\e[0m ✅ - Postgres já instalado."
     pegar_senha_pgvector > /dev/null 2>&1
-    echo "2/3 - [ OK ] - Copiando senha do PgVector"
+    echo -e "Passo \e[32m2/3\e[0m 🔐 - Senha do PgVector copiada com sucesso."
     criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
-    echo "3/3 - [ OK ] - Criando banco de dados"
+    echo -e "Passo \e[32m3/3\e[0m 🛠️ - Banco de dados 'chatwoot${1:+_$1}' criado com sucesso."
     echo ""
 else
     ferramenta_pgvector
@@ -3355,7 +3314,7 @@ else
 fi
 
 ## Mensagem de Passo
-echo -e "\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m"
+echo -e "\e[97m⚙️ Instalando o Chatwoot...\e[33m [Etapa 3 de 6]\e[0m"
 echo ""
 sleep 1
 
@@ -3367,26 +3326,24 @@ cat > chatwoot${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
-## --------------------------- ORION --------------------------- ##
-
   chatwoot${1:+_$1}_app:
-    image: chatwoot/chatwoot:latest ## Versão do Chatwoot
-    ## CORREÇÃO: Removido o 'db:chatwoot_prepare' daqui. O banco será preparado de forma segura na Etapa 5.
+    image: chatwoot/chatwoot:latest
     command: >
       sh -c "echo 'Rails.application.config.active_storage.variant_processor = :mini_magick' > /app/config/initializers/active_storage.rb && bundle exec rails s -p 3000 -b 0.0.0.0"
-    entrypoint: docker/entrypoints/rails.sh    
+    entrypoint: docker/entrypoints/rails.sh
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage ## Arquivos de conversa
-      ## CORREÇÃO: Volume PUBLIC removido para evitar SyntaxError no JS
-      #- chatwoot${1:+_$1}_public:/app/public
+      ## CORREÇÃO 1: Volume PUBLIC removido para evitar o SyntaxError (Tela Branca)
+      #- chatwoot${1:+_$1}_public:/app/public 
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer ## Arquivos de email
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers ## Arquivos de emails
 
     networks:
-      - $nome_rede_interna ## Nome da rede interna
+      - $nome_rede_interna
     
     environment:
+      - CHATWOOT_HUB_URL=https://encha.ai#
       - INSTALLATION_NAME=$nome_empresa_chatwoot
       - SECRET_KEY_BASE=$encryption_key
       - FRONTEND_URL=https://$url_chatwoot
@@ -3444,15 +3401,13 @@ services:
         - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https
         - traefik.http.routers.chatwoot${1:+_$1}_app.middlewares=sslheader
 
-## --------------------------- ORION --------------------------- ##
-
   chatwoot${1:+_$1}_sidekiq:
-    image: chatwoot/chatwoot:latest ## Versão do Chatwoot
+    image: chatwoot/chatwoot:latest
     command: bundle exec sidekiq -C config/sidekiq.yml
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage
-      ## CORREÇÃO: Volume PUBLIC removido aqui também
+      ## CORREÇÃO 1: Volume PUBLIC removido aqui também
       #- chatwoot${1:+_$1}_public:/app/public
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
@@ -3507,24 +3462,13 @@ services:
           cpus: "1"
           memory: 1024M
 
-## --------------------------- ORION --------------------------- ##
-
   chatwoot${1:+_$1}_redis:
-    image: redis:latest  ## Versão do Redis
-    command: [
-        "redis-server",
-        "--appendonly",
-        "yes",
-        "--port",
-        "6379"
-      ]
-
+    image: redis:latest
+    command: ["redis-server", "--appendonly", "yes", "--port", "6379"]
     volumes:
       - chatwoot${1:+_$1}_redis:/data
-
     networks:
       - $nome_rede_interna
-
     deploy:
       placement:
         constraints:
@@ -3532,9 +3476,7 @@ services:
       resources:
         limits:
           cpus: "1"
-          memory: 1024M
-
-## --------------------------- ORION --------------------------- ##
+          memory: 2048M
 
 volumes:
   chatwoot${1:+_$1}_storage:
@@ -3549,7 +3491,7 @@ volumes:
   chatwoot${1:+_$1}_redis:
     external: true
     name: chatwoot${1:+_$1}_redis
-  ## CORREÇÃO: Volume chatwoot_public removido da declaração também
+  ## CORREÇÃO 1: Volume chatwoot_public removido da definição
 
 networks:
   $nome_rede_interna:
@@ -3564,10 +3506,10 @@ else
     echo "Não foi possivel criar a stack do Chatwoot"
 fi
 STACK_NAME="chatwoot${1:+_$1}"
-stack_editavel > /dev/null 2>&1
+stack_editavel
 
 ## Mensagem de Passo
-echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/6]\e[0m"
+echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 6]\e[0m"
 echo ""
 sleep 1
 
@@ -3581,11 +3523,14 @@ sleep 15
 echo ""
 
 ## Mensagem de Passo
-echo -e "\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m"
+echo -e "\e[97m🗄️ Migrando o banco de dados...\e[33m [Etapa 5 de 6]\e[0m"
 echo ""
 sleep 2
 
-## CORREÇÃO: Migração via Container Temporário Ephemeral (Evita CrashLoop)
+## CORREÇÃO 2: Executa a migração usando um container temporário (Ephemeral)
+## Isso evita o problema do container principal ficar reiniciando antes de ter o banco pronto.
+## Usamos bin/rails pois o bundle exec não estava funcionando no seu ambiente.
+
 echo "Iniciando container temporário de migração..."
 docker run --rm \
   --network $nome_rede_interna \
@@ -3599,10 +3544,11 @@ docker run --rm \
   bin/rails db:chatwoot_prepare
 
 if [ $? -eq 0 ]; then
-    echo "1/2 - [ OK ] - Banco de dados migrado/preparado com sucesso."
+    echo "✅ [ SUCESSO ] - Banco de dados migrado/preparado."
 else
-    echo "1/2 - [ OFF ] - O comando de migração principal falhou."
+    echo "❌ [ FALHA ] - O comando de migração falhou."
     echo "Tentando 'db:migrate' simples como fallback..."
+    
     docker run --rm \
       --network $nome_rede_interna \
       -e POSTGRES_HOST=pgvector \
@@ -3615,71 +3561,37 @@ else
       bin/rails db:migrate
 fi
 
-# Aguarda para garantir que o PgVector esteja completamente de pé e responsivo
-sleep 5
-
-# Nome base do container pgvector
-pg_container_name="pgvector_pgvector"
-max_wait_time=1200
-wait_interval=10
-elapsed_time=0
-
-# Aguarda até o container pgvector aparecer
-while [ $elapsed_time -lt $max_wait_time ]; do
-  PG_CONTAINER_ID=$(docker ps -q --filter "name=$pg_container_name" | head -n 1)
-  if [ -n "$PG_CONTAINER_ID" ]; then
-    break
-  fi
-  sleep $wait_interval
-  elapsed_time=$((elapsed_time + wait_interval))
-done
-
-if [ -z "$PG_CONTAINER_ID" ]; then
-  echo "O contêiner do PostgreSQL não foi encontrado após $max_wait_time segundos."
-  exit 1
-fi
-
-# Configuração TimeZone do Orion
-docker exec -i "$PG_CONTAINER_ID" psql -U postgres <<'SQL' > /dev/null 2>&1
-ALTER SYSTEM SET timezone = 'UTC';
-SET timezone = 'UTC';
-ALTER DATABASE chatwoot${1:+_$1} SET timezone TO 'UTC';
-SHOW timezone;
-SQL
-
-if [ $? -eq 0 ]; then
-    echo "2/2 - [ OK ] - Timezone configurado para UTC no Postgres."
-else
-    echo "2/2 - [ OFF ] - Falha ao configurar timezone no PostgreSQL."
-fi
-
 echo ""
+echo "Aguardando o serviço principal estabilizar..."
+sleep 20
+
 ## Mensagem de Passo
-echo -e "\e[97m• ATIVANDO FUNÇÕES DO SUPER ADMIN \e[33m[6/6]\e[0m"
+echo -e "\e[97m🔑 Ativando funções do Super Admin...\e[33m [Etapa 6 de 6]\e[0m"
 echo ""
 sleep 1
 
 ##  Aqui vamos alterar um dado no postgres para liberar algumas funções ocultas no painel de super admin
 wait_for_pgvector
 
-## CORREÇÃO: O Orion usava a variável $CONTAINER_ID (que era do chatwoot_app) para rodar o comando SQL.
-## Agora usamos a variável $PG_CONTAINER_ID correta!
+## CORREÇÃO 3: Aponta o PSQL para o container PGVECTOR correto e não para o Chatwoot
+PG_CONTAINER_ID=$(docker ps -q --filter "name=pgvector" | head -n 1)
 
-docker exec -i $PG_CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
+if [ -n "$PG_CONTAINER_ID" ]; then
+    docker exec -i $PG_CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
 \c chatwoot${1:+_$1};
 update installation_configs set locked = false;
 \q
 EOF
-if [ $? -eq 0 ]; then
-    echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
+    if [ $? -eq 0 ]; then
+        echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
+    else
+        echo "❌ 1/1 - [ FALHA ] - Tentativa de desbloquear a tabela installation_configs no PgVector falhou."
+    fi
 else
-    echo "1/1 - [ OFF ] - Falha ao desbloquear tabela installation_configs no pgvector"
-    echo "Não foi possivel liberar as funções do super_admin"
+    echo "⚠️ Container PgVector não encontrado para desbloqueio."
 fi
 
 echo ""
-
-telemetria Chatwoot finalizado
 
 ## Salvando informações da instalação dentro de /dados_vps/
 cd dados_vps
@@ -3700,29 +3612,23 @@ cd
 ## Espera 30 segundos
 wait_30_sec
 
-## Mensagem de finalizado
-instalado_msg
-
-## Mensagem de Guarde os Dados
-guarde_os_dados_msg
+msg_resumo_informacoes
 
 ## Dados da Aplicação:
-echo -e "\e[32m[ CHATWOOT ]\e[0m"
+echo -e "\e[32m🚀 [ CHATWOOT INSTALADO COM SUCESSO ]\e[0m"
 echo ""
 
-echo -e "\e[97mDominio:\e[33m https://$url_chatwoot\e[0m"
+echo -e "\e[97m🌐 Domínio:\e[33m https://$url_chatwoot\e[0m"
 echo ""
 
-echo -e "\e[97mUsuario:\e[33m Precisa criar dentro do Chatwoot\e[0m"
+echo -e "\e[97m👤 Usuário:\e[33m Deve ser criado dentro do Chatwoot\e[0m"
 echo ""
 
-echo -e "\e[97mSenha:\e[33m Precisa criar dentro do Chatwoot\e[0m"
+echo -e "\e[97m🔑 Senha:\e[33m Deve ser criada dentro do Chatwoot\e[0m"
+echo ""
 
-## Creditos do instalador
-creditos_msg
+msg_retorno_menu
 
-## Pergunta se deseja instalar outra aplicação
-requisitar_outra_instalacao
 }
 
 ferramenta_redis() {
