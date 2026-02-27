@@ -3520,42 +3520,55 @@ sleep 15
 echo ""
 
 ## Mensagem de Passo
-echo -e "\e[97m🗄️ Migrando o banco de dados...\e[33m [Etapa 5 de 6]\e[0m"
+echo -e "\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m"
 echo ""
 sleep 2
 
-## CORREÇÃO CRÍTICA: Migração segura via Container Temporário + BUNDLE EXEC
-echo "Iniciando migração segura..."
-docker run --rm \
-  --network $nome_rede_interna \
-  -e POSTGRES_HOST=pgvector \
-  -e POSTGRES_USERNAME=postgres \
-  -e POSTGRES_PASSWORD=$senha_pgvector \
-  -e POSTGRES_DATABASE=chatwoot${1:+_$1} \
-  -e RAILS_ENV=production \
-  -e SECRET_KEY_BASE=$encryption_key \
-  chatwoot/chatwoot:latest \
-  bundle exec rails db:chatwoot_prepare
+## CORREÇÃO: Usar 'docker service create' em vez de 'docker run'
+## Isso resolve o erro "network not manually attachable" do Swarm.
 
-if [ $? -eq 0 ]; then
-    echo "✅ [ SUCESSO ] - Banco de dados migrado/preparado."
-else
-    echo "⚠️ [ INFO ] - Comando principal falhou, tentando fallback 'migrate'..."
-    docker run --rm \
-      --network $nome_rede_interna \
-      -e POSTGRES_HOST=pgvector \
-      -e POSTGRES_USERNAME=postgres \
-      -e POSTGRES_PASSWORD=$senha_pgvector \
-      -e POSTGRES_DATABASE=chatwoot${1:+_$1} \
-      -e RAILS_ENV=production \
-      -e SECRET_KEY_BASE=$encryption_key \
-      chatwoot/chatwoot:latest \
-      bundle exec rails db:migrate
-fi
+echo "Iniciando serviço temporário de migração..."
+
+# Remove serviço de migração anterior se tiver ficado travado
+docker service rm chatwoot_migration_temp > /dev/null 2>&1
+
+# Cria o serviço que roda o comando e sai (--restart-condition none)
+docker service create \
+  --name chatwoot_migration_temp \
+  --network $nome_rede_interna \
+  --restart-condition none \
+  --env POSTGRES_HOST=pgvector \
+  --env POSTGRES_USERNAME=postgres \
+  --env POSTGRES_PASSWORD=$senha_pgvector \
+  --env POSTGRES_DATABASE=chatwoot${1:+_$1} \
+  --env RAILS_ENV=production \
+  --env SECRET_KEY_BASE=$encryption_key \
+  chatwoot/chatwoot:latest \
+  bin/rails db:chatwoot_prepare
+
+# Aguarda o serviço terminar a tarefa
+echo "Aguardando migração completar..."
+# Loop simples para esperar o serviço terminar
+i=0
+while [ $i -lt 60 ]; do # Espera até 60 segundos
+    STATE=$(docker service ps chatwoot_migration_temp --format "{{.CurrentState}}" | head -n 1)
+    if [[ $STATE == *"Complete"* ]]; then
+        echo "✅ 1/2 - [ OK ] - Banco de dados preparado com sucesso."
+        break
+    elif [[ $STATE == *"Failed"* ]] || [[ $STATE == *"Rejected"* ]]; then
+        echo "❌ 1/2 - [ OFF ] - Falha na migração."
+        break
+    fi
+    sleep 2
+    i=$((i+1))
+done
+
+# Remove o serviço temporário
+docker service rm chatwoot_migration_temp > /dev/null 2>&1
 
 echo ""
 echo "Aguardando o serviço principal estabilizar..."
-sleep 20
+sleep 15
 
 ## Mensagem de Passo
 echo -e "\e[97m🔑 Ativando funções do Super Admin...\e[33m [Etapa 6 de 6]\e[0m"
