@@ -3276,11 +3276,9 @@ while true; do
     ## Pergunta se as respostas estão corretas
     read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
-        ## Digitou Y para confirmar que as informações estão corretas
         clear
         break
     else
-        ## Digitou N para dizer que as informações não estão corretas.
         msg_chatwoot
     fi
 done
@@ -3333,11 +3331,11 @@ services:
     entrypoint: docker/entrypoints/rails.sh
 
     volumes:
-      - chatwoot${1:+_$1}_storage:/app/storage ## Arquivos de conversa
-      ## CORREÇÃO 1: Volume PUBLIC removido para evitar o SyntaxError (Tela Branca)
+      - chatwoot${1:+_$1}_storage:/app/storage
+      ## Volume PUBLIC removido para corrigir SyntaxError
       #- chatwoot${1:+_$1}_public:/app/public 
-      - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer ## Arquivos de email
-      - chatwoot${1:+_$1}_mailers:/app/app/views/mailers ## Arquivos de emails
+      - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
+      - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
 
     networks:
       - $nome_rede_interna
@@ -3407,7 +3405,7 @@ services:
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage
-      ## CORREÇÃO 1: Volume PUBLIC removido aqui também
+      ## Volume PUBLIC removido aqui também
       #- chatwoot${1:+_$1}_public:/app/public
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
@@ -3491,7 +3489,6 @@ volumes:
   chatwoot${1:+_$1}_redis:
     external: true
     name: chatwoot${1:+_$1}_redis
-  ## CORREÇÃO 1: Volume chatwoot_public removido da definição
 
 networks:
   $nome_rede_interna:
@@ -3527,11 +3524,8 @@ echo -e "\e[97m🗄️ Migrando o banco de dados...\e[33m [Etapa 5 de 6]\e[0m"
 echo ""
 sleep 2
 
-## CORREÇÃO 2: Executa a migração usando um container temporário (Ephemeral)
-## Isso evita o problema do container principal ficar reiniciando antes de ter o banco pronto.
-## Usamos bin/rails pois o bundle exec não estava funcionando no seu ambiente.
-
-echo "Iniciando container temporário de migração..."
+## CORREÇÃO CRÍTICA: Migração segura via Container Temporário + BUNDLE EXEC
+echo "Iniciando migração segura..."
 docker run --rm \
   --network $nome_rede_interna \
   -e POSTGRES_HOST=pgvector \
@@ -3541,14 +3535,12 @@ docker run --rm \
   -e RAILS_ENV=production \
   -e SECRET_KEY_BASE=$encryption_key \
   chatwoot/chatwoot:latest \
-  bin/rails db:chatwoot_prepare
+  bundle exec rails db:chatwoot_prepare
 
 if [ $? -eq 0 ]; then
     echo "✅ [ SUCESSO ] - Banco de dados migrado/preparado."
 else
-    echo "❌ [ FALHA ] - O comando de migração falhou."
-    echo "Tentando 'db:migrate' simples como fallback..."
-    
+    echo "⚠️ [ INFO ] - Comando principal falhou, tentando fallback 'migrate'..."
     docker run --rm \
       --network $nome_rede_interna \
       -e POSTGRES_HOST=pgvector \
@@ -3558,7 +3550,7 @@ else
       -e RAILS_ENV=production \
       -e SECRET_KEY_BASE=$encryption_key \
       chatwoot/chatwoot:latest \
-      bin/rails db:migrate
+      bundle exec rails db:migrate
 fi
 
 echo ""
@@ -3570,10 +3562,7 @@ echo -e "\e[97m🔑 Ativando funções do Super Admin...\e[33m [Etapa 6 de 6]\e[
 echo ""
 sleep 1
 
-##  Aqui vamos alterar um dado no postgres para liberar algumas funções ocultas no painel de super admin
-wait_for_pgvector
-
-## CORREÇÃO 3: Aponta o PSQL para o container PGVECTOR correto e não para o Chatwoot
+## Identifica o container do PGVECTOR corretamente (para não dar erro tentando conectar no chatwoot)
 PG_CONTAINER_ID=$(docker ps -q --filter "name=pgvector" | head -n 1)
 
 if [ -n "$PG_CONTAINER_ID" ]; then
@@ -3585,7 +3574,7 @@ EOF
     if [ $? -eq 0 ]; then
         echo "1/1 - [ OK ] - Desbloqueando tabela installation_configs no pgvector"
     else
-        echo "❌ 1/1 - [ FALHA ] - Tentativa de desbloquear a tabela installation_configs no PgVector falhou."
+        echo "❌ 1/1 - [ FALHA ] - Tentativa de desbloquear a tabela installation_configs falhou."
     fi
 else
     echo "⚠️ Container PgVector não encontrado para desbloqueio."
