@@ -3204,118 +3204,140 @@ echo ""
 
 ferramenta_chatwoot() {
 
-    ## Verifica os recursos
-    recursos 2 2 || return
+## Limpa o terminal
+clear
 
+## Ativa a função dados para pegar os dados da vps
+dados
+
+## Mostra o nome da aplicação (Adaptado para sua msg)
+msg_chatwoot
+
+## Inicia um Loop até os dados estarem certos
+while true; do
+
+    ## Passo 1 - Domínio da aplicação
+    echo -e "\e[97mPasso$amarelo 1/6\e[0m"
+    echo -en "\e[33mDigite o Dominio para o Chatwoot (ex: chatwoot.encha.ai): \e[0m" && read -r url_chatwoot
+    echo ""
+    
+    ## Pega o nome do dominio para ser o nome da empresa
+    nome_empresa_chatwoot="$nome_servidor"
+    
+    ## Passo 2 - Email SMTP
+    echo -e "\e[97mPasso$amarelo 2/6\e[0m"
+    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_admin_chatwoot
+    echo ""
+
+    ## Define o dominio SMTP com o dominio do email
+    dominio_smtp_chatwoot=$(echo "$email_admin_chatwoot" | cut -d "@" -f 2)
+
+    ## Passo 3 - Usuário SMTP
+    echo -e "\e[97mPasso$amarelo 3/6\e[0m"
+    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r user_smtp_chatwoot
+    echo ""
+    
+    ## Passo 4 - Senha do SMTP
+    echo -e "\e[97mPasso$amarelo 4/6\e[0m"
+    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_chatwoot
+    echo ""
+    
+    ## Passo 5 - Host SMTP
+    echo -e "\e[97mPasso$amarelo 5/6\e[0m"
+    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_chatwoot
+    echo ""
+    
+    ## Passo 6 - Porta SMTP
+    echo -e "\e[97mPasso$amarelo 6/6\e[0m"
+    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
+    
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    if [ "$porta_smtp_chatwoot" -eq 465 ]; then
+     sobre_ssl=true
+    else
+     sobre_ssl=false
+    fi
+    
     ## Limpa o terminal
     clear
-
-    ## Ativa a função dados para pegar os dados da vps
-    dados
-
+    
     ## Mostra o nome da aplicação
-    nome_chatwoot
+    msg_chatwoot
+    
+    ## Mostra mensagem para verificar as informações
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "\e[33mDominio do Chatwoot:\e[97m $url_chatwoot\e[0m"
+    echo -e "\e[33mNome da Empresa:\e[97m $nome_empresa_chatwoot\e[0m"
+    echo -e "\e[33mEmail do SMTP:\e[97m $email_admin_chatwoot\e[0m"
+    echo -e "\e[33mUser do SMTP:\e[97m $user_smtp_chatwoot\e[0m"
+    echo -e "\e[33mSenha do SMTP:\e[97m $senha_email_chatwoot\e[0m"
+    echo -e "\e[33mHost SMTP:\e[97m $smtp_email_chatwoot\e[0m"
+    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_chatwoot\e[0m"
+    echo ""
 
-    ## Inicia um Loop até os dados estarem certos
-    while true; do
-
-        echo -e "\e[97mPasso$amarelo 1/6\e[0m"
-        echo -en "\e[33mDigite o Dominio para o Chatwoot (ex: chatwoot.seudominio.com): \e[0m" && read -r url_chatwoot
-        echo ""
-        
-        nome_empresa_chatwoot="$nome_servidor"
-        
-        echo -e "\e[97mPasso$amarelo 2/6\e[0m"
-        echo -en "\e[33mDigite o Email para SMTP (ex: admin@seudominio.com): \e[0m" && read -r email_admin_chatwoot
-        echo ""
-
-        dominio_smtp_chatwoot=$(echo "$email_admin_chatwoot" | cut -d "@" -f 2)
-
-        echo -e "\e[97mPasso$amarelo 3/6\e[0m"
-        echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-        echo -en "\e[33mDigite o Usuário para SMTP (ex: admin@seudominio.com): \e[0m" && read -r user_smtp_chatwoot
-        echo ""
-        
-        echo -e "\e[97mPasso$amarelo 4/6\e[0m"
-        echo -en "\e[33mDigite a Senha SMTP do Email: \e[0m" && read -r senha_email_chatwoot
-        echo ""
-        
-        echo -e "\e[97mPasso$amarelo 5/6\e[0m"
-        echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_chatwoot
-        echo ""
-        
-        echo -e "\e[97mPasso$amarelo 6/6\e[0m"
-        echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
-        
-        if [ "$porta_smtp_chatwoot" -eq 465 ]; then
-         sobre_ssl=true
-        else
-         sobre_ssl=false
-        fi
-        
+    ## Pergunta se as respostas estão corretas
+    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
         clear
-        nome_chatwoot
-        
-        # Resumo
-        echo -e "\e[33mDominio:\e[97m $url_chatwoot\e[0m"
-        echo -e "\e[33mEmail SMTP:\e[97m $email_admin_chatwoot\e[0m"
-        echo ""
-
-        read -p "As respostas estão corretas? (Y/N): " confirmacao
-        if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
-            break
-        else
-            clear
-            nome_chatwoot
-        fi
-    done
-
-    echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO CHATWOOT \e[33m[1/6]\e[0m"
-    echo ""
-    sleep 1
-
-    telemetria Chatwoot iniciado > /dev/null 2>&1
-    dados
-
-    echo -e "\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m"
-    echo ""
-    sleep 1
-
-    verificar_container_pgvector
-    if [ $? -eq 0 ]; then
-        echo "1/3 - [ OK ] - PgVector já instalado"
-        pegar_senha_pgvector > /dev/null 2>&1
-        criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
-        echo "3/3 - [ OK ] - Criando banco de dados"
-        echo ""
+        break
     else
-        ferramenta_pgvector
-        pegar_senha_pgvector > /dev/null 2>&1
-        criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
+        clear
+        msg_chatwoot
     fi
+done
 
-    echo -e "\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m"
+## Mensagem de Passo
+echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO CHATWOOT \e[33m[1/6]\e[0m"
+echo ""
+sleep 1
+
+## Ativa a função dados para pegar os dados da vps
+dados
+
+## Mensagem de Passo
+echo -e "\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m"
+echo ""
+sleep 1
+
+## Verifica container postgres e cria banco no postgres (Lógica Orion)
+verificar_container_pgvector
+if [ $? -eq 0 ]; then
+    echo "1/3 - [ OK ] - PgVector já instalado"
+    pegar_senha_pgvector > /dev/null 2>&1
+    echo "2/3 - [ OK ] - Copiando senha do PgVector"
+    criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
+    echo "3/3 - [ OK ] - Criando banco de dados"
     echo ""
-    sleep 1
+else
+    ferramenta_pgvector
+    pegar_senha_pgvector > /dev/null 2>&1
+    criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
+fi
 
-    encryption_key=$(openssl rand -hex 16)
+## Mensagem de Passo
+echo -e "\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m"
+echo ""
+sleep 1
 
-    ## CRIAÇÃO DO ARQUIVO YAML
-    cat > chatwoot${1:+_$1}.yaml <<EOL
+## Criando key aleatória
+encryption_key=$(openssl rand -hex 16)
+
+## Criando a stack chatwoot.yaml (Mantendo Volumes do Orion para evitar bugs)
+cat > chatwoot${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
 
   chatwoot${1:+_$1}_app:
     image: chatwoot/chatwoot:latest
-    ## Entrypoint padrão gerencia o rails server. Sem migração aqui.
     command: >
-      sh -c "echo 'Rails.application.config.active_storage.variant_processor = :mini_magick' > /app/config/initializers/active_storage.rb && bin/rails s -p 3000 -b 0.0.0.0"
+      sh -c "echo 'Rails.application.config.active_storage.variant_processor = :mini_magick' > /app/config/initializers/active_storage.rb && bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0"
     entrypoint: docker/entrypoints/rails.sh    
 
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage
-      ## PUBLIC removido para evitar SyntaxError
-      #- chatwoot${1:+_$1}_public:/app/public
+      - chatwoot${1:+_$1}_public:/app/public
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
 
@@ -3383,17 +3405,13 @@ services:
   chatwoot${1:+_$1}_sidekiq:
     image: chatwoot/chatwoot:latest
     command: bundle exec sidekiq -C config/sidekiq.yml
-
     volumes:
       - chatwoot${1:+_$1}_storage:/app/storage
-      ## PUBLIC removido
-      #- chatwoot${1:+_$1}_public:/app/public
+      - chatwoot${1:+_$1}_public:/app/public
       - chatwoot${1:+_$1}_mailer:/app/app/views/devise/mailer
       - chatwoot${1:+_$1}_mailers:/app/app/views/mailers
-
     networks:
       - $nome_rede_interna
-
     environment:
       - INSTALLATION_NAME=$nome_empresa_chatwoot
       - SECRET_KEY_BASE=$encryption_key
@@ -3429,7 +3447,6 @@ services:
       - RAILS_LOG_TO_STDOUT=true
       - USE_INBOX_AVATAR_FOR_BOT=true
       - ENABLE_ACCOUNT_SIGNUP=false
-
     deploy:
       mode: replicated
       replicas: 1
@@ -3461,6 +3478,9 @@ volumes:
   chatwoot${1:+_$1}_storage:
     external: true
     name: chatwoot${1:+_$1}_storage
+  chatwoot${1:+_$1}_public:
+    external: true
+    name: chatwoot${1:+_$1}_public
   chatwoot${1:+_$1}_mailer:
     external: true
     name: chatwoot${1:+_$1}_mailer
@@ -3477,134 +3497,114 @@ networks:
     name: $nome_rede_interna
 EOL
 
-    if [ $? -eq 0 ]; then
-        echo "1/10 - [ OK ] - Criando Stack"
-    else
-        echo "1/10 - [ OFF ] - Criando Stack"
-    fi
-    STACK_NAME="chatwoot${1:+_$1}"
-    stack_editavel > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "1/10 - [ OK ] - Criando Stack"
+else
+    echo "1/10 - [ OFF ] - Criando Stack"
+    echo "Não foi possivel criar a stack do Chatwoot"
+fi
+STACK_NAME="chatwoot${1:+_$1}"
+stack_editavel
 
-    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/6]\e[0m"
-    echo ""
-    sleep 1
+## Mensagem de Passo
+echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/6]\e[0m"
+echo ""
+sleep 1
 
-    pull redis:latest chatwoot/chatwoot:latest
-    # Apenas verifica se os serviços foram criados, não espera "ficar verde" ainda pois sem banco eles não sobem
-    
-    # Faz o deploy da stack
-    docker stack deploy --prune --resolve-image always -c chatwoot${1:+_$1}.yaml chatwoot${1:+_$1} > /dev/null 2>&1
+## Baixando imagens:
+pull redis:latest chatwoot/chatwoot:latest
 
-    sleep 10
-    echo ""
+## Usa o serviço wait_stack para verificar se o serviço esta online
+wait_stack chatwoot${1:+_$1}_chatwoot${1:+_$1}_redis chatwoot${1:+_$1}_chatwoot${1:+_$1}_app chatwoot${1:+_$1}_chatwoot${1:+_$1}_sidekiq
 
-    echo -e "\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m"
-    echo ""
-    sleep 2
+sleep 30
+echo ""
 
-    # Remove serviço temporário anterior se existir (limpeza)
-    docker service rm chatwoot_migration_temp > /dev/null 2>&1
+## Mensagem de Passo
+echo -e "\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m"
+echo ""
+sleep 7
 
-    # CRÍTICO: Usa 'docker service create' com --detach=false
-    # Isso resolve o problema de rede (funciona em overlay) e mostra o LOG na tela (sem falha silenciosa)
-    echo "Iniciando serviço de migração (Aguarde, isso pode demorar alguns minutos)..."
-    
-    docker service create \
-      --name chatwoot_migration_temp \
-      --network $nome_rede_interna \
-      --restart-condition none \
-      --detach=false \
-      --env POSTGRES_HOST=pgvector \
-      --env POSTGRES_USERNAME=postgres \
-      --env POSTGRES_PASSWORD=$senha_pgvector \
-      --env POSTGRES_DATABASE=chatwoot${1:+_$1} \
-      --env RAILS_ENV=production \
-      --env SECRET_KEY_BASE=$encryption_key \
-      chatwoot/chatwoot:latest \
-      bin/rails db:chatwoot_prepare
+## Migração via Docker Exec (Lógica segura do Orion)
+container_name="chatwoot${1:+_$1}_chatwoot${1:+_$1}_app"
+max_wait_time=1200
+wait_interval=60
+elapsed_time=0
 
-    if [ $? -eq 0 ]; then
-        echo "✅ Banco de dados migrado com sucesso."
-        # Remove o serviço temporário
-        docker service rm chatwoot_migration_temp > /dev/null 2>&1
-    else
-        echo "❌ Falha na migração."
-        echo "Verifique as mensagens acima."
-        # Não remove o serviço para permitir debug se necessário, ou remove se preferir limpar
-        docker service rm chatwoot_migration_temp > /dev/null 2>&1
-    fi
-    
-    echo ""
-    echo "Reiniciando serviços da aplicação para pegar o banco novo..."
-    # Força atualização para garantir que peguem o banco pronto
-    docker service update --force chatwoot${1:+_$1}_chatwoot${1:+_$1}_app > /dev/null 2>&1
-    docker service update --force chatwoot${1:+_$1}_chatwoot${1:+_$1}_sidekiq > /dev/null 2>&1
-    
-    # Agora sim esperamos ficar tudo verde
-    echo "Aguardando estabilização final..."
-    wait_stack chatwoot${1:+_$1}_chatwoot${1:+_$1}_redis chatwoot${1:+_$1}_chatwoot${1:+_$1}_app chatwoot${1:+_$1}_chatwoot${1:+_$1}_sidekiq
+while [ $elapsed_time -lt $max_wait_time ]; do
+  CONTAINER_ID=$(docker ps -q --filter "name=$container_name")
+  if [ -n "$CONTAINER_ID" ]; then
+    break
+  fi
+  sleep $wait_interval
+  elapsed_time=$((elapsed_time + wait_interval))
+done
 
+if [ -z "$CONTAINER_ID" ]; then
+  echo "O contêiner não foi encontrado."
+  exit 1
+fi
 
-    # Configuração Timezone
-    pg_container_name="pgvector_pgvector"
-    if [ -z "$(docker ps -q --filter "name=^/${pg_container_name}$")" ]; then
-        PG_CONTAINER_ID=$(docker ps -q --filter "name=pgvector" | head -n 1)
-    else
-        PG_CONTAINER_ID=$(docker ps -q --filter "name=^/${pg_container_name}$")
-    fi
+docker exec -i "$CONTAINER_ID" bundle exec rails db:chatwoot_prepare > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "1/2 - [ OK ] - Migração Concluída"
+else
+    echo "1/2 - [ OFF ] - Falha na Migração"
+fi
 
-    if [ -n "$PG_CONTAINER_ID" ]; then
-        docker exec -i "$PG_CONTAINER_ID" psql -U postgres <<'SQL' > /dev/null 2>&1
+# Ajuste de Timezone no Postgres (Lógica Orion)
+pg_container_name="pgvector_pgvector"
+PG_CONTAINER_ID=$(docker ps -q --filter "name=$pg_container_name")
+
+if [ -n "$PG_CONTAINER_ID" ]; then
+    docker exec -i "$PG_CONTAINER_ID" psql -U postgres <<'SQL' > /dev/null 2>&1
 ALTER SYSTEM SET timezone = 'UTC';
 SET timezone = 'UTC';
 ALTER DATABASE chatwoot${1:+_$1} SET timezone TO 'UTC';
 SQL
-        echo "Timezone configurado."
-    fi
+    echo "2/2 - [ OK ] - Timezone configurado"
+fi
 
-    echo ""
-    echo -e "\e[97m• ATIVANDO FUNÇÕES DO SUPER ADMIN \e[33m[6/6]\e[0m"
-    echo ""
-    sleep 1
+echo ""
+## Mensagem de Passo
+echo -e "\e[97m• ATIVANDO FUNÇÕES DO SUPER ADMIN \e[33m[6/6]\e[0m"
+echo ""
+sleep 1
 
-    if [ -n "$PG_CONTAINER_ID" ]; then
-        docker exec -i $PG_CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
+wait_for_pgvector
+
+docker exec -i $PG_CONTAINER_ID psql -U postgres <<EOF > /dev/null 2>&1
 \c chatwoot${1:+_$1};
 update installation_configs set locked = false;
 \q
 EOF
-        if [ $? -eq 0 ]; then
-            echo "1/1 - [ OK ] - Funções Super Admin desbloqueadas."
-        else
-            echo "1/1 - [ OFF ] - Erro ao rodar SQL de desbloqueio."
-        fi
-    else
-        echo "1/1 - [ OFF ] - Container PgVector não encontrado."
-    fi
 
-    echo ""
+if [ $? -eq 0 ]; then
+    echo "1/1 - [ OK ] - Super Admin Ativado"
+else
+    echo "1/1 - [ OFF ] - Falha ao ativar Super Admin"
+fi
 
-    # Salva dados
-    cd dados_vps
-    cat > dados_chatwoot${1:+_$1} <<EOL
+echo ""
+
+## Salvando informações e finalizando
+cd dados_vps
+cat > dados_chatwoot${1:+_$1} <<EOL
 [ CHATWOOT ]
-Dominio do Chatwoot: https://$url_chatwoot
-Usuario: Precisa criar dentro do Chatwoot
-Senha: Precisa criar dentro do Chatwoot
+Dominio: https://$url_chatwoot
+Usuario: Criar no primeiro acesso
 EOL
-    cd ..
+cd
 
-    wait_30_sec
+wait_30_sec
+instalado_msg
+guarde_os_dados_msg
 
-    # Mensagens finais
-    echo -e "\e[32m🚀 [ CHATWOOT INSTALADO COM SUCESSO ]\e[0m"
-    echo ""
-    echo -e "\e[97m🌐 Domínio:\e[33m https://$url_chatwoot\e[0m"
-    echo -e "\e[97m👤 Usuário:\e[33m Criar no primeiro acesso\e[0m"
-    echo -e "\e[97m🔑 Senha:\e[33m Criar no primeiro acesso\e[0m"
-    echo ""
+echo -e "\e[32m[ CHATWOOT INSTALADO ]\e[0m"
+echo -e "\e[97mDominio:\e[33m https://$url_chatwoot\e[0m"
 
-    msg_retorno_menu 2>/dev/null || read -p "Pressione ENTER para voltar"
+creditos_msg
+requisitar_outra_instalacao
 }
 
 ferramenta_redis() {
