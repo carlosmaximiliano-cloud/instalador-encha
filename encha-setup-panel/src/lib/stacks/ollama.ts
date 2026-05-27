@@ -9,6 +9,7 @@ const schema = z.object({
 export const ollama: StackDefinition = {
   id: "ollama",
   repoUrl: "https://github.com/ollama/ollama",
+  logoUrl: "https://raw.githubusercontent.com/ollama/ollama/main/docs/static/ollama.svg",
   name: "Ollama",
   description: "Servidor local de LLMs (Llama, Mistral, Gemma, etc.). Compatível com API OpenAI.",
   category: "ai",

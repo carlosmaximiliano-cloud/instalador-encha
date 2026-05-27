@@ -8,6 +8,7 @@ const schema = z.object({
 export const gotenberg: StackDefinition = {
   id: "gotenberg",
   repoUrl: "https://github.com/gotenberg/gotenberg",
+  logoUrl: "https://raw.githubusercontent.com/gotenberg/gotenberg/main/docs/static/logo.svg",
   name: "Gotenberg",
   description: "API HTTP para gerar PDFs a partir de HTML.",
   category: "monitoring",

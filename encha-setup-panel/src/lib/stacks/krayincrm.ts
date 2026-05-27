@@ -14,6 +14,7 @@ const schema = z.object({
 export const krayincrm: StackDefinition = {
   id: "krayincrm",
   repoUrl: "https://github.com/krayin/laravel-crm",
+  logoUrl: "https://raw.githubusercontent.com/krayin/laravel-crm/master/logo.png",
   name: "Krayin CRM",
   description: "CRM Laravel completo com pipeline de vendas e leads.",
   category: "crm",

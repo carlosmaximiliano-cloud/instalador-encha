@@ -14,6 +14,7 @@ const schema = z.object({
 export const tooljet: StackDefinition = {
   id: "tooljet",
   repoUrl: "https://github.com/ToolJet/ToolJet",
+  logoUrl: "https://raw.githubusercontent.com/ToolJet/ToolJet/develop/static/images/logo.svg",
   name: "ToolJet",
   description: "Construa apps internos low-code com drag-and-drop.",
   category: "admin",

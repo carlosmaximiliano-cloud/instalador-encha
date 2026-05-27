@@ -11,6 +11,7 @@ const schema = z.object({
 export const nocobase: StackDefinition = {
   id: "nocobase",
   repoUrl: "https://github.com/nocobase/nocobase",
+  logoUrl: "https://raw.githubusercontent.com/nocobase/nocobase/main/docs/static/img/logo.svg",
   name: "NocoBase",
   description: "Plataforma low-code para apps internos sobre Postgres.",
   category: "cms",

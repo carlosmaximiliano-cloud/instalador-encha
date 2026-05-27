@@ -11,6 +11,7 @@ const schema = z.object({
 export const langflow: StackDefinition = {
   id: "langflow",
   repoUrl: "https://github.com/logspace-ai/langflow",
+  logoUrl: "https://raw.githubusercontent.com/logspace-ai/langflow/main/docs/static/img/logo.svg",
   name: "Langflow",
   description: "Editor visual para fluxos LangChain e agentes IA.",
   category: "ai",

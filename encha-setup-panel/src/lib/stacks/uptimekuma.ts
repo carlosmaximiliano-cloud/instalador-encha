@@ -8,6 +8,7 @@ const schema = z.object({
 export const uptimekuma: StackDefinition = {
   id: "uptimekuma",
   repoUrl: "https://github.com/louislam/uptime-kuma",
+  logoUrl: "https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.svg",
   name: "Uptime Kuma",
   description: "Monitoramento de uptime bonito e simples.",
   category: "monitoring",

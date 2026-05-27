@@ -10,6 +10,7 @@ const schema = z.object({
 export const rustdesk: StackDefinition = {
   id: "rustdesk",
   repoUrl: "https://github.com/rustdesk/rustdesk",
+  logoUrl: "https://raw.githubusercontent.com/rustdesk/rustdesk/master/res/logo.svg",
   name: "RustDesk",
   description: "TeamViewer open-source em Rust.",
   category: "remote",

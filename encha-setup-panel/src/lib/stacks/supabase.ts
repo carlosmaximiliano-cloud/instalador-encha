@@ -44,6 +44,7 @@ function generateSupabaseJwts(): { secret: string; anonKey: string; serviceKey: 
 export const supabase: StackDefinition = {
   id: "supabase",
   repoUrl: "https://github.com/supabase/supabase",
+  logoUrl: "https://raw.githubusercontent.com/supabase/supabase/master/apps/www/public/images/supabase-logo-wordmark--dark.png",
   name: "Supabase",
   description: "Backend completo open-source (Postgres + Auth + Storage + Realtime).",
   category: "database",

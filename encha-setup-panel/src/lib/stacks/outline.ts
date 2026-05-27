@@ -11,6 +11,7 @@ const schema = z.object({
 export const outline: StackDefinition = {
   id: "outline",
   repoUrl: "https://github.com/outline/outline",
+  logoUrl: "https://raw.githubusercontent.com/outline/outline/main/public/logo.png",
   name: "Outline",
   description: "Wiki de conhecimento bonita para times modernos.",
   category: "communication",

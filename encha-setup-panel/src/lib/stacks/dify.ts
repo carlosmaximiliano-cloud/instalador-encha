@@ -16,6 +16,7 @@ const schema = z.object({
 export const dify: StackDefinition = {
   id: "dify",
   repoUrl: "https://github.com/langgenius/dify",
+  logoUrl: "https://raw.githubusercontent.com/langgenius/dify/main/docs/assets/dify-logo.svg",
   name: "Dify",
   description: "Plataforma LLMOps para apps e agentes IA em produção.",
   category: "ai",

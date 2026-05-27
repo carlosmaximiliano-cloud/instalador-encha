@@ -10,6 +10,7 @@ const schema = z.object({
 export const stirling: StackDefinition = {
   id: "stirling",
   repoUrl: "https://github.com/Stirling-Tools/Stirling-PDF",
+  logoUrl: "https://raw.githubusercontent.com/Stirling-Tools/Stirling-PDF/main/docs/logo.svg",
   name: "Stirling PDF",
   description: "Suíte web de manipulação de PDFs (merge, split, OCR).",
   category: "monitoring",

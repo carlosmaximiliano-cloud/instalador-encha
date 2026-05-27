@@ -11,6 +11,7 @@ const schema = z.object({
 export const duplicati: StackDefinition = {
   id: "duplicati",
   repoUrl: "https://github.com/duplicati/duplicati",
+  logoUrl: "https://raw.githubusercontent.com/duplicati/duplicati/master/Duplicati/Server/webroot/img/logo.svg",
   name: "Duplicati",
   description: "Backup automático criptografado para nuvem.",
   category: "storage",

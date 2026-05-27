@@ -10,6 +10,7 @@ const schema = z.object({
 export const zep: StackDefinition = {
   id: "zep",
   repoUrl: "https://github.com/getzep/zep",
+  logoUrl: "https://raw.githubusercontent.com/getzep/zep/main/docs/logo.svg",
   name: "Zep",
   description: "Memória de longo prazo e contexto para agentes IA.",
   category: "ai",

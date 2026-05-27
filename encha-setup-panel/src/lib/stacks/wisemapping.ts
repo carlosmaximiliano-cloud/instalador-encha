@@ -8,6 +8,7 @@ const schema = z.object({
 export const wisemapping: StackDefinition = {
   id: "wisemapping",
   repoUrl: "https://github.com/wisemapping/wisemapping-open-source",
+  logoUrl: "https://raw.githubusercontent.com/wisemapping/wisemapping-open-source/develop/packages/webapp/public/logo.svg",
   name: "WiseMapping",
   description: "Editor de mapas mentais colaborativo open-source.",
   category: "marketing",

@@ -7,6 +7,7 @@ const schema = z.object({});
 export const postgres: StackDefinition = {
   id: "postgres",
   repoUrl: "https://github.com/postgres/postgres",
+  logoUrl: "https://raw.githubusercontent.com/postgres/postgres/master/src/interfaces/libpq/libpq.png",
   name: "PostgreSQL",
   description: "Banco de dados relacional compartilhado pelas stacks que precisam (Evolution, N8N, Chatwoot, Directus). Senha gerada automaticamente.",
   category: "database",

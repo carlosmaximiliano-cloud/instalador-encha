@@ -11,6 +11,7 @@ const schema = z.object({
 export const flowise: StackDefinition = {
   id: "flowise",
   repoUrl: "https://github.com/FlowiseAI/Flowise",
+  logoUrl: "https://raw.githubusercontent.com/FlowiseAI/Flowise/main/images/flowise.png",
   name: "Flowise",
   description: "Construa agentes LLM com fluxos visuais drag-and-drop.",
   category: "ai",

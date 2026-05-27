@@ -9,6 +9,7 @@ const schema = z.object({
 export const wiki: StackDefinition = {
   id: "wiki",
   repoUrl: "https://github.com/requarks/wiki",
+  logoUrl: "https://raw.githubusercontent.com/requarks/wiki/master/docs/assets/logo.svg",
   name: "Wiki.js",
   description: "Documentação corporativa moderna com markdown e Git.",
   category: "communication",

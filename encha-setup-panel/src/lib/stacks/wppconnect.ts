@@ -8,6 +8,7 @@ const schema = z.object({
 export const wppconnect: StackDefinition = {
   id: "wppconnect",
   repoUrl: "https://github.com/wppconnect-team/wppconnect-server",
+  logoUrl: "https://raw.githubusercontent.com/wppconnect-team/wppconnect-server/main/docs/images/logo.png",
   name: "WPPConnect",
   description: "API multi-sessão para WhatsApp baseada em puppeteer.",
   category: "messaging",

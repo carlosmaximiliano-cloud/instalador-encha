@@ -9,6 +9,7 @@ const schema = z.object({
 export const openproject: StackDefinition = {
   id: "openproject",
   repoUrl: "https://github.com/opf/openproject",
+  logoUrl: "https://raw.githubusercontent.com/opf/openproject/dev/docs/logo.svg",
   name: "OpenProject",
   description: "Gestão de projetos enterprise open-source.",
   category: "erp",

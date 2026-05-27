@@ -8,6 +8,7 @@ const schema = z.object({
 export const mattermost: StackDefinition = {
   id: "mattermost",
   repoUrl: "https://github.com/mattermost/mattermost",
+  logoUrl: "https://raw.githubusercontent.com/mattermost/mattermost/master/assets/mattermost-logo.png",
   name: "Mattermost",
   description: "Slack self-hosted para times técnicos e seguros.",
   category: "communication",

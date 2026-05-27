@@ -8,6 +8,7 @@ const schema = z.object({
 export const browserless: StackDefinition = {
   id: "browserless",
   repoUrl: "https://github.com/browserless/browserless",
+  logoUrl: "https://raw.githubusercontent.com/browserless/browserless/master/docs/logo.svg",
   name: "Browserless",
   description: "Chrome headless como serviço para automação.",
   category: "monitoring",

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StackCard, type CatalogEntry } from "@/components/stack-card";
 import { InstallWizard } from "@/components/wizard/install-wizard";
@@ -64,12 +64,7 @@ function CatalogPageInner() {
   const [swarmCtx, setSwarmCtx] = useState({ networkName: "enchanet", serverName: "encha", email: "" });
   const [vpsDefaults, setVpsDefaults] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    fetch("/api/csrf")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d?.token && setCsrf(d.token))
-      .catch((e) => console.error("[csrf]", e));
-
+  const refetchStacks = useCallback(() => {
     fetch("/api/stacks")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -77,6 +72,15 @@ function CatalogPageInner() {
         else console.warn("[stacks] resposta inesperada:", d);
       })
       .catch((e) => console.error("[stacks]", e));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/csrf")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.token && setCsrf(d.token))
+      .catch((e) => console.error("[csrf]", e));
+
+    refetchStacks();
 
     fetch("/api/vps-context")
       .then((r) => (r.ok ? r.json() : null))
@@ -95,11 +99,21 @@ function CatalogPageInner() {
         });
       })
       .catch((e) => console.error("[vps-context]", e));
-  }, []);
+  }, [refetchStacks]);
 
-  const installedSet = useMemo(() => {
+  useEffect(() => {
+    if (!data) return;
+    const anyDeploying = data.catalog.some((s) => s.installed && !s.ready);
+    if (!anyDeploying) return;
+    const id = setInterval(refetchStacks, 5000);
+    return () => clearInterval(id);
+  }, [data, refetchStacks]);
+
+  const readySet = useMemo(() => {
     if (!data) return new Set<string>();
-    return new Set(data.catalog.filter((s) => s.installed).map((s) => s.id));
+    return new Set(
+      data.catalog.filter((s) => s.installed && s.ready).map((s) => s.id)
+    );
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -184,7 +198,7 @@ function CatalogPageInner() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s) => (
-            <StackCard key={s.id} stack={s} installedSet={installedSet} onInstall={openInstall} />
+            <StackCard key={s.id} stack={s} readySet={readySet} onInstall={openInstall} />
           ))}
         </div>
       )}
@@ -202,6 +216,7 @@ function CatalogPageInner() {
           }}
           open
           onClose={() => setOpenStack(null)}
+          onInstalled={refetchStacks}
           csrfToken={csrf}
           swarmCtx={swarmCtx}
         />

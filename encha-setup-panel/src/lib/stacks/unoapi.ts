@@ -23,6 +23,7 @@ const schema = z.object({
 export const unoapi: StackDefinition = {
   id: "unoapi",
   repoUrl: "https://github.com/clairton/unoapi-cloud",
+  logoUrl: "https://raw.githubusercontent.com/clairton/unoapi-cloud/main/public/logo.svg",
   name: "UnoAPI",
   description: "Gateway WhatsApp Cloud + Baileys com fila Redis.",
   category: "messaging",

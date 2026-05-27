@@ -10,6 +10,7 @@ const schema = z.object({
 export const wordpress: StackDefinition = {
   id: "wordpress",
   repoUrl: "https://github.com/WordPress/WordPress",
+  logoUrl: "https://raw.githubusercontent.com/WordPress/WordPress/master/wp-content/themes/twentytwentyone/assets/images/wordpress-logo.svg",
   name: "WordPress",
   description: "Plataforma de blogs e sites mais popular do mundo.",
   category: "cms",

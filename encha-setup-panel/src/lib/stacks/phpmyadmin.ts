@@ -9,6 +9,7 @@ const schema = z.object({
 export const phpmyadmin: StackDefinition = {
   id: "phpmyadmin",
   repoUrl: "https://github.com/phpmyadmin/phpmyadmin",
+  logoUrl: "https://raw.githubusercontent.com/phpmyadmin/phpmyadmin/master/docs/images/logo.png",
   name: "phpMyAdmin",
   description: "Interface web para administrar bancos MySQL/MariaDB.",
   category: "database",

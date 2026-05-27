@@ -8,6 +8,7 @@ const schema = z.object({
 export const easyappointments: StackDefinition = {
   id: "easyappointments",
   repoUrl: "https://github.com/alextselegidis/easyappointments",
+  logoUrl: "https://raw.githubusercontent.com/alextselegidis/easyappointments/develop/public/assets/img/logo.png",
   name: "Easy Appointments",
   description: "Sistema PHP de agendamento de horários.",
   category: "scheduling",

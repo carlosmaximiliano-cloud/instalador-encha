@@ -11,6 +11,7 @@ const schema = z.object({
 export const woofedcrm: StackDefinition = {
   id: "woofedcrm",
   repoUrl: "https://github.com/woofedcrm/woofedcrm",
+  logoUrl: "https://raw.githubusercontent.com/woofedcrm/woofedcrm/main/logo.svg",
   name: "WooFed CRM",
   description: "CRM open-source brasileiro focado em WhatsApp.",
   category: "crm",

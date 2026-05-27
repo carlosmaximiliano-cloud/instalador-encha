@@ -8,6 +8,7 @@ const schema = z.object({
 export const excalidraw: StackDefinition = {
   id: "excalidraw",
   repoUrl: "https://github.com/excalidraw/excalidraw",
+  logoUrl: "https://raw.githubusercontent.com/excalidraw/excalidraw/main/public/logo.svg",
   name: "Excalidraw",
   description: "Whiteboard virtual estilo lápis para diagramas rápidos.",
   category: "design",

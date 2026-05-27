@@ -12,6 +12,7 @@ const schema = z.object({
 export const mautic: StackDefinition = {
   id: "mautic",
   repoUrl: "https://github.com/mautic/mautic",
+  logoUrl: "https://raw.githubusercontent.com/mautic/mautic/master/app/assets/images/mautic_logo.png",
   name: "Mautic",
   description: "Automação de marketing open-source enterprise.",
   category: "marketing",

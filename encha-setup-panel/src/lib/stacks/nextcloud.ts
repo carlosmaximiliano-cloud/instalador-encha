@@ -10,6 +10,7 @@ const schema = z.object({
 export const nextcloud: StackDefinition = {
   id: "nextcloud",
   repoUrl: "https://github.com/nextcloud/server",
+  logoUrl: "https://raw.githubusercontent.com/nextcloud/server/master/core/img/logo.svg",
   name: "Nextcloud",
   description: "Cloud privado completo — arquivos, calendário, chat.",
   category: "storage",

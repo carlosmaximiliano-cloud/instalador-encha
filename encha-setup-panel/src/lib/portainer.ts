@@ -107,19 +107,39 @@ export async function deploySwarmStack(args: {
 
 type DockerService = {
   Spec?: { Labels?: Record<string, string> };
+  ServiceStatus?: { RunningTasks?: number; DesiredTasks?: number };
 };
 
-export async function listSwarmStackNames(token: string, endpointId: number): Promise<string[]> {
+export type SwarmStackStatus = {
+  name: string;
+  desired: number;
+  running: number;
+  ready: boolean;
+};
+
+export async function listSwarmStackStatuses(
+  token: string,
+  endpointId: number
+): Promise<SwarmStackStatus[]> {
   const services = await call<DockerService[]>(
-    `/api/endpoints/${endpointId}/docker/services`,
+    `/api/endpoints/${endpointId}/docker/services?status=true`,
     { token }
   );
-  const stacks = new Set<string>();
+  const byStack = new Map<string, { desired: number; running: number }>();
   for (const svc of services) {
     const ns = svc.Spec?.Labels?.["com.docker.stack.namespace"];
-    if (ns) stacks.add(ns);
+    if (!ns) continue;
+    const cur = byStack.get(ns) ?? { desired: 0, running: 0 };
+    cur.desired += svc.ServiceStatus?.DesiredTasks ?? 0;
+    cur.running += svc.ServiceStatus?.RunningTasks ?? 0;
+    byStack.set(ns, cur);
   }
-  return Array.from(stacks);
+  return Array.from(byStack.entries()).map(([name, s]) => ({
+    name,
+    desired: s.desired,
+    running: s.running,
+    ready: s.desired > 0 && s.running >= s.desired,
+  }));
 }
 
 export async function pingPortainer(): Promise<boolean> {

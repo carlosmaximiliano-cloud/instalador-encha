@@ -14,6 +14,7 @@ const schema = z.object({
 export const docuseal: StackDefinition = {
   id: "docuseal",
   repoUrl: "https://github.com/docusealco/docuseal",
+  logoUrl: "https://raw.githubusercontent.com/docusealco/docuseal/master/app/assets/images/logo.svg",
   name: "DocuSeal",
   description: "Assinatura eletrônica em documentos PDF.",
   category: "marketing",

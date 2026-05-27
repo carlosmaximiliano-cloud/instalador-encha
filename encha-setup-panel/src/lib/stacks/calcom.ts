@@ -14,6 +14,7 @@ const schema = z.object({
 export const calcom: StackDefinition = {
   id: "calcom",
   repoUrl: "https://github.com/calcom/cal.com",
+  logoUrl: "https://raw.githubusercontent.com/calcom/cal/main/public/logo.svg",
   name: "Cal.com",
   description: "Calendly open-source — agendamento de reuniões.",
   category: "scheduling",

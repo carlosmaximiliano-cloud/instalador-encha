@@ -8,6 +8,7 @@ const schema = z.object({
 export const focalboard: StackDefinition = {
   id: "focalboard",
   repoUrl: "https://github.com/mattermost-community/focalboard",
+  logoUrl: "https://raw.githubusercontent.com/mattermost-community/focalboard/main/logo.svg",
   name: "Focalboard",
   description: "Trello/Notion open-source para gestão de projetos.",
   category: "communication",

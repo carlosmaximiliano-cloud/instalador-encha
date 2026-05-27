@@ -21,6 +21,7 @@ const schema = z
 export const n8n: StackDefinition = {
   id: "n8n",
   repoUrl: "https://github.com/n8n-io/n8n",
+  logoUrl: "https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-logo.png",
   name: "N8N",
   description: "Plataforma de automação de fluxos (low-code) com 400+ integrações. Editor visual de workflows.",
   category: "automation",

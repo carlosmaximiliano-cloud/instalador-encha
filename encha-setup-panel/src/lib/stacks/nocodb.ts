@@ -8,6 +8,7 @@ const schema = z.object({
 export const nocodb: StackDefinition = {
   id: "nocodb",
   repoUrl: "https://github.com/nocodb/nocodb",
+  logoUrl: "https://raw.githubusercontent.com/nocodb/nocodb/master/packages/nc-gui/assets/nc_logo.png",
   name: "NocoDB",
   description: "Airtable open-source — turn any DB into a spreadsheet.",
   category: "cms",

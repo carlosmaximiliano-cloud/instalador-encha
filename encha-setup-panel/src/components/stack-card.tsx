@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,7 @@ import {
   Shield, Workflow, MessageCircle, Headphones, HardDrive, Bot, LayoutDashboard,
   Brain, TableProperties, DatabaseZap, Database, CheckCircle2, ExternalLink,
   UsersRound, FileText, Calendar, BarChart3, KeyRound, Radio, Monitor as MonitorIcon,
-  PencilRuler, Activity, Mail,
+  PencilRuler, Activity, Mail, Loader2,
 } from "lucide-react";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -64,27 +65,32 @@ export type CatalogEntry = {
   icon: string;
   dependsOn: string[];
   installed: boolean;
+  ready: boolean;
   repoUrl?: string;
+  logoUrl?: string;
   installVia?: "panel" | "bash";
   optionNumber?: number;
 };
 
 export function StackCard({
   stack,
-  installedSet,
+  readySet,
   onInstall,
 }: {
   stack: CatalogEntry;
-  installedSet: Set<string>;
+  readySet: Set<string>;
   onInstall: (id: string) => void;
 }) {
   const Icon = ICONS[stack.icon] ?? Shield;
-  const missingDeps = stack.dependsOn.filter((d) => !installedSet.has(d));
+  const [logoOk, setLogoOk] = useState(true);
+  const missingDeps = stack.dependsOn.filter((d) => !readySet.has(d));
   const canInstall = missingDeps.length === 0;
   const isBash = stack.installVia === "bash";
+  const isDeploying = stack.installed && !stack.ready;
 
   let buttonLabel = "Instalar";
-  if (stack.installed) buttonLabel = "Já instalado";
+  if (stack.installed && stack.ready) buttonLabel = "Já instalado";
+  else if (isDeploying) buttonLabel = "Instalando...";
   else if (!canInstall) buttonLabel = "Aguardando dependências";
   else if (isBash) buttonLabel = "Instalar via SSH";
 
@@ -92,8 +98,19 @@ export function StackCard({
     <Card variant="glass" className="flex flex-col h-full">
       <CardHeader>
         <div className="flex items-start gap-3">
-          <div className="h-11 w-11 rounded-md bg-coral-100/60 dark:bg-coral-900/20 flex items-center justify-center text-coral-600 dark:text-coral-300 shrink-0">
-            <Icon className="h-5 w-5" />
+          <div className="h-[52px] w-[52px] rounded-md bg-coral-100/60 dark:bg-coral-900/20 flex items-center justify-center text-coral-600 dark:text-coral-300 shrink-0 overflow-hidden p-1.5">
+            {stack.logoUrl && logoOk ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={stack.logoUrl}
+                alt={stack.name}
+                className="max-h-full max-w-full object-contain"
+                onError={() => setLogoOk(false)}
+                loading="lazy"
+              />
+            ) : (
+              <Icon className="h-6 w-6" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base flex items-center gap-2 flex-wrap">
@@ -111,10 +128,16 @@ export function StackCard({
               ) : (
                 stack.name
               )}
-              {stack.installed && (
+              {stack.installed && stack.ready && (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" />
                   Instalado
+                </Badge>
+              )}
+              {isDeploying && (
+                <Badge variant="warning" className="gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Instalando...
                 </Badge>
               )}
               {isBash && !stack.installed && (

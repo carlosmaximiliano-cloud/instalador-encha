@@ -10,6 +10,7 @@ const schema = z.object({
 export const keycloak: StackDefinition = {
   id: "keycloak",
   repoUrl: "https://github.com/keycloak/keycloak",
+  logoUrl: "https://raw.githubusercontent.com/keycloak/keycloak/master/docs/logo.svg",
   name: "Keycloak",
   description: "Identity Provider (SSO, OAuth, SAML) enterprise.",
   category: "auth",

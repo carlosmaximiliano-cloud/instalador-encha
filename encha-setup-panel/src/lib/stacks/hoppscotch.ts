@@ -16,6 +16,7 @@ const schema = z.object({
 export const hoppscotch: StackDefinition = {
   id: "hoppscotch",
   repoUrl: "https://github.com/hoppscotch/hoppscotch",
+  logoUrl: "https://raw.githubusercontent.com/hoppscotch/hoppscotch/main/public/logo.svg",
   name: "Hoppscotch",
   description: "Postman alternativo, leve e web-based.",
   category: "communication",

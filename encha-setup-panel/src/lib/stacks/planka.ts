@@ -18,6 +18,7 @@ const schema = z.object({
 export const planka: StackDefinition = {
   id: "planka",
   repoUrl: "https://github.com/plankanban/planka",
+  logoUrl: "https://raw.githubusercontent.com/plankanban/planka/main/public/logo.svg",
   name: "Planka",
   description: "Kanban Trello-like minimalista e rápido.",
   category: "communication",

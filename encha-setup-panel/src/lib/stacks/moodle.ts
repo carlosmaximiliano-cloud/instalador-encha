@@ -18,6 +18,7 @@ const schema = z.object({
 export const moodle: StackDefinition = {
   id: "moodle",
   repoUrl: "https://github.com/moodle/moodle",
+  logoUrl: "https://raw.githubusercontent.com/moodle/moodle/master/pix/logos/moodlelogo.svg",
   name: "Moodle",
   description: "LMS líder mundial para EAD e cursos online.",
   category: "erp",

@@ -9,6 +9,7 @@ const schema = z.object({
 export const wuzapi: StackDefinition = {
   id: "wuzapi",
   repoUrl: "https://github.com/asternic/wuzapi",
+  logoUrl: "https://raw.githubusercontent.com/asternic/wuzapi/main/logo.png",
   name: "WuzAPI",
   description: "API REST e webhooks para WhatsApp via WhatsMeow.",
   category: "messaging",

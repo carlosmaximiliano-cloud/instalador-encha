@@ -8,6 +8,7 @@ const schema = z.object({
 export const botpress: StackDefinition = {
   id: "botpress",
   repoUrl: "https://github.com/botpress/botpress",
+  logoUrl: "https://raw.githubusercontent.com/botpress/botpress/master/docs/logo.svg",
   name: "Botpress",
   description: "Plataforma de chatbots conversacionais com IA.",
   category: "chatbot",

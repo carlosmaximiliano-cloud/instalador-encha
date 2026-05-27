@@ -11,6 +11,7 @@ const schema = z.object({
 export const minio: StackDefinition = {
   id: "minio",
   repoUrl: "https://github.com/minio/minio",
+  logoUrl: "https://raw.githubusercontent.com/minio/minio/master/docs/screenshots/minio-logo.svg",
   name: "MinIO",
   description: "Storage S3-compatível open-source. Necessário para Typebot, Directus e backups.",
   category: "storage",

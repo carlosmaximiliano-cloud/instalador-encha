@@ -8,6 +8,7 @@ const schema = z.object({
 export const glpi: StackDefinition = {
   id: "glpi",
   repoUrl: "https://github.com/glpi-project/glpi",
+  logoUrl: "https://raw.githubusercontent.com/glpi-project/glpi/main/pics/logo.png",
   name: "GLPI",
   description: "ITSM/gestão de ativos e suporte técnico.",
   category: "erp",

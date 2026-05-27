@@ -12,6 +12,7 @@ const schema = z.object({
 export const shlink: StackDefinition = {
   id: "shlink",
   repoUrl: "https://github.com/shlinkio/shlink",
+  logoUrl: "https://raw.githubusercontent.com/shlinkio/shlink/main/docs/logo.svg",
   name: "Shlink",
   description: "Encurtador de URLs com analytics open-source.",
   category: "marketing",

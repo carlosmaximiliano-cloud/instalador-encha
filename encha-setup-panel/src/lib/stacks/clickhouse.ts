@@ -10,6 +10,7 @@ const schema = z.object({
 export const clickhouse: StackDefinition = {
   id: "clickhouse",
   repoUrl: "https://github.com/ClickHouse/ClickHouse",
+  logoUrl: "https://raw.githubusercontent.com/ClickHouse/ClickHouse/master/website/images/ch_logo_300x300.png",
   name: "ClickHouse",
   description: "Banco colunar analítico para queries OLAP em bilhões de linhas.",
   category: "database",

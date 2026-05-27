@@ -10,6 +10,7 @@ const schema = z.object({
 export const pgadmin: StackDefinition = {
   id: "pgadmin",
   repoUrl: "https://github.com/pgadmin-org/pgadmin4",
+  logoUrl: "https://raw.githubusercontent.com/pgadmin-org/pgadmin4/master/docs/en_US/_static/pgadmin.svg",
   name: "PgAdmin",
   description: "UI web para gerenciar o PostgreSQL — queries, schemas, backups.",
   category: "admin",

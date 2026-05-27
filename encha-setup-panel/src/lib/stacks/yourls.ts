@@ -10,6 +10,7 @@ const schema = z.object({
 export const yourls: StackDefinition = {
   id: "yourls",
   repoUrl: "https://github.com/YOURLS/YOURLS",
+  logoUrl: "https://raw.githubusercontent.com/YOURLS/YOURLS/master/images/yourls-logo.png",
   name: "YOURLS",
   description: "Encurtador de URLs PHP simples e auto-hospedado.",
   category: "marketing",

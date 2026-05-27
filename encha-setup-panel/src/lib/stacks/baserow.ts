@@ -8,6 +8,7 @@ const schema = z.object({
 export const baserow: StackDefinition = {
   id: "baserow",
   repoUrl: "https://github.com/bram2w/baserow",
+  logoUrl: "https://raw.githubusercontent.com/bram2w/baserow/master/docs/logo.png",
   name: "Baserow",
   description: "Airtable open-source colaborativo.",
   category: "cms",

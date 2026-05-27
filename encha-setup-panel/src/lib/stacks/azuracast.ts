@@ -9,6 +9,7 @@ const schema = z.object({
 export const azuracast: StackDefinition = {
   id: "azuracast",
   repoUrl: "https://github.com/AzuraCast/AzuraCast",
+  logoUrl: "https://raw.githubusercontent.com/AzuraCast/AzuraCast/master/resources/logo.svg",
   name: "AzuraCast",
   description: "Rádio web self-hosted (streaming + automação).",
   category: "media",

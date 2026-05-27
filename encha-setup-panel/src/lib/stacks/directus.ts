@@ -11,6 +11,7 @@ const schema = z.object({
 export const directus: StackDefinition = {
   id: "directus",
   repoUrl: "https://github.com/directus/directus",
+  logoUrl: "https://raw.githubusercontent.com/directus/directus/main/docs/public/img/directus-icon.svg",
   name: "Directus",
   description: "Headless CMS instantâneo sobre seu banco de dados. Painel de admin pronto + API REST/GraphQL.",
   category: "admin",

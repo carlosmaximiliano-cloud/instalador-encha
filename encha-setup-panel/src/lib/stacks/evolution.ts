@@ -9,6 +9,7 @@ const schema = z.object({
 export const evolution: StackDefinition = {
   id: "evolution",
   repoUrl: "https://github.com/EvolutionAPI/evolution-api",
+  logoUrl: "https://raw.githubusercontent.com/EvolutionAPI/evolution-api/main/public/logo.svg",
   name: "Evolution API",
   description: "API multi-instância de WhatsApp com integração nativa para N8N, Chatwoot e Typebot.",
   category: "messaging",

@@ -10,6 +10,7 @@ const schema = z.object({
 export const anythingllm: StackDefinition = {
   id: "anythingllm",
   repoUrl: "https://github.com/Mintplex-Labs/anything-llm",
+  logoUrl: "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/public/logo.svg",
   name: "AnythingLLM",
   description: "Cliente LLM all-in-one com RAG sobre seus documentos.",
   category: "ai",

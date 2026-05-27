@@ -10,6 +10,7 @@ const schema = z.object({
 export const firecrawl: StackDefinition = {
   id: "firecrawl",
   repoUrl: "https://github.com/mendableai/firecrawl",
+  logoUrl: "https://raw.githubusercontent.com/mendableai/firecrawl/main/logo.png",
   name: "Firecrawl",
   description: "Crawler que transforma sites em markdown pronto para LLM.",
   category: "ai",

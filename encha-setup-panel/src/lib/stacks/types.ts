@@ -57,6 +57,7 @@ export type StackDefinition = {
   schema: z.ZodTypeAny;
   swarmStackNames?: string[];
   repoUrl?: string;
+  logoUrl?: string;
   installVia?: "panel" | "bash";
   generateSecrets?: (values: Record<string, unknown>) => GeneratedSecret[];
   generateYaml: (

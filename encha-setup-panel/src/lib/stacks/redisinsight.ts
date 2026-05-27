@@ -9,6 +9,7 @@ const schema = z.object({
 export const redisinsight: StackDefinition = {
   id: "redisinsight",
   repoUrl: "https://github.com/RedisInsight/RedisInsight",
+  logoUrl: "https://raw.githubusercontent.com/RedisInsight/RedisInsight/main/docs/static/logo.svg",
   name: "RedisInsight",
   description: "UI oficial para inspecionar e gerenciar instâncias Redis.",
   category: "database",

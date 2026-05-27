@@ -9,6 +9,7 @@ const schema = z.object({
 export const traccar: StackDefinition = {
   id: "traccar",
   repoUrl: "https://github.com/traccar/traccar",
+  logoUrl: "https://raw.githubusercontent.com/traccar/traccar/master/web/app/view/images/logo.svg",
   name: "Traccar",
   description: "Servidor GPS para rastreamento de veículos.",
   category: "monitoring",

@@ -10,6 +10,7 @@ const schema = z.object({
 export const rabbitmq: StackDefinition = {
   id: "rabbitmq",
   repoUrl: "https://github.com/rabbitmq/rabbitmq-server",
+  logoUrl: "https://raw.githubusercontent.com/rabbitmq/rabbitmq-server/main/deps/rabbit/docs/logo.svg",
   name: "RabbitMQ",
   description: "Message broker AMQP usado por sistemas distribuídos.",
   category: "messaging",

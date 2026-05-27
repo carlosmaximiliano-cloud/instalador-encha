@@ -10,6 +10,7 @@ const schema = z.object({
 export const quepasa: StackDefinition = {
   id: "quepasa",
   repoUrl: "https://github.com/nocodeleaks/quepasa",
+  logoUrl: "https://raw.githubusercontent.com/nocodeleaks/quepasa/main/docs/logo.svg",
   name: "QuePasa",
   description: "API WhatsApp simples e estável usando Baileys.",
   category: "messaging",

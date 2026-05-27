@@ -9,6 +9,7 @@ const schema = z.object({
 export const odoo: StackDefinition = {
   id: "odoo",
   repoUrl: "https://github.com/odoo/odoo",
+  logoUrl: "https://raw.githubusercontent.com/odoo/odoo/master/web/static/src/img/logo.svg",
   name: "Odoo",
   description: "ERP completo (vendas, estoque, contabilidade, RH).",
   category: "erp",

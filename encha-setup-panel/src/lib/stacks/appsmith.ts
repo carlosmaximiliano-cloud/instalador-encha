@@ -8,6 +8,7 @@ const schema = z.object({
 export const appsmith: StackDefinition = {
   id: "appsmith",
   repoUrl: "https://github.com/appsmithorg/appsmith",
+  logoUrl: "https://raw.githubusercontent.com/appsmithorg/appsmith/release/static/images/appsmith_logo.png",
   name: "Appsmith",
   description: "Builder visual de painéis e ferramentas internas.",
   category: "cms",

@@ -9,6 +9,7 @@ const schema = z.object({
 export const humhub: StackDefinition = {
   id: "humhub",
   repoUrl: "https://github.com/humhub/humhub",
+  logoUrl: "https://raw.githubusercontent.com/humhub/humhub/master/protected/assets/img/logo-dark.svg",
   name: "HumHub",
   description: "Rede social privada para comunidades e empresas.",
   category: "communication",

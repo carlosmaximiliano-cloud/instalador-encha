@@ -8,6 +8,7 @@ const schema = z.object({
 export const metabase: StackDefinition = {
   id: "metabase",
   repoUrl: "https://github.com/metabase/metabase",
+  logoUrl: "https://raw.githubusercontent.com/metabase/metabase/master/resources/metabase.svg",
   name: "Metabase",
   description: "BI open-source — gráficos e dashboards em minutos.",
   category: "analytics",

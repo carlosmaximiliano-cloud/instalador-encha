@@ -13,6 +13,7 @@ const schema = z.object({
 export const traefikPortainer: StackDefinition = {
   id: "traefik-portainer",
   repoUrl: "https://github.com/portainer/portainer",
+  logoUrl: "https://raw.githubusercontent.com/portainer/portainer/develop/app/assets/images/logo_alt.png",
   name: "Traefik + Portainer",
   description: "Proxy reverso com SSL automático (Let's Encrypt) + UI de gerenciamento de containers. Base para todas as outras stacks.",
   category: "infra",

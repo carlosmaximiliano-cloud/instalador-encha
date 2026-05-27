@@ -17,6 +17,7 @@ const schema = z.object({
 export const documenso: StackDefinition = {
   id: "documenso",
   repoUrl: "https://github.com/documenso/documenso",
+  logoUrl: "https://raw.githubusercontent.com/documenso/documenso/main/apps/marketing/public/logo.svg",
   name: "Documenso",
   description: "DocuSign open-source — assinatura digital de PDFs.",
   category: "marketing",

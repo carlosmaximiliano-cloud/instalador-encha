@@ -14,6 +14,7 @@ const schema = z.object({
 export const affine: StackDefinition = {
   id: "affine",
   repoUrl: "https://github.com/toeverything/AFFiNE",
+  logoUrl: "https://raw.githubusercontent.com/toeverything/AFFiNE/master/assets/affine-logo.svg",
   name: "AFFiNE",
   description: "Notion + Miro all-in-one com blocos editáveis.",
   category: "communication",

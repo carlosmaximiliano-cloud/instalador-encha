@@ -15,6 +15,7 @@ const schema = z.object({
 export const langfuse: StackDefinition = {
   id: "langfuse",
   repoUrl: "https://github.com/langfuse/langfuse",
+  logoUrl: "https://raw.githubusercontent.com/langfuse/langfuse/main/docs/static/img/logo.svg",
   name: "Langfuse",
   description: "Observabilidade e analytics para aplicações LLM.",
   category: "ai",

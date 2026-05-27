@@ -9,6 +9,7 @@ const schema = z.object({
 export const strapi: StackDefinition = {
   id: "strapi",
   repoUrl: "https://github.com/strapi/strapi",
+  logoUrl: "https://raw.githubusercontent.com/strapi/strapi/master/packages/core/admin/admin/src/assets/images/logo-strapi.svg",
   name: "Strapi",
   description: "Headless CMS líder do mercado em Node.js.",
   category: "cms",

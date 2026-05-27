@@ -32,6 +32,7 @@ type Props = {
   stack: StackMeta;
   open: boolean;
   onClose: () => void;
+  onInstalled?: () => void;
   csrfToken: string;
   swarmCtx: { networkName: string; serverName: string; email: string };
 };
@@ -42,7 +43,7 @@ type InstallState =
   | { kind: "success"; accessUrl?: string; notes: string[] }
   | { kind: "error"; message: string };
 
-export function InstallWizard({ stack, open, onClose, csrfToken, swarmCtx }: Props) {
+export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
   const [state, setState] = useState<InstallState>({ kind: "form" });
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const form = useForm<Record<string, unknown>>({
@@ -71,6 +72,7 @@ export function InstallWizard({ stack, open, onClose, csrfToken, swarmCtx }: Pro
         return;
       }
       setState({ kind: "success", accessUrl: data.accessUrl, notes: data.notes ?? [] });
+      onInstalled?.();
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : "Erro de rede" });
     }

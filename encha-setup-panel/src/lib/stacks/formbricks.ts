@@ -14,6 +14,7 @@ const schema = z.object({
 export const formbricks: StackDefinition = {
   id: "formbricks",
   repoUrl: "https://github.com/formbricks/formbricks",
+  logoUrl: "https://raw.githubusercontent.com/formbricks/formbricks/main/apps/docs/public/logo-dark.svg",
   name: "Formbricks",
   description: "Pesquisas e formulários in-product orientados a dados.",
   category: "marketing",

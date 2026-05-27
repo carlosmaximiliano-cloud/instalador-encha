@@ -10,6 +10,7 @@ const schema = z.object({
 export const frappe: StackDefinition = {
   id: "frappe",
   repoUrl: "https://github.com/frappe/frappe",
+  logoUrl: "https://raw.githubusercontent.com/frappe/frappe/develop/frappe/public/images/frappe-logo.png",
   name: "Frappe / ERPNext",
   description: "ERP open-source em Python (vendas, estoque, contabilidade).",
   category: "erp",

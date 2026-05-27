@@ -14,6 +14,7 @@ const schema = z.object({
 export const passbolt: StackDefinition = {
   id: "passbolt",
   repoUrl: "https://github.com/passbolt/passbolt_api",
+  logoUrl: "https://raw.githubusercontent.com/passbolt/passbolt_api/master/docs/logo.svg",
   name: "Passbolt",
   description: "Gerenciador de senhas em time open-source.",
   category: "auth",

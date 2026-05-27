@@ -74,6 +74,7 @@ const schema = z.object({
 export const ntfy: StackDefinition = {
   id: "ntfy",
   repoUrl: "https://github.com/binwiederhier/ntfy",
+  logoUrl: "https://raw.githubusercontent.com/binwiederhier/ntfy/main/docs/static/logo.svg",
   name: "Ntfy",
   description: "Notificações push HTTP simples para qualquer device.",
   category: "monitoring",

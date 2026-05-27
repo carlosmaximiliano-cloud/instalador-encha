@@ -12,6 +12,7 @@ const schema = z.object({
 export const vaultwarden: StackDefinition = {
   id: "vaultwarden",
   repoUrl: "https://github.com/dani-garcia/vaultwarden",
+  logoUrl: "https://raw.githubusercontent.com/dani-garcia/vaultwarden/main/docker/amd64/logo.svg",
   name: "Vaultwarden",
   description: "Servidor Bitwarden open-source em Rust.",
   category: "storage",

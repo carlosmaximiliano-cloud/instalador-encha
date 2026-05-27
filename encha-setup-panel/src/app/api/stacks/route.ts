@@ -3,7 +3,7 @@ import { z } from "zod";
 import { readSession } from "@/lib/session";
 import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { installStack, listInstalledStacks } from "@/lib/installer";
-import { discoverContext, listSwarmStackNames } from "@/lib/portainer";
+import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames } from "@/lib/stacks/types";
 
@@ -23,43 +23,52 @@ export async function GET() {
 
   const catalog = getPublicCatalog();
 
-  // Consulta Portainer-managed stacks E Docker Engine via proxy para cobrir stacks externos
-  const [installed, swarmNames] = await Promise.all([
+  const [installed, swarmStatuses] = await Promise.all([
     listInstalledStacks(session.jwt).catch((err) => {
       console.error("[api/stacks] Falha listando stacks do Portainer:", err);
       return [];
     }),
     discoverContext(session.jwt)
-      .then(({ endpointId }) => listSwarmStackNames(session.jwt, endpointId))
+      .then(({ endpointId }) => listSwarmStackStatuses(session.jwt, endpointId))
       .catch((err) => {
         console.error("[api/stacks] Falha listando serviços Docker:", err);
-        return [] as string[];
+        return [] as SwarmStackStatus[];
       }),
   ]);
 
-  console.log(
-    "[api/stacks] Portainer stacks:", installed.length || "(nenhuma)",
-    "| Swarm:", swarmNames.join(", ") || "(nenhuma)"
-  );
-
-  // Merge: Portainer-managed + Docker Engine (cobre stacks externos como traefik/portainer)
+  const statusByName = new Map(swarmStatuses.map((s) => [s.name, s]));
   const installedNames = new Set([
     ...installed.map((s) => s.Name),
-    ...swarmNames,
+    ...swarmStatuses.map((s) => s.name),
   ]);
 
-  const catalogPayload = catalog.map((s) => ({
-    id: s.id,
-    name: s.name,
-    description: s.description,
-    category: s.category,
-    icon: s.icon,
-    dependsOn: s.dependsOn,
-    repoUrl: s.repoUrl,
-    installVia: s.installVia ?? "panel",
-    optionNumber: s.optionNumber,
-    installed: expectedStackNames(s).every((n) => installedNames.has(n)),
-  }));
+  const readyDetails = swarmStatuses
+    .map((s) => `${s.name}=${s.running}/${s.desired}`)
+    .join(", ");
+  console.log(
+    "[api/stacks] Portainer:", installed.length || "(nenhuma)",
+    "| Swarm:", readyDetails || "(nenhuma)"
+  );
+
+  const catalogPayload = catalog.map((s) => {
+    const expected = expectedStackNames(s);
+    const present = expected.every((n) => installedNames.has(n));
+    const ready = present && expected.every((n) => statusByName.get(n)?.ready ?? false);
+    return {
+      id: s.id,
+      name: s.name,
+      description: s.description,
+      category: s.category,
+      icon: s.icon,
+      dependsOn: s.dependsOn,
+      repoUrl: s.repoUrl,
+      logoUrl: s.logoUrl,
+      installVia: s.installVia ?? "panel",
+      optionNumber: s.optionNumber,
+      installed: present,
+      ready,
+    };
+  });
 
   const knownNames = new Set<string>();
   for (const s of catalog) {
@@ -76,7 +85,9 @@ export async function GET() {
     }
   }
 
-  const detectedInstalled = catalogPayload.filter((c) => c.installed).length;
+  const readyCount = catalogPayload.filter((c) => c.installed && c.ready).length;
+  const deployingCount = catalogPayload.filter((c) => c.installed && !c.ready).length;
+
   return NextResponse.json(
     {
       catalog: catalogPayload,
@@ -89,7 +100,7 @@ export async function GET() {
     },
     {
       headers: {
-        "x-stack-detection": `portainer=${installed.length};swarm=${swarmNames.length};catalog=${detectedInstalled}`,
+        "x-stack-detection": `portainer=${installed.length};swarm=${swarmStatuses.length};ready=${readyCount};deploying=${deployingCount}`,
       },
     }
   );

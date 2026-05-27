@@ -15,6 +15,7 @@ const schema = z.object({
 export const typebot: StackDefinition = {
   id: "typebot",
   repoUrl: "https://github.com/baptisteArno/typebot.io",
+  logoUrl: "https://raw.githubusercontent.com/typebot-io/typebot.js/main/apps/builder/public/logo.svg",
   name: "Typebot",
   description: "Construtor de chatbots conversacionais com builder visual. Depende do MinIO para uploads.",
   category: "automation",

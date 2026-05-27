@@ -10,6 +10,7 @@ const schema = z.object({
 export const mongodb: StackDefinition = {
   id: "mongodb",
   repoUrl: "https://github.com/mongodb/mongo",
+  logoUrl: "https://raw.githubusercontent.com/mongodb-js/leaf_cms/master/public/images/mongodb-leaf.png",
   name: "MongoDB + Mongo Express",
   description: "Banco NoSQL MongoDB + UI Mongo Express para gerenciamento visual.",
   category: "database",

@@ -8,6 +8,7 @@ const schema = z.object({
 export const bolt: StackDefinition = {
   id: "bolt",
   repoUrl: "https://github.com/stackblitz-labs/bolt.diy",
+  logoUrl: "https://raw.githubusercontent.com/stackblitz-labs/bolt.diy/main/public/logo.svg",
   name: "Bolt.diy",
   description: "IDE web open-source para gerar apps com LLM.",
   category: "ai",

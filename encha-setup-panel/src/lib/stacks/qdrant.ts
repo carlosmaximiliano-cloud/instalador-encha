@@ -9,6 +9,7 @@ const schema = z.object({
 export const qdrant: StackDefinition = {
   id: "qdrant",
   repoUrl: "https://github.com/qdrant/qdrant",
+  logoUrl: "https://raw.githubusercontent.com/qdrant/qdrant/master/docs/logo.svg",
   name: "Qdrant",
   description: "Banco de vetores para busca semântica e RAG.",
   category: "database",

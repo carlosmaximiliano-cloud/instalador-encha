@@ -9,6 +9,7 @@ const schema = z.object({
 export const twentycrm: StackDefinition = {
   id: "twentycrm",
   repoUrl: "https://github.com/twentyhq/twenty",
+  logoUrl: "https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-ui/assets/logo/logo.svg",
   name: "Twenty CRM",
   description: "CRM moderno open-source com UI estilo Notion.",
   category: "crm",

@@ -14,6 +14,7 @@ const schema = z.object({
 export const chatwoot: StackDefinition = {
   id: "chatwoot",
   repoUrl: "https://github.com/chatwoot/chatwoot",
+  logoUrl: "https://raw.githubusercontent.com/chatwoot/chatwoot/develop/app/assets/images/chatwoot_icon.svg",
   name: "Chatwoot",
   description: "Plataforma open-source de atendimento omnichannel (WhatsApp, Telegram, Web, etc.).",
   category: "messaging",

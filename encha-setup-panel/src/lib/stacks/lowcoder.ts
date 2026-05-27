@@ -16,6 +16,7 @@ const schema = z.object({
 export const lowcoder: StackDefinition = {
   id: "lowcoder",
   repoUrl: "https://github.com/lowcoder-org/lowcoder",
+  logoUrl: "https://raw.githubusercontent.com/lowcoder-org/lowcoder/main/docs/logo.svg",
   name: "Lowcoder",
   description: "Retool open-source — apps low-code colaborativos.",
   category: "admin",
