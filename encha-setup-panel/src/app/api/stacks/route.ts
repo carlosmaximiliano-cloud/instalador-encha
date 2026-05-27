@@ -52,6 +52,16 @@ export async function GET() {
     for (const n of expectedStackNames(s)) knownNames.add(n);
   }
 
+  for (const s of catalog) {
+    const expected = expectedStackNames(s);
+    const missing = expected.filter((n) => !installedNames.has(n));
+    if (missing.length && missing.length < expected.length) {
+      console.warn(
+        `[api/stacks] '${s.id}': detecção parcial — esperado=[${expected.join(",")}] faltando=[${missing.join(",")}]`
+      );
+    }
+  }
+
   const detectedInstalled = catalogPayload.filter((c) => c.installed).length;
   return NextResponse.json(
     {

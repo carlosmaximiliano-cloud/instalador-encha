@@ -19,7 +19,7 @@ export const traefikPortainer: StackDefinition = {
   icon: "shield",
   dependsOn: [],
   optionNumber: 2,
-  swarmStackNames: ["traefik_portainer"],
+  swarmStackNames: ["traefik", "portainer"],
   fields: [
     {
       name: "url_portainer",
