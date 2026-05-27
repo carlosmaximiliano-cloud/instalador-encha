@@ -1,6 +1,9 @@
 
 #!/bin/bash
 
+# Quando executado via "curl | bash", stdin é o pipe — redireciona para o terminal
+[[ -t 0 ]] || exec </dev/tty
+
 # Cores melhoradas
 roxo="\033[95m"
 roxo_escuro="\033[35m"
