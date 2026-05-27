@@ -149,7 +149,7 @@ centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═════�
 
     while true; do
         echo -en "${ciano}Você aceita seguir com total responsabilidade pelo uso da ferramenta? (Y/N): ${reset}"
-        read -r confirmacao
+        read -r confirmacao </dev/tty
 
         case "$confirmacao" in
             [Yy])
@@ -329,7 +329,7 @@ banner_instalacao_completa() {
     echo -e "  • portainer.seudominio.com  →  IP_DA_VPS"
     echo -e "  • painel.seudominio.com     →  IP_DA_VPS"
     echo ""
-    echo -ne "${ciano}Pressione ENTER para iniciar...${reset}" && read -r _
+    echo -ne "${ciano}Pressione ENTER para iniciar...${reset}" && read -r _ </dev/tty
 }
 
 coletar_inputs_instalacao() {
@@ -339,14 +339,14 @@ coletar_inputs_instalacao() {
 
     # 1) Subdomínio Portainer
     while true; do
-        echo -ne "${ciano}1/5 Subdomínio do Portainer (ex: portainer.encha.ai): ${reset}" && read -r url_portainer
+        echo -ne "${ciano}1/5 Subdomínio do Portainer (ex: portainer.encha.ai): ${reset}" && read -r url_portainer </dev/tty
         [[ "$url_portainer" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
 
     # 2) Usuário Portainer
     while true; do
-        echo -ne "${ciano}2/5 Usuário admin do Portainer: ${reset}" && read -r user_portainer
+        echo -ne "${ciano}2/5 Usuário admin do Portainer: ${reset}" && read -r user_portainer </dev/tty
         [[ ${#user_portainer} -ge 3 ]] && break
         echo -e "${vermelho}✖ Mínimo 3 caracteres.${reset}"
     done
@@ -354,7 +354,7 @@ coletar_inputs_instalacao() {
     # 3) Senha Portainer (12+ chars, maiús, minús, dígito, especial)
     while true; do
         echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
-        echo -ne "${ciano}3/5 Senha do Portainer: ${reset}" && read -r pass_portainer
+        echo -ne "${ciano}3/5 Senha do Portainer: ${reset}" && read -r pass_portainer </dev/tty
         if [[ ${#pass_portainer} -ge 12 ]] \
             && [[ "$pass_portainer" =~ [A-Z] ]] \
             && [[ "$pass_portainer" =~ [a-z] ]] \
@@ -367,14 +367,14 @@ coletar_inputs_instalacao() {
 
     # 4) Email SSL
     while true; do
-        echo -ne "${ciano}4/5 Email para certificados SSL (Let's Encrypt): ${reset}" && read -r email_ssl
+        echo -ne "${ciano}4/5 Email para certificados SSL (Let's Encrypt): ${reset}" && read -r email_ssl </dev/tty
         [[ "$email_ssl" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] && break
         echo -e "${vermelho}✖ Email inválido.${reset}"
     done
 
     # 5) Subdomínio do Painel
     while true; do
-        echo -ne "${ciano}5/5 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
+        echo -ne "${ciano}5/5 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel </dev/tty
         [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
@@ -392,7 +392,7 @@ coletar_inputs_instalacao() {
     echo -e "  ${azul}Painel:${reset}     https://${verde}${url_painel}${reset}"
     echo ""
     while true; do
-        echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao
+        echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao </dev/tty
         case "$confirmacao" in
             [Yy]) break ;;
             [Nn]) coletar_inputs_instalacao; return ;;
