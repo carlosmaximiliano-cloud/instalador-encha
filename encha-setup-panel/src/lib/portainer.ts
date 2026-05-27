@@ -86,13 +86,6 @@ export async function listStacks(token: string): Promise<Stack[]> {
   return call<Stack[]>("/api/stacks", { token });
 }
 
-export async function deleteStack(token: string, id: number, endpointId: number): Promise<void> {
-  await call<unknown>(`/api/stacks/${id}?endpointId=${endpointId}`, {
-    method: "DELETE",
-    token,
-  });
-}
-
 export async function deploySwarmStack(args: {
   token: string;
   name: string;

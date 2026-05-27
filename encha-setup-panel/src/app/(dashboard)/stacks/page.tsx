@@ -1,55 +1,46 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Trash2, ListChecks, Inbox } from "lucide-react";
+import { ListChecks, Inbox, Info } from "lucide-react";
 
 type InstalledStack = { id: number; name: string; createdAt: number; external?: boolean };
 
 export default function StacksPage() {
   const [stacks, setStacks] = useState<InstalledStack[]>([]);
-  const [csrf, setCsrf] = useState("");
   const [loading, setLoading] = useState(true);
 
-  async function load() {
-    setLoading(true);
-    const r = await fetch("/api/stacks");
-    const d = await r.json();
-    setStacks(d.installed ?? []);
-    setLoading(false);
-  }
-
   useEffect(() => {
-    fetch("/api/csrf").then((r) => r.json()).then((d) => setCsrf(d.token));
-    load();
+    (async () => {
+      try {
+        const r = await fetch("/api/stacks");
+        if (r.ok) {
+          const d = await r.json();
+          setStacks(d.installed ?? []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  async function remove(id: number, name: string) {
-    if (!confirm(`Remover a stack "${name}"? Isso vai derrubar os containers e apagar volumes não-externos.`)) return;
-    const r = await fetch(`/api/stacks/${id}`, {
-      method: "DELETE",
-      headers: { "x-csrf-token": csrf },
-    });
-    if (!r.ok) {
-      const j = await r.json();
-      alert("Erro: " + (j.error ?? r.status));
-      return;
-    }
-    load();
-  }
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
+      <header className="space-y-2">
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <ListChecks className="h-6 w-6 text-primary" />
           Stacks instaladas
         </h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie o que está rodando no Swarm.
+          Lista do que está rodando no Swarm.
         </p>
+        <div className="flex items-start gap-2 p-3 rounded-md bg-info-soft text-info-foreground text-sm">
+          <Info className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            Edição e remoção devem ser feitas pelo Portainer. O painel é exclusivo para instalação.
+          </span>
+        </div>
       </header>
 
       {loading ? (
@@ -73,13 +64,10 @@ export default function StacksPage() {
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between gap-4">
+              <CardContent>
                 <div className="text-xs text-muted-foreground">
                   Instalada em {new Date(s.createdAt * 1000).toLocaleString("pt-BR")}
                 </div>
-                <Button variant="destructive" size="sm" onClick={() => remove(s.id, s.name)}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Remover
-                </Button>
               </CardContent>
             </Card>
           ))}

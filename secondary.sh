@@ -1150,8 +1150,10 @@ echo -e "\e[33m⚠️ AVISO: GUARDE TODAS AS INFORMAÇÕES ACIMA NO SEU BLOCO DE
 echo ""
 echo -e "\e[36m📱 Nos acompanhe no Instagram: \e[1m@encha_ai\e[0m \e[36mpara mais dicas, atualizações e novidades!\e[0m"
 echo ""
-echo -e "\e[33m▶️ Aperte ENTER para voltar ao menu de ferramentas\e[0m"
-read
+if [[ -z "$ENCHA_NONINTERACTIVE" ]]; then
+    echo -e "\e[33m▶️ Aperte ENTER para voltar ao menu de ferramentas\e[0m"
+    read
+fi
 sleep 2
 
 }
@@ -19645,10 +19647,24 @@ ferramenta_encha_panel() {
         echo -e "  \e[32m✓ Imagem baixada do Docker Hub.\e[0m"
     elif [[ -d /root/encha-setup-panel/src ]]; then
         echo -e "  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
-        if docker build -t enchaai/setup-panel:latest /root/encha-setup-panel/ >/dev/null 2>&1; then
-            echo -e "  \e[32m✓ Imagem buildada localmente.\e[0m"
+        echo -e "  \e[97m  Log completo: /var/log/encha-build.log\e[0m"
+        docker build -t enchaai/setup-panel:latest /root/encha-setup-panel/ \
+            > /var/log/encha-build.log 2>&1 &
+        local build_pid=$!
+        local start=$SECONDS
+        while kill -0 "$build_pid" 2>/dev/null; do
+            local elapsed=$((SECONDS - start))
+            printf "\r  \e[33m  ⏳ Buildando imagem... %ds decorridos (esperado: 120-180s)\e[0m" "$elapsed"
+            sleep 30
+        done
+        printf "\r%80s\r" " "
+        wait "$build_pid"
+        local build_exit=$?
+        if [[ $build_exit -eq 0 ]]; then
+            echo -e "  \e[32m✓ Imagem buildada localmente em $((SECONDS - start))s.\e[0m"
         else
-            echo -e "  \e[31m✖ Build local falhou. Abortando.\e[0m"
+            echo -e "  \e[31m✖ Build falhou (exit $build_exit). Últimas linhas do log:\e[0m"
+            tail -20 /var/log/encha-build.log
             return 1
         fi
     else

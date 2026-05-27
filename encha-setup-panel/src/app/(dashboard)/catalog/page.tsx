@@ -66,11 +66,18 @@ function CatalogPageInner() {
 
   useEffect(() => {
     fetch("/api/csrf")
-      .then((r) => r.json())
-      .then((d) => setCsrf(d.token));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.token && setCsrf(d.token))
+      .catch((e) => console.error("[csrf]", e));
+
     fetch("/api/stacks")
-      .then((r) => r.json())
-      .then(setData);
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && Array.isArray(d.catalog)) setData(d);
+        else console.warn("[stacks] resposta inesperada:", d);
+      })
+      .catch((e) => console.error("[stacks]", e));
+
     fetch("/api/vps-context")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -87,7 +94,7 @@ function CatalogPageInner() {
           url_portainer: d.url_portainer ?? "",
         });
       })
-      .catch(() => {});
+      .catch((e) => console.error("[vps-context]", e));
   }, []);
 
   const installedSet = useMemo(() => {

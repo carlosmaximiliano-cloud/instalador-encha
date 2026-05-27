@@ -20,10 +20,18 @@ export async function GET() {
   const session = await readSession();
   if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const [catalog, installed] = await Promise.all([
-    Promise.resolve(getPublicCatalog()),
-    listInstalledStacks(session.jwt).catch(() => []),
-  ]);
+  const catalog = getPublicCatalog();
+  const installed = await listInstalledStacks(session.jwt).catch((err) => {
+    console.error("[api/stacks] Falha listando stacks do Portainer:", err);
+    return [];
+  });
+
+  console.log(
+    "[api/stacks] Portainer retornou",
+    installed.length,
+    "stacks:",
+    installed.map((s) => s.Name).join(", ") || "(nenhuma)"
+  );
 
   const installedNames = new Set(installed.map((s) => s.Name));
   const catalogPayload = catalog.map((s) => ({
@@ -44,15 +52,23 @@ export async function GET() {
     for (const n of expectedStackNames(s)) knownNames.add(n);
   }
 
-  return NextResponse.json({
-    catalog: catalogPayload,
-    installed: installed.map((s) => ({
-      id: s.Id,
-      name: s.Name,
-      createdAt: s.CreationDate,
-      external: !knownNames.has(s.Name),
-    })),
-  });
+  const detectedInstalled = catalogPayload.filter((c) => c.installed).length;
+  return NextResponse.json(
+    {
+      catalog: catalogPayload,
+      installed: installed.map((s) => ({
+        id: s.Id,
+        name: s.Name,
+        createdAt: s.CreationDate,
+        external: !knownNames.has(s.Name),
+      })),
+    },
+    {
+      headers: {
+        "x-stack-detection": `portainer=${installed.length};catalog=${detectedInstalled}`,
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
