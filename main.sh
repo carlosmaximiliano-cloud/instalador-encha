@@ -307,68 +307,172 @@ DEBIAN_FRONTEND=noninteractive apt upgrade -y > /dev/null 2>&1 && status_ok "Sis
 executar_instalacoes
 
 
-# Download e execução do script principal
-echo ""
-barra_meio
-echo -e "${roxo}${negrito}📥 DOWNLOAD DO SCRIPT PRINCIPAL${reset}"
-barra_meio
+# ─────────────────────────────────────────────────────────────────────────────
+# FLUXO LINEAR — instala Traefik+Portainer + Encha Setup Panel automaticamente
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Remover script antigo se existir
-if [ -f SetupEnchaAI ]; then
-    status_info "Removendo versão anterior do Instalador Encha..."
-    rm -f SetupEnchaAI && status_ok "Script anterior removido"
-fi
-
-
-
-# Baixar novo script
-status_info "Baixando o Instalador Encha da fonte oficial..."
-if curl -fsSL --retry 3 --connect-timeout 10 https://raw.githubusercontent.com/Encha-Ai/Instalador-Encha/main/secondary.sh -o SetupEnchaAI; then
-    chmod +x SetupEnchaAI
-    status_ok "Instalador Encha baixado com sucesso"
-    
-    echo ""
-    status_info "Executando Instalador Encha..."
-    loading_animation 2
-    sleep 2
+banner_instalacao_completa() {
     clear
-    ./SetupEnchaAI
-else
-    status_fail "Falha no download do Instalador Encha"
-    echo -e "${amarelo}Verifique sua conexão com a internet e tente novamente.${reset}"
-    exit 1
-fi
+    echo -e "${negrito}${roxo}"
+    centralizar "╔══════════════════════════════════════════════════════════════════╗"
+    centralizar "║          🚀 INSTALAÇÃO AUTOMÁTICA DO ENCHA SETUP                 ║"
+    centralizar "╚══════════════════════════════════════════════════════════════════╝"
+    echo -e "${reset}"
+    echo ""
+    echo -e "${ciano}Serão instalados nesta sequência:${reset}"
+    echo -e "  ${verde}1.${reset} Docker Swarm + rede overlay"
+    echo -e "  ${verde}2.${reset} Traefik (proxy reverso com SSL automático)"
+    echo -e "  ${verde}3.${reset} Portainer (interface de gerenciamento Docker)"
+    echo -e "  ${verde}4.${reset} Encha Setup Panel (painel visual para instalar stacks)"
+    echo ""
+    echo -e "${amarelo}⚠ Aponte os subdomínios para o IP da VPS ANTES de continuar:${reset}"
+    echo -e "  • portainer.seudominio.com  →  IP_DA_VPS"
+    echo -e "  • painel.seudominio.com     →  IP_DA_VPS"
+    echo ""
+    echo -ne "${ciano}Pressione ENTER para iniciar...${reset}" && read -r _
+}
 
-# Update final
+coletar_inputs_instalacao() {
+    clear
+    echo -e "${negrito}${roxo}📝 COLETA DE DADOS${reset}"
+    echo ""
+
+    # 1) Subdomínio Portainer
+    while true; do
+        echo -ne "${ciano}1/5 Subdomínio do Portainer (ex: portainer.encha.ai): ${reset}" && read -r url_portainer
+        [[ "$url_portainer" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
+        echo -e "${vermelho}✖ Domínio inválido.${reset}"
+    done
+
+    # 2) Usuário Portainer
+    while true; do
+        echo -ne "${ciano}2/5 Usuário admin do Portainer: ${reset}" && read -r user_portainer
+        [[ ${#user_portainer} -ge 3 ]] && break
+        echo -e "${vermelho}✖ Mínimo 3 caracteres.${reset}"
+    done
+
+    # 3) Senha Portainer (12+ chars, maiús, minús, dígito, especial)
+    while true; do
+        echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
+        echo -ne "${ciano}3/5 Senha do Portainer: ${reset}" && read -r pass_portainer
+        if [[ ${#pass_portainer} -ge 12 ]] \
+            && [[ "$pass_portainer" =~ [A-Z] ]] \
+            && [[ "$pass_portainer" =~ [a-z] ]] \
+            && [[ "$pass_portainer" =~ [0-9] ]] \
+            && [[ "$pass_portainer" =~ [@_] ]]; then
+            break
+        fi
+        echo -e "${vermelho}✖ Senha não atende aos requisitos.${reset}"
+    done
+
+    # 4) Email SSL
+    while true; do
+        echo -ne "${ciano}4/5 Email para certificados SSL (Let's Encrypt): ${reset}" && read -r email_ssl
+        [[ "$email_ssl" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] && break
+        echo -e "${vermelho}✖ Email inválido.${reset}"
+    done
+
+    # 5) Subdomínio do Painel
+    while true; do
+        echo -ne "${ciano}5/5 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
+        [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
+        echo -e "${vermelho}✖ Domínio inválido.${reset}"
+    done
+
+    # Defaults fixos (combinam com docker-stack.yaml do painel)
+    nome_servidor="encha"
+    nome_rede_interna="enchanet"
+
+    # Confirmação
+    clear
+    echo -e "${roxo}${negrito}🔍 CONFIRA OS DADOS:${reset}"
+    echo -e "  ${azul}Portainer:${reset}  https://${verde}${url_portainer}${reset}"
+    echo -e "  ${azul}Usuário:${reset}    ${verde}${user_portainer}${reset}"
+    echo -e "  ${azul}Email SSL:${reset}  ${verde}${email_ssl}${reset}"
+    echo -e "  ${azul}Painel:${reset}     https://${verde}${url_painel}${reset}"
+    echo ""
+    while true; do
+        echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao
+        case "$confirmacao" in
+            [Yy]) break ;;
+            [Nn]) coletar_inputs_instalacao; return ;;
+            *)   echo -e "${amarelo}Responda Y ou N.${reset}" ;;
+        esac
+    done
+
+    export url_portainer user_portainer pass_portainer email_ssl url_painel
+    export nome_servidor nome_rede_interna
+    export ENCHA_NONINTERACTIVE=1
+    export ENCHA_MAX_RETRIES=10
+    export ENCHA_SLEEP=60
+}
+
+download_secondary() {
+    echo ""
+    barra_meio
+    echo -e "${roxo}${negrito}📥 BAIXANDO SCRIPT DE INSTALAÇÃO${reset}"
+    barra_meio
+
+    [ -f SetupEnchaAI ] && rm -f SetupEnchaAI
+
+    status_info "Baixando secondary.sh da fonte oficial..."
+    if curl -fsSL --retry 3 --connect-timeout 10 \
+        https://raw.githubusercontent.com/Encha-Ai/Instalador-Encha/main/secondary.sh \
+        -o SetupEnchaAI; then
+        chmod +x SetupEnchaAI
+        status_ok "Script baixado com sucesso"
+    else
+        status_fail "Falha no download. Verifique a conexão."
+        exit 1
+    fi
+}
+
+mostrar_resumo_final() {
+    clear
+    echo -e "${negrito}${verde}"
+    centralizar "╔══════════════════════════════════════════════════════════════════╗"
+    centralizar "║                                                                  ║"
+    centralizar "║                  🎉 INSTALAÇÃO CONCLUÍDA! 🎉                    ║"
+    centralizar "║                                                                  ║"
+    centralizar "╚══════════════════════════════════════════════════════════════════╝"
+    echo -e "${reset}"
+    echo ""
+    echo -e "${ciano}${negrito}Acesse seus serviços:${reset}"
+    echo -e "  ${verde}▸ Portainer:${reset}  https://${negrito}${url_portainer}${reset}"
+    echo -e "    ${cinza}usuário: ${user_portainer}${reset}"
+    echo -e "  ${verde}▸ Painel Encha:${reset} https://${negrito}${url_painel}${reset}"
+    echo ""
+    echo -e "${amarelo}💡 O Encha Setup Panel já está pronto para instalar as demais stacks.${reset}"
+    echo ""
+    echo -e "${ciano}${negrito}Suporte:${reset}"
+    echo -e "  ${azul}📧 atendimento@encha.ai${reset}"
+    echo -e "  ${azul}🌐 https://encha.ai${reset}"
+    echo -e "  ${azul}📱 WhatsApp: +55 61 99159-2205${reset}"
+    echo ""
+}
+
+# ───────── EXECUÇÃO ─────────
+
+banner_instalacao_completa
+coletar_inputs_instalacao
+download_secondary
+
+status_info "Carregando funções do instalador..."
+# shellcheck source=/dev/null
+source ./SetupEnchaAI
+status_ok "Funções carregadas (modo biblioteca)"
+
 echo ""
 barra_meio
-echo -e "${verde}${negrito}✅ FINALIZAÇÃO${reset}"
+echo -e "${roxo}${negrito}🐳 INSTALANDO TRAEFIK + PORTAINER${reset}"
 barra_meio
-
-status_info "Executando atualização final do sistema..."
-DEBIAN_FRONTEND=noninteractive apt update > /dev/null 2>&1 && apt upgrade -y > /dev/null 2>&1
-status_ok "Atualização final concluída"
-
-# Banner de conclusão
-echo ""
-clear
-echo -e "${negrito}${verde}"
-centralizar "╔══════════════════════════════════════════════════════════════════╗"
-centralizar "║                                                                  ║"
-centralizar "║                    🎉 SETUP CONCLUÍDO! 🎉                       ║"
-centralizar "║                                                                  ║"
-centralizar "║              Todos os componentes foram instalados               ║"
-centralizar "║                    e configurados com sucesso!                   ║"
-centralizar "║                                                                  ║"
-centralizar "║                         Encha AI!                                ║"
-centralizar "║                                                                  ║"
-centralizar "╚══════════════════════════════════════════════════════════════════╝"
-echo -e "${reset}"
+ferramenta_traefik_e_portainer
 
 echo ""
-echo -e "${ciano}${negrito}Para mais informações e suporte:${reset}"
-echo -e "${azul}📧 Email: atendimento@encha.ai${reset}"
-echo -e "${azul}🌐 Website: https://encha.ai${reset}"
-echo -e "${azul}📱 Instagram: @encha_ai${reset}"
-echo -e "${azul}📱 WhatsApp (suporte): +55 61 99159-2205${reset}"
+barra_meio
+echo -e "${roxo}${negrito}📦 INSTALANDO ENCHA SETUP PANEL${reset}"
+barra_meio
+ferramenta_encha_panel
+
+mostrar_resumo_final
 echo ""

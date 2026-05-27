@@ -1995,42 +1995,48 @@ ferramenta_traefik_e_portainer() {
   if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER (UNIVERSAL) ---"; fi
 
   # --- COLETA DE DADOS ---
-  while true; do
-    echo -e "Passo \e[33m1/6\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
-    echo ""
-    echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-    echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
-    echo ""
-    while true; do
-      echo -e "Passo \e[33m3/6\e[0m 🔐"
-      echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
-      echo ""
-      if type validar_senha &> /dev/null; then
-        if validar_senha "$pass_portainer" 12; then break; fi
-      else
-        if [ ${#pass_portainer} -ge 12 ]; then break; fi
-      fi
-      echo ""
-    done
-    echo -e "Passo \e[33m4/6\e[0m 🖥️"
-    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
-    echo ""
-    echo -e "Passo \e[33m5/6\e[0m 🌐"
-    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
-    echo ""
-    echo -e "Passo \e[33m6/6\e[0m 📧"
-    echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
-    echo ""
-    
-    clear
-    if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
-    echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
+  # Modo não-interativo: variáveis pré-populadas via export (ex: main.sh refatorado)
+  if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then
+    echo -e "\e[33m🤖 Modo não-interativo ativo — usando variáveis exportadas.\e[0m"
     echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
-    read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
-    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
-  done
+  else
+    while true; do
+      echo -e "Passo \e[33m1/6\e[0m 📡"
+      echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
+      echo ""
+      echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
+      echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
+      echo ""
+      while true; do
+        echo -e "Passo \e[33m3/6\e[0m 🔐"
+        echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+        echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
+        echo ""
+        if type validar_senha &> /dev/null; then
+          if validar_senha "$pass_portainer" 12; then break; fi
+        else
+          if [ ${#pass_portainer} -ge 12 ]; then break; fi
+        fi
+        echo ""
+      done
+      echo -e "Passo \e[33m4/6\e[0m 🖥️"
+      echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
+      echo ""
+      echo -e "Passo \e[33m5/6\e[0m 🌐"
+      echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
+      echo ""
+      echo -e "Passo \e[33m6/6\e[0m 📧"
+      echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
+      echo ""
+
+      clear
+      if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
+      echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
+      echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
+      read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
+      if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
+    done
+  fi
 
   # --- INSTALAÇÃO INTELIGENTE ---
 
@@ -2242,9 +2248,11 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
   echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  sleep 20 
+  # Aguarda inicial mais longo no modo não-interativo (Portainer pode levar 1-5 min)
+  if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then sleep 60; else sleep 20; fi
 
-  MAX_RETRIES=5
+  MAX_RETRIES=${ENCHA_MAX_RETRIES:-5}
+  SLEEP_INTERVAL=${ENCHA_SLEEP:-10}
   CONTA_CRIADA=false
   for i in $(seq 1 $MAX_RETRIES); do
     RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
@@ -2256,8 +2264,8 @@ EOL
       CONTA_CRIADA=true
       break
     else
-      echo -e "⏳ Tentativa $i/$MAX_RETRIES..."
-      sleep 10
+      echo -e "⏳ Tentativa $i/$MAX_RETRIES (aguardando ${SLEEP_INTERVAL}s)..."
+      sleep $SLEEP_INTERVAL
     fi
   done
 
@@ -19581,6 +19589,158 @@ processar_menu_unlimited() {
                 ;;
         esac
     done
+}
+
+################################################################################
+# ferramenta_encha_panel — Instala o Encha Setup Panel (Next.js)
+#
+# Pré-requisitos:
+#   - Traefik + Portainer já instalados (rede $nome_rede_interna ativa)
+#   - $url_painel exportada (subdomínio do painel)
+#
+# Variáveis de ambiente esperadas:
+#   - url_painel               domínio público do painel
+#   - nome_rede_interna        overlay network (default: enchanet)
+#   - email_ssl                email para Let's Encrypt (informativo)
+################################################################################
+ferramenta_encha_panel() {
+    clear
+    echo -e "\e[35m╔════════════════════════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[35m║              📦 INSTALANDO ENCHA SETUP PANEL                      ║\e[0m"
+    echo -e "\e[35m╚════════════════════════════════════════════════════════════════════╝\e[0m"
+    echo ""
+
+    if [[ -z "$url_painel" ]]; then
+        echo -e "\e[31m✖ Variável \$url_painel não definida. Abortando.\e[0m"
+        return 1
+    fi
+
+    # Garante que envsubst está disponível (vem no pacote gettext-base)
+    if ! command -v envsubst >/dev/null 2>&1; then
+        echo -e "\e[33m• Instalando gettext-base (envsubst)...\e[0m"
+        DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base >/dev/null 2>&1
+    fi
+
+    # 1) Docker Secret idempotente (32 bytes random)
+    echo -e "\e[97m• [1/5] Criando Docker Secret encha_panel_master_key\e[0m"
+    if docker secret inspect encha_panel_master_key >/dev/null 2>&1; then
+        echo -e "  \e[33m↳ Secret já existe, reutilizando.\e[0m"
+    else
+        openssl rand 32 | docker secret create encha_panel_master_key - >/dev/null \
+            && echo -e "  \e[32m✓ Secret criado.\e[0m" \
+            || { echo -e "  \e[31m✖ Falha ao criar secret.\e[0m"; return 1; }
+    fi
+
+    # 2) Volume idempotente
+    echo -e "\e[97m• [2/5] Criando volume encha_panel_data\e[0m"
+    docker volume create encha_panel_data >/dev/null \
+        && echo -e "  \e[32m✓ Volume pronto.\e[0m"
+
+    # 3) Diretório dados_vps (bind-mount read-only do painel)
+    mkdir -p /root/dados_vps
+
+    # 4) Obter imagem (pull com fallback para build local)
+    echo -e "\e[97m• [3/5] Obtendo imagem enchaai/setup-panel:latest\e[0m"
+    if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
+        echo -e "  \e[32m✓ Imagem baixada do Docker Hub.\e[0m"
+    elif [[ -d /root/encha-setup-panel/src ]]; then
+        echo -e "  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
+        if docker build -t enchaai/setup-panel:latest /root/encha-setup-panel/ >/dev/null 2>&1; then
+            echo -e "  \e[32m✓ Imagem buildada localmente.\e[0m"
+        else
+            echo -e "  \e[31m✖ Build local falhou. Abortando.\e[0m"
+            return 1
+        fi
+    else
+        echo -e "  \e[31m✖ Imagem indisponível e não há fonte local em /root/encha-setup-panel/. Abortando.\e[0m"
+        return 1
+    fi
+
+    # 5) Render do docker-stack.yaml com envsubst (host + rede dinâmicos)
+    echo -e "\e[97m• [4/5] Gerando docker-stack.yaml dinâmico\e[0m"
+    export ENCHA_PANEL_HOST="$url_painel"
+    export ENCHA_PANEL_NETWORK="${nome_rede_interna:-enchanet}"
+
+    local stack_template="/root/encha-setup-panel/docker-stack.yaml"
+    if [[ ! -f "$stack_template" ]]; then
+        # Fallback: gera template inline se o repo não estiver no host
+        stack_template="/tmp/encha-panel.template.yaml"
+        cat > "$stack_template" <<'TEMPLATE'
+version: "3.7"
+services:
+  panel:
+    image: enchaai/setup-panel:latest
+    networks:
+      - ${ENCHA_PANEL_NETWORK}
+    secrets:
+      - source: encha_panel_master_key
+        target: master_key
+        mode: 0444
+    volumes:
+      - encha_panel_data:/app/data
+      - /root/dados_vps:/app/vps-context:ro
+    environment:
+      - NODE_ENV=production
+      - PORTAINER_URL=http://portainer_portainer:9000
+      - DB_PATH=/app/data/panel.db
+      - VPS_CONTEXT_DIR=/app/vps-context
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=${ENCHA_PANEL_NETWORK}"
+        - "traefik.http.routers.encha-panel.rule=Host(`${ENCHA_PANEL_HOST}`)"
+        - "traefik.http.routers.encha-panel.entrypoints=websecure"
+        - "traefik.http.routers.encha-panel.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.encha-panel.service=encha-panel"
+        - "traefik.http.services.encha-panel.loadbalancer.server.port=3000"
+secrets:
+  encha_panel_master_key:
+    external: true
+volumes:
+  encha_panel_data:
+    external: true
+    name: encha_panel_data
+networks:
+  ${ENCHA_PANEL_NETWORK}:
+    external: true
+    name: ${ENCHA_PANEL_NETWORK}
+TEMPLATE
+    fi
+
+    envsubst '${ENCHA_PANEL_HOST} ${ENCHA_PANEL_NETWORK}' \
+        < "$stack_template" > /tmp/encha-panel.yaml
+
+    # 6) Deploy
+    echo -e "\e[97m• [5/5] Fazendo deploy da stack encha-panel\e[0m"
+    docker stack rm encha-panel >/dev/null 2>&1
+    sleep 8
+    docker stack deploy --resolve-image always -c /tmp/encha-panel.yaml encha-panel >/dev/null
+
+    # 7) Aguarda o serviço subir
+    if type wait_stack &> /dev/null; then
+        wait_stack "encha-panel"
+    else
+        sleep 30
+    fi
+
+    echo ""
+    echo -e "\e[32m╔════════════════════════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[32m║  ✅ Encha Setup Panel disponível em:                              ║\e[0m"
+    echo -e "\e[32m║     https://$url_painel\e[0m"
+    echo -e "\e[32m╚════════════════════════════════════════════════════════════════════╝\e[0m"
+    echo ""
 }
 
 main() {

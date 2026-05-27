@@ -1,6 +1,11 @@
 version: "3.7"
 
 # Stack do Encha Setup Panel para Docker Swarm.
+#
+# Este arquivo usa variáveis de ambiente para host e rede:
+#   - ENCHA_PANEL_HOST    domínio público (ex: painel.exemplo.com)
+#   - ENCHA_PANEL_NETWORK overlay network (ex: enchanet)
+#
 # Pré-requisitos:
 #   1. Traefik + Portainer já instalados (mesma rede overlay).
 #   2. Swarm Secret 'encha_panel_master_key' criado (32 bytes random):
@@ -9,14 +14,19 @@ version: "3.7"
 #        docker volume create encha_panel_data
 #   4. Diretório /root/dados_vps presente no host (criado pelo instalador bash).
 #
-# Deploy:
-#   docker stack deploy -c docker-stack.yaml encha-panel
+# Deploy (com envsubst):
+#   export ENCHA_PANEL_HOST=painel.meudominio.com
+#   export ENCHA_PANEL_NETWORK=enchanet
+#   envsubst '${ENCHA_PANEL_HOST} ${ENCHA_PANEL_NETWORK}' < docker-stack.yaml \
+#     | docker stack deploy --resolve-image always -c - encha-panel
+#
+# Ou rodar via ferramenta_encha_panel() no secondary.sh.
 
 services:
   panel:
     image: enchaai/setup-panel:latest
     networks:
-      - enchanet
+      - ${ENCHA_PANEL_NETWORK}
     secrets:
       - source: encha_panel_master_key
         target: master_key
@@ -50,8 +60,8 @@ services:
           memory: 128M
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=enchanet"
-        - "traefik.http.routers.encha-panel.rule=Host(`painel.alunaencha.shop`)"
+        - "traefik.docker.network=${ENCHA_PANEL_NETWORK}"
+        - "traefik.http.routers.encha-panel.rule=Host(`${ENCHA_PANEL_HOST}`)"
         - "traefik.http.routers.encha-panel.entrypoints=websecure"
         - "traefik.http.routers.encha-panel.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.encha-panel.service=encha-panel"
@@ -67,6 +77,6 @@ volumes:
     name: encha_panel_data
 
 networks:
-  enchanet:
+  ${ENCHA_PANEL_NETWORK}:
     external: true
-    name: enchanet
+    name: ${ENCHA_PANEL_NETWORK}
