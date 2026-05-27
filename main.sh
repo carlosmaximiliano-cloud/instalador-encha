@@ -367,7 +367,7 @@ coletar_inputs_instalacao() {
 
     # 4) Email SSL
     while true; do
-        echo -ne "${ciano}4/5 Email para certificados SSL (Let's Encrypt): ${reset}" && read -r email_ssl
+        echo -ne "${ciano}4/5 Email para certificados SSL: ${reset}" && read -r email_ssl
         [[ "$email_ssl" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] && break
         echo -e "${vermelho}✖ Email inválido.${reset}"
     done
@@ -427,6 +427,36 @@ download_secondary() {
     fi
 }
 
+preparar_fonte_painel() {
+    echo ""
+    barra_meio
+    echo -e "${roxo}${negrito}📦 PREPARANDO FONTE DO PAINEL${reset}"
+    barra_meio
+
+    status_info "Garantindo git..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1
+
+    if [[ -d /root/encha-setup-panel/.git ]]; then
+        status_info "Atualizando repositório existente..."
+        git -C /root/encha-setup-panel fetch origin main >/dev/null 2>&1
+        git -C /root/encha-setup-panel reset --hard origin/main >/dev/null 2>&1
+    else
+        status_info "Clonando enchaaluno/setupteste..."
+        rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
+        git clone --depth 1 \
+            https://github.com/enchaaluno/setupteste.git \
+            /tmp/_setupteste_clone >/dev/null 2>&1 \
+            || { status_fail "Falha no git clone"; exit 1; }
+        if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
+            status_fail "Diretório encha-setup-panel não encontrado no repositório."
+            exit 1
+        fi
+        mv /tmp/_setupteste_clone/encha-setup-panel /root/encha-setup-panel
+        rm -rf /tmp/_setupteste_clone
+    fi
+    status_ok "Fonte do painel pronta em /root/encha-setup-panel"
+}
+
 mostrar_resumo_final() {
     clear
     echo -e "${negrito}${verde}"
@@ -468,11 +498,16 @@ echo -e "${roxo}${negrito}🐳 INSTALANDO TRAEFIK + PORTAINER${reset}"
 barra_meio
 ferramenta_traefik_e_portainer
 
+preparar_fonte_painel
+
 echo ""
 barra_meio
 echo -e "${roxo}${negrito}📦 INSTALANDO ENCHA SETUP PANEL${reset}"
 barra_meio
-ferramenta_encha_panel
+if ! ferramenta_encha_panel; then
+    status_fail "Falha ao instalar o painel. Verifique 'docker service ls' e 'docker stack ps encha-panel'."
+    exit 1
+fi
 
 mostrar_resumo_final
 echo ""
