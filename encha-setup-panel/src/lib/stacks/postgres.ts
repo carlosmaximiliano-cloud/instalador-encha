@@ -6,45 +6,63 @@ const schema = z.object({});
 
 export const postgres: StackDefinition = {
   id: "postgres",
-  repoUrl: "https://github.com/pgvector/pgvector",
-  name: "PostgreSQL (interno)",
-  description: "Banco PostgreSQL compartilhado pelas stacks que precisam (Evolution, N8N, Chatwoot, Directus). Senha gerada automaticamente.",
+  repoUrl: "https://github.com/postgres/postgres",
+  name: "PostgreSQL",
+  description: "Banco de dados relacional compartilhado pelas stacks que precisam (Evolution, N8N, Chatwoot, Directus). Senha gerada automaticamente.",
   category: "database",
   icon: "database",
   dependsOn: ["traefik-portainer"],
-  optionNumber: -1,
+  optionNumber: 3,
+  installVia: "panel",
   fields: [],
   schema,
   generateSecrets: () => [{ name: "senha_postgres", value: randomBytes(16).toString("hex") }],
   generateYaml(_v, secrets, ctx) {
     const senha = secrets.senha_postgres;
+    const net = ctx.networkName;
     return `version: "3.7"
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: postgres:16
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=500"
+      - "-c"
+      - "shared_buffers=512MB"
     environment:
       - POSTGRES_PASSWORD=${senha}
-      - PG_MAX_CONNECTIONS=500
+      - TZ=America/Sao_Paulo
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - ${ctx.networkName}
+      - ${net}
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
 
 volumes:
   postgres_data:
-    external: true
-    name: postgres_data
 
 networks:
-  ${ctx.networkName}:
+  ${net}:
     external: true
-    name: ${ctx.networkName}
+    name: ${net}
 `;
+  },
+  postInstall: {
+    notes: [
+      "Host interno (dentro do Swarm): postgres_postgres:5432",
+      "Usuário: postgres",
+      "Senha gerada automaticamente — veja no Audit log",
+      "Porta 5432 não exposta externamente por segurança",
+    ],
   },
 };
