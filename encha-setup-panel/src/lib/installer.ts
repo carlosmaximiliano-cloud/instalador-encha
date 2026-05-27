@@ -33,6 +33,8 @@ function buildSecretMap(secrets: GeneratedSecret[], reused: Record<string, strin
       out[s.name] = reused.senha_postgres ?? "";
     } else if (s.value === "REUSE_MINIO") {
       out[s.name] = reused.minio_access ?? "";
+    } else if (s.value === "REUSE_MYSQL") {
+      out[s.name] = reused.senha_mysql ?? "";
     } else {
       out[s.name] = s.value;
     }
@@ -105,9 +107,10 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     const sharedToPersist: Record<string, string> = { ...reused };
     for (const g of generated) {
-      if (g.value === "REUSE_POSTGRES" || g.value === "REUSE_MINIO") continue;
+      if (g.value === "REUSE_POSTGRES" || g.value === "REUSE_MINIO" || g.value === "REUSE_MYSQL") continue;
       if (def.id === "postgres" && g.name === "senha_postgres") sharedToPersist.senha_postgres = g.value;
       if (def.id === "minio" && g.name === "minio_access") sharedToPersist.minio_access = g.value;
+      if (def.id === "mysql" && g.name === "senha_mysql") sharedToPersist.senha_mysql = g.value;
     }
 
     const yaml = def.generateYaml(parsed.data, secretMap, input.swarmCtx);
