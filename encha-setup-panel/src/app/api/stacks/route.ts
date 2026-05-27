@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readSession } from "@/lib/session";
 import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { installStack, listInstalledStacks } from "@/lib/installer";
+import { discoverContext, listSwarmStackNames } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames } from "@/lib/stacks/types";
 
@@ -21,19 +22,32 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
   const catalog = getPublicCatalog();
-  const installed = await listInstalledStacks(session.jwt).catch((err) => {
-    console.error("[api/stacks] Falha listando stacks do Portainer:", err);
-    return [];
-  });
+
+  // Consulta Portainer-managed stacks E Docker Engine via proxy para cobrir stacks externos
+  const [installed, swarmNames] = await Promise.all([
+    listInstalledStacks(session.jwt).catch((err) => {
+      console.error("[api/stacks] Falha listando stacks do Portainer:", err);
+      return [];
+    }),
+    discoverContext(session.jwt)
+      .then(({ endpointId }) => listSwarmStackNames(session.jwt, endpointId))
+      .catch((err) => {
+        console.error("[api/stacks] Falha listando serviços Docker:", err);
+        return [] as string[];
+      }),
+  ]);
 
   console.log(
-    "[api/stacks] Portainer retornou",
-    installed.length,
-    "stacks:",
-    installed.map((s) => s.Name).join(", ") || "(nenhuma)"
+    "[api/stacks] Portainer stacks:", installed.length || "(nenhuma)",
+    "| Swarm:", swarmNames.join(", ") || "(nenhuma)"
   );
 
-  const installedNames = new Set(installed.map((s) => s.Name));
+  // Merge: Portainer-managed + Docker Engine (cobre stacks externos como traefik/portainer)
+  const installedNames = new Set([
+    ...installed.map((s) => s.Name),
+    ...swarmNames,
+  ]);
+
   const catalogPayload = catalog.map((s) => ({
     id: s.id,
     name: s.name,
@@ -75,7 +89,7 @@ export async function GET() {
     },
     {
       headers: {
-        "x-stack-detection": `portainer=${installed.length};catalog=${detectedInstalled}`,
+        "x-stack-detection": `portainer=${installed.length};swarm=${swarmNames.length};catalog=${detectedInstalled}`,
       },
     }
   );

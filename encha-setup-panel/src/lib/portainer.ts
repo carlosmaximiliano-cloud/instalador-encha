@@ -105,6 +105,23 @@ export async function deploySwarmStack(args: {
   });
 }
 
+type DockerService = {
+  Spec?: { Labels?: Record<string, string> };
+};
+
+export async function listSwarmStackNames(token: string, endpointId: number): Promise<string[]> {
+  const services = await call<DockerService[]>(
+    `/api/endpoints/${endpointId}/docker/services`,
+    { token }
+  );
+  const stacks = new Set<string>();
+  for (const svc of services) {
+    const ns = svc.Spec?.Labels?.["com.docker.stack.namespace"];
+    if (ns) stacks.add(ns);
+  }
+  return Array.from(stacks);
+}
+
 export async function pingPortainer(): Promise<boolean> {
   try {
     const init: AnyInit = {};
