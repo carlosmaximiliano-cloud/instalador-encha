@@ -1,0 +1,170 @@
+/* Encha AI — Design Tokens (Coral + Liquid Glass) — portado do Projeto LIGA. */
+
+:root {
+  /* Coral scale (brand primary) */
+  --coral-50:  18 80% 96%;
+  --coral-100: 18 75% 92%;
+  --coral-200: 18 70% 85%;
+  --coral-300: 18 68% 76%;
+  --coral-400: 18 65% 68%;
+  --coral-500: 18 65% 64%;
+  --coral-600: 18 60% 55%;
+  --coral-700: 18 55% 45%;
+  --coral-800: 18 50% 35%;
+  --coral-900: 18 45% 25%;
+
+  --primary: var(--coral-500);
+  --primary-hover: var(--coral-600);
+  --primary-active: var(--coral-700);
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: var(--coral-50);
+  --primary-soft-foreground: var(--coral-800);
+
+  /* Warm-tinted neutrals */
+  --warm-50:  20 30% 98%;
+  --warm-100: 20 25% 96%;
+  --warm-200: 20 20% 92%;
+  --warm-300: 20 18% 85%;
+  --warm-500: 20 12% 52%;
+  --warm-700: 20 15% 30%;
+  --warm-800: 20 20% 18%;
+  --warm-900: 20 25% 10%;
+
+  --background: var(--warm-50);
+  --foreground: var(--warm-800);
+  --card: 0 0% 100%;
+  --card-foreground: var(--warm-800);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--warm-800);
+  --muted: var(--warm-100);
+  --muted-foreground: var(--warm-500);
+  --accent: var(--warm-100);
+  --accent-foreground: var(--warm-800);
+  --border: 20 18% 88%;
+  --input: 20 18% 88%;
+  --ring: var(--coral-500);
+  --secondary: var(--warm-100);
+  --secondary-foreground: var(--warm-800);
+
+  /* Semantic states */
+  --success: 152 60% 36%;
+  --success-foreground: 152 60% 18%;
+  --success-soft: 152 50% 95%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 38 92% 20%;
+  --warning-soft: 38 92% 95%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-soft: 0 72% 96%;
+
+  --info: 214 80% 50%;
+  --info-foreground: 214 80% 20%;
+  --info-soft: 214 80% 96%;
+
+  /* Liquid Glass (light) */
+  --glass-bg: 0 0% 100% / 0.55;
+  --glass-bg-strong: 0 0% 100% / 0.78;
+  --glass-border: 0 0% 100% / 0.65;
+  --glass-highlight: 0 0% 100% / 0.95;
+  --shadow-glass-sm:
+    inset 0 1px 0 hsl(var(--glass-highlight)),
+    inset 0 -1px 0 hsl(20 30% 90% / 0.4),
+    0 1px 2px hsl(20 50% 30% / 0.05),
+    0 6px 16px hsl(20 50% 30% / 0.08);
+  --shadow-glass-md:
+    inset 0 1px 0 hsl(var(--glass-highlight)),
+    inset 0 -1px 0 hsl(20 30% 88% / 0.5),
+    0 2px 4px hsl(20 50% 30% / 0.06),
+    0 8px 24px hsl(20 50% 30% / 0.10),
+    0 20px 48px hsl(20 50% 30% / 0.06);
+  --shadow-glass-lg:
+    inset 0 1px 0 hsl(0 0% 100% / 1),
+    inset 0 -1px 0 hsl(20 30% 88% / 0.6),
+    0 4px 8px hsl(20 50% 30% / 0.08),
+    0 16px 40px hsl(20 50% 30% / 0.16),
+    0 32px 64px hsl(20 50% 30% / 0.10);
+  --shadow-glow-primary: 0 0 24px hsl(var(--coral-500) / 0.25), 0 4px 16px hsl(var(--coral-500) / 0.3);
+
+  --blur-sm: 12px;
+  --blur-md: 24px;
+  --blur-lg: 40px;
+
+  /* Apple radius scale */
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  /* Mesh background */
+  --mesh-bg:
+    radial-gradient(ellipse 80% 60% at 20% 0%, hsl(18 85% 92%) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 100% 30%, hsl(35 85% 92%) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 50% 100%, hsl(18 70% 95%) 0%, transparent 50%),
+    linear-gradient(180deg, hsl(20 50% 98%) 0%, hsl(20 30% 96%) 100%);
+}
+
+.dark {
+  --background: 20 25% 6%;
+  --foreground: 20 15% 88%;
+  --card: 20 20% 12%;
+  --card-foreground: 20 15% 88%;
+  --popover: 20 20% 12%;
+  --popover-foreground: 20 15% 88%;
+  --muted: 20 15% 16%;
+  --muted-foreground: 20 10% 60%;
+  --accent: 20 15% 16%;
+  --accent-foreground: 20 15% 88%;
+  --border: 20 12% 18%;
+  --input: 20 12% 18%;
+  --secondary: 20 15% 16%;
+  --secondary-foreground: 20 15% 88%;
+
+  --primary: var(--coral-400);
+  --primary-hover: var(--coral-500);
+  --primary-active: var(--coral-600);
+  --primary-foreground: 20 25% 8%;
+  --primary-soft: 18 30% 14%;
+  --primary-soft-foreground: var(--coral-200);
+
+  --success: 152 50% 50%;
+  --success-soft: 152 30% 14%;
+  --warning: 38 92% 60%;
+  --warning-foreground: 38 95% 82%;
+  --warning-soft: 38 60% 14%;
+  --destructive: 0 70% 60%;
+  --destructive-soft: 0 50% 14%;
+  --info: 214 80% 65%;
+  --info-soft: 214 50% 14%;
+
+  --glass-bg: 0 0% 100% / 0.04;
+  --glass-bg-strong: 0 0% 100% / 0.07;
+  --glass-border: 0 0% 100% / 0.07;
+  --glass-highlight: 0 0% 100% / 0.06;
+  --shadow-glass-sm:
+    inset 0 1px 0 hsl(0 0% 100% / 0.06),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.3),
+    0 1px 2px hsl(0 0% 0% / 0.3),
+    0 6px 18px hsl(0 0% 0% / 0.35);
+  --shadow-glass-md:
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
+    0 2px 4px hsl(0 0% 0% / 0.4),
+    0 12px 32px hsl(0 0% 0% / 0.5),
+    0 24px 64px hsl(0 0% 0% / 0.3);
+  --shadow-glass-lg:
+    inset 0 1px 0 hsl(0 0% 100% / 0.12),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.5),
+    0 4px 8px hsl(0 0% 0% / 0.5),
+    0 20px 48px hsl(0 0% 0% / 0.6),
+    0 40px 80px hsl(0 0% 0% / 0.4);
+  --shadow-glow-primary: 0 0 32px hsl(var(--coral-400) / 0.35), 0 4px 20px hsl(var(--coral-500) / 0.4);
+
+  --mesh-bg:
+    radial-gradient(ellipse 80% 60% at 20% 0%, hsl(18 40% 18%) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 100% 30%, hsl(25 35% 12%) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 50% 100%, hsl(18 30% 8%) 0%, transparent 50%),
+    linear-gradient(180deg, hsl(20 25% 6%) 0%, hsl(20 20% 4%) 100%);
+}

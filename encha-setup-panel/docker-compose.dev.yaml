@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    command: --bind :9000
+    ports:
+      - "9000:9000"
+    volumes:
+      - portainer_dev_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  panel:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORTAINER_URL=http://portainer:9000
+      - MASTER_KEY_PATH=/app/data/master.key
+      - DB_PATH=/app/data/panel.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - portainer
+
+volumes:
+  portainer_dev_data:

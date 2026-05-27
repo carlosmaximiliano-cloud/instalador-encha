@@ -1,0 +1,72 @@
+version: "3.7"
+
+# Stack do Encha Setup Panel para Docker Swarm.
+# Pré-requisitos:
+#   1. Traefik + Portainer já instalados (mesma rede overlay).
+#   2. Swarm Secret 'encha_panel_master_key' criado (32 bytes random):
+#        openssl rand 32 | docker secret create encha_panel_master_key -
+#   3. Volume externo 'encha_panel_data' criado:
+#        docker volume create encha_panel_data
+#   4. Diretório /root/dados_vps presente no host (criado pelo instalador bash).
+#
+# Deploy:
+#   docker stack deploy -c docker-stack.yaml encha-panel
+
+services:
+  panel:
+    image: enchaai/setup-panel:latest
+    networks:
+      - enchanet
+    secrets:
+      - source: encha_panel_master_key
+        target: master_key
+        mode: 0444
+    volumes:
+      - encha_panel_data:/app/data
+      - /root/dados_vps:/app/vps-context:ro
+    environment:
+      - NODE_ENV=production
+      - PORTAINER_URL=http://portainer_portainer:9000
+      - DB_PATH=/app/data/panel.db
+      - VPS_CONTEXT_DIR=/app/vps-context
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=enchanet"
+        - "traefik.http.routers.encha-panel.rule=Host(`painel.alunaencha.shop`)"
+        - "traefik.http.routers.encha-panel.entrypoints=websecure"
+        - "traefik.http.routers.encha-panel.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.encha-panel.service=encha-panel"
+        - "traefik.http.services.encha-panel.loadbalancer.server.port=3000"
+
+secrets:
+  encha_panel_master_key:
+    external: true
+
+volumes:
+  encha_panel_data:
+    external: true
+    name: encha_panel_data
+
+networks:
+  enchanet:
+    external: true
+    name: enchanet
