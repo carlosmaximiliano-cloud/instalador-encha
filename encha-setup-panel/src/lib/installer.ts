@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getStack } from "./stacks/registry";
-import { deploySwarmStack, discoverContext, listStacks, type Stack } from "./portainer";
+import { deploySwarmStack, discoverContext, ensureSwarmVolume, listStacks, type Stack } from "./portainer";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
@@ -115,6 +115,9 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     const yaml = def.generateYaml(parsed.data, secretMap, input.swarmCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
+    for (const vol of def.externalVolumes ?? []) {
+      await ensureSwarmVolume(input.token, endpointId, vol);
+    }
     const stack = await deploySwarmStack({
       token: input.token,
       name: input.stackId.replace(/-/g, "_"),

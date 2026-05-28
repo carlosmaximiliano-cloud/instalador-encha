@@ -29,6 +29,17 @@ export async function createSession(s: Session): Promise<void> {
   c.set(SESSION_COOKIE, blob, cookieOpts(MAX_AGE_SECONDS));
 }
 
+function isJwtExpired(jwt: string): boolean {
+  try {
+    const parts = jwt.split(".");
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    return typeof payload.exp === "number" && payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 export async function readSession(): Promise<Session | null> {
   const c = await cookies();
   const v = c.get(SESSION_COOKIE)?.value;
@@ -36,6 +47,7 @@ export async function readSession(): Promise<Session | null> {
   try {
     const s = JSON.parse(decryptSecret(v)) as Session;
     if (s.exp < Date.now()) return null;
+    if (isJwtExpired(s.jwt)) return null;
     return s;
   } catch {
     return null;

@@ -17,6 +17,7 @@ export const mongodb: StackDefinition = {
   icon: "database-zap",
   dependsOn: ["traefik-portainer"],
   optionNumber: 15,
+  externalVolumes: ["mongodb_data"],
   fields: [
     { name: "url_mongo_express", label: "Domínio do Mongo Express (UI)", kind: "domain", placeholder: "mongo.suaempresa.com", group: "Domínios" },
     { name: "usuario_mongo", label: "Usuário admin", kind: "username", group: "Credenciais" },

@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StackCard, type CatalogEntry } from "@/components/stack-card";
 import { InstallWizard } from "@/components/wizard/install-wizard";
 import { SshInstallHint } from "@/components/ssh-install-hint";
 import { Input } from "@/components/ui/input";
-import { Search, Boxes, X } from "lucide-react";
+import { Search, Boxes, X, AlertTriangle } from "lucide-react";
+
+const MAX_DEPLOY_MS = 10 * 60 * 1000;
 
 type Field = {
   name: string;
@@ -56,7 +58,8 @@ function CatalogPageInner() {
   const router = useRouter();
   const category = search_params.get("category");
 
-  const [data, setData] = useState<{ catalog: CatalogEntry[] } | null>(null);
+  const [data, setData] = useState<{ catalog: CatalogEntry[]; portainerOnline?: boolean } | null>(null);
+  const deployStartedAt = useRef<Map<string, number>>(new Map());
   const [search, setSearch] = useState("");
   const [openStack, setOpenStack] = useState<FullStack | null>(null);
   const [sshHint, setSshHint] = useState<CatalogEntry | null>(null);
@@ -103,8 +106,20 @@ function CatalogPageInner() {
 
   useEffect(() => {
     if (!data) return;
-    const anyDeploying = data.catalog.some((s) => s.installed && !s.ready);
-    if (!anyDeploying) return;
+    const now = Date.now();
+    const stillDeploying = data.catalog.some((s) => {
+      if (!s.installed || s.ready) {
+        deployStartedAt.current.delete(s.id);
+        return false;
+      }
+      const started = deployStartedAt.current.get(s.id);
+      if (started === undefined) {
+        deployStartedAt.current.set(s.id, now);
+        return true;
+      }
+      return now - started < MAX_DEPLOY_MS;
+    });
+    if (!stillDeploying) return;
     const id = setInterval(refetchStacks, 5000);
     return () => clearInterval(id);
   }, [data, refetchStacks]);
@@ -178,6 +193,15 @@ function CatalogPageInner() {
             : "Escolha o que instalar no seu Swarm — tudo via Portainer API."}
         </p>
       </header>
+
+      {data && data.portainerOnline === false && (
+        <div className="flex items-start gap-2 p-3 rounded-md bg-warning-soft text-warning-foreground text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            Portainer não responde — instalações desabilitadas até que a conexão se restabeleça.
+          </span>
+        </div>
+      )}
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

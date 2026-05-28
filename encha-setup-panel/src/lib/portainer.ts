@@ -1,7 +1,8 @@
 import { Agent, fetch as undiciFetch, FormData, File } from "undici";
 
 const PORTAINER_URL = process.env.PORTAINER_URL ?? "http://portainer:9000";
-const TLS_INSECURE = process.env.PORTAINER_TLS_INSECURE === "1";
+const TLS_INSECURE =
+  process.env.PORTAINER_TLS_INSECURE === "1" && process.env.NODE_ENV !== "production";
 
 const insecureAgent = TLS_INSECURE
   ? new Agent({ connect: { rejectUnauthorized: false } })
@@ -138,8 +139,25 @@ export async function listSwarmStackStatuses(
     name,
     desired: s.desired,
     running: s.running,
-    ready: s.desired > 0 && s.running >= s.desired,
+    ready: s.desired === 0 || s.running >= s.desired,
   }));
+}
+
+export async function ensureSwarmVolume(
+  token: string,
+  endpointId: number,
+  name: string
+): Promise<void> {
+  try {
+    await call(`/api/endpoints/${endpointId}/docker/volumes/create`, {
+      method: "POST",
+      token,
+      body: { Name: name, Driver: "local" },
+    });
+  } catch (e) {
+    // 409 = volume já existe, ok
+    if (!(e instanceof PortainerError) || e.status !== 409) throw e;
+  }
 }
 
 export async function pingPortainer(): Promise<boolean> {

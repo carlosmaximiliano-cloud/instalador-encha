@@ -100,12 +100,14 @@ type StackDefinition = {
   category: Category;       // Ver categorias abaixo
   icon: string;             // Chave do mapa ICONS em stack-card.tsx
   dependsOn: string[];      // IDs de stacks que devem estar instaladas antes
-  optionNumber: number;     // N° da opção no secondary.sh (0 = sem opção)
+  optionNumber: number;     // N° da opção no secondary.sh (positivo)
   fields: StackField[];     // Campos do formulário de instalação
   schema: z.ZodTypeAny;     // Validação dos campos
   repoUrl?: string;         // Link GitHub (aparece no nome do card)
-  installVia?: "panel"|"bash"; // "panel" = wizard completo; "bash" = SSH hint
-  swarmStackNames?: string[]; // Nomes Swarm se diferente de id (underscores)
+  logoUrl?: string;         // URL da logo oficial (raw GitHub). Fallback: ícone lucide
+  installVia?: "panel"|"bash"; // "panel" = wizard; "bash" = SshInstallHint
+  swarmStackNames?: string[]; // Nomes Swarm se diferente de id_com_underscores
+  externalVolumes?: string[]; // Volumes Docker pré-criados antes do deploy
   generateSecrets?: (values) => GeneratedSecret[];
   generateYaml: (values, secrets, ctx) => string;
   postInstall?: { accessUrl?, notes? };
@@ -151,27 +153,34 @@ Migrar um stub para instalação completa = implementar `fields`, `schema`, `gen
 
 | Método | Rota | Auth | Descrição |
 |---|---|---|---|
-| POST | /api/auth | ❌ | Login com senha mestra |
-| DELETE | /api/auth | ✅ | Logout |
+| POST | /api/auth | ❌ + RateLimit | Login com senha mestra |
+| DELETE | /api/auth | ✅ + CSRF | Logout |
 | GET | /api/csrf | ✅ | Token CSRF (httpOnly) |
 | GET | /api/health | ❌ | Ping (status Portainer) |
-| GET | /api/stacks | ✅ | Catálogo + status instalado |
+| GET | /api/stacks | ✅ | Catálogo + `installed`/`ready`/`portainerOnline` |
 | GET | /api/stacks/[id]/schema | ✅ | Campos do formulário |
-| POST | /api/stacks/[id] | ✅ + CSRF | Instalar stack |
-| DELETE | /api/stacks/[id] | ✅ + CSRF | Desinstalar stack |
+| POST | /api/stacks | ✅ + CSRF + RateLimit | Instalar stack (idempotente: 409 se já existe) |
 | GET | /api/audit | ✅ | Log de ações (últimas 200) |
 | GET | /api/vps-context | ✅ | Dados da VPS (nome, rede, email) |
+
+Painel é **somente instalação**: não há endpoint DELETE de stack — remoção/edição usa o Portainer.
 
 ---
 
 ## Autenticação e Segurança
 
-- **Senha mestra:** derivada do Docker Secret `encha_panel_master_key` + Argon2id
-- **Sessão:** cookie `__Host-encha_session` (SameSite=Strict, Secure, HttpOnly), HMAC-SHA256
-- **CSRF:** token duplo-submit HMAC no header `x-csrf-token`
-- **Rate limit:** 10 tentativas/15 min por IP no endpoint `/api/auth`
-- **Container:** `read_only: true` + `tmpfs: /tmp, /app/.next/cache`
-- **Middleware:** protege todas as rotas exceto `/login`, `/api/auth`, `/api/csrf`, `/api/health` e assets estáticos (`*.png|jpg|svg|...`)
+- **Senha mestra:** validada via `authenticate()` no Portainer (não armazena hash local)
+- **Sessão:** cookie `__Host-encha_session` (SameSite=Strict, Secure em prod, HttpOnly). Conteúdo cifrado com chave do Docker Secret `encha_panel_master_key`
+- **Expiração:** dupla — `session.exp` (8h após login) + verificação de `jwt.exp` (do Portainer) a cada request. Qualquer um vencido → 401 → redirect para `/login`
+- **CSRF:** token duplo-submit no cookie `__Host-encha_csrf` + header `x-csrf-token`. Aplicado em todos os POST/DELETE de mutação (auth DELETE, /api/stacks POST)
+- **Origin check:** todas as mutações verificam header `Origin` contra host do servidor
+- **Rate limit (SQLite):**
+  - Login: 5 tentativas / 15 min por IP
+  - POST /api/stacks: 3 tentativas / 1 min por IP+stackId
+- **Idempotência:** POST /api/stacks checa `listSwarmStackStatuses` antes de deploy. Retorna 409 se stack já existe — protege contra duplo-clique e duas abas
+- **TLS Portainer:** `PORTAINER_TLS_INSECURE=1` só funciona se `NODE_ENV != production` (defesa contra desabilitação acidental)
+- **Container:** `read_only: true` + `tmpfs: /tmp, /app/.next/cache`. Banco SQLite no volume `encha_panel_data:/app/data`
+- **Middleware:** protege todas as rotas exceto `/login`, `/api/auth`, `/api/csrf`, `/api/health` e assets estáticos
 
 ---
 
@@ -194,9 +203,35 @@ O catálogo usa esses valores como `default` nos campos do wizard de instalaçã
 Client em `src/lib/portainer.ts` (undici, sem axios).
 
 - `PORTAINER_URL` (env) — padrão `http://portainer_portainer:9000`
-- `PORTAINER_TLS_INSECURE=1` — desabilita verificação TLS
+- `PORTAINER_TLS_INSECURE=1` — só ativa quando `NODE_ENV != production`
+- **Detecção de stacks instaladas** — `listSwarmStackStatuses()` consulta
+  `/api/endpoints/{id}/docker/services?status=true` (Docker Engine via proxy
+  Portainer). Agrega por label `com.docker.stack.namespace`, retorna
+  `{ name, desired, running, ready }`. Detecta tanto stacks deployadas pelo
+  Portainer quanto stacks externas (criadas via `docker stack deploy` no bash)
+- **Critério `ready`**: `desired === 0 || running >= desired` (scale=0 considerado
+  intencional)
 - Fluxo de deploy:
   1. `authenticate()` → JWT
+  2. `listEndpoints()` → endpoint ID
+  3. `getSwarm()` → swarm ID
+  4. `ensureSwarmVolume()` para cada `externalVolumes` da stack (idempotente — 409 = ok)
+  5. `deploySwarmStack()` — multipart form com YAML
+
+## Estados visuais no catálogo
+
+| Estado | Condição | Visual |
+|---|---|---|
+| Não instalado | stack ausente do Swarm | Botão "Instalar" laranja |
+| Instalando | stack existe, `running < desired` | Badge amarelo "Instalando..." + spinner. Botão desabilitado |
+| Pronto | stack existe, `running >= desired` | Badge verde "Instalado" (texto amarelo em dark mode) |
+
+**Dependências:** só desbloqueiam quando a stack-pai está `installed && ready`
+(não basta o YAML ter sido aceito).
+
+**Polling:** catálogo refaz `GET /api/stacks` a cada 5s **apenas enquanto** há
+stack em estado "Instalando". Timeout de 10 min — após isso, polling para mesmo
+que stack continue não-ready (provavelmente falha de pull / config inválida).
   2. `listEndpoints()` → endpoint ID
   3. `getSwarm()` → swarm ID
   4. `deploySwarmStack()` — multipart form com YAML

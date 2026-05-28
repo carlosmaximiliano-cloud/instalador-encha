@@ -56,6 +56,7 @@ export type StackDefinition = {
   fields: StackField[];
   schema: z.ZodTypeAny;
   swarmStackNames?: string[];
+  externalVolumes?: string[];
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";

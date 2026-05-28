@@ -11,8 +11,9 @@ export const redis: StackDefinition = {
   category: "database",
   icon: "database",
   dependsOn: ["traefik-portainer"],
-  optionNumber: -1,
+  optionNumber: 6,
   installVia: "panel",
+  externalVolumes: ["redis_data"],
   fields: [],
   schema,
   generateYaml(_v, _s, ctx) {

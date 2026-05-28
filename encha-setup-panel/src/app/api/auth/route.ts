@@ -4,7 +4,7 @@ import { authenticate, PortainerError } from "@/lib/portainer";
 import { createSession, setCsrfCookie, destroySession } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { getClientIp, verifyOrigin } from "@/lib/csrf";
+import { getClientIp, verifyOrigin, verifyCsrf } from "@/lib/csrf";
 import { newCsrfToken } from "@/lib/csrf";
 
 const loginSchema = z.object({
@@ -62,7 +62,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
+  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
   await destroySession();
   return NextResponse.json({ ok: true });
 }

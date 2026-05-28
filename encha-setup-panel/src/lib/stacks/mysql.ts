@@ -12,8 +12,9 @@ export const mysql: StackDefinition = {
   category: "database",
   icon: "database",
   dependsOn: ["traefik-portainer"],
-  optionNumber: 0,
+  optionNumber: 5,
   installVia: "panel",
+  externalVolumes: ["mysql_data"],
   fields: [],
   schema,
   generateSecrets: () => [{ name: "senha_mysql", value: randomBytes(16).toString("hex") }],
@@ -44,6 +45,8 @@ services:
 
 volumes:
   mysql_data:
+    external: true
+    name: mysql_data
 
 networks:
   ${net}:

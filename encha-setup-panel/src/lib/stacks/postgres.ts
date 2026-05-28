@@ -15,6 +15,7 @@ export const postgres: StackDefinition = {
   dependsOn: ["traefik-portainer"],
   optionNumber: 3,
   installVia: "panel",
+  externalVolumes: ["postgres_data"],
   fields: [],
   schema,
   generateSecrets: () => [{ name: "senha_postgres", value: randomBytes(16).toString("hex") }],
@@ -51,6 +52,8 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: postgres_data
 
 networks:
   ${net}:
