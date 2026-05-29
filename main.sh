@@ -1,5 +1,20 @@
-
 #!/bin/bash
+
+# Redireciona stdin para o terminal — necessário quando o script é executado
+# via "curl | bash", onde stdin é o pipe (o próprio script) e não o teclado.
+# Sem isso, todos os "read" ficam sem input e o script trava ou entra em loop.
+# Se /dev/tty não estiver acessível (ex.: sem TTY de controle), aborta com aviso
+# em vez de cair em loop infinito de "read" recebendo EOF.
+if [ ! -t 0 ]; then
+    if [ -e /dev/tty ] && exec </dev/tty; then
+        :
+    else
+        echo "ERRO: este instalador precisa de um terminal interativo." >&2
+        echo "Rode com um TTY, por exemplo:" >&2
+        echo "  bash <(curl -fsSL https://raw.githubusercontent.com/enchaaluno/setupteste/main/main.sh)" >&2
+        exit 1
+    fi
+fi
 
 # Cores melhoradas
 roxo="\033[95m"
@@ -149,7 +164,11 @@ centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═════�
 
     while true; do
         echo -en "${ciano}Você aceita seguir com total responsabilidade pelo uso da ferramenta? (Y/N): ${reset}"
-        read -r confirmacao
+        if ! read -r confirmacao; then
+            echo ""
+            echo -e "${vermelho}✖ Sem entrada interativa (EOF). Instalação cancelada.${reset}"
+            exit 1
+        fi
 
         case "$confirmacao" in
             [Yy])
