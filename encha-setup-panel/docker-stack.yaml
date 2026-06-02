@@ -39,7 +39,7 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
-      - MONITOR_BASE_URL=https://monitor.alunaencha.shop
+      - MONITOR_BASE_URL=https://monitor.encha.com.br
     read_only: true
     tmpfs:
       - /tmp
