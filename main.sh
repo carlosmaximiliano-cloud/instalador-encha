@@ -15,7 +15,7 @@ if [ ! -t 0 ]; then
     else
         echo "ERRO: este instalador precisa de um terminal interativo." >&2
         echo "Rode com um TTY, por exemplo:" >&2
-        echo "  bash <(curl -fsSL https://raw.githubusercontent.com/enchaaluno/setupteste/main/main.sh)" >&2
+        echo "  bash <(curl -fsSL https://raw.githubusercontent.com/carlosmaximiliano-cloud/instalador-encha/main/main.sh)" >&2
         exit 1
     fi
 fi
@@ -440,7 +440,7 @@ download_secondary() {
 
     status_info "Baixando secondary.sh da fonte oficial..."
     if curl -fsSL --retry 3 --connect-timeout 10 \
-        https://raw.githubusercontent.com/enchaaluno/setupteste/main/secondary.sh \
+        https://raw.githubusercontent.com/carlosmaximiliano-cloud/instalador-encha/main/secondary.sh \
         -o SetupEnchaAI; then
         chmod +x SetupEnchaAI
         status_ok "Script baixado com sucesso"
@@ -464,10 +464,10 @@ preparar_fonte_painel() {
         git -C /root/encha-setup-panel fetch origin main >/dev/null 2>&1
         git -C /root/encha-setup-panel reset --hard origin/main >/dev/null 2>&1
     else
-        status_info "Clonando enchaaluno/setupteste..."
+        status_info "Clonando carlosmaximiliano-cloud/instalador-encha..."
         rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
         git clone --depth 1 \
-            https://github.com/enchaaluno/setupteste.git \
+            https://github.com/carlosmaximiliano-cloud/instalador-encha.git \
             /tmp/_setupteste_clone >/dev/null 2>&1 \
             || { status_fail "Falha no git clone"; exit 1; }
         if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
