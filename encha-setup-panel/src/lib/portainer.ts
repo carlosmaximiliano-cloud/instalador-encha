@@ -143,6 +143,60 @@ export async function listSwarmStackStatuses(
   }));
 }
 
+// Service completo do Docker Engine API (subset que usamos para o self-update).
+export type DockerServiceFull = {
+  ID: string;
+  Version: { Index: number };
+  Spec: {
+    Name?: string;
+    Labels?: Record<string, string>;
+    TaskTemplate?: {
+      ContainerSpec?: { Image?: string };
+      // demais campos preservados via spread ao reenviar
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  };
+};
+
+// Encontra um service Swarm pelo nome (ex: "encha-panel_panel"), via proxy Docker do Portainer.
+export async function getServiceByName(
+  token: string,
+  endpointId: number,
+  name: string
+): Promise<DockerServiceFull | null> {
+  const filters = encodeURIComponent(JSON.stringify({ name: [name] }));
+  const services = await call<DockerServiceFull[]>(
+    `/api/endpoints/${endpointId}/docker/services?filters=${filters}`,
+    { token }
+  );
+  // O filtro `name` do Docker é prefixo; casa exatamente pelo Spec.Name.
+  return services.find((s) => s.Spec?.Name === name) ?? services[0] ?? null;
+}
+
+// Atualiza a imagem de um service preservando o restante do Spec (rolling update no Swarm).
+export async function updateServiceImage(
+  token: string,
+  endpointId: number,
+  service: DockerServiceFull,
+  newImage: string
+): Promise<void> {
+  const spec = {
+    ...service.Spec,
+    TaskTemplate: {
+      ...service.Spec.TaskTemplate,
+      ContainerSpec: {
+        ...service.Spec.TaskTemplate?.ContainerSpec,
+        Image: newImage,
+      },
+    },
+  };
+  await call(
+    `/api/endpoints/${endpointId}/docker/services/${service.ID}/update?version=${service.Version.Index}`,
+    { method: "POST", token, body: spec }
+  );
+}
+
 export async function ensureSwarmVolume(
   token: string,
   endpointId: number,

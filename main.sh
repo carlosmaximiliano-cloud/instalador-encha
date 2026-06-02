@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Versão do Encha Setup. Mantenha em sincronia com encha-setup-panel/src/lib/version.ts
+# e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
+ENCHA_VERSION="0.0.1"
+
 # Redireciona stdin para o terminal — necessário quando o script é executado
 # via "curl | bash", onde stdin é o pipe (o próprio script) e não o teclado.
 # Sem isso, todos os "read" ficam sem input e o script trava ou entra em loop.

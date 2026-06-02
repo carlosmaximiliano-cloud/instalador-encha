@@ -7,7 +7,11 @@ export type AuditAction =
   | "stack.install"
   | "stack.install.fail"
   | "stack.remove"
-  | "stack.remove.fail";
+  | "stack.remove.fail"
+  | "terms.accept"
+  | "banner.click"
+  | "panel.update"
+  | "panel.update.fail";
 
 export type AuditEntry = {
   user: string;

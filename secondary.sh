@@ -1,6 +1,10 @@
 
 #!/bin/bash
 
+# Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
+# e encha-setup-panel/src/lib/version.ts.
+ENCHA_VERSION="0.0.1"
+
 #FERRAMENTAS VISUAIS
 
 centralizar() {
@@ -18991,6 +18995,7 @@ processar_menu_unlimited() {
     OPCOES[81]="Duplicati"
     OPCOES[82]="Webtop"
     # outras opções
+    OPCOES[97]="Atualizar painel" # Ação: pull da imagem nova + redeploy
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
     OPCOES[99]="Verificar status" # Ação
     OPCOES[100]="Voltar ao Menu" # Ação
@@ -19013,7 +19018,8 @@ processar_menu_unlimited() {
         
         echo -e "$(printf -- '-%.0s' {1..$(tput cols)})"
         # Menu inferior com ações fixas
-        printf "       ${amarelo_escuro}[ 98 ]${reset} - %-22s |  ${amarelo_escuro}[ 99 ]${reset} - %-22s |  ${amarelo_escuro}[ V ]${reset} - %s\n" "${OPCOES[98]}" "${OPCOES[99]}" "${OPCOES[100]}"
+        printf "       ${amarelo_escuro}[ 97 ]${reset} - %-22s |  ${amarelo_escuro}[ 98 ]${reset} - %-22s\n" "${OPCOES[97]}" "${OPCOES[98]}"
+        printf "       ${amarelo_escuro}[ 99 ]${reset} - %-22s |  ${amarelo_escuro}[ V ]${reset} - %s\n" "${OPCOES[99]}" "${OPCOES[100]}"
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
@@ -19564,6 +19570,11 @@ processar_menu_unlimited() {
                 ferramenta_webtop
               fi
               ;;
+            97)
+                ferramenta_atualizar_painel
+                echo "Aperte ENTER para retornar ao menu de ferramentas"
+                read
+                ;;
             98)
                 if verificar_docker_e_portainer_traefik; then
                     liberar_chatwoot
@@ -19591,6 +19602,60 @@ processar_menu_unlimited() {
                 ;;
         esac
     done
+}
+
+################################################################################
+# ferramenta_atualizar_painel — Atualiza o Encha Setup Panel para a versão mais
+# recente. Refresca o fonte dos scripts no host (git) e faz pull + redeploy da
+# imagem nova via Docker. Equivalente, no caminho SSH, ao botão "Atualizar" do
+# painel (que faz o redeploy via Portainer).
+################################################################################
+ferramenta_atualizar_painel() {
+    echo ""
+    echo -e "\e[95m\e[1m🔄 ATUALIZANDO ENCHA SETUP\e[0m"
+    echo ""
+
+    # 1/4 — Refresca o fonte (scripts + painel) no host.
+    if [[ -d /root/encha-setup-panel/.git ]]; then
+        echo -e "\e[97m• [1/4] Atualizando fonte (git fetch + reset)...\e[0m"
+        git -C /root/encha-setup-panel fetch origin main >/dev/null 2>&1
+        git -C /root/encha-setup-panel reset --hard origin/main >/dev/null 2>&1 \
+            && echo -e "  \e[32m✔ Fonte atualizado\e[0m" \
+            || echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo mesmo assim)\e[0m"
+    else
+        echo -e "\e[97m• [1/4] Fonte git ausente — pulando refresh dos scripts\e[0m"
+    fi
+
+    # 2/4 — Pull da imagem nova.
+    echo -e "\e[97m• [2/4] Baixando imagem enchaai/setup-panel:latest...\e[0m"
+    if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
+        echo -e "  \e[32m✔ Imagem atualizada\e[0m"
+    else
+        echo -e "  \e[31m✖ Falha no pull da imagem. Verifique a conexão.\e[0m"
+        return 1
+    fi
+
+    # 3/4 — Redeploy: rolling update do service se ele existir; senão, redeploy completo.
+    echo -e "\e[97m• [3/4] Aplicando atualização no Swarm...\e[0m"
+    if docker service inspect encha-panel_panel >/dev/null 2>&1; then
+        if docker service update --image enchaai/setup-panel:latest --force encha-panel_panel >/dev/null 2>&1; then
+            echo -e "  \e[32m✔ Service atualizado (rolling update)\e[0m"
+        else
+            echo -e "  \e[33m↳ Falha no update direto. Tentando redeploy completo...\e[0m"
+            ferramenta_encha_panel
+            return $?
+        fi
+    else
+        echo -e "  \e[33m↳ Service não encontrado. Fazendo deploy completo...\e[0m"
+        ferramenta_encha_panel
+        return $?
+    fi
+
+    # 4/4 — Confirmação.
+    echo -e "\e[97m• [4/4] Aguardando o painel reiniciar...\e[0m"
+    sleep 5
+    echo ""
+    echo -e "\e[32m\e[1m✅ Encha Setup atualizado.\e[0m"
 }
 
 ################################################################################
@@ -19710,6 +19775,11 @@ services:
       placement:
         constraints:
           - node.role == manager
+      update_config:
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        order: start-first
       restart_policy:
         condition: on-failure
         max_attempts: 5

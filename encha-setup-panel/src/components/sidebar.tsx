@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
+import { BannerAd } from "./banner-ad";
+import { UpdateChecker } from "./update-checker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
 const CATEGORY_ORDER: { slug: string; label: string }[] = [
@@ -141,7 +143,9 @@ export function Sidebar() {
         </Collapsible>
       </nav>
 
-      <div className="p-3 border-t border-glass-border space-y-1">
+      <div className="p-3 border-t border-glass-border space-y-2">
+        <UpdateChecker />
+        <BannerAd variant="sidebar" />
         <ThemeToggle className="w-full" />
         <button
           onClick={logout}
