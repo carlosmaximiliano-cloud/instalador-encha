@@ -1,7 +1,9 @@
 // Cliente server-side do Monitor Encha (backend central). Server-to-server, sem CORS.
 // Todas as chamadas são best-effort: timeout curto + try/catch, nunca lançam pro caller.
 
-const MONITOR_BASE_URL = process.env.MONITOR_BASE_URL ?? "https://monitor.alunaencha.shop";
+const MONITOR_BASE_URL = process.env.MONITOR_BASE_URL ?? "https://monitor.encha.com.br";
+
+export type BannerPosition = "top" | "sidebar";
 const TIMEOUT_MS = 4000;
 
 export type MonitorBanner = {
@@ -37,8 +39,9 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
   }
 }
 
-export async function fetchBanner(): Promise<MonitorBanner | null> {
-  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/banner.json`, {
+export async function fetchBanner(position: BannerPosition = "top"): Promise<MonitorBanner | null> {
+  const pos = position === "sidebar" ? "sidebar" : "top";
+  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/banner.json?position=${pos}`, {
     cache: "no-store",
   });
   if (!res || res.status === 204 || !res.ok) return null;

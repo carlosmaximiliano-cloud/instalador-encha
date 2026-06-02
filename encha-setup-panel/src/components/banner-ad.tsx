@@ -19,7 +19,8 @@ export function BannerAd({ variant, className }: Props) {
   const [csrf, setCsrf] = useState<string>("");
 
   useEffect(() => {
-    fetch("/api/banner")
+    const position = variant === "sidebar" ? "sidebar" : "top";
+    fetch(`/api/banner?position=${position}`)
       .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
       .then((d) => (d?.id ? setBanner(d) : null))
       .catch(() => {});
@@ -27,7 +28,7 @@ export function BannerAd({ variant, className }: Props) {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.token && setCsrf(d.token))
       .catch(() => {});
-  }, []);
+  }, [variant]);
 
   if (!banner) return null;
 
