@@ -355,6 +355,75 @@ banner_instalacao_completa() {
     echo -ne "${ciano}Pressione ENTER para iniciar...${reset}" && read -r _
 }
 
+# Descobre a overlay network onde o Portainer já está conectado, para que o
+# painel suba na MESMA rede (e assim alcance o Portainer e seja roteado pelo
+# Traefik existentes). Imprime o nome da rede em stdout; retorna 1 se não achar.
+descobrir_rede_painel() {
+    local svc nets net name driver ingress
+    for svc in portainer_portainer $(docker service ls --format '{{.Name}}' 2>/dev/null | grep -i portainer); do
+        nets=$(docker service inspect "$svc" \
+            --format '{{range .Spec.TaskTemplate.Networks}}{{.Target}} {{end}}' 2>/dev/null)
+        [ -n "$nets" ] && break
+    done
+    for net in $nets; do
+        read -r name driver ingress <<<"$(docker network inspect "$net" \
+            --format '{{.Name}} {{.Driver}} {{.Ingress}}' 2>/dev/null)"
+        if [ "$driver" = "overlay" ] && [ "$ingress" != "true" ]; then
+            echo "$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Detecta se Traefik + Portainer já estão instalados e rodando nesta VPS.
+# Retorna 0 (instalado) ou 1 (ausente). Silenciosa — só verifica.
+infra_ja_instalada() {
+    command -v docker &> /dev/null || return 1
+    docker ps --format '{{.Names}}' 2>/dev/null | grep -q "portainer" || return 1
+    docker ps --format '{{.Names}}' 2>/dev/null | grep -q "traefik"   || return 1
+    return 0
+}
+
+# Coleta apenas o subdomínio do painel (modo "instalar só o painel").
+# Reaproveita a rede overlay já existente; não pede dados do Portainer porque o
+# painel autentica no Portainer em runtime, na própria tela de login.
+coletar_inputs_so_painel() {
+    clear
+    echo -e "${negrito}${roxo}📝 INSTALAR APENAS O PAINEL${reset}"
+    echo ""
+    echo -e "${verde}✓ Traefik + Portainer detectados — serão reaproveitados.${reset}"
+    echo -e "  ${azul}Rede interna:${reset} ${verde}${nome_rede_interna}${reset}"
+    echo ""
+    echo -e "${amarelo}⚠ Aponte o subdomínio do painel para o IP da VPS ANTES de continuar.${reset}"
+    echo ""
+
+    while true; do
+        echo -ne "${ciano}Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
+        [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
+        echo -e "${vermelho}✖ Domínio inválido.${reset}"
+    done
+
+    clear
+    echo -e "${roxo}${negrito}🔍 CONFIRA OS DADOS:${reset}"
+    echo -e "  ${azul}Painel:${reset}        https://${verde}${url_painel}${reset}"
+    echo -e "  ${azul}Rede (reuso):${reset}  ${verde}${nome_rede_interna}${reset}"
+    echo ""
+    while true; do
+        echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao
+        case "$confirmacao" in
+            [Yy]) break ;;
+            [Nn]) coletar_inputs_so_painel; return ;;
+            *)   echo -e "${amarelo}Responda Y ou N.${reset}" ;;
+        esac
+    done
+
+    export url_painel nome_rede_interna
+    export ENCHA_NONINTERACTIVE=1
+    export ENCHA_MAX_RETRIES=10
+    export ENCHA_SLEEP=60
+}
+
 coletar_inputs_instalacao() {
     clear
     echo -e "${negrito}${roxo}📝 COLETA DE DADOS${reset}"
@@ -507,7 +576,9 @@ mostrar_resumo_final() {
 # ───────── EXECUÇÃO ─────────
 
 banner_instalacao_completa
-coletar_inputs_instalacao
+
+# Baixa e carrega o secondary.sh ANTES de coletar dados, para ter os helpers do
+# instalador disponíveis e poder decidir o fluxo (instalar tudo x só painel).
 download_secondary
 
 status_info "Carregando funções do instalador..."
@@ -515,11 +586,45 @@ status_info "Carregando funções do instalador..."
 source ./SetupEnchaAI
 status_ok "Funções carregadas (modo biblioteca)"
 
-echo ""
-barra_meio
-echo -e "${roxo}${negrito}🐳 INSTALANDO TRAEFIK + PORTAINER${reset}"
-barra_meio
-ferramenta_traefik_e_portainer
+# Por padrão instala Traefik+Portainer. Se já existirem, pergunta ao usuário.
+INSTALAR_INFRA=1
+
+if infra_ja_instalada; then
+    rede_detectada="$(descobrir_rede_painel)" || rede_detectada=""
+    nome_rede_interna="${rede_detectada:-enchanet}"
+    nome_servidor="encha"
+
+    clear
+    echo -e "${negrito}${roxo}🔎 INFRAESTRUTURA DETECTADA${reset}"
+    echo ""
+    echo -e "${verde}✓ Traefik + Portainer já estão instalados nesta VPS.${reset}"
+    echo -e "  ${azul}Rede interna detectada:${reset} ${verde}${nome_rede_interna}${reset}"
+    echo ""
+    echo -e "${ciano}O que você deseja fazer?${reset}"
+    echo -e "  ${verde}1.${reset} Instalar ${negrito}APENAS o Encha Setup Panel${reset} ${cinza}(recomendado — não mexe no resto)${reset}"
+    echo -e "  ${verde}2.${reset} Reinstalar tudo ${cinza}(Docker + Traefik + Portainer + Painel)${reset}"
+    echo ""
+    while true; do
+        echo -ne "${ciano}Escolha (1/2): ${reset}" && read -r escolha_infra
+        case "$escolha_infra" in
+            1) INSTALAR_INFRA=0; break ;;
+            2) INSTALAR_INFRA=1; break ;;
+            *) echo -e "${amarelo}Responda 1 ou 2.${reset}" ;;
+        esac
+    done
+fi
+
+if [ "$INSTALAR_INFRA" -eq 1 ]; then
+    coletar_inputs_instalacao
+    echo ""
+    barra_meio
+    echo -e "${roxo}${negrito}🐳 INSTALANDO TRAEFIK + PORTAINER${reset}"
+    barra_meio
+    ferramenta_traefik_e_portainer
+else
+    coletar_inputs_so_painel
+    status_info "Reaproveitando Traefik+Portainer existentes (rede: ${nome_rede_interna})."
+fi
 
 preparar_fonte_painel
 

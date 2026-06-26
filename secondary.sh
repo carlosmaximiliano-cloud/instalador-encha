@@ -2046,14 +2046,13 @@ ferramenta_traefik_e_portainer() {
 
   # --- INSTALAÇÃO INTELIGENTE ---
 
-  echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
-  # Remove versões antigas para garantir instalação limpa
+  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+  # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
+  # NÃO faz purge do Docker nem 'rm -rf /var/lib/docker': volumes externos
+  # (portainer_data, certificados e dados de stacks) são preservados — reinstalar
+  # é idempotente e não apaga nada do que já existe na VPS.
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
-  sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
-  sudo rm -rf /var/lib/docker
-  sudo rm -rf /var/lib/containerd
-  sudo rm /etc/apt/sources.list.d/docker.list 2>/dev/null
 
   cd ~ || exit 1
   mkdir -p dados_vps; cd dados_vps
@@ -2073,7 +2072,10 @@ EOL
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
   echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
-  
+
+  if command -v docker &> /dev/null; then
+  echo -e "✅ Docker já instalado: \e[33m$(docker --version 2>/dev/null)\e[0m. Pulando instalação."
+  else
   # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
   OS_CODENAME=$(lsb_release -cs)
   echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
@@ -2110,6 +2112,7 @@ EOL
          sudo apt-get update -y > /dev/null 2>&1
          sudo apt-get install -y docker.io > /dev/null 2>&1
       fi
+  fi
   fi
 
   # Verificação Final
@@ -17560,15 +17563,13 @@ instalar_traefik_e_portainer() {
 
   # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
-  echo -e "\e[97m• LIMPANDO AMBIENTE \e[33m[1/9]\e[0m"
-  
-  # Remove versões antigas para garantir instalação limpa
+  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+
+  # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
+  # NÃO faz purge do Docker nem 'rm -rf /var/lib/docker': volumes externos
+  # (portainer_data, certificados e dados de stacks) são preservados.
   sudo docker stack rm traefik > /dev/null 2>&1
   sudo docker stack rm portainer > /dev/null 2>&1
-  sudo apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker.io > /dev/null 2>&1
-  sudo rm -rf /var/lib/docker
-  sudo rm -rf /var/lib/containerd
-  sudo rm /etc/apt/sources.list.d/docker.list 2>/dev/null
 
   cd ~ || exit 1
   mkdir -p dados_vps; cd dados_vps
@@ -17590,7 +17591,10 @@ EOL
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
   echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
-  
+
+  if command -v docker &> /dev/null; then
+  echo -e "✅ Docker já instalado: \e[33m$(docker --version 2>/dev/null)\e[0m. Pulando instalação."
+  else
   # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
   OS_CODENAME=$(lsb_release -cs)
   echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
@@ -17627,6 +17631,7 @@ EOL
          sudo apt-get update -y > /dev/null 2>&1
          sudo apt-get install -y docker.io > /dev/null 2>&1
       fi
+  fi
   fi
 
   # Verificação Final
