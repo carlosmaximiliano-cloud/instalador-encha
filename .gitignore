@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────
+# Publicação mínima: o GitHub contém APENAS os arquivos necessários
+# para instalar e rodar o Encha Setup. Tudo abaixo fica no disco local,
+# mas NÃO é publicado (evita expor credenciais / docs internas / artefatos).
+# ─────────────────────────────────────────────────────────────
+
+# Segredos / credenciais — NUNCA publicar
+CLAUDE.md
+**/CLAUDE.md
+.claude/
+.env
+.env.local
+**/.env
+**/.env.local
+dados_vps/
+dados VPS.rtf
+*.rtf
+
+# Docs internas (contêm IP da VPS / notas de dev) — ficam locais
+encha-setup-panel/specs.md
+encha-setup-panel/README.md
+STACKS_REPOSITORIES.md
+STACKS_REPOSITORIES_COM_LOGOS.md
+
+# Arquivos de dev — não necessários para instalar/rodar
+encha-setup-panel/.env.example
+encha-setup-panel/docker-compose.dev.yaml
+
+# Artefatos de build
+node_modules/
+.next/
+out/
+dist/
+*.log
+**/data/*.db*
+**/data/*.sqlite*
+encha-setup-panel/tsconfig.tsbuildinfo
+.DS_Store
+**/.DS_Store
