@@ -2257,21 +2257,37 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
   echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  # Aguarda inicial mais longo no modo não-interativo (Portainer pode levar 1-5 min)
-  if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then sleep 60; else sleep 20; fi
+  # Usa a rede interna do Swarm (não o domínio público) para criar o admin:
+  # evita depender de DNS + certificado Let's Encrypt já prontos, que é a
+  # causa raiz do lock de segurança do Portainer (a janela de ~5min para criar
+  # o admin fecha antes do domínio público ficar acessível).
+  echo -e "⏳ Aguardando Portainer responder na rede interna..."
+  for i in $(seq 1 30); do
+    code=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/system/status 2>/dev/null)
+    [ "$code" = "200" ] && break
+    sleep 2
+  done
 
   MAX_RETRIES=${ENCHA_MAX_RETRIES:-5}
   SLEEP_INTERVAL=${ENCHA_SLEEP:-10}
   CONTA_CRIADA=false
   for i in $(seq 1 $MAX_RETRIES); do
-    RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
+    RESPONSE=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -X POST http://portainer_portainer:9000/api/users/admin/init \
       -H "Content-Type: application/json" \
-      -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}")
+      -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}" 2>/dev/null)
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
       echo -e "\e[32m✅ Conta criada!\e[0m"
       CONTA_CRIADA=true
       break
+    elif echo "$RESPONSE" | grep -qi "locked\|timeout\|already been initialized"; then
+      # Janela de segurança do Portainer expirou — o timer é baseado no tempo
+      # de vida do processo, então reiniciar o serviço o reseta.
+      echo -e "⚠️  Janela de admin do Portainer expirada — reiniciando serviço..."
+      sudo docker service update --force portainer_portainer > /dev/null 2>&1
+      sleep 15
     else
       echo -e "⏳ Tentativa $i/$MAX_RETRIES (aguardando ${SLEEP_INTERVAL}s)..."
       sleep $SLEEP_INTERVAL
@@ -2279,9 +2295,10 @@ EOL
   done
 
   if [ "$CONTA_CRIADA" = true ]; then
-    token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
+    token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
-      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" | jq -r .jwt)
+      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" 2>/dev/null | jq -r .jwt)
   fi
 
   cd dados_vps
@@ -17776,23 +17793,38 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
   echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  sleep 20 
+  # Usa a rede interna do Swarm (não o domínio público) para criar o admin:
+  # evita depender de DNS + certificado Let's Encrypt já prontos, que é a
+  # causa raiz do lock de segurança do Portainer (a janela de ~5min para criar
+  # o admin fecha antes do domínio público ficar acessível).
+  echo -e "⏳ Aguardando Portainer responder na rede interna..."
+  for i in $(seq 1 30); do
+    code=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/system/status 2>/dev/null)
+    [ "$code" = "200" ] && break
+    sleep 2
+  done
 
   MAX_RETRIES=5
   CONTA_CRIADA=false
-  
+
   # Uso o JQ (instalado acima) para montar o JSON seguro (caso a senha tenha caracteres especiais)
   JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
 
   for i in $(seq 1 $MAX_RETRIES); do
-    RESPONSE=$(curl -k -s -X POST "https://$url_portainer/api/users/admin/init" \
+    RESPONSE=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -X POST http://portainer_portainer:9000/api/users/admin/init \
       -H "Content-Type: application/json" \
-      -d "$JSON_PAYLOAD")
+      -d "$JSON_PAYLOAD" 2>/dev/null)
 
     if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
       echo -e "\e[32m✅ Conta criada!\e[0m"
       CONTA_CRIADA=true
       break
+    elif echo "$RESPONSE" | grep -qi "locked\|timeout\|already been initialized"; then
+      echo -e "⚠️  Janela de admin do Portainer expirada — reiniciando serviço..."
+      sudo docker service update --force portainer_portainer > /dev/null 2>&1
+      sleep 15
     else
       echo -e "⏳ Tentativa $i/$MAX_RETRIES..."
       sleep 10
@@ -17802,10 +17834,11 @@ EOL
   if [ "$CONTA_CRIADA" = true ]; then
     # JSON seguro para login
     JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
-    
-    token=$(curl -k -s -X POST "https://$url_portainer/api/auth" \
+
+    token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
-      -d "$JSON_LOGIN" | jq -r .jwt)
+      -d "$JSON_LOGIN" 2>/dev/null | jq -r .jwt)
   fi
 
   cd dados_vps
