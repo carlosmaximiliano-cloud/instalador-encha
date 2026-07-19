@@ -2011,7 +2011,8 @@ ferramenta_traefik_e_portainer() {
       echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
       echo ""
       echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-      echo -en "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
+      user_portainer="admin"
+      echo -e "\e[33mUsuário do Portainer: \e[97madmin\e[33m (padrão)\e[0m"
       echo ""
       while true; do
         echo -e "Passo \e[33m3/6\e[0m 🔐"
@@ -2202,7 +2203,15 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
 
   echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
-  
+
+  # O Portainer cria o admin no próprio boot via --admin-password-file (lendo de
+  # um Docker Secret). Isso evita a corrida com a janela de segurança / o
+  # crash-loop do agent, que faz a criação via API externa falhar. O usuário é
+  # sempre "admin" (limitação do --admin-password-file).
+  user_portainer="admin"
+  sudo docker secret rm portainer_admin_password >/dev/null 2>&1
+  printf '%s' "$pass_portainer" | sudo docker secret create portainer_admin_password - >/dev/null 2>&1
+
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
@@ -2220,11 +2229,14 @@ services:
 
   portainer:
     image: portainer/portainer-ce:latest
-    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    command: -H tcp://tasks.agent:9001 --tlsskipverify --admin-password-file /run/secrets/portainer_admin_password
     volumes:
       - portainer_data:/data
     networks:
       - $nome_rede_interna
+    secrets:
+      - source: portainer_admin_password
+        target: portainer_admin_password
     deploy:
       mode: replicated
       replicas: 1
@@ -2238,6 +2250,10 @@ services:
         - "traefik.http.routers.portainer.service=portainer"
         - "traefik.swarm.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
+
+secrets:
+  portainer_admin_password:
+    external: true
 
 volumes:
   portainer_data:
@@ -2256,49 +2272,37 @@ EOL
   echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
-  echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  # Usa a rede interna do Swarm (não o domínio público) para criar o admin:
-  # evita depender de DNS + certificado Let's Encrypt já prontos, que é a
-  # causa raiz do lock de segurança do Portainer (a janela de ~5min para criar
-  # o admin fecha antes do domínio público ficar acessível).
-  echo -e "⏳ Aguardando Portainer responder na rede interna..."
-  for i in $(seq 1 30); do
-    code=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
-      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/system/status 2>/dev/null)
-    [ "$code" = "200" ] && break
-    sleep 2
-  done
-
-  MAX_RETRIES=${ENCHA_MAX_RETRIES:-5}
-  SLEEP_INTERVAL=${ENCHA_SLEEP:-10}
+  echo -e "\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  # O admin já foi criado pelo Portainer no boot (--admin-password-file).
+  # Aqui só confirmamos (admin/check=204) e pegamos o token. Sem POST de init,
+  # não há corrida com a janela de segurança nem com o crash-loop do agent.
+  echo -e "⏳ Confirmando admin do Portainer na rede interna..."
   CONTA_CRIADA=false
-  for i in $(seq 1 $MAX_RETRIES); do
-    RESPONSE=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
-      -s -X POST http://portainer_portainer:9000/api/users/admin/init \
-      -H "Content-Type: application/json" \
-      -d "{\"Username\": \"$user_portainer\", \"Password\": \"$pass_portainer\"}" 2>/dev/null)
-
-    if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-      echo -e "\e[32m✅ Conta criada!\e[0m"
-      CONTA_CRIADA=true
-      break
-    elif echo "$RESPONSE" | grep -qi "locked\|timeout\|already been initialized"; then
-      # Janela de segurança do Portainer expirou — o timer é baseado no tempo
-      # de vida do processo, então reiniciar o serviço o reseta.
-      echo -e "⚠️  Janela de admin do Portainer expirada — reiniciando serviço..."
-      sudo docker service update --force portainer_portainer > /dev/null 2>&1
-      sleep 15
-    else
-      echo -e "⏳ Tentativa $i/$MAX_RETRIES (aguardando ${SLEEP_INTERVAL}s)..."
-      sleep $SLEEP_INTERVAL
-    fi
+  for i in $(seq 1 40); do
+    chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/users/admin/check 2>/dev/null)
+    [ "$chk" = "204" ] && { CONTA_CRIADA=true; break; }
+    sleep 3
   done
+
+  # Fallback defensivo: se não confirmou em ~2min, força um restart e re-checa.
+  if [ "$CONTA_CRIADA" != true ]; then
+    echo -e "⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+    sudo docker service update --force portainer_portainer >/dev/null 2>&1
+    for i in $(seq 1 20); do
+      chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+        -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/users/admin/check 2>/dev/null)
+      [ "$chk" = "204" ] && { CONTA_CRIADA=true; break; }
+      sleep 3
+    done
+  fi
 
   if [ "$CONTA_CRIADA" = true ]; then
+    echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
     token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
       -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
-      -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" 2>/dev/null | jq -r .jwt)
+      -d "{\"username\":\"admin\",\"password\":\"$pass_portainer\"}" 2>/dev/null | jq -r .jwt)
   fi
 
   cd dados_vps
@@ -2306,7 +2310,7 @@ EOL
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: $user_portainer
+Usuario: admin
 Senha: $pass_portainer
 Token: $token
 EOL
@@ -17738,7 +17742,15 @@ EOL
   if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
 
   echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
-  
+
+  # O Portainer cria o admin no próprio boot via --admin-password-file (lendo de
+  # um Docker Secret). Isso evita a corrida com a janela de segurança / o
+  # crash-loop do agent, que faz a criação via API externa falhar. O usuário é
+  # sempre "admin" (limitação do --admin-password-file).
+  user_portainer="admin"
+  sudo docker secret rm portainer_admin_password >/dev/null 2>&1
+  printf '%s' "$pass_portainer" | sudo docker secret create portainer_admin_password - >/dev/null 2>&1
+
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
@@ -17756,11 +17768,14 @@ services:
 
   portainer:
     image: portainer/portainer-ce:latest
-    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    command: -H tcp://tasks.agent:9001 --tlsskipverify --admin-password-file /run/secrets/portainer_admin_password
     volumes:
       - portainer_data:/data
     networks:
       - $nome_rede_interna
+    secrets:
+      - source: portainer_admin_password
+        target: portainer_admin_password
     deploy:
       mode: replicated
       replicas: 1
@@ -17775,6 +17790,10 @@ services:
         - "traefik.docker.network=$nome_rede_interna"
         - "traefik.http.routers.portainer.entrypoints=websecure"
 
+secrets:
+  portainer_admin_password:
+    external: true
+
 volumes:
   portainer_data:
     external: true
@@ -17788,53 +17807,37 @@ networks:
 EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
-  
+
   echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
-  echo -e "\e[97m• CRIANDO CONTA \e[33m[FINALIZANDO]\e[0m"
-  # Usa a rede interna do Swarm (não o domínio público) para criar o admin:
-  # evita depender de DNS + certificado Let's Encrypt já prontos, que é a
-  # causa raiz do lock de segurança do Portainer (a janela de ~5min para criar
-  # o admin fecha antes do domínio público ficar acessível).
-  echo -e "⏳ Aguardando Portainer responder na rede interna..."
-  for i in $(seq 1 30); do
-    code=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
-      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/system/status 2>/dev/null)
-    [ "$code" = "200" ] && break
-    sleep 2
-  done
-
-  MAX_RETRIES=5
+  echo -e "\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  # O admin já foi criado pelo Portainer no boot (--admin-password-file).
+  # Aqui só confirmamos (admin/check=204) e pegamos o token. Sem POST de init,
+  # não há corrida com a janela de segurança nem com o crash-loop do agent.
+  echo -e "⏳ Confirmando admin do Portainer na rede interna..."
   CONTA_CRIADA=false
-
-  # Uso o JQ (instalado acima) para montar o JSON seguro (caso a senha tenha caracteres especiais)
-  JSON_PAYLOAD=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{Username: $u, Password: $p}')
-
-  for i in $(seq 1 $MAX_RETRIES); do
-    RESPONSE=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
-      -s -X POST http://portainer_portainer:9000/api/users/admin/init \
-      -H "Content-Type: application/json" \
-      -d "$JSON_PAYLOAD" 2>/dev/null)
-
-    if echo "$RESPONSE" | grep -q "\"Username\":\"$user_portainer\""; then
-      echo -e "\e[32m✅ Conta criada!\e[0m"
-      CONTA_CRIADA=true
-      break
-    elif echo "$RESPONSE" | grep -qi "locked\|timeout\|already been initialized"; then
-      echo -e "⚠️  Janela de admin do Portainer expirada — reiniciando serviço..."
-      sudo docker service update --force portainer_portainer > /dev/null 2>&1
-      sleep 15
-    else
-      echo -e "⏳ Tentativa $i/$MAX_RETRIES..."
-      sleep 10
-    fi
+  for i in $(seq 1 40); do
+    chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+      -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/users/admin/check 2>/dev/null)
+    [ "$chk" = "204" ] && { CONTA_CRIADA=true; break; }
+    sleep 3
   done
+
+  if [ "$CONTA_CRIADA" != true ]; then
+    echo -e "⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+    sudo docker service update --force portainer_portainer >/dev/null 2>&1
+    for i in $(seq 1 20); do
+      chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+        -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/users/admin/check 2>/dev/null)
+      [ "$chk" = "204" ] && { CONTA_CRIADA=true; break; }
+      sleep 3
+    done
+  fi
 
   if [ "$CONTA_CRIADA" = true ]; then
-    # JSON seguro para login
-    JSON_LOGIN=$(jq -n --arg u "$user_portainer" --arg p "$pass_portainer" '{username: $u, password: $p}')
-
+    echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+    JSON_LOGIN=$(jq -n --arg p "$pass_portainer" '{username: "admin", password: $p}')
     token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
       -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
@@ -17846,7 +17849,7 @@ EOL
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: $user_portainer
+Usuario: admin
 Senha: $pass_portainer
 Token: $token
 EOL
@@ -18712,7 +18715,8 @@ instalar_ambiente_completo() {
     echo ""
 
     echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-    echo -ne "\e[33mDigite um usuário para o Portainer (ex: admin): \e[0m" && read -r user_portainer
+    user_portainer="admin"
+    echo -e "\e[33mUsuário do Portainer: \e[97madmin\e[33m (padrão)\e[0m"
     echo ""
 
     while true; do
