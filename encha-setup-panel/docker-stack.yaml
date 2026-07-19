@@ -1,0 +1,88 @@
+version: "3.7"
+
+# Stack do Encha Setup Panel para Docker Swarm.
+#
+# Este arquivo usa variáveis de ambiente para host e rede:
+#   - ENCHA_PANEL_HOST    domínio público (ex: painel.exemplo.com)
+#   - ENCHA_PANEL_NETWORK overlay network (ex: enchanet)
+#
+# Pré-requisitos:
+#   1. Traefik + Portainer já instalados (mesma rede overlay).
+#   2. Swarm Secret 'encha_panel_master_key' criado (32 bytes random):
+#        openssl rand 32 | docker secret create encha_panel_master_key -
+#   3. Volume externo 'encha_panel_data' criado:
+#        docker volume create encha_panel_data
+#   4. Diretório /root/dados_vps presente no host (criado pelo instalador bash).
+#
+# Deploy (com envsubst):
+#   export ENCHA_PANEL_HOST=painel.meudominio.com
+#   export ENCHA_PANEL_NETWORK=enchanet
+#   envsubst '${ENCHA_PANEL_HOST} ${ENCHA_PANEL_NETWORK}' < docker-stack.yaml \
+#     | docker stack deploy --resolve-image always -c - encha-panel
+#
+# Ou rodar via ferramenta_encha_panel() no secondary.sh.
+
+services:
+  panel:
+    image: enchaai/setup-panel:latest
+    networks:
+      - ${ENCHA_PANEL_NETWORK}
+    secrets:
+      - source: encha_panel_master_key
+        target: master_key
+        mode: 0444
+    volumes:
+      - encha_panel_data:/app/data
+      - /root/dados_vps:/app/vps-context:ro
+    environment:
+      - NODE_ENV=production
+      - PORTAINER_URL=http://portainer_portainer:9000
+      - DB_PATH=/app/data/panel.db
+      - VPS_CONTEXT_DIR=/app/vps-context
+      - MONITOR_BASE_URL=https://monitor.encha.com.br
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=${ENCHA_PANEL_NETWORK}"
+        - "traefik.http.routers.encha-panel.rule=Host(`${ENCHA_PANEL_HOST}`)"
+        - "traefik.http.routers.encha-panel.entrypoints=websecure"
+        - "traefik.http.routers.encha-panel.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.encha-panel.service=encha-panel"
+        - "traefik.http.services.encha-panel.loadbalancer.server.port=3000"
+
+secrets:
+  encha_panel_master_key:
+    external: true
+
+volumes:
+  encha_panel_data:
+    external: true
+    name: encha_panel_data
+
+networks:
+  ${ENCHA_PANEL_NETWORK}:
+    external: true
+    name: ${ENCHA_PANEL_NETWORK}

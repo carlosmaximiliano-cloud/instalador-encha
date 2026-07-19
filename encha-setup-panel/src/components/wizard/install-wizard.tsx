@@ -1,0 +1,192 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+
+type Field = {
+  name: string;
+  label: string;
+  kind: string;
+  placeholder?: string;
+  helpText?: string;
+  sensitive?: boolean;
+  optional?: boolean;
+  default?: string | boolean;
+  group?: string;
+};
+
+type StackMeta = {
+  id: string;
+  name: string;
+  description: string;
+  fields: Field[];
+  postInstallNotes?: string[];
+};
+
+type Props = {
+  stack: StackMeta;
+  open: boolean;
+  onClose: () => void;
+  onInstalled?: () => void;
+  csrfToken: string;
+  swarmCtx: { networkName: string; serverName: string; email: string };
+};
+
+type InstallState =
+  | { kind: "form" }
+  | { kind: "installing" }
+  | { kind: "success"; accessUrl?: string; notes: string[] }
+  | { kind: "error"; message: string };
+
+export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
+  const [state, setState] = useState<InstallState>({ kind: "form" });
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const form = useForm<Record<string, unknown>>({
+    defaultValues: Object.fromEntries(
+      stack.fields.map((f) => [f.name, f.default ?? (f.kind === "checkbox" ? false : "")])
+    ),
+  });
+
+  useEffect(() => {
+    if (!open) setState({ kind: "form" });
+  }, [open]);
+
+  const groups = Array.from(new Set(stack.fields.map((f) => f.group ?? "Configuração")));
+
+  async function onSubmit(values: Record<string, unknown>) {
+    setState({ kind: "installing" });
+    try {
+      const res = await fetch("/api/stacks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
+        body: JSON.stringify({ stackId: stack.id, values, swarmCtx }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setState({ kind: "error", message: data.error ?? "Erro na instalação" });
+        return;
+      }
+      setState({ kind: "success", accessUrl: data.accessUrl, notes: data.notes ?? [] });
+      onInstalled?.();
+    } catch (e) {
+      setState({ kind: "error", message: e instanceof Error ? e.message : "Erro de rede" });
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Instalar {stack.name}</DialogTitle>
+          <DialogDescription>{stack.description}</DialogDescription>
+        </DialogHeader>
+
+        {state.kind === "form" && (
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {groups.map((g) => (
+              <div key={g} className="space-y-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{g}</div>
+                {stack.fields
+                  .filter((f) => (f.group ?? "Configuração") === g)
+                  .map((f) => {
+                    const isCheckbox = f.kind === "checkbox";
+                    if (isCheckbox) {
+                      return (
+                        <label key={f.name} className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" {...form.register(f.name)} className="h-4 w-4 rounded border-input" />
+                          <span className="text-sm">{f.label}</span>
+                        </label>
+                      );
+                    }
+                    const isPwd = f.kind === "password";
+                    const show = showSecrets[f.name];
+                    return (
+                      <div key={f.name} className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={f.name}>
+                            {f.label}
+                            {f.sensitive && <Badge variant="warning" className="ml-2">sensível</Badge>}
+                          </Label>
+                          {isPwd && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSecrets((s) => ({ ...s, [f.name]: !s[f.name] }))}
+                              className="text-muted-foreground hover:text-foreground"
+                              aria-label={show ? "Esconder" : "Mostrar"}
+                            >
+                              {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          )}
+                        </div>
+                        <Input
+                          id={f.name}
+                          type={isPwd && !show ? "password" : f.kind === "email" ? "email" : f.kind === "port" ? "number" : "text"}
+                          placeholder={f.placeholder}
+                          autoComplete={isPwd ? "new-password" : "off"}
+                          {...form.register(f.name)}
+                        />
+                        {f.helpText && <p className="text-xs text-muted-foreground">{f.helpText}</p>}
+                      </div>
+                    );
+                  })}
+              </div>
+            ))}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button type="submit">Instalar</Button>
+            </div>
+          </form>
+        )}
+
+        {state.kind === "installing" && (
+          <div className="py-12 flex flex-col items-center gap-3 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Implantando no Swarm via Portainer API...</p>
+          </div>
+        )}
+
+        {state.kind === "success" && (
+          <div className="py-8 space-y-4 text-center">
+            <CheckCircle2 className="h-14 w-14 text-emerald-400 mx-auto" />
+            <h3 className="text-xl font-semibold">Stack implantada!</h3>
+            {state.accessUrl && (
+              <a
+                href={state.accessUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-primary hover:underline"
+              >
+                {state.accessUrl}
+              </a>
+            )}
+            {state.notes.length > 0 && (
+              <ul className="text-sm text-muted-foreground space-y-1 max-w-md mx-auto text-left">
+                {state.notes.map((n, i) => (
+                  <li key={i}>• {n}</li>
+                ))}
+              </ul>
+            )}
+            <Button onClick={onClose}>Fechar</Button>
+          </div>
+        )}
+
+        {state.kind === "error" && (
+          <div className="py-8 space-y-4 text-center">
+            <AlertCircle className="h-14 w-14 text-destructive mx-auto" />
+            <h3 className="text-xl font-semibold">Falha na instalação</h3>
+            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" onClick={() => setState({ kind: "form" })}>Tentar de novo</Button>
+              <Button onClick={onClose}>Fechar</Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
