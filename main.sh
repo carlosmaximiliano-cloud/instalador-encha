@@ -436,12 +436,10 @@ coletar_inputs_instalacao() {
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
 
-    # 2) Usuário Portainer
-    while true; do
-        echo -ne "${ciano}2/5 Usuário admin do Portainer: ${reset}" && read -r user_portainer
-        [[ ${#user_portainer} -ge 3 ]] && break
-        echo -e "${vermelho}✖ Mínimo 3 caracteres.${reset}"
-    done
+    # 2) Usuário Portainer — sempre "admin" (o Portainer cria o admin no boot
+    #    via --admin-password-file, que não permite username customizado).
+    user_portainer="admin"
+    echo -e "${ciano}2/5 Usuário do Portainer: ${verde}admin${ciano} (padrão)${reset}"
 
     # 3) Senha Portainer (12+ chars, maiús, minús, dígito, especial)
     while true; do
