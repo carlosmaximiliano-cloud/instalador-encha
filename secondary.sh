@@ -2130,7 +2130,7 @@ EOL
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
-  sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
+  sudo docker network create --driver=overlay --attachable "$nome_rede_interna" > /dev/null 2>&1
 
   echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
   
@@ -2212,6 +2212,45 @@ EOL
   sudo docker secret rm portainer_admin_password >/dev/null 2>&1
   printf '%s' "$pass_portainer" | sudo docker secret create portainer_admin_password - >/dev/null 2>&1
 
+  # Deploy em 2 estágios: o Portainer tenta registrar seu "ambiente local"
+  # (ping em tasks.agent:9001) uma ÚNICA vez, durante o próprio boot, sem
+  # retry. Se o agent (deploy global) ainda não estiver pronto nesse instante,
+  # essa tentativa falha PERMANENTEMENTE — mesmo com o admin criado, o
+  # Portainer fica sem nenhum ambiente (tela do Wizard). Por isso subimos o
+  # agent sozinho primeiro e confirmamos que está rodando antes de subir o
+  # Portainer na mesma stack.
+  cat > portainer-agent.yaml <<EOL
+version: "3.7"
+services:
+  agent:
+    image: portainer/agent:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+
+networks:
+  $nome_rede_interna:
+    external: true
+    attachable: true
+    name: $nome_rede_interna
+EOL
+
+  sudo docker stack deploy --prune --resolve-image always -c portainer-agent.yaml portainer > /dev/null 2>&1
+
+  echo -e "⏳ Aguardando o agent do Portainer ficar pronto..."
+  for i in $(seq 1 30); do
+    rep=$(sudo docker service ls --filter "name=portainer_agent" --format "{{.Replicas}}")
+    running=${rep%%/*}; total=${rep##*/}
+    [ -n "$running" ] && [ "$running" = "$total" ] && [ "$running" != "0" ] && break
+    sleep 2
+  done
+
   cat > portainer.yaml <<EOL
 version: "3.7"
 services:
@@ -2268,7 +2307,7 @@ networks:
 EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
-  
+
   echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
@@ -17669,7 +17708,7 @@ EOL
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
-  sudo docker network create --driver=overlay "$nome_rede_interna" > /dev/null 2>&1
+  sudo docker network create --driver=overlay --attachable "$nome_rede_interna" > /dev/null 2>&1
 
   echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
   
@@ -17750,6 +17789,45 @@ EOL
   user_portainer="admin"
   sudo docker secret rm portainer_admin_password >/dev/null 2>&1
   printf '%s' "$pass_portainer" | sudo docker secret create portainer_admin_password - >/dev/null 2>&1
+
+  # Deploy em 2 estágios: o Portainer tenta registrar seu "ambiente local"
+  # (ping em tasks.agent:9001) uma ÚNICA vez, durante o próprio boot, sem
+  # retry. Se o agent (deploy global) ainda não estiver pronto nesse instante,
+  # essa tentativa falha PERMANENTEMENTE — mesmo com o admin criado, o
+  # Portainer fica sem nenhum ambiente (tela do Wizard). Por isso subimos o
+  # agent sozinho primeiro e confirmamos que está rodando antes de subir o
+  # Portainer na mesma stack.
+  cat > portainer-agent.yaml <<EOL
+version: "3.7"
+services:
+  agent:
+    image: portainer/agent:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - $nome_rede_interna
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+
+networks:
+  $nome_rede_interna:
+    external: true
+    attachable: true
+    name: $nome_rede_interna
+EOL
+
+  sudo docker stack deploy --prune --resolve-image always -c portainer-agent.yaml portainer > /dev/null 2>&1
+
+  echo -e "⏳ Aguardando o agent do Portainer ficar pronto..."
+  for i in $(seq 1 30); do
+    rep=$(sudo docker service ls --filter "name=portainer_agent" --format "{{.Replicas}}")
+    running=${rep%%/*}; total=${rep##*/}
+    [ -n "$running" ] && [ "$running" = "$total" ] && [ "$running" != "0" ] && break
+    sleep 2
+  done
 
   cat > portainer.yaml <<EOL
 version: "3.7"
