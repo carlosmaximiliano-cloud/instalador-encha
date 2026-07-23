@@ -27,6 +27,7 @@ export const evoai: StackDefinition = {
   category: "ai",
   icon: "bot",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["evoai"],
   optionNumber: 52,
   installVia: "panel",
   fields: [

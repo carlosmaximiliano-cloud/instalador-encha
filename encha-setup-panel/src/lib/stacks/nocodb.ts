@@ -14,6 +14,7 @@ export const nocodb: StackDefinition = {
   category: "cms",
   icon: "table-properties",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["nocodb"],
   optionNumber: 32,
   installVia: "panel",
   fields: [

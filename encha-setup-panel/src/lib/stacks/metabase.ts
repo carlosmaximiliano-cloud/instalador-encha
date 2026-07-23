@@ -14,6 +14,7 @@ export const metabase: StackDefinition = {
   category: "analytics",
   icon: "table-properties",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["metabase"],
   optionNumber: 36,
   installVia: "panel",
   fields: [

@@ -57,6 +57,8 @@ export type StackDefinition = {
   schema: z.ZodTypeAny;
   swarmStackNames?: string[];
   externalVolumes?: string[];
+  /** Bancos a garantir no Postgres compartilhado (serviço postgres_postgres) antes do deploy. */
+  postgresDatabases?: string[];
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";

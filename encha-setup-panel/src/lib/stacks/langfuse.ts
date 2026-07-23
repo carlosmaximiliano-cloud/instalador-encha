@@ -21,6 +21,7 @@ export const langfuse: StackDefinition = {
   category: "ai",
   icon: "brain",
   dependsOn: ["traefik-portainer", "postgres", "clickhouse", "minio"],
+  postgresDatabases: ["langfuse"],
   optionNumber: 66,
   installVia: "panel",
   fields: [

@@ -20,6 +20,7 @@ export const docuseal: StackDefinition = {
   category: "marketing",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["docuseal"],
   optionNumber: 37,
   installVia: "panel",
   fields: [

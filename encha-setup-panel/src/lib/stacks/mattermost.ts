@@ -14,6 +14,7 @@ export const mattermost: StackDefinition = {
   category: "communication",
   icon: "message-circle",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["mattermost"],
   optionNumber: 24,
   installVia: "panel",
   fields: [

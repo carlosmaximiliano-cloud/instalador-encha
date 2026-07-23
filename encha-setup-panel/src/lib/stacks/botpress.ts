@@ -14,6 +14,7 @@ export const botpress: StackDefinition = {
   category: "chatbot",
   icon: "bot",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["botpress"],
   optionNumber: 13,
   installVia: "panel",
   fields: [

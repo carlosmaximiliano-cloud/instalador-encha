@@ -16,6 +16,7 @@ export const keycloak: StackDefinition = {
   category: "auth",
   icon: "shield",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["keycloak"],
   optionNumber: 53,
   installVia: "panel",
   fields: [

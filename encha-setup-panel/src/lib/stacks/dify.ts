@@ -22,6 +22,7 @@ export const dify: StackDefinition = {
   category: "ai",
   icon: "brain",
   dependsOn: ["traefik-portainer", "postgres", "redis", "minio"],
+  postgresDatabases: ["dify", "dify_plugin"],
   optionNumber: 39,
   installVia: "panel",
   fields: [

@@ -15,6 +15,7 @@ export const evolution: StackDefinition = {
   category: "messaging",
   icon: "message-circle",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["evolution"],
   optionNumber: 3,
   fields: [
     {

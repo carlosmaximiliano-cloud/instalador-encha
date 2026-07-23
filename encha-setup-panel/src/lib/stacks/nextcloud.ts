@@ -16,6 +16,7 @@ export const nextcloud: StackDefinition = {
   category: "storage",
   icon: "hard-drive",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["nextcloud"],
   optionNumber: 42,
   installVia: "panel",
   fields: [

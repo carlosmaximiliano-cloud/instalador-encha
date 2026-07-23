@@ -22,6 +22,7 @@ export const hoppscotch: StackDefinition = {
   category: "communication",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["hoppscotch"],
   optionNumber: 59,
   installVia: "panel",
   fields: [

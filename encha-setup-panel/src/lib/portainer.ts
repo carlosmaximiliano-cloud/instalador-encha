@@ -214,6 +214,100 @@ export async function ensureSwarmVolume(
   }
 }
 
+type DockerContainer = { Id: string; State?: string };
+type ExecCreateResponse = { Id: string };
+type ExecInspect = { ExitCode: number | null };
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+// Acha o container em execução de um service Swarm (ex: "postgres_postgres") via label do Docker.
+async function findRunningContainerId(
+  token: string,
+  endpointId: number,
+  serviceName: string
+): Promise<string | null> {
+  const filters = encodeURIComponent(
+    JSON.stringify({
+      label: [`com.docker.swarm.service.name=${serviceName}`],
+      status: ["running"],
+    })
+  );
+  const containers = await call<DockerContainer[]>(
+    `/api/endpoints/${endpointId}/docker/containers/json?filters=${filters}`,
+    { token }
+  );
+  return containers[0]?.Id ?? null;
+}
+
+// Espera o container do service ficar `running` (mitiga corrida no deploy em 2 estágios).
+async function waitForRunningContainer(
+  token: string,
+  endpointId: number,
+  serviceName: string,
+  opts: { retries?: number; delayMs?: number } = {}
+): Promise<string> {
+  const retries = opts.retries ?? 10;
+  const delayMs = opts.delayMs ?? 3000;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const id = await findRunningContainerId(token, endpointId, serviceName);
+    if (id) return id;
+    if (attempt < retries) await sleep(delayMs);
+  }
+  throw new Error(
+    `Serviço ${serviceName} não está rodando — instale/aguarde a stack correspondente antes de continuar`
+  );
+}
+
+// Roda um comando dentro de um container via Docker exec (proxy Docker do Portainer).
+async function dockerExec(
+  token: string,
+  endpointId: number,
+  containerId: string,
+  cmd: string[]
+): Promise<{ exitCode: number; output: string }> {
+  const created = await call<ExecCreateResponse>(
+    `/api/endpoints/${endpointId}/docker/containers/${containerId}/exec`,
+    {
+      method: "POST",
+      token,
+      body: { AttachStdout: true, AttachStderr: true, Tty: false, Cmd: cmd },
+    }
+  );
+  const output = await call<string>(`/api/endpoints/${endpointId}/docker/exec/${created.Id}/start`, {
+    method: "POST",
+    token,
+    body: { Detach: false, Tty: false },
+  });
+  const inspect = await call<ExecInspect>(`/api/endpoints/${endpointId}/docker/exec/${created.Id}/json`, {
+    token,
+  });
+  return { exitCode: inspect.ExitCode ?? 0, output: typeof output === "string" ? output : "" };
+}
+
+const POSTGRES_SERVICE_NAME = "postgres_postgres";
+
+// Garante que um banco exista no Postgres compartilhado — idempotente, nunca dropa dados.
+export async function ensurePostgresDatabase(
+  token: string,
+  endpointId: number,
+  dbName: string
+): Promise<void> {
+  if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
+    throw new Error(`Nome de banco inválido: "${dbName}"`);
+  }
+
+  const containerId = await waitForRunningContainer(token, endpointId, POSTGRES_SERVICE_NAME);
+
+  const sql =
+    `psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${dbName}'" | grep -q 1 ` +
+    `|| psql -U postgres -c "CREATE DATABASE ${dbName}"`;
+  const { exitCode, output } = await dockerExec(token, endpointId, containerId, ["sh", "-c", sql]);
+
+  if (exitCode !== 0) {
+    throw new PortainerError(500, `Falha ao criar banco '${dbName}': ${output || `exit code ${exitCode}`}`);
+  }
+}
+
 export async function pingPortainer(): Promise<boolean> {
   try {
     const init: AnyInit = {};

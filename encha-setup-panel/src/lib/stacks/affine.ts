@@ -20,6 +20,7 @@ export const affine: StackDefinition = {
   category: "communication",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["affine"],
   optionNumber: 40,
   installVia: "panel",
   fields: [
