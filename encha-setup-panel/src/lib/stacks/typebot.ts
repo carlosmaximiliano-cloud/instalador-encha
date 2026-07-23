@@ -21,6 +21,7 @@ export const typebot: StackDefinition = {
   category: "automation",
   icon: "bot",
   dependsOn: ["traefik-portainer", "postgres", "minio"],
+  postgresDatabases: ["typebot"],
   optionNumber: 8,
   fields: [
     { name: "url_typebot", label: "Domínio do Builder", kind: "domain", placeholder: "type.suaempresa.com", group: "Domínios" },

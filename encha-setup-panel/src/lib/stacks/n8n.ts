@@ -27,6 +27,7 @@ export const n8n: StackDefinition = {
   category: "automation",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["n8n"],
   optionNumber: 4,
   fields: [
     { name: "url_editorn8n", label: "Domínio do Editor N8N", kind: "domain", placeholder: "n8n.suaempresa.com", group: "Domínios" },

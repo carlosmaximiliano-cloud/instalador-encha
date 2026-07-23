@@ -15,6 +15,7 @@ export const openproject: StackDefinition = {
   category: "erp",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["openproject"],
   optionNumber: 48,
   installVia: "panel",
   fields: [

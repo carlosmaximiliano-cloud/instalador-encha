@@ -17,6 +17,7 @@ export const flowise: StackDefinition = {
   category: "ai",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["flowise"],
   optionNumber: 28,
   installVia: "panel",
   fields: [

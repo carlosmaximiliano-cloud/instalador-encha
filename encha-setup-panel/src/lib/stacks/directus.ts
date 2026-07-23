@@ -17,6 +17,7 @@ export const directus: StackDefinition = {
   category: "admin",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres", "minio"],
+  postgresDatabases: ["directus"],
   optionNumber: 9,
   fields: [
     { name: "url_directus", label: "Domínio", kind: "domain", placeholder: "directus.suaempresa.com", group: "Domínios" },

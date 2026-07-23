@@ -17,6 +17,7 @@ export const langflow: StackDefinition = {
   category: "ai",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["langflow"],
   optionNumber: 29,
   installVia: "panel",
   fields: [

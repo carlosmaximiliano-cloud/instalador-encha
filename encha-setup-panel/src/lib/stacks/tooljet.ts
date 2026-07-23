@@ -20,6 +20,7 @@ export const tooljet: StackDefinition = {
   category: "admin",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["tooljet_app"],
   optionNumber: 73,
   installVia: "panel",
   fields: [

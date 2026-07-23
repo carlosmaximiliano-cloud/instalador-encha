@@ -23,6 +23,7 @@ export const documenso: StackDefinition = {
   category: "marketing",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres", "minio"],
+  postgresDatabases: ["documenso"],
   optionNumber: 71,
   installVia: "panel",
   fields: [

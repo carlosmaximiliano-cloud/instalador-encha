@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.0.3"
+ENCHA_VERSION="0.0.4"
 
 #FERRAMENTAS VISUAIS
 
@@ -19750,13 +19750,16 @@ ferramenta_atualizar_painel() {
         echo -e "\e[97m• [1/4] Fonte git ausente — pulando refresh dos scripts\e[0m"
     fi
 
-    # 2/4 — Pull da imagem nova.
+    # 2/4 — Pull da imagem nova (enchaai/setup-panel não existe no Docker Hub
+    # hoje, então isto sempre falha — o fallback abaixo builda local a partir
+    # do fonte já atualizado no passo 1/4, e faz o redeploy completo).
     echo -e "\e[97m• [2/4] Baixando imagem enchaai/setup-panel:latest...\e[0m"
     if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
         echo -e "  \e[32m✔ Imagem atualizada\e[0m"
     else
-        echo -e "  \e[31m✖ Falha no pull da imagem. Verifique a conexão.\e[0m"
-        return 1
+        echo -e "  \e[33m↳ Pull falhou (imagem não publicada no Hub). Buildando local...\e[0m"
+        ferramenta_encha_panel
+        return $?
     fi
 
     # 3/4 — Redeploy: rolling update do service se ele existir; senão, redeploy completo.
@@ -19780,6 +19783,37 @@ ferramenta_atualizar_painel() {
     sleep 5
     echo ""
     echo -e "\e[32m\e[1m✅ Encha Setup atualizado.\e[0m"
+}
+
+################################################################################
+# atualizar_fonte_painel — Garante /root/encha-setup-panel na ponta do main.
+#
+# Auto-contida (não depende de preparar_fonte_painel do main.sh) porque
+# secondary.sh também pode rodar isolado (BASH_SOURCE == 0, ver fim do
+# arquivo). Como enchaai/setup-panel não existe no Docker Hub, o painel é
+# SEMPRE buildado local a partir deste diretório — se ele ficar desatualizado,
+# qualquer fix no painel (ex.: provisionamento de banco por-app) não chega à
+# imagem buildada, mesmo com o fix já em main. Chamar sempre antes de buildar.
+################################################################################
+atualizar_fonte_painel() {
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1
+
+    if [[ -d /root/encha-setup-panel/.git ]] \
+        && git -C /root/encha-setup-panel fetch --depth 1 origin main >/dev/null 2>&1 \
+        && git -C /root/encha-setup-panel reset --hard FETCH_HEAD >/dev/null 2>&1; then
+        return 0
+    fi
+
+    rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
+    git clone --depth 1 \
+        https://github.com/enchaaluno/setupteste.git \
+        /tmp/_setupteste_clone >/dev/null 2>&1 || return 1
+    if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
+        rm -rf /tmp/_setupteste_clone
+        return 1
+    fi
+    mv /tmp/_setupteste_clone/encha-setup-panel /root/encha-setup-panel
+    rm -rf /tmp/_setupteste_clone
 }
 
 ################################################################################
@@ -19831,6 +19865,17 @@ ferramenta_encha_panel() {
     mkdir -p /root/dados_vps
 
     # 4) Obter imagem (pull com fallback para build local)
+    # enchaai/setup-panel não existe no Docker Hub hoje — o pull abaixo sempre
+    # falha e cai no build local. Por isso o fonte precisa estar na ponta do
+    # main ANTES do build, senão fixes já publicados no repo não chegam à
+    # imagem (foi exatamente o que causou o n8n voltar a quebrar num reinstall).
+    echo -e "\e[97m• [3/5] Atualizando fonte do painel (git)...\e[0m"
+    if atualizar_fonte_painel; then
+        echo -e "  \e[32m✓ Fonte na ponta do main.\e[0m"
+    else
+        echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
+    fi
+
     echo -e "\e[97m• [3/5] Obtendo imagem enchaai/setup-panel:latest\e[0m"
     if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
         echo -e "  \e[32m✓ Imagem baixada do Docker Hub.\e[0m"

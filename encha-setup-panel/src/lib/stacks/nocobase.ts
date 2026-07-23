@@ -17,6 +17,7 @@ export const nocobase: StackDefinition = {
   category: "cms",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["nocobase"],
   optionNumber: 12,
   installVia: "panel",
   fields: [

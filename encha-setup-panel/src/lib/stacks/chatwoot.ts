@@ -20,6 +20,7 @@ export const chatwoot: StackDefinition = {
   category: "messaging",
   icon: "headphones",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["chatwoot"],
   optionNumber: 5,
   fields: [
     { name: "url_chatwoot", label: "Domínio do Chatwoot", kind: "domain", placeholder: "chatwoot.suaempresa.com", group: "Domínios" },

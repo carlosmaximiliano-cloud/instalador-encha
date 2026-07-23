@@ -20,6 +20,7 @@ export const formbricks: StackDefinition = {
   category: "marketing",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["formbricks"],
   optionNumber: 35,
   installVia: "panel",
   fields: [

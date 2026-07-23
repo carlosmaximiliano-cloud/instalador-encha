@@ -24,6 +24,7 @@ export const planka: StackDefinition = {
   category: "communication",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["planka"],
   optionNumber: 61,
   installVia: "panel",
   fields: [

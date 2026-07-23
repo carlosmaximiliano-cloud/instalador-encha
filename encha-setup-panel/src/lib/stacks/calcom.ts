@@ -20,6 +20,7 @@ export const calcom: StackDefinition = {
   category: "scheduling",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["calcom"],
   optionNumber: 18,
   installVia: "panel",
   fields: [

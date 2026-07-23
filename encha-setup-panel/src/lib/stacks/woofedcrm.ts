@@ -17,6 +17,7 @@ export const woofedcrm: StackDefinition = {
   category: "crm",
   icon: "headphones",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["woofedcrm"],
   optionNumber: 22,
   installVia: "panel",
   fields: [

@@ -17,6 +17,7 @@ export const outline: StackDefinition = {
   category: "communication",
   icon: "layout-dashboard",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["outline"],
   optionNumber: 25,
   installVia: "panel",
   fields: [

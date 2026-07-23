@@ -18,6 +18,7 @@ export const shlink: StackDefinition = {
   category: "marketing",
   icon: "workflow",
   dependsOn: ["traefik-portainer", "postgres", "redis"],
+  postgresDatabases: ["shlink"],
   optionNumber: 80,
   installVia: "panel",
   fields: [

@@ -14,6 +14,7 @@ export const baserow: StackDefinition = {
   category: "cms",
   icon: "table-properties",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["baserow"],
   optionNumber: 14,
   installVia: "panel",
   fields: [

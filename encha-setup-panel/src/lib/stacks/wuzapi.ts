@@ -15,6 +15,7 @@ export const wuzapi: StackDefinition = {
   category: "messaging",
   icon: "message-circle",
   dependsOn: ["traefik-portainer", "postgres"],
+  postgresDatabases: ["wuzapi"],
   optionNumber: 78,
   installVia: "panel",
   fields: [
