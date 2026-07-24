@@ -19847,7 +19847,7 @@ ferramenta_encha_panel() {
     fi
 
     # 1) Docker Secret idempotente (32 bytes random)
-    echo -e "\e[97m• [1/5] Criando Docker Secret encha_panel_master_key\e[0m"
+    echo -e "\e[97m• [1/6] Criando Docker Secret encha_panel_master_key\e[0m"
     if docker secret inspect encha_panel_master_key >/dev/null 2>&1; then
         echo -e "  \e[33m↳ Secret já existe, reutilizando.\e[0m"
     else
@@ -19857,7 +19857,7 @@ ferramenta_encha_panel() {
     fi
 
     # 2) Volume idempotente
-    echo -e "\e[97m• [2/5] Criando volume encha_panel_data\e[0m"
+    echo -e "\e[97m• [2/6] Criando volume encha_panel_data\e[0m"
     docker volume create encha_panel_data >/dev/null \
         && echo -e "  \e[32m✓ Volume pronto.\e[0m"
 
@@ -19869,14 +19869,14 @@ ferramenta_encha_panel() {
     # falha e cai no build local. Por isso o fonte precisa estar na ponta do
     # main ANTES do build, senão fixes já publicados no repo não chegam à
     # imagem (foi exatamente o que causou o n8n voltar a quebrar num reinstall).
-    echo -e "\e[97m• [3/5] Atualizando fonte do painel (git)...\e[0m"
+    echo -e "\e[97m• [3/6] Atualizando fonte do painel (git)...\e[0m"
     if atualizar_fonte_painel; then
         echo -e "  \e[32m✓ Fonte na ponta do main.\e[0m"
     else
         echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
     fi
 
-    echo -e "\e[97m• [3/5] Obtendo imagem enchaai/setup-panel:latest\e[0m"
+    echo -e "\e[97m• [4/6] Obtendo imagem enchaai/setup-panel:latest\e[0m"
     if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
         echo -e "  \e[32m✓ Imagem baixada do Docker Hub.\e[0m"
     elif [[ -d /root/encha-setup-panel/src ]]; then
@@ -19907,7 +19907,7 @@ ferramenta_encha_panel() {
     fi
 
     # 5) Render do docker-stack.yaml com envsubst (host + rede dinâmicos)
-    echo -e "\e[97m• [4/5] Gerando docker-stack.yaml dinâmico\e[0m"
+    echo -e "\e[97m• [5/6] Gerando docker-stack.yaml dinâmico\e[0m"
     export ENCHA_PANEL_HOST="$url_painel"
     export ENCHA_PANEL_NETWORK="${nome_rede_interna:-enchanet}"
 
@@ -19978,7 +19978,7 @@ TEMPLATE
         < "$stack_template" > /tmp/encha-panel.yaml
 
     # 6) Deploy
-    echo -e "\e[97m• [5/5] Fazendo deploy da stack encha-panel\e[0m"
+    echo -e "\e[97m• [6/6] Fazendo deploy da stack encha-panel\e[0m"
     docker stack rm encha-panel >/dev/null 2>&1
     sleep 8
     docker stack deploy --resolve-image always -c /tmp/encha-panel.yaml encha-panel >/dev/null
