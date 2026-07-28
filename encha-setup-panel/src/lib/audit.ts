@@ -11,7 +11,9 @@ export type AuditAction =
   | "terms.accept"
   | "banner.click"
   | "panel.update"
-  | "panel.update.fail";
+  | "panel.update.fail"
+  | "host.scripts.update"
+  | "host.scripts.update.fail";
 
 export type AuditEntry = {
   user: string;

@@ -49,6 +49,34 @@ async function call<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   return (await res.text()) as unknown as T;
 }
 
+// Variante que nunca faz JSON.parse do corpo — necessária para endpoints do Docker
+// Engine que respondem `Content-Type: application/json` mas com corpo em NDJSON
+// (várias linhas JSON), como `POST /images/create`. `call()` quebraria em `res.json()`
+// mesmo num pull bem-sucedido; aqui devolvemos o texto cru para quem chama decidir.
+async function callRaw(path: string, opts: FetchOpts = {}): Promise<{ status: number; text: string }> {
+  const headers: Record<string, string> = { ...(opts.headers ?? {}) };
+  if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
+  let body: string | FormData | undefined;
+  if (opts.formData) {
+    body = opts.formData;
+  } else if (opts.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(opts.body);
+  }
+
+  const init: AnyInit = {
+    method: opts.method ?? "GET",
+    headers,
+  };
+  if (body !== undefined) init.body = body;
+  if (insecureAgent) init.dispatcher = insecureAgent;
+
+  const res = await undiciFetch(`${PORTAINER_URL}${path}`, init);
+  const text = await res.text().catch(() => "");
+  if (!res.ok) throw new PortainerError(res.status, text || `HTTP ${res.status}`);
+  return { status: res.status, text };
+}
+
 export class PortainerError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -327,4 +355,198 @@ export async function discoverContext(
   const endpointId = endpoints[0].Id;
   const swarm = await getSwarm(token, endpointId);
   return { endpointId, swarmId: swarm.ID };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Containers avulsos (one-shot) — usado pelo updater de scripts do host
+// (src/lib/host-updater.ts). O painel não tem docker.sock nem é privilegiado;
+// tudo isto passa pela API do Portainer com o JWT do usuário logado.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Confere se uma imagem já está presente no node (evita pull desnecessário —
+// o caminho principal do updater de scripts usa a própria imagem do painel,
+// que por definição já está no node que está atendendo a requisição).
+export async function imageExistsLocally(
+  token: string,
+  endpointId: number,
+  image: string
+): Promise<boolean> {
+  try {
+    await call(`/api/endpoints/${endpointId}/docker/images/${encodeURIComponent(image)}/json`, {
+      token,
+    });
+    return true;
+  } catch (e) {
+    if (e instanceof PortainerError && e.status === 404) return false;
+    throw e;
+  }
+}
+
+// Pull de imagem (fallback — só usado se imageExistsLocally() for false para
+// a imagem principal). `POST /images/create` responde 200 com um stream NDJSON
+// mesmo quando o pull falha no meio; a falha aparece como uma linha com chave
+// "error". callRaw() é obrigatório aqui — call() quebraria em res.json().
+export async function pullImage(token: string, endpointId: number, image: string): Promise<void> {
+  const [repo, tag = "latest"] = image.split(":");
+  const { text } = await callRaw(
+    `/api/endpoints/${endpointId}/docker/images/create` +
+      `?fromImage=${encodeURIComponent(repo)}&tag=${encodeURIComponent(tag)}`,
+    { method: "POST", token }
+  );
+  const lines = text.split("\n").filter(Boolean);
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj?.error) throw new PortainerError(500, `Falha no pull de ${image}: ${obj.error}`);
+    } catch (e) {
+      if (e instanceof PortainerError) throw e;
+      // linha não-JSON isolada — ignora, não é indicativo de erro
+    }
+  }
+}
+
+export type ContainerSpec = {
+  Image: string;
+  Entrypoint?: string[];
+  Cmd?: string[];
+  Env?: string[];
+  User?: string;
+  Tty?: boolean;
+  Labels?: Record<string, string>;
+  HostConfig: {
+    Binds?: string[];
+    AutoRemove?: boolean;
+    NetworkMode?: string;
+    Privileged?: boolean;
+    RestartPolicy?: { Name: string };
+  };
+};
+
+export async function createContainer(
+  token: string,
+  endpointId: number,
+  name: string,
+  spec: ContainerSpec
+): Promise<{ Id: string }> {
+  return call<{ Id: string }>(
+    `/api/endpoints/${endpointId}/docker/containers/create?name=${encodeURIComponent(name)}`,
+    { method: "POST", token, body: spec }
+  );
+}
+
+export async function startContainer(token: string, endpointId: number, id: string): Promise<void> {
+  await call(`/api/endpoints/${endpointId}/docker/containers/${id}/start`, {
+    method: "POST",
+    token,
+  });
+}
+
+type ContainerInspect = {
+  State?: { Running?: boolean; ExitCode?: number; Status?: string; Error?: string };
+};
+
+export async function inspectContainer(
+  token: string,
+  endpointId: number,
+  id: string
+): Promise<ContainerInspect> {
+  return call<ContainerInspect>(`/api/endpoints/${endpointId}/docker/containers/${id}/json`, {
+    token,
+  });
+}
+
+// Espera o container sair via polling (NÃO usa `POST /containers/{id}/wait`,
+// que bloqueia a requisição HTTP sem timeout configurado — arriscado atrás de
+// Traefik/Portainer). Teto de ~2min; em timeout, força remoção e devolve exitCode -1.
+export async function waitForContainerExit(
+  token: string,
+  endpointId: number,
+  id: string,
+  opts: { timeoutMs?: number; intervalMs?: number } = {}
+): Promise<{ exitCode: number; timedOut: boolean }> {
+  const timeoutMs = opts.timeoutMs ?? 120_000;
+  const intervalMs = opts.intervalMs ?? 2000;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const info = await inspectContainer(token, endpointId, id);
+    if (info.State?.Running === false) {
+      return { exitCode: info.State.ExitCode ?? -1, timedOut: false };
+    }
+    await sleep(intervalMs);
+  }
+  return { exitCode: -1, timedOut: true };
+}
+
+export async function getContainerLogs(
+  token: string,
+  endpointId: number,
+  id: string,
+  tail = 200
+): Promise<string> {
+  const { text } = await callRaw(
+    `/api/endpoints/${endpointId}/docker/containers/${id}/logs?stdout=1&stderr=1&tail=${tail}`,
+    { token }
+  );
+  return text;
+}
+
+export async function removeContainer(
+  token: string,
+  endpointId: number,
+  id: string
+): Promise<void> {
+  try {
+    await call(`/api/endpoints/${endpointId}/docker/containers/${id}?force=1&v=1`, {
+      method: "DELETE",
+      token,
+    });
+  } catch (e) {
+    // 404 = já não existe — ok, alvo era remover.
+    if (!(e instanceof PortainerError) || e.status !== 404) throw e;
+  }
+}
+
+// Varre containers órfãos de execuções anteriores que travaram e nunca foram
+// removidos (crash do painel a meio do passo, timeout, etc.) — evita que o
+// nome fixo do container fique permanentemente "ocupado" (409 no create).
+export async function listContainersByLabel(
+  token: string,
+  endpointId: number,
+  label: string
+): Promise<Array<{ Id: string; Names?: string[]; Created?: number }>> {
+  const filters = encodeURIComponent(JSON.stringify({ label: [label], all: ["true"] }));
+  return call(`/api/endpoints/${endpointId}/docker/containers/json?all=1&filters=${filters}`, {
+    token,
+  });
+}
+
+// Cria, roda até o fim, coleta logs e remove um container avulso (one-shot).
+// Sempre remove em `finally` — mesmo em erro/timeout — para não vazar o nome
+// nem deixar processo root-equivalente pendurado no host.
+export async function runOneShotContainer(
+  token: string,
+  endpointId: number,
+  args: { name: string; label: string; spec: ContainerSpec; timeoutMs?: number }
+): Promise<{ exitCode: number; logs: string; timedOut: boolean }> {
+  // Varredura de órfãos com o mesmo label antes de criar um novo.
+  const orphans = await listContainersByLabel(token, endpointId, args.label);
+  for (const o of orphans) {
+    await removeContainer(token, endpointId, o.Id);
+  }
+
+  const { Id } = await createContainer(token, endpointId, args.name, {
+    ...args.spec,
+    HostConfig: { ...args.spec.HostConfig, AutoRemove: false },
+  });
+
+  try {
+    await startContainer(token, endpointId, Id);
+    const { exitCode, timedOut } = await waitForContainerExit(token, endpointId, Id, {
+      timeoutMs: args.timeoutMs,
+    });
+    const logs = await getContainerLogs(token, endpointId, Id).catch(() => "");
+    return { exitCode, logs, timedOut };
+  } finally {
+    await removeContainer(token, endpointId, Id).catch(() => {});
+  }
 }
