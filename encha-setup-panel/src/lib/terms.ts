@@ -37,6 +37,15 @@ export function recordAcceptanceLocal(input: AcceptanceInput): number {
   return Number(res.lastInsertRowid);
 }
 
+/** Verifica se ESTA instalação já aceitou a versão dada dos termos. Síncrono. */
+export function hasAccepted(version: string): boolean {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT 1 FROM terms_acceptances WHERE terms_version = ? AND agreed = 1 LIMIT 1")
+    .get(version);
+  return !!row;
+}
+
 function markSynced(id: number): void {
   getDb().prepare("UPDATE terms_acceptances SET synced=1 WHERE id=?").run(id);
 }

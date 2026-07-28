@@ -54,16 +54,29 @@ export async function fetchBanner(position: BannerPosition = "top"): Promise<Mon
   }
 }
 
+// Memo curto em processo: TermsGate roda a cada navegação do dashboard
+// (server component, sem cache do Next entre requests distintos), então sem
+// isso cada clique pagaria os 4s de timeout do Monitor sempre que ele cair.
+let termsCache: { at: number; value: MonitorTerms | null } | null = null;
+const TERMS_CACHE_MS = 60_000;
+
 export async function fetchTerms(): Promise<MonitorTerms | null> {
+  if (termsCache && Date.now() - termsCache.at < TERMS_CACHE_MS) return termsCache.value;
+
   const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/terms.json`, {
     cache: "no-store",
   });
-  if (!res || res.status === 204 || !res.ok) return null;
+  if (!res || res.status === 204 || !res.ok) {
+    termsCache = { at: Date.now(), value: null };
+    return null;
+  }
   try {
     const data = (await res.json()) as MonitorTerms;
-    if (!data?.version) return null;
-    return data;
+    const value = data?.version ? data : null;
+    termsCache = { at: Date.now(), value };
+    return value;
   } catch {
+    termsCache = { at: Date.now(), value: null };
     return null;
   }
 }

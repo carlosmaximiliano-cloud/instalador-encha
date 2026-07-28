@@ -44,5 +44,21 @@ function initSchema(d: Database.Database) {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS terms_acceptances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts INTEGER NOT NULL,
+      user TEXT NOT NULL,
+      ip TEXT NOT NULL,
+      user_agent TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      hostname TEXT,
+      stack_id TEXT NOT NULL,
+      terms_version TEXT NOT NULL,
+      agreed INTEGER NOT NULL DEFAULT 1,
+      synced INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_terms_version ON terms_acceptances(terms_version);
+    CREATE INDEX IF NOT EXISTS idx_terms_unsynced ON terms_acceptances(synced) WHERE synced = 0;
   `);
 }
