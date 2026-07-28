@@ -19750,14 +19750,15 @@ ferramenta_atualizar_painel() {
         echo -e "\e[97m• [1/4] Fonte git ausente — pulando refresh dos scripts\e[0m"
     fi
 
-    # 2/4 — Pull da imagem nova (enchaai/setup-panel não existe no Docker Hub
-    # hoje, então isto sempre falha — o fallback abaixo builda local a partir
-    # do fonte já atualizado no passo 1/4, e faz o redeploy completo).
-    echo -e "\e[97m• [2/4] Baixando imagem enchaai/setup-panel:latest...\e[0m"
-    if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
+    # 2/4 — Pull da imagem nova. Se o pull anônimo falhar (pacote virou privado
+    # no GHCR, rede fora, ou versão ainda não publicada), o fallback abaixo
+    # builda local a partir do fonte já atualizado no passo 1/4, e faz o
+    # redeploy completo.
+    echo -e "\e[97m• [2/4] Baixando imagem ghcr.io/enchaaluno/setup-panel:latest...\e[0m"
+    if docker pull ghcr.io/enchaaluno/setup-panel:latest >/dev/null 2>&1; then
         echo -e "  \e[32m✔ Imagem atualizada\e[0m"
     else
-        echo -e "  \e[33m↳ Pull falhou (imagem não publicada no Hub). Buildando local...\e[0m"
+        echo -e "  \e[33m↳ Pull falhou. Buildando local...\e[0m"
         ferramenta_encha_panel
         return $?
     fi
@@ -19765,7 +19766,7 @@ ferramenta_atualizar_painel() {
     # 3/4 — Redeploy: rolling update do service se ele existir; senão, redeploy completo.
     echo -e "\e[97m• [3/4] Aplicando atualização no Swarm...\e[0m"
     if docker service inspect encha-panel_panel >/dev/null 2>&1; then
-        if docker service update --image enchaai/setup-panel:latest --force encha-panel_panel >/dev/null 2>&1; then
+        if docker service update --image ghcr.io/enchaaluno/setup-panel:latest --force encha-panel_panel >/dev/null 2>&1; then
             echo -e "  \e[32m✔ Service atualizado (rolling update)\e[0m"
         else
             echo -e "  \e[33m↳ Falha no update direto. Tentando redeploy completo...\e[0m"
@@ -19790,10 +19791,11 @@ ferramenta_atualizar_painel() {
 #
 # Auto-contida (não depende de preparar_fonte_painel do main.sh) porque
 # secondary.sh também pode rodar isolado (BASH_SOURCE == 0, ver fim do
-# arquivo). Como enchaai/setup-panel não existe no Docker Hub, o painel é
-# SEMPRE buildado local a partir deste diretório — se ele ficar desatualizado,
-# qualquer fix no painel (ex.: provisionamento de banco por-app) não chega à
-# imagem buildada, mesmo com o fix já em main. Chamar sempre antes de buildar.
+# arquivo). Se o pull de ghcr.io/enchaaluno/setup-panel falhar por qualquer
+# motivo (pacote ainda não publicado, virou privado, rede fora), o painel cai
+# no build local a partir deste diretório — se ele ficar desatualizado, um fix
+# no painel não chega à imagem buildada, mesmo com o fix já em main. Chamar
+# sempre antes de buildar.
 ################################################################################
 atualizar_fonte_painel() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1
@@ -19865,10 +19867,11 @@ ferramenta_encha_panel() {
     mkdir -p /root/dados_vps
 
     # 4) Obter imagem (pull com fallback para build local)
-    # enchaai/setup-panel não existe no Docker Hub hoje — o pull abaixo sempre
-    # falha e cai no build local. Por isso o fonte precisa estar na ponta do
-    # main ANTES do build, senão fixes já publicados no repo não chegam à
-    # imagem (foi exatamente o que causou o n8n voltar a quebrar num reinstall).
+    # Se o pull anônimo falhar (pacote privado no GHCR, rede fora, versão
+    # ainda não publicada), cai no build local abaixo. Por isso o fonte
+    # precisa estar na ponta do main ANTES do build, senão fixes já
+    # publicados no repo não chegam à imagem (foi exatamente o que causou o
+    # n8n voltar a quebrar num reinstall).
     echo -e "\e[97m• [3/6] Atualizando fonte do painel (git)...\e[0m"
     if atualizar_fonte_painel; then
         echo -e "  \e[32m✓ Fonte na ponta do main.\e[0m"
@@ -19876,13 +19879,13 @@ ferramenta_encha_panel() {
         echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
     fi
 
-    echo -e "\e[97m• [4/6] Obtendo imagem enchaai/setup-panel:latest\e[0m"
-    if docker pull enchaai/setup-panel:latest >/dev/null 2>&1; then
-        echo -e "  \e[32m✓ Imagem baixada do Docker Hub.\e[0m"
+    echo -e "\e[97m• [4/6] Obtendo imagem ghcr.io/enchaaluno/setup-panel:latest\e[0m"
+    if docker pull ghcr.io/enchaaluno/setup-panel:latest >/dev/null 2>&1; then
+        echo -e "  \e[32m✓ Imagem baixada do GHCR.\e[0m"
     elif [[ -d /root/encha-setup-panel/src ]]; then
         echo -e "  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
         echo -e "  \e[97m  Log completo: /var/log/encha-build.log\e[0m"
-        docker build -t enchaai/setup-panel:latest /root/encha-setup-panel/ \
+        docker build -t ghcr.io/enchaaluno/setup-panel:latest /root/encha-setup-panel/ \
             > /var/log/encha-build.log 2>&1 &
         local build_pid=$!
         local start=$SECONDS
@@ -19919,7 +19922,7 @@ ferramenta_encha_panel() {
 version: "3.7"
 services:
   panel:
-    image: enchaai/setup-panel:latest
+    image: ghcr.io/enchaaluno/setup-panel:latest
     networks:
       - ${ENCHA_PANEL_NETWORK}
     secrets:

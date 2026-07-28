@@ -7,7 +7,7 @@ import {
 
 // Nome do service Swarm do próprio painel (stack `encha-panel`, service `panel`).
 const PANEL_SERVICE = "encha-panel_panel";
-const IMAGE_REPO = "enchaai/setup-panel";
+const IMAGE_REPO = "ghcr.io/enchaaluno/setup-panel";
 
 export type UpdateResult = { ok: true } | { ok: false; error: string };
 

@@ -24,7 +24,7 @@ version: "3.7"
 
 services:
   panel:
-    image: enchaai/setup-panel:latest
+    image: ghcr.io/enchaaluno/setup-panel:latest
     networks:
       - ${ENCHA_PANEL_NETWORK}
     secrets:

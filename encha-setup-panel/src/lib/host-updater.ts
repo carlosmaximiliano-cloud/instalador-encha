@@ -18,7 +18,7 @@ import { APP_VERSION } from "./version";
 
 const CONTAINER_NAME = "encha-host-updater";
 const CONTAINER_LABEL = "com.encha.role=host-script-updater";
-const PANEL_IMAGE_REPO = "enchaai/setup-panel";
+const PANEL_IMAGE_REPO = "ghcr.io/enchaaluno/setup-panel";
 const FALLBACK_IMAGE = "alpine/git:2.45.2";
 const SETUPTESTE_REPO = "enchaaluno/setupteste";
 
