@@ -61,27 +61,42 @@ type PendingRow = {
   ip: string;
 };
 
+// Guarda em memória contra chamadas concorrentes: flushPendingAcceptances()
+// é disparada tanto pelo POST /api/terms quanto pelo TermsGate a cada render
+// em que os termos já estão aceitos — o router.refresh() do cliente após
+// aceitar reexecuta o layout quase imediatamente, então as duas chamadas
+// competem pela MESMA linha synced=0 antes de qualquer uma marcar synced=1,
+// duplicando o aceite no Monitor. Painel roda replicas:1, então um lock em
+// processo já resolve — não precisa de lock no banco.
+let flushing = false;
+
 /** Tenta reenviar ao Monitor os aceites pendentes (synced=0). Best-effort. */
 export async function flushPendingAcceptances(limit = 20): Promise<void> {
-  const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT id, ts, user_agent, device_id, hostname, stack_id, terms_version, ip
-       FROM terms_acceptances WHERE synced=0 ORDER BY id ASC LIMIT ?`
-    )
-    .all(limit) as PendingRow[];
+  if (flushing) return;
+  flushing = true;
+  try {
+    const db = getDb();
+    const rows = db
+      .prepare(
+        `SELECT id, ts, user_agent, device_id, hostname, stack_id, terms_version, ip
+         FROM terms_acceptances WHERE synced=0 ORDER BY id ASC LIMIT ?`
+      )
+      .all(limit) as PendingRow[];
 
-  for (const r of rows) {
-    const ok = await reportTermsAcceptance({
-      deviceId: r.device_id,
-      hostname: r.hostname ?? "",
-      userAgent: r.user_agent,
-      termsVersion: r.terms_version,
-      stackId: r.stack_id,
-      ip: r.ip,
-      ts: r.ts,
-    });
-    if (ok) markSynced(r.id);
-    else break; // Monitor provavelmente offline — para e tenta de novo depois
+    for (const r of rows) {
+      const ok = await reportTermsAcceptance({
+        deviceId: r.device_id,
+        hostname: r.hostname ?? "",
+        userAgent: r.user_agent,
+        termsVersion: r.terms_version,
+        stackId: r.stack_id,
+        ip: r.ip,
+        ts: r.ts,
+      });
+      if (ok) markSynced(r.id);
+      else break; // Monitor provavelmente offline — para e tenta de novo depois
+    }
+  } finally {
+    flushing = false;
   }
 }
