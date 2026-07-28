@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.0.4"
+ENCHA_VERSION="0.0.5"
 
 #FERRAMENTAS VISUAIS
 
