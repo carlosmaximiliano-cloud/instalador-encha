@@ -5,6 +5,39 @@
 # e encha-setup-panel/src/lib/version.ts.
 ENCHA_VERSION="0.0.6"
 
+# Versão fixa da Evolution API. Mantenha em sincronia com EVOLUTION_IMAGE em
+# encha-setup-panel/src/lib/stacks/evolution.ts.
+#
+# NUNCA voltar para "latest": a tag latest do evoapicloud não acompanha as
+# releases (o build publicado nela em 2026-05-06 saiu junto da 2.4.0-rc1 e tem
+# digest próprio), então cada VPS instalada em uma data diferente roda um
+# código diferente. A linha 2.4.x é a única que recebe correções — `main` não
+# tem commit funcional desde a 2.3.7 (dez/2025).
+#
+# ⚠️ Tags stable levam prefixo "v" (v2.3.7); as RC não (2.4.0-rc2).
+#    "evoapicloud/evolution-api:2.3.7" (sem "v") dá 404.
+# Rollback conhecido: EVOLUTION_IMAGE="evoapicloud/evolution-api:v2.3.7"
+EVOLUTION_IMAGE="evoapicloud/evolution-api:2.4.0-rc2"
+
+# redis:latest é hoje o Redis 8 — fixamos no mesmo major de propósito, porque
+# cair para o 7 seria downgrade e o Redis 7 pode recusar carregar um AOF
+# gravado pelo 8, travando o serviço em quem já tem dados no volume.
+EVOLUTION_REDIS_IMAGE="redis:8-alpine"
+
+# Opcional: se exportado antes de rodar o script, liga a auto-ativação de
+# licença headless da 2.4.x (o e-mail precisa já estar registrado no servidor
+# de licenças da Evolution). Vazio = ativação manual pelo /manager, como antes.
+EVOLUTION_OPERATOR_EMAIL="${EVOLUTION_OPERATOR_EMAIL:-}"
+
+# A 2.4.x decide pela PRESENÇA da variável, então ela só pode ser emitida no
+# YAML quando preenchida. Quando vazia, sobra uma linha em branco no meio da
+# lista de envs — que é YAML válido e não altera nada.
+if [ -n "$EVOLUTION_OPERATOR_EMAIL" ]; then
+  EVOLUTION_ACTIVATION_ENV="      - EVOLUTION_OPERATOR_EMAIL=$EVOLUTION_OPERATOR_EMAIL"
+else
+  EVOLUTION_ACTIVATION_ENV=""
+fi
+
 #FERRAMENTAS VISUAIS
 
 centralizar() {
@@ -2951,7 +2984,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   evolution${1:+_$1}_api:
-    image: evoapicloud/evolution-api:latest ## Versão da Evolution API
+    image: ${EVOLUTION_IMAGE} ## Versão da Evolution API
 
     volumes:
       - evolution${1:+_$1}_instances:/evolution/instances
@@ -3034,8 +3067,16 @@ services:
       - WA_BUSINESS_LANGUAGE=pt_BR
 
       ## 📊 Telemetria
+      # A 2.4.x lê TELEMETRY_ENABLED (default LIGADO se ausente) e ignora
+      # TELEMETRY, que era o nome antigo. Mantemos os dois: sem
+      # TELEMETRY_ENABLED a telemetria voltaria a ligar sozinha no upgrade —
+      # e o payload leva o nome da instância dentro da rota.
       - TELEMETRY=false
+      - TELEMETRY_ENABLED=false
       - TELEMETRY_URL=
+
+      ## 🔑 Ativação automática de licença (2.4.x) — só sai se configurado
+${EVOLUTION_ACTIVATION_ENV}
 
       ## 🌐 Configuração do WebSocket
       - WEBSOCKET_ENABLED=false
@@ -3148,7 +3189,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   evolution${1:+_$1}_redis:
-    image: redis:latest  ## Versão do Redis
+    image: ${EVOLUTION_REDIS_IMAGE}  ## Versão do Redis
     command: [
         "redis-server",
         "--appendonly",
@@ -3213,7 +3254,7 @@ echo ""
 sleep 1
 
 ## Baixando imagens:
-pull redis:latest evoapicloud/evolution-api:latest
+pull ${EVOLUTION_REDIS_IMAGE} ${EVOLUTION_IMAGE}
 
 ## Usa o serviço wait_evolution para verificar se o serviço esta online
 wait_stack evolution${1:+_$1}_evolution${1:+_$1}_redis evolution${1:+_$1}_evolution${1:+_$1}_api
@@ -18681,7 +18722,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   evolution_api:
-    image: evoapicloud/evolution-api:latest ## Versão da Evolution API
+    image: ${EVOLUTION_IMAGE} ## Versão da Evolution API
 
     volumes:
       - evolution_instances:/evolution/instances
@@ -18764,8 +18805,16 @@ services:
       - WA_BUSINESS_LANGUAGE=pt_BR
 
       ## 📊 Telemetria
+      # A 2.4.x lê TELEMETRY_ENABLED (default LIGADO se ausente) e ignora
+      # TELEMETRY, que era o nome antigo. Mantemos os dois: sem
+      # TELEMETRY_ENABLED a telemetria voltaria a ligar sozinha no upgrade —
+      # e o payload leva o nome da instância dentro da rota.
       - TELEMETRY=false
+      - TELEMETRY_ENABLED=false
       - TELEMETRY_URL=
+
+      ## 🔑 Ativação automática de licença (2.4.x) — só sai se configurado
+${EVOLUTION_ACTIVATION_ENV}
 
       ## 🌐 Configuração do WebSocket
       - WEBSOCKET_ENABLED=false
@@ -18878,7 +18927,7 @@ services:
 # ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
 
   evolution_redis:
-    image: redis:latest  ## Versão do Redis
+    image: ${EVOLUTION_REDIS_IMAGE}  ## Versão do Redis
     command: [
         "redis-server",
         "--appendonly",
@@ -18940,7 +18989,7 @@ echo ""
 sleep 1
 
 ## Baixando imagens:
-pull redis:latest evoapicloud/evolution-api:latest
+pull ${EVOLUTION_REDIS_IMAGE} ${EVOLUTION_IMAGE}
 
 ## Usa o serviço wait_evolution para verificar se o serviço esta online
 wait_stack evolution_evolution_redis evolution_evolution_api

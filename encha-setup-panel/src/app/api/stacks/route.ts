@@ -6,6 +6,7 @@ import { installStack, listInstalledStacks } from "@/lib/installer";
 import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames } from "@/lib/stacks/types";
+import { computePendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 const installSchema = z.object({
@@ -59,6 +60,9 @@ export async function GET() {
     const expected = expectedStackNames(s);
     const present = expected.every((n) => installedNames.has(n));
     const ready = present && expected.every((n) => statusByName.get(n)?.ready ?? false);
+    // Só oferece atualização quando a stack já subiu por completo — trocar a
+    // imagem no meio de um deploy ainda em andamento só embaralharia o estado.
+    const pendingUpdates = ready ? computePendingUpdates(s, swarmStatuses) : [];
     return {
       id: s.id,
       name: s.name,
@@ -72,6 +76,8 @@ export async function GET() {
       optionNumber: s.optionNumber,
       installed: present,
       ready,
+      updateAvailable: pendingUpdates.length > 0,
+      pendingUpdates,
     };
   });
 

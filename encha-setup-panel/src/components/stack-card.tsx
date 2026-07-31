@@ -7,7 +7,7 @@ import {
   Shield, Workflow, MessageCircle, Headphones, HardDrive, Bot, LayoutDashboard,
   Brain, TableProperties, DatabaseZap, Database, CheckCircle2, ExternalLink,
   UsersRound, FileText, Calendar, BarChart3, KeyRound, Radio, Monitor as MonitorIcon,
-  PencilRuler, Activity, Mail, Loader2,
+  PencilRuler, Activity, Mail, Loader2, ArrowUpCircle,
 } from "lucide-react";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -66,6 +66,8 @@ export type CatalogEntry = {
   dependsOn: string[];
   installed: boolean;
   ready: boolean;
+  updateAvailable?: boolean;
+  pendingUpdates?: { serviceName: string; current: string; target: string }[];
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";
@@ -76,10 +78,16 @@ export function StackCard({
   stack,
   readySet,
   onInstall,
+  onUpdate,
+  updating = false,
+  updateError,
 }: {
   stack: CatalogEntry;
   readySet: Set<string>;
   onInstall: (id: string) => void;
+  onUpdate?: (id: string) => void;
+  updating?: boolean;
+  updateError?: string;
 }) {
   const Icon = ICONS[stack.icon] ?? Shield;
   const [logoOk, setLogoOk] = useState(true);
@@ -87,6 +95,7 @@ export function StackCard({
   const canInstall = missingDeps.length === 0;
   const isBash = stack.installVia === "bash";
   const isDeploying = stack.installed && !stack.ready;
+  const canUpdate = Boolean(stack.updateAvailable && onUpdate) && !isDeploying;
 
   let buttonLabel = "Instalar";
   if (stack.installed && stack.ready) buttonLabel = "Já instalado";
@@ -140,6 +149,12 @@ export function StackCard({
                   Instalando...
                 </Badge>
               )}
+              {canUpdate && (
+                <Badge variant="warning" className="gap-1">
+                  <ArrowUpCircle className="h-3 w-3" />
+                  Atualização disponível
+                </Badge>
+              )}
               {isBash && !stack.installed && (
                 <Badge variant="neutral" className="text-[10px]">
                   Em breve
@@ -159,8 +174,22 @@ export function StackCard({
             Instale primeiro: {missingDeps.join(", ")}
           </div>
         )}
+        {canUpdate && stack.pendingUpdates?.length ? (
+          <div className="mt-3 text-xs rounded-md bg-warning-soft text-warning-foreground px-3 py-2 space-y-1">
+            {stack.pendingUpdates.map((p) => (
+              <div key={p.serviceName} className="break-all">
+                <span className="opacity-70">{p.current}</span>
+                {" → "}
+                <span className="font-medium">{p.target}</span>
+              </div>
+            ))}
+            <div className="opacity-70 pt-1">
+              Atualiza só a imagem — volumes e banco de dados são preservados.
+            </div>
+          </div>
+        ) : null}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
         <Button
           className="w-full"
           variant={stack.installed ? "secondary" : isBash ? "outline" : "primary"}
@@ -169,6 +198,31 @@ export function StackCard({
         >
           {buttonLabel}
         </Button>
+        {canUpdate && (
+          <Button
+            className="w-full"
+            variant="primary"
+            disabled={updating}
+            onClick={() => onUpdate?.(stack.id)}
+          >
+            {updating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <ArrowUpCircle className="h-4 w-4 mr-2" />
+                Atualizar
+              </>
+            )}
+          </Button>
+        )}
+        {updateError && (
+          <div className="rounded-md bg-destructive-soft text-destructive px-3 py-2 text-xs w-full text-center">
+            {updateError}
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

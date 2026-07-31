@@ -83,6 +83,14 @@ export type StackDefinition = {
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;
+  /**
+   * Serviços cuja imagem pode ser trocada in-place (rolling update do Swarm),
+   * sem recriar a stack nem tocar em volumes/banco. `service` é o nome do
+   * serviço DENTRO do compose — o nome real no Swarm é `<stack>_<service>`.
+   * Fonte da verdade da versão-alvo: é comparado com a imagem em execução
+   * para decidir se há atualização disponível. Ver /api/stacks/[id]/update.
+   */
+  updatableImages?: { service: string; image: string }[];
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";

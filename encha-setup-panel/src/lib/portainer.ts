@@ -135,7 +135,11 @@ export async function deploySwarmStack(args: {
 }
 
 type DockerService = {
-  Spec?: { Labels?: Record<string, string> };
+  Spec?: {
+    Name?: string;
+    Labels?: Record<string, string>;
+    TaskTemplate?: { ContainerSpec?: { Image?: string } };
+  };
   ServiceStatus?: { RunningTasks?: number; DesiredTasks?: number };
 };
 
@@ -144,7 +148,25 @@ export type SwarmStackStatus = {
   desired: number;
   running: number;
   ready: boolean;
+  /**
+   * Imagem em execução por serviço, chaveada pelo nome completo no Swarm
+   * (ex.: "evolution_evolution_api"). Sai de graça: já percorremos todos os
+   * services aqui, então detectar atualização não custa chamada extra.
+   * O Docker devolve a imagem com digest anexado
+   * ("repo:tag@sha256:..."), então compare sempre com `stripDigest`.
+   */
+  images: Record<string, string>;
 };
+
+/**
+ * Remove o "@sha256:..." que o Docker anexa à imagem em execução. Sem isso
+ * toda comparação com a imagem-alvo daria "diferente" e o painel ofereceria
+ * uma atualização que não existe.
+ */
+export function stripDigest(image: string): string {
+  const at = image.indexOf("@");
+  return at === -1 ? image : image.slice(0, at);
+}
 
 export async function listSwarmStackStatuses(
   token: string,
@@ -154,13 +176,19 @@ export async function listSwarmStackStatuses(
     `/api/endpoints/${endpointId}/docker/services?status=true`,
     { token }
   );
-  const byStack = new Map<string, { desired: number; running: number }>();
+  const byStack = new Map<
+    string,
+    { desired: number; running: number; images: Record<string, string> }
+  >();
   for (const svc of services) {
     const ns = svc.Spec?.Labels?.["com.docker.stack.namespace"];
     if (!ns) continue;
-    const cur = byStack.get(ns) ?? { desired: 0, running: 0 };
+    const cur = byStack.get(ns) ?? { desired: 0, running: 0, images: {} };
     cur.desired += svc.ServiceStatus?.DesiredTasks ?? 0;
     cur.running += svc.ServiceStatus?.RunningTasks ?? 0;
+    const svcName = svc.Spec?.Name;
+    const image = svc.Spec?.TaskTemplate?.ContainerSpec?.Image;
+    if (svcName && image) cur.images[svcName] = stripDigest(image);
     byStack.set(ns, cur);
   }
   return Array.from(byStack.entries()).map(([name, s]) => ({
@@ -168,6 +196,7 @@ export async function listSwarmStackStatuses(
     desired: s.desired,
     running: s.running,
     ready: s.desired === 0 || s.running >= s.desired,
+    images: s.images,
   }));
 }
 

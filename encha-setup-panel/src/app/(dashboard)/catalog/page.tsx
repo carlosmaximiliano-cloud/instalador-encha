@@ -142,6 +142,32 @@ function CatalogPageInner() {
     return list;
   }, [data, search, category]);
 
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updateErrors, setUpdateErrors] = useState<Record<string, string>>({});
+
+  async function handleUpdate(id: string) {
+    if (updatingId) return; // já tem uma atualização em voo
+    setUpdatingId(id);
+    setUpdateErrors((prev) => ({ ...prev, [id]: "" }));
+    try {
+      const res = await fetch(`/api/stacks/${id}/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok) {
+        setUpdateErrors((prev) => ({ ...prev, [id]: j?.error ?? "Falha ao atualizar" }));
+        return;
+      }
+      refetchStacks();
+    } catch (e) {
+      console.error("[update]", e);
+      setUpdateErrors((prev) => ({ ...prev, [id]: "Falha ao atualizar — veja o console" }));
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   async function openInstall(id: string) {
     const stack = data?.catalog.find((s) => s.id === id);
     if (!stack) return;
@@ -222,7 +248,15 @@ function CatalogPageInner() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s) => (
-            <StackCard key={s.id} stack={s} readySet={readySet} onInstall={openInstall} />
+            <StackCard
+              key={s.id}
+              stack={s}
+              readySet={readySet}
+              onInstall={openInstall}
+              onUpdate={handleUpdate}
+              updating={updatingId === s.id}
+              updateError={updateErrors[s.id]}
+            />
           ))}
         </div>
       )}

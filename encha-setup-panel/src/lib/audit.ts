@@ -8,6 +8,8 @@ export type AuditAction =
   | "stack.install.fail"
   | "stack.remove"
   | "stack.remove.fail"
+  | "stack.update"
+  | "stack.update.fail"
   | "terms.accept"
   | "banner.click"
   | "panel.update"
