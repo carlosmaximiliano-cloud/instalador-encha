@@ -4,6 +4,7 @@ import {
   deploySwarmStack,
   discoverContext,
   ensurePostgresDatabase,
+  ensurePostgresExtension,
   ensureSwarmVolume,
   listStacks,
   pullImageWithRegistry,
@@ -197,6 +198,11 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     }
     for (const db of def.postgresDatabases ?? []) {
       await ensurePostgresDatabase(input.token, endpointId, db);
+    }
+    for (const { database, extensions } of def.postgresExtensions ?? []) {
+      for (const ext of extensions) {
+        await ensurePostgresExtension(input.token, endpointId, database, ext);
+      }
     }
     const stack = await deploySwarmStack({
       token: input.token,

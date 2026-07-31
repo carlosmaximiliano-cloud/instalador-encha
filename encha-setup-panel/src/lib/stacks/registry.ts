@@ -88,6 +88,7 @@ import { rustdesk } from "./rustdesk";
 import { excalidraw } from "./excalidraw";
 import { infisical } from "./infisical";
 import { enchat } from "./enchat";
+import { evocrm } from "./evocrm";
 
 export const ALL_STACKS: StackDefinition[] = [
   // Implementadas (instalam pelo painel)
@@ -104,6 +105,7 @@ export const ALL_STACKS: StackDefinition[] = [
   mongodb,
   infisical,
   enchat,
+  evocrm,
   // Stubs (instalação via SSH no momento)
   mysql,
   redis,

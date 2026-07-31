@@ -78,6 +78,12 @@ export type StackDefinition = {
   externalVolumes?: string[];
   /** Bancos a garantir no Postgres compartilhado (serviço postgres_postgres) antes do deploy. */
   postgresDatabases?: string[];
+  /**
+   * Extensões a garantir por banco do Postgres compartilhado, depois de
+   * criado (idempotente — CREATE EXTENSION IF NOT EXISTS). `database` deve
+   * também estar em `postgresDatabases`.
+   */
+  postgresExtensions?: { database: string; extensions: string[] }[];
   /** Diretórios a garantir (mkdir -p) no node manager antes do deploy — necessário para bind mounts, que o Swarm não cria sozinho. */
   hostDirs?: string[];
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
