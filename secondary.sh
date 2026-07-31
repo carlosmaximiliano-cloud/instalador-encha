@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.1.1"
+ENCHA_VERSION="0.1.2"
 
 # Versão fixa da Evolution API. Mantenha em sincronia com EVOLUTION_IMAGE em
 # encha-setup-panel/src/lib/stacks/evolution.ts.
@@ -1335,6 +1335,21 @@ validar_usuario() {
     fi
 
     return 0
+}
+
+# Valida um domínio/subdomínio (FQDN) antes de usá-lo em labels do Traefik
+# (Host(`$dominio`)). Mesmo regex já usado nos prompts de domínio do main.sh
+# — sem essa checagem, um valor malformado vai direto para o compose e só
+# quebra na hora de emitir o certificado ou rotear a requisição.
+validar_dominio() {
+    dominio=$1
+
+    if [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+        return 0
+    fi
+
+    echo -e "\e[31m✖ Domínio inválido. Use um domínio/subdomínio válido, ex: crm.suaempresa.com\e[0m"
+    return 1
 }
 
 # O Portainer só cria o admin via --admin-password-file com o username fixo
@@ -12480,7 +12495,10 @@ ferramenta_enchat(){
 
   while true; do
     echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio do painel EnchaT (ex: crm.suaempresa.com): \e[0m" && read -r url_enchat
+    while true; do
+      echo -en "🔗 \e[33mDigite o domínio do painel EnchaT (ex: crm.suaempresa.com): \e[0m" && read -r url_enchat
+      validar_dominio "$url_enchat" && break
+    done
     echo ""
     echo -e "\n📍 Passo 2/3"
     echo -en "🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m" && read -r versao_enchat

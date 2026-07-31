@@ -100,7 +100,7 @@ export default function LoginPage() {
           <div className="text-center lg:text-left space-y-1">
             <h2 className="text-2xl font-semibold text-foreground">Bem-vindo</h2>
             <p className="text-sm text-muted-foreground">
-              Entre com suas credenciais do Portainer
+              Entre com o admin do painel definido na instalação
             </p>
           </div>
 

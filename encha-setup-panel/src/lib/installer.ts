@@ -10,7 +10,7 @@ import {
   pullImageWithRegistry,
   type Stack,
 } from "./portainer";
-import { ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
+import { RegistryAuthError, ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
 import { ensureHostDirs } from "./host-dirs";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
@@ -176,13 +176,26 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
           await pullImageWithRegistry(input.token, endpointId, img, registryId);
         }
       } catch (e) {
+        // RegistryAuthError carrega a causa estruturada (reason/httpStatus/
+        // serverDetail) — grava tudo no audit em vez de só a mensagem final,
+        // pra dar pra distinguir depois "chave errada" de "Console fora do
+        // ar" sem precisar reproduzir o problema. Nunca inclui a chave nem
+        // o token (RegistryAuthError já não os captura em lugar nenhum).
+        const meta: Record<string, unknown> = {
+          error: e instanceof Error ? e.message : "Erro desconhecido",
+        };
+        if (e instanceof RegistryAuthError) {
+          meta.reason = e.reason;
+          if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
+          if (e.serverDetail !== undefined) meta.serverDetail = e.serverDetail;
+        }
         logAudit({
           user: input.user,
           ip: input.ip,
           action: "registry.auth.fail",
           target: def.registryAuth.registryHost,
           result: "error",
-          meta: { error: e instanceof Error ? e.message : "Erro desconhecido" },
+          meta,
         });
         throw e;
       }

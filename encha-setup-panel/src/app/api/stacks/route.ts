@@ -5,7 +5,7 @@ import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { installStack, listInstalledStacks } from "@/lib/installer";
 import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
-import { expectedStackNames } from "@/lib/stacks/types";
+import { expectedStackNames, isStackReady } from "@/lib/stacks/types";
 import { computePendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -60,7 +60,7 @@ export async function GET() {
   const catalogPayload = catalog.map((s) => {
     const expected = expectedStackNames(s);
     const present = expected.every((n) => installedNames.has(n));
-    const ready = present && expected.every((n) => statusByName.get(n)?.ready ?? false);
+    const ready = isStackReady(s, installedNames, statusByName);
     // Só oferece atualização quando a stack já subiu por completo — trocar a
     // imagem no meio de um deploy ainda em andamento só embaralharia o estado.
     const pendingUpdates = ready ? computePendingUpdates(s, swarmStatuses) : [];
@@ -151,7 +151,10 @@ export async function POST(req: NextRequest) {
   const def = getStack(parsed.data.stackId);
   if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
 
-  // Idempotência: se já está deployado, retorna 409
+  // Idempotência (já instalada?) e dependsOn (pré-requisitos prontos?) — o
+  // stack-card.tsx já desabilita o botão nesses casos, mas isso é só UI:
+  // nada impede um POST direto pulando a checagem. Reusa a mesma consulta ao
+  // Portainer para os dois, então não sai chamada extra por causa disso.
   try {
     const { endpointId } = await discoverContext(token);
     const swarmStatuses = await listSwarmStackStatuses(token, endpointId);
@@ -163,8 +166,22 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+
+    const statusByName = new Map(swarmStatuses.map((s) => [s.name, s]));
+    for (const depId of def.dependsOn) {
+      const depDef = getStack(depId);
+      // dependência desconhecida no catálogo: não há como validar, ignora
+      // (não deveria acontecer — dependsOn deve sempre apontar pra um id real)
+      if (!depDef) continue;
+      if (!isStackReady(depDef, present, statusByName)) {
+        return NextResponse.json(
+          { error: `Dependência pendente: instale "${depDef.name}" antes de "${def.name}".` },
+          { status: 409 }
+        );
+      }
+    }
   } catch (e) {
-    console.warn("[api/stacks] pre-deploy idempotency check falhou:", e);
+    console.warn("[api/stacks] pre-deploy idempotency/dependsOn check falhou:", e);
     // Se não conseguir verificar, prossegue com a instalação (Portainer dará erro se duplicado)
   }
 

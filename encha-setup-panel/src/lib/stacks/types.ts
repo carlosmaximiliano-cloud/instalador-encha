@@ -116,6 +116,20 @@ export function expectedStackNames(def: StackDefinition): string[] {
   return def.swarmStackNames ?? [def.id.replace(/-/g, "_")];
 }
 
+// "Pronta" = todos os serviços esperados existem E estão com running>=desired.
+// Compartilhado entre GET /api/stacks (monta o catálogo) e POST /api/stacks
+// (valida dependsOn antes de instalar) — mesma definição nos dois lugares,
+// para não divergir sobre o que conta como "dependência satisfeita".
+export function isStackReady(
+  def: StackDefinition,
+  installedNames: Set<string>,
+  statusByName: Map<string, { ready: boolean }>
+): boolean {
+  const expected = expectedStackNames(def);
+  const present = expected.every((n) => installedNames.has(n));
+  return present && expected.every((n) => statusByName.get(n)?.ready ?? false);
+}
+
 export const fqdn = z
   .string()
   .min(3)

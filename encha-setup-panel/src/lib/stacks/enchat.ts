@@ -29,6 +29,23 @@ export const enchat: StackDefinition = {
   installVia: "panel",
   hostDirs: ["/var/enchat/media", "/var/enchat/postgres"],
   transientFields: ["chave_licenca"],
+  // Sem `updatableImages` DE PROPÓSITO — não é omissão, é decisão. Três
+  // motivos reais impedem um botão de update in-place funcionar hoje:
+  //   1. updateServiceImage() (portainer.ts) não manda X-Registry-Auth; só o
+  //      pré-pull do install (pullImageWithRegistry, usado em installer.ts)
+  //      é autenticado. Um update trocaria a imagem sem credencial —
+  //      enchat_app/enchat_pinfy ficariam presas em "pending" sem erro claro.
+  //   2. `chave_licenca` é transientField e nunca é persistida (decisão de
+  //      segurança). No momento do update não há como refazer o exchange, e
+  //      o token GHCR já registrado no Portainer é de curta duração.
+  //   3. A versão do enchat_app vem do formulário (`versao_enchat`), mas
+  //      `updatableImages` é uma constante estática — colidiria com "use
+  //      exatamente a versão indicada no portal EnchaT" do próprio helpText.
+  // Para habilitar: dar suporte a registry auth no caminho de update (pedir
+  // a chave de novo num modal dedicado, refazer o exchange, então
+  // pullImageWithRegistry antes do updateServiceImage) — não só declarar o
+  // campo. Ver plano "Correções dos achados da validação e2e" no histórico.
+
   registryAuth: {
     registryHost: "ghcr.io",
     registryName: "GHCR EnchaT",
