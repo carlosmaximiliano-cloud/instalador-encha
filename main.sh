@@ -2,12 +2,12 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com encha-setup-panel/src/lib/version.ts
 # e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
-ENCHA_VERSION="0.1.0"
+ENCHA_VERSION="0.1.1"
 
 # Versão e URL dos Termos de Uso (texto integral em legal/TERMOS-DE-USO.md).
 # Ao publicar uma revisão material do texto, atualize TERMS_VERSION em conjunto
 # com a versão publicada em /admin/setup/terms no Monitor — os dois precisam bater.
-TERMS_VERSION="1"
+TERMS_VERSION="2"
 TERMS_URL="https://encha.ai/termos"
 
 # Redireciona stdin para o terminal — necessário quando o script é executado
@@ -172,20 +172,20 @@ centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═════�
     echo -e "${amarelo}comunidade a instalar suas aplicações na própria VPS. O uso é facultativo —${reset}"
     echo -e "${amarelo}existem outras opções no mercado, como Orion e EasyPanel.${reset}"
     echo ""
+    echo -e "${vermelho}${negrito}⚠⚠⚠ Cupom de desconto: ${reset}${amarelo}acesse ${ciano}hostinger.com.br/encha${amarelo} e use o${reset}"
+    echo -e "${amarelo}cupom ${negrito}ENCHA${reset}${amarelo} e veja o quanto você economiza na sua nova VPS ⚠⚠⚠${reset}"
+    echo ""
     echo -e "${ciano}${negrito}O QUE ESTE INSTALADOR VAI FAZER NA SUA VPS:${reset}"
     echo -e "${amarelo} • Rodar 'apt upgrade' no sistema inteiro, como root${reset}"
     echo -e "${amarelo} • Trocar o hostname e editar o /etc/hosts do servidor${reset}"
-    echo -e "${amarelo} • Instalar Docker, iniciar o Swarm e abrir as portas 80 e 443${reset}"
+    echo -e "${amarelo} • Instalar Docker, iniciar o Swarm e abrir as portas 80 e 443 — necessárias${reset}"
+    echo -e "${amarelo}   para a comunicação externa. Se você instalar outras stacks, elas podem${reset}"
+    echo -e "${amarelo}   abrir portas adicionais obrigatórias — consulte a documentação de cada uma.${reset}"
     echo -e "${amarelo} • Emitir certificado SSL (Let's Encrypt), enviando seu e-mail a ela${reset}"
-    echo ""
-    echo -e "${vermelho}${negrito}O QUE ELE NÃO FAZ (fica por sua conta):${reset}"
-    echo -e "${amarelo} • NÃO configura firewall, NÃO cria swap, NÃO faz backup${reset}"
-    echo -e "${amarelo} • Senhas e API keys geradas ficam em TEXTO PURO em /root/dados_vps/${reset}"
-    echo -e "${amarelo} • Algumas stacks abrem portas extras no host (ex.: 3306, 27017)${reset}"
     echo ""
     echo -e "${amarelo}Fornecido \"no estado em que se encontra\", sem garantia. Use uma VPS nova${reset}"
     echo -e "${amarelo}ou faça backup antes. Termos completos: ${ciano}${TERMS_URL}${amarelo} (versão ${TERMS_VERSION}).${reset}"
-    echo -e "${amarelo}Script original da ${ciano}OrionDesign${amarelo}, refatorado pela ${verde}Encha AI${amarelo}.${reset}"
+    echo -e "${amarelo}Script original da ${ciano}OrionDesign${amarelo}, melhorado pela ${verde}Encha LTDA${amarelo}.${reset}"
     echo ""
 
     while true; do
@@ -573,14 +573,11 @@ coletar_inputs_instalacao() {
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
 
-    # 6) Usuário admin do painel — identidade separada da do Portainer.
-    echo -e "${amarelo}--> Mesmas regras do usuário do Portainer, mas precisa ser diferente dele.${reset}"
+    # 6) Usuário admin do painel — identidade separada da do Portainer (pode
+    #    repetir o mesmo usuário, se o operador preferir).
+    echo -e "${amarelo}--> Mesmas regras do usuário do Portainer.${reset}"
     while true; do
         echo -ne "${ciano}6/7 Usuário admin do Painel: ${reset}" && read -r user_painel
-        if [[ "$user_painel" == "$user_portainer" ]]; then
-            echo -e "${vermelho}✖ Use um usuário diferente do Portainer.${reset}"
-            continue
-        fi
         if type validar_usuario &> /dev/null; then
             validar_usuario "$user_painel" && break
         else
@@ -593,10 +590,6 @@ coletar_inputs_instalacao() {
     while true; do
         echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
         echo -ne "${ciano}7/7 Senha admin do Painel: ${reset}" && read -rs pass_painel && echo ""
-        if [[ "$pass_painel" == "$pass_portainer" ]]; then
-            echo -e "${vermelho}✖ Use uma senha diferente do Portainer.${reset}"
-            continue
-        fi
         if type validar_senha &> /dev/null; then
             validar_senha "$pass_painel" 12 && break
         elif [[ ${#pass_painel} -ge 12 ]] \

@@ -1,6 +1,6 @@
 # TERMOS DE USO — ENCHA SETUP E ENCHA SETUP PANEL
 
-**Versão 1 — vigente desde 28 de julho de 2026.**
+**Versão 2 — vigente desde 31 de julho de 2026.**
 
 Este documento é o instrumento que rege o uso do **Encha Setup** (instalador) e do **Encha Setup Panel** (painel de gerenciamento, também referido como "Monitor" ou "painel"), ambos **cedidos gratuitamente** pela ENCHA LTDA à comunidade.
 
@@ -108,7 +108,7 @@ Para os fins deste instrumento, os termos abaixo têm o significado que lhes é 
 - Verificação de disponibilidade de novas versões e acionamento manual da rotina de atualização.
 - Exibição de conteúdo publicitário, na forma da Cláusula 15.
 
-5.2. **Autenticação.** O acesso ao Painel é autenticado com as credenciais da interface de gerenciamento de contêineres instalada no servidor. **O Painel não possui base de usuários própria e não armazena a senha do Usuário.** A sessão é mantida em cookie cifrado, estritamente necessário ao funcionamento, com prazo de validade limitado.
+5.2. **Autenticação.** O acesso ao Painel é feito com uma conta administrativa própria do Painel, cujo usuário e senha são definidos pelo Usuário no momento da instalação. Essa credencial fica gravada em variável de ambiente da própria stack do Painel, **em texto não cifrado** — exceção ao regime da Cláusula 5.4, adotada deliberadamente para que o Usuário possa consultar ou redefinir essa senha, caso a esqueça, pela interface de gerenciamento de contêineres do servidor. Para atuar em nome do Usuário perante essa mesma interface (Cláusula 5.3), o Painel guarda, do mesmo modo, uma credencial de serviço dela. A sessão do Usuário no Painel é mantida em cookie cifrado, estritamente necessário ao funcionamento, com prazo de validade limitado.
 
 5.3. **Nível de privilégio.** O Usuário reconhece e aceita expressamente que, embora o Painel não receba acesso direto ao soquete de controle da plataforma de contêineres, **ele atua no servidor por procuração, valendo-se da interface de programação da ferramenta de gerenciamento de contêineres e das credenciais do próprio Usuário**. Por essa via, o Painel é capaz de criar e remover contêineres, obter imagens, executar comandos em contêineres em funcionamento e, na rotina de atualização, **executar contêiner auxiliar com privilégio de superusuário e com o diretório administrativo do servidor acessível para escrita**. **Em termos práticos, quem detém acesso ao Painel detém, por transitividade, privilégio equivalente ao de administrador do servidor.**
 
@@ -398,7 +398,7 @@ O Usuário obriga-se, sob sua exclusiva responsabilidade, a observar o disposto 
 
 ## 25. VIGÊNCIA
 
-25.1. Estes Termos correspondem à **versão 1** e vigoram a partir de **28 de julho de 2026**, por prazo indeterminado, enquanto perdurar o uso dos Produtos pelo Usuário.
+25.1. Estes Termos correspondem à **versão 2** e vigoram a partir de **31 de julho de 2026**, por prazo indeterminado, enquanto perdurar o uso dos Produtos pelo Usuário.
 
 25.2. Esta versão corresponde integralmente ao texto publicado nos canais oficiais da Encha e ao texto exibido no Painel para fins de aceite.
 
@@ -476,3 +476,4 @@ As senhas e chaves de aplicação geradas durante a instalação são gravadas e
 ## ANEXO III — HISTÓRICO DE VERSÕES
 
 - **Versão 1** — vigente desde 28 de julho de 2026. Primeira versão integral destes Termos de Uso, substituindo o texto provisório anteriormente publicado sob a mesma identificação de versão.
+- **Versão 2** — vigente desde 31 de julho de 2026. Atualiza a Cláusula 5.2: o Painel passa a ter conta administrativa própria (usuário e senha definidos pelo Usuário na instalação, gravados em texto não cifrado na variável de ambiente da stack), além de guardar credencial de serviço da interface de gerenciamento de contêineres para atuar em nome do Usuário.

@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.1.0"
+ENCHA_VERSION="0.1.1"
 
 # Versão fixa da Evolution API. Mantenha em sincronia com EVOLUTION_IMAGE em
 # encha-setup-panel/src/lib/stacks/evolution.ts.
@@ -2604,7 +2604,12 @@ Dominio: https://$url_portainer
 Usuario: Criar manualmente.
 EOL
   fi
-  chmod 700 /root/dados_vps 2>/dev/null
+  # NÃO usar 700 no diretório: o container do painel roda como uid 1001
+  # (não-root) e bind-monta /root/dados_vps inteiro em /app/vps-context — sem
+  # permissão de travessia (x) para "outros", ele fica sem conseguir ler nem
+  # o dados_vps (que não tem nada sensível). 755 no diretório + 600 só no
+  # arquivo sensível dá o mesmo ganho de segurança sem quebrar o painel.
+  chmod 755 /root/dados_vps 2>/dev/null
   chmod 600 /root/dados_vps/dados_portainer 2>/dev/null
   user_portainer="$USER_PORTAINER_FINAL"
   cd; cd
@@ -18460,7 +18465,9 @@ Dominio: https://$url_portainer
 Usuario: Criar manualmente.
 EOL
   fi
-  chmod 700 /root/dados_vps 2>/dev/null
+  # Ver o comentário equivalente em ferramenta_traefik_e_portainer — 700 no
+  # diretório quebra a leitura do painel (container roda como uid 1001).
+  chmod 755 /root/dados_vps 2>/dev/null
   chmod 600 /root/dados_vps/dados_portainer 2>/dev/null
   cd; cd
 
@@ -20586,6 +20593,10 @@ ferramenta_encha_panel() {
 
     # 3) Diretório dados_vps (bind-mount read-only do painel)
     mkdir -p /root/dados_vps
+    # Auto-corrige VPS que ficaram com 700 no diretório (bug de instalações
+    # 0.1.0): o container roda como uid 1001 e precisa de travessia (x) para
+    # ler /app/vps-context, mesmo sem poder ler dados_portainer (600).
+    chmod 755 /root/dados_vps 2>/dev/null
 
     # 4) Obter imagem (pull com fallback para build local)
     # Se o pull anônimo falhar (pacote privado no GHCR, rede fora, versão
