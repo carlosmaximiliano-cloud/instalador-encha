@@ -58,8 +58,20 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
 
   const groups = Array.from(new Set(stack.fields.map((f) => f.group ?? "Configuração")));
 
-  async function onSubmit(values: Record<string, unknown>) {
+  async function onSubmit(rawValues: Record<string, unknown>) {
     setState({ kind: "installing" });
+    // Campos opcionais deixados em branco chegam como "" (default do form),
+    // não undefined — e "" falha validação de z.string().email().optional()
+    // ou z.coerce.number().optional() no schema da stack (email vira
+    // "Invalid email", port vira "Number must be greater than or equal to
+    // 1", mesmo sendo opcional). JSON.stringify omite chaves `undefined`,
+    // então convertê-las aqui faz o campo realmente sumir do payload.
+    const values = { ...rawValues };
+    for (const f of stack.fields) {
+      if (f.optional && values[f.name] === "") {
+        values[f.name] = undefined;
+      }
+    }
     try {
       const res = await fetch("/api/stacks", {
         method: "POST",
