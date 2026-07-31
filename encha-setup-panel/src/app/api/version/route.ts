@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { fetchLatestVersion } from "@/lib/monitor";
 import { APP_VERSION, compareSemver } from "@/lib/version";
+import { getLocalAdmin } from "@/lib/auth/local-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,10 @@ export async function GET() {
       releaseUrl: release?.release_url ?? null,
       releaseNotesHtml: release?.release_notes_html ?? null,
       publishedAt: release?.published_at ?? null,
+      // "local" = admin próprio do painel (PANEL_ADMIN_USER); "portainer" =
+      // login em passthrough direto para o Portainer (instalações antigas).
+      // Exposto para o suporte identificar o modo sem precisar de SSH.
+      authMode: getLocalAdmin() ? "local" : "portainer",
     },
     { headers: { "Cache-Control": "private, max-age=300" } }
   );

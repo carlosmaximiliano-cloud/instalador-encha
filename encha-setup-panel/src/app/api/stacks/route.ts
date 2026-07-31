@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { readSession } from "@/lib/session";
+import { requireSessionToken } from "@/lib/auth/require-token";
 import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { installStack, listInstalledStacks } from "@/lib/installer";
 import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
@@ -20,20 +20,21 @@ const installSchema = z.object({
 });
 
 export async function GET() {
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const auth = await requireSessionToken();
+  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { token } = auth;
 
   const catalog = getPublicCatalog();
   let portainerOnline = true;
 
   const [installed, swarmStatuses] = await Promise.all([
-    listInstalledStacks(session.jwt).catch((err) => {
+    listInstalledStacks(token).catch((err) => {
       portainerOnline = false;
       console.error("[api/stacks] Falha listando stacks do Portainer:", err);
       return [];
     }),
-    discoverContext(session.jwt)
-      .then(({ endpointId }) => listSwarmStackStatuses(session.jwt, endpointId))
+    discoverContext(token)
+      .then(({ endpointId }) => listSwarmStackStatuses(token, endpointId))
       .catch((err) => {
         portainerOnline = false;
         console.error("[api/stacks] Falha listando serviços Docker:", err);
@@ -122,8 +123,9 @@ export async function POST(req: NextRequest) {
   if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
   if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
 
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const auth = await requireSessionToken();
+  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { session, token } = auth;
 
   let body: unknown;
   try {
@@ -151,8 +153,8 @@ export async function POST(req: NextRequest) {
 
   // Idempotência: se já está deployado, retorna 409
   try {
-    const { endpointId } = await discoverContext(session.jwt);
-    const swarmStatuses = await listSwarmStackStatuses(session.jwt, endpointId);
+    const { endpointId } = await discoverContext(token);
+    const swarmStatuses = await listSwarmStackStatuses(token, endpointId);
     const present = new Set(swarmStatuses.map((s) => s.name));
     const expected = expectedStackNames(def);
     if (expected.every((n) => present.has(n))) {
@@ -170,7 +172,7 @@ export async function POST(req: NextRequest) {
     stackId: parsed.data.stackId,
     values: parsed.data.values,
     swarmCtx: parsed.data.swarmCtx,
-    token: session.jwt,
+    token,
     user: session.user,
     ip,
   });

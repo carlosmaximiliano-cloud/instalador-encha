@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { encryptSecret, decryptSecret } from "./crypto";
+import { isJwtExpired } from "./jwt";
 
 const SESSION_COOKIE = "__Host-encha_session";
 const CSRF_COOKIE = "__Host-encha_csrf";
@@ -7,8 +8,13 @@ const MAX_AGE_SECONDS = 8 * 60 * 60;
 
 export type Session = {
   user: string;
-  jwt: string;
+  // Ausente no modo "local" (admin próprio do painel) — o token do Portainer
+  // é obtido sob demanda com as credenciais de serviço (ver
+  // src/lib/auth/require-token.ts). Presente no modo legado "portainer", em
+  // que o login é um proxy direto para o Portainer.
+  jwt?: string;
   exp: number;
+  mode?: "local" | "portainer";
 };
 
 const isProd = process.env.NODE_ENV === "production";
@@ -29,17 +35,6 @@ export async function createSession(s: Session): Promise<void> {
   c.set(SESSION_COOKIE, blob, cookieOpts(MAX_AGE_SECONDS));
 }
 
-function isJwtExpired(jwt: string): boolean {
-  try {
-    const parts = jwt.split(".");
-    if (parts.length !== 3) return true;
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-    return typeof payload.exp === "number" && payload.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
-}
-
 export async function readSession(): Promise<Session | null> {
   const c = await cookies();
   const v = c.get(SESSION_COOKIE)?.value;
@@ -47,7 +42,9 @@ export async function readSession(): Promise<Session | null> {
   try {
     const s = JSON.parse(decryptSecret(v)) as Session;
     if (s.exp < Date.now()) return null;
-    if (isJwtExpired(s.jwt)) return null;
+    // Sessões no modo local não carregam jwt — nada a checar aqui; o token
+    // de serviço tem seu próprio ciclo de vida (ver getServiceToken).
+    if (s.jwt && isJwtExpired(s.jwt)) return null;
     return s;
   } catch {
     return null;

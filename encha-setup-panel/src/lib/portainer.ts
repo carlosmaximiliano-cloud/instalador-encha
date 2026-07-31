@@ -1,4 +1,6 @@
 import { Agent, fetch as undiciFetch, FormData, File } from "undici";
+import { readFileSync } from "node:fs";
+import { jwtExpiryMs } from "./jwt";
 
 const PORTAINER_URL = process.env.PORTAINER_URL ?? "http://portainer:9000";
 const TLS_INSECURE =
@@ -87,12 +89,14 @@ export class PortainerError extends Error {
 export type AuthResult = { jwt: string };
 export type Endpoint = { Id: number; Name: string; Type: number };
 export type SwarmInfo = { ID: string };
+export type StackEnvVar = { name: string; value: string };
 export type Stack = {
   Id: number;
   Name: string;
   EndpointId: number;
   Status: number;
   CreationDate: number;
+  Env?: StackEnvVar[];
 };
 
 export async function authenticate(username: string, password: string): Promise<string> {
@@ -101,6 +105,71 @@ export async function authenticate(username: string, password: string): Promise<
     body: { username, password },
   });
   return r.jwt;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Token de serviço — usado quando o painel tem admin local próprio
+// (PANEL_ADMIN_USER setado, ver src/lib/auth/local-admin.ts). Em vez de
+// carregar o JWT do usuário logado na sessão, o painel se autentica sozinho
+// no Portainer com PORTAINER_USER/PORTAINER_PASSWORD e reaproveita esse
+// token entre requisições até perto de expirar. Ver src/lib/auth/require-token.ts.
+// ─────────────────────────────────────────────────────────────────────────
+
+let cachedServiceToken: { jwt: string; expMs: number } | null = null;
+let inflightServiceAuth: Promise<string> | null = null;
+
+const SERVICE_TOKEN_SAFETY_MARGIN_MS = 60_000;
+const SERVICE_TOKEN_DEFAULT_TTL_MS = 30 * 60_000;
+
+export function invalidateServiceToken(): void {
+  cachedServiceToken = null;
+}
+
+async function authenticateService(): Promise<string> {
+  const user = process.env.PORTAINER_USER;
+  const passwordFile = process.env.PORTAINER_PASSWORD_FILE;
+  const password = passwordFile
+    ? readFileSync(passwordFile, "utf8").trim()
+    : process.env.PORTAINER_PASSWORD;
+  if (!user || !password) {
+    throw new PortainerError(
+      503,
+      "Credenciais de serviço do Portainer ausentes (PORTAINER_USER/PORTAINER_PASSWORD)"
+    );
+  }
+  const jwt = await authenticate(user, password);
+  const expMs = jwtExpiryMs(jwt) ?? Date.now() + SERVICE_TOKEN_DEFAULT_TTL_MS;
+  cachedServiceToken = { jwt, expMs };
+  return jwt;
+}
+
+export async function getServiceToken(): Promise<string> {
+  if (cachedServiceToken && Date.now() < cachedServiceToken.expMs - SERVICE_TOKEN_SAFETY_MARGIN_MS) {
+    return cachedServiceToken.jwt;
+  }
+  if (inflightServiceAuth) return inflightServiceAuth;
+  inflightServiceAuth = authenticateService().finally(() => {
+    inflightServiceAuth = null;
+  });
+  return inflightServiceAuth;
+}
+
+// Executa `fn` com o token de serviço, e tenta de novo UMA vez com token
+// fresco se a chamada falhar por expiração/rejeição (401/403) — necessário
+// porque operações longas (install de stack, pull de imagem) podem
+// atravessar a expiração do JWT.
+export async function withServiceToken<T>(fn: (token: string) => Promise<T>): Promise<T> {
+  const token = await getServiceToken();
+  try {
+    return await fn(token);
+  } catch (e) {
+    if (e instanceof PortainerError && (e.status === 401 || e.status === 403)) {
+      invalidateServiceToken();
+      const fresh = await getServiceToken();
+      return fn(fresh);
+    }
+    throw e;
+  }
 }
 
 export async function listEndpoints(token: string): Promise<Endpoint[]> {
@@ -113,6 +182,10 @@ export async function getSwarm(token: string, endpointId: number): Promise<Swarm
 
 export async function listStacks(token: string): Promise<Stack[]> {
   return call<Stack[]>("/api/stacks", { token });
+}
+
+export async function getStackById(token: string, id: number): Promise<Stack> {
+  return call<Stack>(`/api/stacks/${id}`, { token });
 }
 
 export async function deploySwarmStack(args: {
@@ -131,6 +204,38 @@ export async function deploySwarmStack(args: {
     method: "POST",
     token: args.token,
     formData: fd,
+  });
+}
+
+// Compose armazenado de uma stack criada/gerenciada pela API do Portainer
+// (GET /api/stacks/{id}/file). Usado pelo self-update do painel para
+// patchear PANEL_IMAGE_TAG sem perder o resto do compose nem o Env
+// armazenado — ver src/lib/updater.ts.
+export async function getStackFile(token: string, id: number): Promise<string> {
+  const r = await call<{ StackFileContent: string }>(`/api/stacks/${id}/file`, { token });
+  return r.StackFileContent;
+}
+
+export async function updateSwarmStack(
+  token: string,
+  id: number,
+  endpointId: number,
+  args: {
+    stackFileContent: string;
+    env: Array<{ name: string; value: string }>;
+    prune?: boolean;
+    pullImage?: boolean;
+  }
+): Promise<Stack> {
+  return call<Stack>(`/api/stacks/${id}?endpointId=${endpointId}`, {
+    method: "PUT",
+    token,
+    body: {
+      StackFileContent: args.stackFileContent,
+      Env: args.env,
+      Prune: args.prune ?? false,
+      PullImage: args.pullImage ?? true,
+    },
   });
 }
 
@@ -362,6 +467,37 @@ export async function ensurePostgresDatabase(
 
   if (exitCode !== 0) {
     throw new PortainerError(500, `Falha ao criar banco '${dbName}': ${output || `exit code ${exitCode}`}`);
+  }
+}
+
+// Garante uma extensão num banco do Postgres compartilhado — idempotente
+// (CREATE EXTENSION IF NOT EXISTS). Chamado depois de ensurePostgresDatabase
+// para o mesmo banco. Mesma validação de dbName; extension passa pelo mesmo
+// regex (nomes de extensão do Postgres também são identificadores simples) —
+// nunca interpolar input de usuário aqui sem essa checagem.
+export async function ensurePostgresExtension(
+  token: string,
+  endpointId: number,
+  dbName: string,
+  extension: string
+): Promise<void> {
+  if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
+    throw new Error(`Nome de banco inválido: "${dbName}"`);
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(extension)) {
+    throw new Error(`Nome de extensão inválido: "${extension}"`);
+  }
+
+  const containerId = await waitForRunningContainer(token, endpointId, POSTGRES_SERVICE_NAME);
+
+  const sql = `psql -U postgres -d ${dbName} -c "CREATE EXTENSION IF NOT EXISTS ${extension}"`;
+  const { exitCode, output } = await dockerExec(token, endpointId, containerId, ["sh", "-c", sql]);
+
+  if (exitCode !== 0) {
+    throw new PortainerError(
+      500,
+      `Falha ao criar extensão '${extension}' no banco '${dbName}': ${output || `exit code ${exitCode}`}`
+    );
   }
 }
 

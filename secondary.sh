@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.0.6"
+ENCHA_VERSION="0.1.0"
 
 # Versão fixa da Evolution API. Mantenha em sincronia com EVOLUTION_IMAGE em
 # encha-setup-panel/src/lib/stacks/evolution.ts.
@@ -1304,6 +1304,91 @@ validar_senha() {
     return 0
 }
 
+# Valida um nome de usuário (Portainer admin, admin do painel). Evita
+# defaults previsíveis como "admin" — se um atacante já sabe o usuário, só
+# falta adivinhar a senha, o que reduz a segurança pela metade.
+validar_usuario() {
+    usuario=$1
+    tem_erro=0
+    mensagem_erro=""
+
+    if [ ${#usuario} -lt 4 ] || [ ${#usuario} -gt 40 ]; then
+        mensagem_erro+="\n❌ O usuário precisa ter entre 4 e 40 caracteres."
+        tem_erro=1
+    fi
+
+    if ! [[ $usuario =~ ^[a-z][a-z0-9_-]*$ ]]; then
+        mensagem_erro+="\n🔡 Use apenas letras minúsculas, números, _ ou -, começando com uma letra."
+        tem_erro=1
+    fi
+
+    case "${usuario,,}" in
+        admin|administrator|root|portainer|user|test|encha)
+            mensagem_erro+="\n⚠️ Esse usuário é previsível demais (\"$usuario\") — escolha outro."
+            tem_erro=1
+            ;;
+    esac
+
+    if [ $tem_erro -eq 1 ]; then
+        echo -e "\e[31mUsuário inválido. Veja o que precisa ajustar:$mensagem_erro\e[0m"
+        return 1
+    fi
+
+    return 0
+}
+
+# O Portainer só cria o admin via --admin-password-file com o username fixo
+# "admin" (limitação da flag). Para aplicar um usuário customizado, o
+# bootstrap continua como "admin" e este helper renomeia o userID 1 logo
+# depois, via PUT /api/users/1 — isso não mexe no hash da senha nem invalida
+# o JWT (ele carrega o userID, não o nome). Se a renomeação falhar de forma
+# persistente, mantém "admin" e avisa — NUNCA aborta a instalação por causa
+# disso.
+#
+# Uso: renomear_admin_portainer_se_necessario <rede> <usuario_alvo> <senha> <token_admin>
+# Efeitos: define USER_PORTAINER_FINAL e TOKEN_PORTAINER_FINAL (globais).
+renomear_admin_portainer_se_necessario() {
+    local rede="$1" alvo="$2" senha="$3" token_admin="$4"
+    USER_PORTAINER_FINAL="admin"
+    TOKEN_PORTAINER_FINAL="$token_admin"
+
+    if [ -z "$alvo" ] || [ "$alvo" = "admin" ] || [ -z "$token_admin" ]; then
+        return 0
+    fi
+
+    local ok=false http
+    for _ in 1 2 3 4 5; do
+        http=$(sudo docker run --rm --network "$rede" curlimages/curl:latest \
+            -s -o /dev/null -w "%{http_code}" -X PUT \
+            -H "Authorization: Bearer $token_admin" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg u "$alvo" '{Username:$u}')" \
+            http://portainer_portainer:9000/api/users/1 2>/dev/null)
+        [ "$http" = "200" ] && { ok=true; break; }
+        sleep 3
+    done
+
+    if [ "$ok" != true ]; then
+        echo -e "\e[33m⚠️  Não foi possível renomear o admin do Portainer para \"$alvo\" (HTTP $http) — mantendo \"admin\".\e[0m"
+        return 0
+    fi
+
+    local novo_token
+    novo_token=$(sudo docker run --rm --network "$rede" curlimages/curl:latest \
+        -s -X POST http://portainer_portainer:9000/api/auth \
+        -H "Content-Type: application/json" \
+        -d "$(jq -nc --arg u "$alvo" --arg p "$senha" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+
+    if [ -n "$novo_token" ] && [ "$novo_token" != "null" ]; then
+        USER_PORTAINER_FINAL="$alvo"
+        TOKEN_PORTAINER_FINAL="$novo_token"
+        echo -e "\e[32m✅ Admin do Portainer renomeado para \"$alvo\".\e[0m"
+    else
+        echo -e "\e[33m⚠️  Renomeado para \"$alvo\", mas falha ao reautenticar — usando token antigo.\e[0m"
+        USER_PORTAINER_FINAL="$alvo"
+    fi
+}
+
 
 
 wait_stack() {
@@ -2120,13 +2205,21 @@ ferramenta_traefik_e_portainer() {
       echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
       echo ""
       echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-      user_portainer="admin"
-      echo -e "\e[33mUsuário do Portainer: \e[97madmin\e[33m (padrão)\e[0m"
+      echo -e "\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+      while true; do
+        echo -ne "\e[36mUsuário do Portainer: \e[0m" && read -r user_portainer
+        if type validar_usuario &> /dev/null; then
+          validar_usuario "$user_portainer" && break
+        else
+          [[ "$user_portainer" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_portainer,,}" != "admin" ]] && break
+          echo -e "\e[31m✖ Usuário inválido.\e[0m"
+        fi
+      done
       echo ""
       while true; do
         echo -e "Passo \e[33m3/6\e[0m 🔐"
         echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-        echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
+        echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -rs pass_portainer && echo ""
         echo ""
         if type validar_senha &> /dev/null; then
           if validar_senha "$pass_portainer" 12; then break; fi
@@ -2155,6 +2248,25 @@ ferramenta_traefik_e_portainer() {
   fi
 
   # --- INSTALAÇÃO INTELIGENTE ---
+
+  # Guarda o usuário que o operador pediu — o bootstrap do Portainer abaixo
+  # só sabe criar "admin" (limitação do --admin-password-file). O usuário
+  # pedido é aplicado depois por renomeação (ver
+  # renomear_admin_portainer_se_necessario, chamada no bloco FINALIZANDO).
+  user_portainer_alvo="$user_portainer"
+
+  # Reinstalação sobre um 'portainer_data' já existente: o admin (e a senha)
+  # já foram criados numa instalação anterior e sobrevivem ao 'docker stack
+  # rm' (o volume é externo, preservado de propósito). Nem --admin-password-file
+  # nem a renomeação têm efeito num banco já inicializado — sinalizar aqui
+  # evita que dados_portainer seja gravado com credenciais que na prática não
+  # foram aplicadas.
+  PORTAINER_JA_INICIALIZADO=false
+  if sudo docker volume inspect portainer_data >/dev/null 2>&1; then
+    PORTAINER_JA_INICIALIZADO=true
+    echo -e "\e[33m⚠️  'portainer_data' já existe — o admin do Portainer de uma instalação anterior será preservado.\e[0m"
+    echo -e "\e[33m   As credenciais digitadas agora só serão aplicadas se baterem com as já existentes.\e[0m"
+  fi
 
   echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
   # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
@@ -2445,22 +2557,45 @@ EOL
     done
   fi
 
+  USER_PORTAINER_FINAL=""
+  TOKEN_PORTAINER_FINAL=""
+  CREDENCIAIS_APLICADAS=false
+
   if [ "$CONTA_CRIADA" = true ]; then
-    echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
     token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
       -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
-      -d "{\"username\":\"admin\",\"password\":\"$pass_portainer\"}" 2>/dev/null | jq -r .jwt)
+      -d "$(jq -nc --arg p "$pass_portainer" '{username:"admin",password:$p}')" 2>/dev/null | jq -r .jwt)
+
+    if [ -n "$token" ] && [ "$token" != "null" ]; then
+      echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+      CREDENCIAIS_APLICADAS=true
+      if [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
+        # Reinstalação: o admin "admin"/$pass_portainer já existia (senha
+        # bate com o que foi digitado agora) — não mexe no username, que
+        # pode já ter sido customizado numa instalação anterior.
+        USER_PORTAINER_FINAL="admin"
+        TOKEN_PORTAINER_FINAL="$token"
+      else
+        renomear_admin_portainer_se_necessario "$nome_rede_interna" "$user_portainer_alvo" "$pass_portainer" "$token"
+      fi
+    elif [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
+      # Reinstalação sobre admin pré-existente com credenciais diferentes
+      # das digitadas agora: as credenciais NÃO foram aplicadas. Não
+      # sobrescrever dados_portainer com informação enganosa.
+      echo -e "\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
+      echo -e "\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+    fi
   fi
 
   cd dados_vps
-  if [ "$CONTA_CRIADA" = true ]; then
+  if [ "$CREDENCIAIS_APLICADAS" = true ]; then
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: admin
+Usuario: $USER_PORTAINER_FINAL
 Senha: $pass_portainer
-Token: $token
+Token: $TOKEN_PORTAINER_FINAL
 EOL
   else
     cat > dados_portainer <<EOL
@@ -2469,6 +2604,9 @@ Dominio: https://$url_portainer
 Usuario: Criar manualmente.
 EOL
   fi
+  chmod 700 /root/dados_vps 2>/dev/null
+  chmod 600 /root/dados_vps/dados_portainer 2>/dev/null
+  user_portainer="$USER_PORTAINER_FINAL"
   cd; cd
 
   if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
@@ -17983,6 +18121,15 @@ instalar_traefik_e_portainer() {
 
   # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
+  # Guarda o usuário pedido — o bootstrap abaixo só sabe criar "admin"
+  # (limitação do --admin-password-file). Aplicado depois por renomeação.
+  local user_portainer_alvo="$user_portainer"
+  local PORTAINER_JA_INICIALIZADO=false
+  if sudo docker volume inspect portainer_data >/dev/null 2>&1; then
+    PORTAINER_JA_INICIALIZADO=true
+    echo -e "\e[33m⚠️  'portainer_data' já existe — o admin de uma instalação anterior será preservado.\e[0m"
+  fi
+
   echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
 
   # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
@@ -18273,23 +18420,38 @@ EOL
     done
   fi
 
+  local USER_PORTAINER_FINAL="" TOKEN_PORTAINER_FINAL="" CREDENCIAIS_APLICADAS=false
+
   if [ "$CONTA_CRIADA" = true ]; then
-    echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
     JSON_LOGIN=$(jq -n --arg p "$pass_portainer" '{username: "admin", password: $p}')
     token=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
       -s -X POST http://portainer_portainer:9000/api/auth \
       -H "Content-Type: application/json" \
       -d "$JSON_LOGIN" 2>/dev/null | jq -r .jwt)
+
+    if [ -n "$token" ] && [ "$token" != "null" ]; then
+      echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+      CREDENCIAIS_APLICADAS=true
+      if [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
+        USER_PORTAINER_FINAL="admin"
+        TOKEN_PORTAINER_FINAL="$token"
+      else
+        renomear_admin_portainer_se_necessario "$nome_rede_interna" "$user_portainer_alvo" "$pass_portainer" "$token"
+      fi
+    elif [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
+      echo -e "\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
+      echo -e "\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+    fi
   fi
 
   cd dados_vps
-  if [ "$CONTA_CRIADA" = true ]; then
+  if [ "$CREDENCIAIS_APLICADAS" = true ]; then
     cat > dados_portainer <<EOL
 [ PORTAINER ]
 Dominio: https://$url_portainer
-Usuario: admin
+Usuario: $USER_PORTAINER_FINAL
 Senha: $pass_portainer
-Token: $token
+Token: $TOKEN_PORTAINER_FINAL
 EOL
   else
     cat > dados_portainer <<EOL
@@ -18298,6 +18460,8 @@ Dominio: https://$url_portainer
 Usuario: Criar manualmente.
 EOL
   fi
+  chmod 700 /root/dados_vps 2>/dev/null
+  chmod 600 /root/dados_vps/dados_portainer 2>/dev/null
   cd; cd
 
 
@@ -19161,15 +19325,23 @@ instalar_ambiente_completo() {
     echo ""
 
     echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-    user_portainer="admin"
-    echo -e "\e[33mUsuário do Portainer: \e[97madmin\e[33m (padrão)\e[0m"
+    echo -e "\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+    while true; do
+      echo -ne "\e[36mUsuário do Portainer: \e[0m" && read -r user_portainer
+      if type validar_usuario &> /dev/null; then
+        validar_usuario "$user_portainer" && break
+      else
+        [[ "$user_portainer" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_portainer,,}" != "admin" ]] && break
+        echo -e "\e[31m✖ Usuário inválido.\e[0m"
+      fi
+    done
     echo ""
 
     while true; do
       echo -e "Passo \e[33m3/6\e[0m 🔐"
       echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
       echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
-      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r pass_portainer
+      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -rs pass_portainer && echo ""
       echo ""
 
       if validar_senha "$pass_portainer" 12; then
@@ -20140,20 +20312,15 @@ ferramenta_atualizar_painel() {
         return $?
     fi
 
-    # 3/4 — Redeploy: rolling update do service se ele existir; senão, redeploy completo.
-    echo -e "\e[97m• [3/4] Aplicando atualização no Swarm...\e[0m"
-    if docker service inspect encha-panel_panel >/dev/null 2>&1; then
-        if docker service update --image ghcr.io/enchaaluno/setup-panel:latest --force encha-panel_panel >/dev/null 2>&1; then
-            echo -e "  \e[32m✔ Service atualizado (rolling update)\e[0m"
-        else
-            echo -e "  \e[33m↳ Falha no update direto. Tentando redeploy completo...\e[0m"
-            ferramenta_encha_panel
-            return $?
-        fi
-    else
-        echo -e "  \e[33m↳ Service não encontrado. Fazendo deploy completo...\e[0m"
-        ferramenta_encha_panel
-        return $?
+    # 3/4 — Redeploy via API do Portainer (create-or-update, idempotente).
+    # NÃO usar mais `docker service update --image` aqui: a stack agora é
+    # gerenciada pelo Portainer (ver deploy_stack_painel_via_portainer), e um
+    # `service update` por fora deixaria o compose armazenado desatualizado —
+    # o próximo "Update the stack" clicado no Portainer reverteria a imagem
+    # silenciosamente. ferramenta_encha_panel já faz create-or-update.
+    echo -e "\e[97m• [3/4] Aplicando atualização via Portainer...\e[0m"
+    if ! ferramenta_encha_panel; then
+        return 1
     fi
 
     # 4/4 — Confirmação.
@@ -20196,6 +20363,180 @@ atualizar_fonte_painel() {
 }
 
 ################################################################################
+# deploy_stack_painel_via_portainer — cria/atualiza a stack `encha-panel` pela
+# API do Portainer (POST/PUT /api/stacks), em vez de `docker stack deploy`
+# direto no host. É isso que faz a stack aparecer em Stacks no Portainer com
+# compose e variáveis editáveis — o mecanismo por trás de "esqueceu a senha
+# do painel? edite PANEL_ADMIN_PASSWORD no Portainer e clique em Update the
+# stack" (ver mostrar_resumo_final em main.sh).
+#
+# $1 = caminho do docker-stack.yaml já resolvido (após envsubst da rede).
+#
+# Credenciais: usa $user_painel/$pass_painel (admin do painel) e
+# $user_portainer/$pass_portainer (credenciais de serviço que o painel usa
+# pra falar com o Portainer). Se estiverem vazias (chamada a partir de
+# "atualizar painel", sem passar pelo wizard completo), tenta: (a) ler
+# usuário/senha do Portainer de /root/dados_vps/dados_portainer; (b)
+# preservar os valores já gravados no Env da stack existente, para não
+# resetar a senha do admin do painel a cada atualização. Se mesmo assim
+# faltar algo pro primeiro deploy, aborta com uma mensagem clara em vez de
+# criar uma stack com admin vazio.
+################################################################################
+deploy_stack_painel_via_portainer() {
+    local stack_file="$1"
+    local rede="${nome_rede_interna:-enchanet}"
+
+    if ! command -v jq &> /dev/null; then
+        apt-get update -y > /dev/null 2>&1
+        apt-get install -y jq > /dev/null 2>&1
+    fi
+
+    # Fallback de credenciais de serviço: lê do arquivo gravado na instalação
+    # do Portainer, se não vierem em escopo (mesmo idioma de stack_editavel).
+    if [ -z "$user_portainer" ] || [ -z "$pass_portainer" ]; then
+        local arq="/root/dados_vps/dados_portainer"
+        if [ -f "$arq" ]; then
+            user_portainer=${user_portainer:-$(grep "Usuario: " "$arq" | awk -F"Usuario: " '{print $2}' | tr -d '\r')}
+            pass_portainer=${pass_portainer:-$(grep "Senha: " "$arq" | awk -F"Senha: " '{print $2}' | tr -d '\r')}
+        fi
+    fi
+    if [ -z "$user_portainer" ] || [ -z "$pass_portainer" ]; then
+        echo -e "  \e[31m✖ Credenciais de serviço do Portainer indisponíveis — não é possível deployar o painel via API.\e[0m"
+        return 1
+    fi
+
+    echo -e "  \e[97m↳ Aguardando API do Portainer...\e[0m"
+    local pronto=false
+    for _ in $(seq 1 20); do
+        code=$(docker run --rm --network "$rede" curlimages/curl:latest \
+            -s -o /dev/null -w "%{http_code}" http://portainer_portainer:9000/api/system/status 2>/dev/null)
+        [ "$code" = "200" ] && { pronto=true; break; }
+        sleep 3
+    done
+    if [ "$pronto" != true ]; then
+        echo -e "  \e[31m✖ Portainer não respondeu — abortando deploy do painel via API.\e[0m"
+        return 1
+    fi
+
+    local token
+    token=$(docker run --rm --network "$rede" curlimages/curl:latest \
+        -s -X POST http://portainer_portainer:9000/api/auth \
+        -H "Content-Type: application/json" \
+        -d "$(jq -nc --arg u "$user_portainer" --arg p "$pass_portainer" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+    if [ -z "$token" ] || [ "$token" = "null" ]; then
+        echo -e "  \e[31m✖ Falha ao autenticar no Portainer (usuário: $user_portainer).\e[0m"
+        return 1
+    fi
+
+    local endpoint_id
+    endpoint_id=$(docker run --rm --network "$rede" curlimages/curl:latest \
+        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
+    if [ -z "$endpoint_id" ] || [ "$endpoint_id" = "null" ]; then
+        echo -e "  \e[31m✖ Não foi possível obter o Endpoint ID do Portainer.\e[0m"
+        return 1
+    fi
+
+    local swarm_id
+    swarm_id=$(docker run --rm --network "$rede" curlimages/curl:latest \
+        -s -H "Authorization: Bearer $token" "http://portainer_portainer:9000/api/endpoints/$endpoint_id/docker/swarm" 2>/dev/null | jq -r .ID)
+    if [ -z "$swarm_id" ] || [ "$swarm_id" = "null" ]; then
+        swarm_id=$(docker info --format '{{.Swarm.Cluster.ID}}')
+    fi
+
+    # Localiza a stack já gerenciada pelo Portainer (se houver) e seu Env atual.
+    local stacks_json stack_id current_env_json
+    stacks_json=$(docker run --rm --network "$rede" curlimages/curl:latest \
+        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null)
+    stack_id=$(echo "$stacks_json" | jq -r '.[] | select(.Name=="encha-panel") | .Id' 2>/dev/null | head -n1)
+    if [ -n "$stack_id" ]; then
+        current_env_json=$(echo "$stacks_json" | jq -c --arg id "$stack_id" '.[] | select((.Id|tostring)==$id) | (.Env // [])')
+    else
+        current_env_json="[]"
+    fi
+    get_env_val() { echo "$current_env_json" | jq -r --arg n "$1" '.[] | select(.name==$n) | .value' | head -n1; }
+
+    # Migração: uma `encha-panel` criada por `docker stack deploy` (host-owned)
+    # aparece no Portainer como stack externa, sem registro — o create
+    # retornaria 409 e não haveria stack para atualizar via PUT. Remove antes.
+    if [ -z "$stack_id" ] && docker stack ls --format '{{.Name}}' 2>/dev/null | grep -qx "encha-panel"; then
+        echo -e "  \e[33m↳ Stack 'encha-panel' existente foi criada fora do Portainer — migrando...\e[0m"
+        docker stack rm encha-panel >/dev/null 2>&1
+        sleep 10
+    fi
+
+    local panel_user_val panel_pass_val
+    panel_user_val="${user_painel:-$(get_env_val PANEL_ADMIN_USER)}"
+    panel_pass_val="${pass_painel:-$(get_env_val PANEL_ADMIN_PASSWORD)}"
+    if [ -z "$panel_user_val" ] || [ -z "$panel_pass_val" ]; then
+        echo -e "  \e[31m✖ Sem admin do painel definido (nem em escopo, nem já gravado na stack). Rode a instalação do painel pelo wizard.\e[0m"
+        return 1
+    fi
+
+    local env_json
+    env_json=$(jq -nc \
+        --arg host "$url_painel" \
+        --arg pu "$panel_user_val" --arg pp "$panel_pass_val" \
+        --arg su "$user_portainer" --arg sp "$pass_portainer" \
+        --arg tag "latest" \
+        '[{name:"ENCHA_PANEL_HOST",value:$host},
+          {name:"PANEL_ADMIN_USER",value:$pu},
+          {name:"PANEL_ADMIN_PASSWORD",value:$pp},
+          {name:"PORTAINER_USER",value:$su},
+          {name:"PORTAINER_PASSWORD",value:$sp},
+          {name:"PANEL_IMAGE_TAG",value:$tag}]')
+
+    local resp http_code
+    resp=$(mktemp)
+
+    if [ -n "$stack_id" ]; then
+        echo -e "  \e[97m↳ Stack já gerenciada pelo Portainer (Id $stack_id) — atualizando...\e[0m"
+        local body
+        body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
+            '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
+        http_code=$(docker run --rm --network "$rede" curlimages/curl:latest \
+            -s -o "$resp" -w "%{http_code}" -X PUT \
+            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+            -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+    else
+        http_code=$(docker run --rm --network "$rede" -v "$stack_file":"$stack_file":ro curlimages/curl:latest \
+            -s -o "$resp" -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $token" \
+            -F "Name=encha-panel" \
+            -F "SwarmID=$swarm_id" \
+            -F "endpointId=$endpoint_id" \
+            -F "Env=$env_json" \
+            -F "file=@$stack_file" \
+            http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null)
+        if [ "$http_code" = "409" ]; then
+            echo -e "  \e[33m↳ 409 no create — stack já existe, localizando e atualizando...\e[0m"
+            stack_id=$(docker run --rm --network "$rede" curlimages/curl:latest \
+                -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null \
+                | jq -r '.[] | select(.Name=="encha-panel") | .Id' | head -n1)
+            if [ -n "$stack_id" ]; then
+                local body
+                body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
+                    '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
+                http_code=$(docker run --rm --network "$rede" curlimages/curl:latest \
+                    -s -o "$resp" -w "%{http_code}" -X PUT \
+                    -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+                    -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+            fi
+        fi
+    fi
+
+    if ! [[ "$http_code" =~ ^20[0-9]$ ]]; then
+        echo -e "  \e[31m✖ Deploy via API do Portainer falhou (HTTP $http_code).\e[0m"
+        echo -e "  \e[31m  Detalhe: $(cat "$resp" 2>/dev/null)\e[0m"
+        rm -f "$resp"
+        return 1
+    fi
+
+    echo -e "  \e[32m✓ Stack 'encha-panel' criada/atualizada via API do Portainer.\e[0m"
+    rm -f "$resp"
+    return 0
+}
+
+################################################################################
 # ferramenta_encha_panel — Instala o Encha Setup Panel (Next.js)
 #
 # Pré-requisitos:
@@ -20206,6 +20547,9 @@ atualizar_fonte_painel() {
 #   - url_painel               domínio público do painel
 #   - nome_rede_interna        overlay network (default: enchanet)
 #   - email_ssl                email para Let's Encrypt (informativo)
+#   - user_painel / pass_painel        admin local do painel
+#   - user_portainer / pass_portainer  credenciais de serviço p/ o painel
+#                                       falar com a API do Portainer
 ################################################################################
 ferramenta_encha_panel() {
     clear
@@ -20286,20 +20630,23 @@ ferramenta_encha_panel() {
         return 1
     fi
 
-    # 5) Render do docker-stack.yaml com envsubst (host + rede dinâmicos)
+    # 5) Render do docker-stack.yaml com envsubst — SÓ a rede. O host e as
+    # credenciais (PANEL_ADMIN_*, PORTAINER_*) ficam como ${VAR} no arquivo e
+    # são resolvidos pelo Env da API do Portainer (deploy_stack_painel_via_portainer),
+    # não por envsubst — é isso que os torna editáveis no Portainer depois.
     echo -e "\e[97m• [5/6] Gerando docker-stack.yaml dinâmico\e[0m"
-    export ENCHA_PANEL_HOST="$url_painel"
     export ENCHA_PANEL_NETWORK="${nome_rede_interna:-enchanet}"
 
     local stack_template="/root/encha-setup-panel/docker-stack.yaml"
     if [[ ! -f "$stack_template" ]]; then
-        # Fallback: gera template inline se o repo não estiver no host
+        # Fallback: gera template inline se o repo não estiver no host.
+        # Mantenha em sincronia com encha-setup-panel/docker-stack.yaml.
         stack_template="/tmp/encha-panel.template.yaml"
         cat > "$stack_template" <<'TEMPLATE'
 version: "3.7"
 services:
   panel:
-    image: ghcr.io/enchaaluno/setup-panel:latest
+    image: ghcr.io/enchaaluno/setup-panel:${PANEL_IMAGE_TAG}
     networks:
       - ${ENCHA_PANEL_NETWORK}
     secrets:
@@ -20314,6 +20661,11 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
+      - MONITOR_BASE_URL=https://monitor.encha.com.br
+      - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
+      - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}
+      - PORTAINER_USER=${PORTAINER_USER}
+      - PORTAINER_PASSWORD=${PORTAINER_PASSWORD}
     read_only: true
     tmpfs:
       - /tmp
@@ -20354,14 +20706,15 @@ networks:
 TEMPLATE
     fi
 
-    envsubst '${ENCHA_PANEL_HOST} ${ENCHA_PANEL_NETWORK}' \
+    envsubst '${ENCHA_PANEL_NETWORK}' \
         < "$stack_template" > /tmp/encha-panel.yaml
 
-    # 6) Deploy
-    echo -e "\e[97m• [6/6] Fazendo deploy da stack encha-panel\e[0m"
-    docker stack rm encha-panel >/dev/null 2>&1
-    sleep 8
-    docker stack deploy --resolve-image always -c /tmp/encha-panel.yaml encha-panel >/dev/null
+    # 6) Deploy via API do Portainer (não `docker stack deploy` — ver
+    # deploy_stack_painel_via_portainer para o porquê).
+    echo -e "\e[97m• [6/6] Publicando a stack encha-panel no Portainer\e[0m"
+    if ! deploy_stack_painel_via_portainer /tmp/encha-panel.yaml; then
+        return 1
+    fi
 
     # 7) Aguarda o serviço subir
     if type wait_stack &> /dev/null; then

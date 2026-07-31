@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession } from "@/lib/session";
+import { requireSessionToken } from "@/lib/auth/require-token";
 import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { fetchLatestVersion } from "@/lib/monitor";
@@ -13,8 +13,9 @@ export async function POST(req: NextRequest) {
   if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
   if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
 
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const auth = await requireSessionToken();
+  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { session, token } = auth;
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`update:${ip}`, 2, 60_000);
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Você já está na versão mais recente" }, { status: 409 });
   }
 
-  const result = await triggerSelfUpdate(session.jwt, latest);
+  const result = await triggerSelfUpdate(token, latest);
 
   logAudit({
     user: session.user,

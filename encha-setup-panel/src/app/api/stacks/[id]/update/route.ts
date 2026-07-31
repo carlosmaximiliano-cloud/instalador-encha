@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession } from "@/lib/session";
+import { requireSessionToken } from "@/lib/auth/require-token";
 import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import {
   discoverContext,
@@ -19,16 +19,17 @@ type Ctx = { params: Promise<{ id: string }> };
  * definição manda. Usado pelo botão "Atualizar" para se mostrar ou não.
  */
 export async function GET(_req: NextRequest, { params }: Ctx) {
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const auth = await requireSessionToken();
+  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { token } = auth;
 
   const { id } = await params;
   const def = getStack(id);
   if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
 
   try {
-    const { endpointId } = await discoverContext(session.jwt);
-    const statuses = await listSwarmStackStatuses(session.jwt, endpointId);
+    const { endpointId } = await discoverContext(token);
+    const statuses = await listSwarmStackStatuses(token, endpointId);
     const pending = computePendingUpdates(def, statuses);
     return NextResponse.json({ updateAvailable: pending.length > 0, pending });
   } catch (e) {
@@ -46,8 +47,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
   if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
 
-  const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const auth = await requireSessionToken();
+  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { session, token } = auth;
 
   const { id } = await params;
   const ip = getClientIp(req);
@@ -70,8 +72,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   }
 
   try {
-    const { endpointId } = await discoverContext(session.jwt);
-    const statuses = await listSwarmStackStatuses(session.jwt, endpointId);
+    const { endpointId } = await discoverContext(token);
+    const statuses = await listSwarmStackStatuses(token, endpointId);
     const pending = computePendingUpdates(def, statuses);
 
     if (pending.length === 0) {
@@ -80,11 +82,11 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
     const updated: string[] = [];
     for (const p of pending) {
-      const svc = await getServiceByName(session.jwt, endpointId, p.serviceName);
+      const svc = await getServiceByName(token, endpointId, p.serviceName);
       if (!svc) {
         throw new Error(`Serviço '${p.serviceName}' não encontrado no Swarm`);
       }
-      await updateServiceImage(session.jwt, endpointId, svc, p.target);
+      await updateServiceImage(token, endpointId, svc, p.target);
       updated.push(`${p.serviceName}: ${p.current} → ${p.target}`);
     }
 

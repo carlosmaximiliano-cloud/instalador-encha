@@ -2,9 +2,26 @@ version: "3.7"
 
 # Stack do Encha Setup Panel para Docker Swarm.
 #
-# Este arquivo usa variáveis de ambiente para host e rede:
-#   - ENCHA_PANEL_HOST    domínio público (ex: painel.exemplo.com)
-#   - ENCHA_PANEL_NETWORK overlay network (ex: enchanet)
+# Esta stack é criada/atualizada pela API do Portainer (POST/PUT
+# /api/stacks), não por `docker stack deploy` direto no host — é o que a
+# torna editável (compose + variáveis) no editor de stacks do Portainer.
+# Ver deploy_stack_painel_via_portainer() em secondary.sh. Mantenha este
+# arquivo em sincronia com o heredoc equivalente em
+# secondary.sh (ferramenta_encha_panel) — eles precisam ser idênticos.
+#
+# Variáveis interpoladas pelo Env da stack no Portainer (edite lá para
+# alterar em produção — "Update the stack" reaplica):
+#   - ENCHA_PANEL_HOST      domínio público (ex: painel.exemplo.com)
+#   - PANEL_IMAGE_TAG       tag da imagem do painel (ex: 0.1.0, latest)
+#   - PANEL_ADMIN_USER      usuário do admin local do painel
+#   - PANEL_ADMIN_PASSWORD  senha do admin local do painel (texto puro —
+#                           é o que permite reset via Portainer)
+#   - PORTAINER_USER        credencial de serviço p/ o painel falar com o Portainer
+#   - PORTAINER_PASSWORD    idem
+#
+# ENCHA_PANEL_NETWORK é a exceção: continua resolvida por envsubst antes do
+# deploy (aparece como chave de `networks:`, que a API do Portainer não
+# interpola) — não é necessário torná-la editável.
 #
 # Pré-requisitos:
 #   1. Traefik + Portainer já instalados (mesma rede overlay).
@@ -14,17 +31,13 @@ version: "3.7"
 #        docker volume create encha_panel_data
 #   4. Diretório /root/dados_vps presente no host (criado pelo instalador bash).
 #
-# Deploy (com envsubst):
-#   export ENCHA_PANEL_HOST=painel.meudominio.com
-#   export ENCHA_PANEL_NETWORK=enchanet
-#   envsubst '${ENCHA_PANEL_HOST} ${ENCHA_PANEL_NETWORK}' < docker-stack.yaml \
-#     | docker stack deploy --resolve-image always -c - encha-panel
-#
-# Ou rodar via ferramenta_encha_panel() no secondary.sh.
+# Deploy: ver deploy_stack_painel_via_portainer() em secondary.sh
+# (ferramenta_encha_panel). Não usar `docker stack deploy` para esta stack —
+# quebra a edição via Portainer.
 
 services:
   panel:
-    image: ghcr.io/enchaaluno/setup-panel:latest
+    image: ghcr.io/enchaaluno/setup-panel:${PANEL_IMAGE_TAG}
     networks:
       - ${ENCHA_PANEL_NETWORK}
     secrets:
@@ -40,6 +53,10 @@ services:
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
       - MONITOR_BASE_URL=https://monitor.encha.com.br
+      - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
+      - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}
+      - PORTAINER_USER=${PORTAINER_USER}
+      - PORTAINER_PASSWORD=${PORTAINER_PASSWORD}
     read_only: true
     tmpfs:
       - /tmp

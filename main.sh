@@ -2,7 +2,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com encha-setup-panel/src/lib/version.ts
 # e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
-ENCHA_VERSION="0.0.6"
+ENCHA_VERSION="0.1.0"
 
 # Versão e URL dos Termos de Uso (texto integral em legal/TERMOS-DE-USO.md).
 # Ao publicar uma revisão material do texto, atualize TERMS_VERSION em conjunto
@@ -407,9 +407,11 @@ infra_ja_instalada() {
     return 0
 }
 
-# Coleta apenas o subdomínio do painel (modo "instalar só o painel").
-# Reaproveita a rede overlay já existente; não pede dados do Portainer porque o
-# painel autentica no Portainer em runtime, na própria tela de login.
+# Coleta os dados do painel (modo "instalar só o painel"). Reaproveita a rede
+# overlay já existente. Diferente da versão anterior, o painel agora tem
+# admin próprio e precisa das credenciais de serviço do Portainer (para se
+# autenticar sozinho na API) — então essas credenciais são lidas/confirmadas
+# aqui, não mais deixadas para a tela de login.
 coletar_inputs_so_painel() {
     clear
     echo -e "${negrito}${roxo}📝 INSTALAR APENAS O PAINEL${reset}"
@@ -421,15 +423,82 @@ coletar_inputs_so_painel() {
     echo ""
 
     while true; do
-        echo -ne "${ciano}Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
+        echo -ne "${ciano}1/4 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
         [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
 
+    # 2) Credenciais de serviço do Portainer — o painel usa para se
+    #    autenticar sozinho na API. Tenta detectar em /root/dados_vps/dados_portainer
+    #    (gravado na instalação do Portainer) antes de pedir.
+    user_portainer=""
+    pass_portainer=""
+    arquivo_portainer="/root/dados_vps/dados_portainer"
+    if [ -f "$arquivo_portainer" ]; then
+        detectado_user=$(grep "Usuario: " "$arquivo_portainer" | awk -F"Usuario: " '{print $2}' | tr -d '\r')
+        detectado_senha=$(grep "Senha: " "$arquivo_portainer" | awk -F"Senha: " '{print $2}' | tr -d '\r')
+        if [[ -n "$detectado_user" && -n "$detectado_senha" && "$detectado_user" != *"criar"* ]]; then
+            echo -e "${verde}✓ Credenciais do Portainer detectadas — usuário: ${detectado_user}${reset}"
+            echo -ne "${ciano}2/4 Usar essas credenciais? (Y/n): ${reset}" && read -r usar_detectado
+            if [[ ! "$usar_detectado" =~ ^[Nn]$ ]]; then
+                user_portainer="$detectado_user"
+                pass_portainer="$detectado_senha"
+            fi
+        fi
+    fi
+    if [ -z "$user_portainer" ]; then
+        echo -ne "${ciano}2/4 Usuário do Portainer: ${reset}" && read -r user_portainer
+        echo -ne "${ciano}    Senha do Portainer: ${reset}" && read -rs pass_portainer && echo ""
+    fi
+
+    # Valida de verdade contra o Portainer, para não gerar uma stack do
+    # painel com credenciais de serviço erradas.
+    echo -e "${ciano}Validando credenciais do Portainer...${reset}"
+    resp=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
+        -s -o /dev/null -w "%{http_code}" -X POST http://portainer_portainer:9000/api/auth \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" 2>/dev/null)
+    if [ "$resp" != "200" ]; then
+        echo -e "${vermelho}✖ Falha ao autenticar no Portainer com essas credenciais (HTTP $resp).${reset}"
+        coletar_inputs_so_painel; return
+    fi
+    echo -e "${verde}✓ Credenciais do Portainer válidas.${reset}"
+
+    # 3) Usuário admin do painel
+    echo -e "${amarelo}--> 4-40 caracteres, minúsculas/números/_/-, começando com letra. Evite \"admin\".${reset}"
+    while true; do
+        echo -ne "${ciano}3/4 Usuário admin do Painel: ${reset}" && read -r user_painel
+        if type validar_usuario &> /dev/null; then
+            validar_usuario "$user_painel" && break
+        else
+            [[ "$user_painel" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_painel,,}" != "admin" ]] && break
+            echo -e "${vermelho}✖ Usuário inválido.${reset}"
+        fi
+    done
+
+    # 4) Senha admin do painel
+    while true; do
+        echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
+        echo -ne "${ciano}4/4 Senha admin do Painel: ${reset}" && read -rs pass_painel && echo ""
+        if type validar_senha &> /dev/null; then
+            validar_senha "$pass_painel" 12 && break
+        elif [[ ${#pass_painel} -ge 12 ]] \
+            && [[ "$pass_painel" =~ [A-Z] ]] \
+            && [[ "$pass_painel" =~ [a-z] ]] \
+            && [[ "$pass_painel" =~ [0-9] ]] \
+            && [[ "$pass_painel" =~ [@_] ]]; then
+            break
+        else
+            echo -e "${vermelho}✖ Senha não atende aos requisitos.${reset}"
+        fi
+    done
+
     clear
     echo -e "${roxo}${negrito}🔍 CONFIRA OS DADOS:${reset}"
-    echo -e "  ${azul}Painel:${reset}        https://${verde}${url_painel}${reset}"
-    echo -e "  ${azul}Rede (reuso):${reset}  ${verde}${nome_rede_interna}${reset}"
+    echo -e "  ${azul}Painel:${reset}          https://${verde}${url_painel}${reset}"
+    echo -e "  ${azul}Rede (reuso):${reset}    ${verde}${nome_rede_interna}${reset}"
+    echo -e "  ${azul}Serviço Portainer:${reset} ${verde}${user_portainer}${reset}"
+    echo -e "  ${azul}Usuário Painel:${reset}   ${verde}${user_painel}${reset}"
     echo ""
     while true; do
         echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao
@@ -441,6 +510,7 @@ coletar_inputs_so_painel() {
     done
 
     export url_painel nome_rede_interna
+    export user_portainer pass_portainer user_painel pass_painel
     export ENCHA_NONINTERACTIVE=1
     export ENCHA_MAX_RETRIES=10
     export ENCHA_SLEEP=60
@@ -453,55 +523,105 @@ coletar_inputs_instalacao() {
 
     # 1) Subdomínio Portainer
     while true; do
-        echo -ne "${ciano}1/5 Subdomínio do Portainer (ex: portainer.encha.ai): ${reset}" && read -r url_portainer
+        echo -ne "${ciano}1/7 Subdomínio do Portainer (ex: portainer.encha.ai): ${reset}" && read -r url_portainer
         [[ "$url_portainer" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
     done
 
-    # 2) Usuário Portainer — sempre "admin" (o Portainer cria o admin no boot
-    #    via --admin-password-file, que não permite username customizado).
-    user_portainer="admin"
-    echo -e "${ciano}2/5 Usuário do Portainer: ${verde}admin${ciano} (padrão)${reset}"
+    # 2) Usuário do Portainer — sem default: "admin" deixa metade da
+    #    credencial pública. O usuário digitado é aplicado por renomeação
+    #    logo após o bootstrap (ver ferramenta_traefik_e_portainer).
+    echo -e "${amarelo}--> 4-40 caracteres, minúsculas/números/_/-, começando com letra. Evite \"admin\".${reset}"
+    while true; do
+        echo -ne "${ciano}2/7 Usuário do Portainer: ${reset}" && read -r user_portainer
+        if type validar_usuario &> /dev/null; then
+            validar_usuario "$user_portainer" && break
+        else
+            [[ "$user_portainer" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_portainer,,}" != "admin" ]] && break
+            echo -e "${vermelho}✖ Usuário inválido.${reset}"
+        fi
+    done
 
     # 3) Senha Portainer (12+ chars, maiús, minús, dígito, especial)
     while true; do
         echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
-        echo -ne "${ciano}3/5 Senha do Portainer: ${reset}" && read -r pass_portainer
-        if [[ ${#pass_portainer} -ge 12 ]] \
+        echo -ne "${ciano}3/7 Senha do Portainer: ${reset}" && read -rs pass_portainer && echo ""
+        if type validar_senha &> /dev/null; then
+            validar_senha "$pass_portainer" 12 && break
+        elif [[ ${#pass_portainer} -ge 12 ]] \
             && [[ "$pass_portainer" =~ [A-Z] ]] \
             && [[ "$pass_portainer" =~ [a-z] ]] \
             && [[ "$pass_portainer" =~ [0-9] ]] \
             && [[ "$pass_portainer" =~ [@_] ]]; then
             break
+        else
+            echo -e "${vermelho}✖ Senha não atende aos requisitos.${reset}"
         fi
-        echo -e "${vermelho}✖ Senha não atende aos requisitos.${reset}"
     done
 
     # 4) Email SSL
     while true; do
-        echo -ne "${ciano}4/5 Email para certificados SSL: ${reset}" && read -r email_ssl
+        echo -ne "${ciano}4/7 Email para certificados SSL: ${reset}" && read -r email_ssl
         [[ "$email_ssl" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] && break
         echo -e "${vermelho}✖ Email inválido.${reset}"
     done
 
     # 5) Subdomínio do Painel
     while true; do
-        echo -ne "${ciano}5/5 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
+        echo -ne "${ciano}5/7 Subdomínio do Encha Setup Panel (ex: painel.encha.ai): ${reset}" && read -r url_painel
         [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "${vermelho}✖ Domínio inválido.${reset}"
+    done
+
+    # 6) Usuário admin do painel — identidade separada da do Portainer.
+    echo -e "${amarelo}--> Mesmas regras do usuário do Portainer, mas precisa ser diferente dele.${reset}"
+    while true; do
+        echo -ne "${ciano}6/7 Usuário admin do Painel: ${reset}" && read -r user_painel
+        if [[ "$user_painel" == "$user_portainer" ]]; then
+            echo -e "${vermelho}✖ Use um usuário diferente do Portainer.${reset}"
+            continue
+        fi
+        if type validar_usuario &> /dev/null; then
+            validar_usuario "$user_painel" && break
+        else
+            [[ "$user_painel" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_painel,,}" != "admin" ]] && break
+            echo -e "${vermelho}✖ Usuário inválido.${reset}"
+        fi
+    done
+
+    # 7) Senha admin do painel
+    while true; do
+        echo -e "${amarelo}--> Mínimo 12 caracteres com MAIÚSCULAS, minúsculas, números e @ ou _${reset}"
+        echo -ne "${ciano}7/7 Senha admin do Painel: ${reset}" && read -rs pass_painel && echo ""
+        if [[ "$pass_painel" == "$pass_portainer" ]]; then
+            echo -e "${vermelho}✖ Use uma senha diferente do Portainer.${reset}"
+            continue
+        fi
+        if type validar_senha &> /dev/null; then
+            validar_senha "$pass_painel" 12 && break
+        elif [[ ${#pass_painel} -ge 12 ]] \
+            && [[ "$pass_painel" =~ [A-Z] ]] \
+            && [[ "$pass_painel" =~ [a-z] ]] \
+            && [[ "$pass_painel" =~ [0-9] ]] \
+            && [[ "$pass_painel" =~ [@_] ]]; then
+            break
+        else
+            echo -e "${vermelho}✖ Senha não atende aos requisitos.${reset}"
+        fi
     done
 
     # Defaults fixos (combinam com docker-stack.yaml do painel)
     nome_servidor="encha"
     nome_rede_interna="enchanet"
 
-    # Confirmação
+    # Confirmação — nunca exibir as senhas.
     clear
     echo -e "${roxo}${negrito}🔍 CONFIRA OS DADOS:${reset}"
-    echo -e "  ${azul}Portainer:${reset}  https://${verde}${url_portainer}${reset}"
-    echo -e "  ${azul}Usuário:${reset}    ${verde}${user_portainer}${reset}"
-    echo -e "  ${azul}Email SSL:${reset}  ${verde}${email_ssl}${reset}"
-    echo -e "  ${azul}Painel:${reset}     https://${verde}${url_painel}${reset}"
+    echo -e "  ${azul}Portainer:${reset}       https://${verde}${url_portainer}${reset}"
+    echo -e "  ${azul}Usuário Portainer:${reset} ${verde}${user_portainer}${reset}"
+    echo -e "  ${azul}Email SSL:${reset}       ${verde}${email_ssl}${reset}"
+    echo -e "  ${azul}Painel:${reset}          https://${verde}${url_painel}${reset}"
+    echo -e "  ${azul}Usuário Painel:${reset}   ${verde}${user_painel}${reset}"
     echo ""
     while true; do
         echo -ne "${verde}✅ Confirma? (Y/N): ${reset}" && read -r confirmacao
@@ -513,6 +633,7 @@ coletar_inputs_instalacao() {
     done
 
     export url_portainer user_portainer pass_portainer email_ssl url_painel
+    export user_painel pass_painel
     export nome_servidor nome_rede_interna
     export ENCHA_NONINTERACTIVE=1
     export ENCHA_MAX_RETRIES=10
@@ -586,8 +707,13 @@ mostrar_resumo_final() {
     echo -e "  ${verde}▸ Portainer:${reset}  https://${negrito}${url_portainer}${reset}"
     echo -e "    ${cinza}usuário: ${user_portainer}${reset}"
     echo -e "  ${verde}▸ Painel Encha:${reset} https://${negrito}${url_painel}${reset}"
+    echo -e "    ${cinza}usuário: ${user_painel}${reset}"
     echo ""
     echo -e "${amarelo}💡 O Encha Setup Panel já está pronto para instalar as demais stacks.${reset}"
+    echo ""
+    echo -e "${ciano}${negrito}Esqueceu a senha do painel?${reset}"
+    echo -e "  ${cinza}Portainer → Stacks → encha-panel → Environment variables →${reset}"
+    echo -e "  ${cinza}PANEL_ADMIN_PASSWORD → editar → Update the stack.${reset}"
     echo ""
     echo -e "${ciano}${negrito}Suporte:${reset}"
     echo -e "  ${azul}📧 atendimento@encha.ai${reset}"
