@@ -25,6 +25,25 @@ export type GeneratedSecret = {
   value: string;
 };
 
+/**
+ * Troca uma chave de licença por credencial de um registro Docker privado
+ * (ex.: GHCR) e a registra no Portainer antes do deploy, para que o
+ * `docker stack deploy` nativo do Portainer anexe o `EncodedRegistryAuth`
+ * automaticamente. Ver installer.ts para a orquestração.
+ */
+export type RegistryAuthSpec = {
+  /** Host exato do registro — vira o campo URL do registry no Portainer. Ex.: "ghcr.io" (sem esquema/barra). */
+  registryHost: string;
+  /** Nome amigável do registry criado/atualizado no Portainer. */
+  registryName: string;
+  /** Endpoint que troca a chave de licença por {username, token}. */
+  exchangeUrl: string;
+  /** Nome do campo do formulário que carrega a chave (deve também estar em transientFields). */
+  licenseField: string;
+  /** Imagens privadas a pré-puxar (com a credencial) antes do deploy — falha rápido se a chave não tiver acesso. */
+  images: (values: Record<string, unknown>) => string[];
+};
+
 export type StackDefinition = {
   id: string;
   name: string;
@@ -59,6 +78,11 @@ export type StackDefinition = {
   externalVolumes?: string[];
   /** Bancos a garantir no Postgres compartilhado (serviço postgres_postgres) antes do deploy. */
   postgresDatabases?: string[];
+  /** Diretórios a garantir (mkdir -p) no node manager antes do deploy — necessário para bind mounts, que o Swarm não cria sozinho. */
+  hostDirs?: string[];
+  /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
+  transientFields?: string[];
+  registryAuth?: RegistryAuthSpec;
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";

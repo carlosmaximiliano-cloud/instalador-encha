@@ -382,16 +382,27 @@ export async function imageExistsLocally(
   }
 }
 
-// Pull de imagem (fallback — só usado se imageExistsLocally() for false para
-// a imagem principal). `POST /images/create` responde 200 com um stream NDJSON
-// mesmo quando o pull falha no meio; a falha aparece como uma linha com chave
-// "error". callRaw() é obrigatório aqui — call() quebraria em res.json().
-export async function pullImage(token: string, endpointId: number, image: string): Promise<void> {
-  const [repo, tag = "latest"] = image.split(":");
+// Pull de imagem — usado tanto no fallback do updater de scripts (imagem
+// pública) quanto no pré-pull de imagens privadas antes de instalar uma
+// stack (com credencial de registry, ver pullImageWithRegistry). `POST
+// /images/create` responde 200 com um stream NDJSON mesmo quando o pull
+// falha no meio; a falha aparece como uma linha com chave "error". callRaw()
+// é obrigatório aqui — call() quebraria em res.json().
+async function pullImageRaw(
+  token: string,
+  endpointId: number,
+  image: string,
+  headers?: Record<string, string>
+): Promise<void> {
+  const sep = image.lastIndexOf(":");
+  // lastIndexOf evita cortar no host quando a imagem tem registry com porta;
+  // aqui não há porta, mas é mais seguro que split(":")[0].
+  const repo = sep > image.lastIndexOf("/") ? image.slice(0, sep) : image;
+  const tag = sep > image.lastIndexOf("/") ? image.slice(sep + 1) : "latest";
   const { text } = await callRaw(
     `/api/endpoints/${endpointId}/docker/images/create` +
       `?fromImage=${encodeURIComponent(repo)}&tag=${encodeURIComponent(tag)}`,
-    { method: "POST", token }
+    { method: "POST", token, headers }
   );
   const lines = text.split("\n").filter(Boolean);
   for (const line of lines) {
@@ -403,6 +414,85 @@ export async function pullImage(token: string, endpointId: number, image: string
       // linha não-JSON isolada — ignora, não é indicativo de erro
     }
   }
+}
+
+export async function pullImage(token: string, endpointId: number, image: string): Promise<void> {
+  return pullImageRaw(token, endpointId, image);
+}
+
+// Pull autenticado — usado antes de instalar stacks com imagem privada (ex.:
+// EnchaT). O header X-Registry-Auth só é reescrito pelo proxy do Portainer
+// quando o JSON decodificado contém "registryId" (ele troca pela credencial
+// real do registry cadastrado); credencial crua passaria direto e quebraria
+// por incompatibilidade de encoding entre o Portainer e o daemon Docker.
+export async function pullImageWithRegistry(
+  token: string,
+  endpointId: number,
+  image: string,
+  registryId: number
+): Promise<void> {
+  const auth = Buffer.from(JSON.stringify({ registryId })).toString("base64");
+  return pullImageRaw(token, endpointId, image, { "X-Registry-Auth": auth });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Registries privados (ex.: GHCR) — necessário para o `docker stack deploy`
+// nativo do Portainer anexar EncodedRegistryAuth às tasks de imagem privada.
+// GET/POST/PUT exigem usuário admin do Portainer.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type PortainerRegistry = {
+  Id: number;
+  Name: string;
+  URL: string;
+  Type: number;
+  Authentication: boolean;
+  Username: string;
+};
+
+export async function listRegistries(token: string): Promise<PortainerRegistry[]> {
+  return call<PortainerRegistry[]>("/api/registries", { token });
+}
+
+// Type 3 = CustomRegistry. NÃO usar 8 (GithubRegistry) — o Validate() do
+// Portainer rejeita esse tipo no create com 400. URL deve ser o host exato
+// ("ghcr.io", sem esquema/barra) — o deploy casa por igualdade de string
+// contra o domínio da imagem.
+export async function createRegistry(
+  token: string,
+  p: { name: string; url: string; username: string; password: string }
+): Promise<PortainerRegistry> {
+  return call<PortainerRegistry>("/api/registries", {
+    method: "POST",
+    token,
+    body: {
+      Name: p.name,
+      Type: 3,
+      URL: p.url,
+      Authentication: true,
+      Username: p.username,
+      Password: p.password,
+      TLS: true,
+    },
+  });
+}
+
+export async function updateRegistry(
+  token: string,
+  id: number,
+  p: { name: string; url: string; username: string; password: string }
+): Promise<PortainerRegistry> {
+  return call<PortainerRegistry>(`/api/registries/${id}`, {
+    method: "PUT",
+    token,
+    body: {
+      Name: p.name,
+      URL: p.url,
+      Authentication: true,
+      Username: p.username,
+      Password: p.password,
+    },
+  });
 }
 
 export type ContainerSpec = {

@@ -87,6 +87,7 @@ import { azuracast } from "./azuracast";
 import { rustdesk } from "./rustdesk";
 import { excalidraw } from "./excalidraw";
 import { infisical } from "./infisical";
+import { enchat } from "./enchat";
 
 export const ALL_STACKS: StackDefinition[] = [
   // Implementadas (instalam pelo painel)
@@ -102,6 +103,7 @@ export const ALL_STACKS: StackDefinition[] = [
   pgadmin,
   mongodb,
   infisical,
+  enchat,
   // Stubs (instalação via SSH no momento)
   mysql,
   redis,

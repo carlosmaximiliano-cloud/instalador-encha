@@ -2,7 +2,13 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com encha-setup-panel/src/lib/version.ts
 # e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
-ENCHA_VERSION="0.0.5"
+ENCHA_VERSION="0.0.6"
+
+# Versão e URL dos Termos de Uso (texto integral em legal/TERMOS-DE-USO.md).
+# Ao publicar uma revisão material do texto, atualize TERMS_VERSION em conjunto
+# com a versão publicada em /admin/setup/terms no Monitor — os dois precisam bater.
+TERMS_VERSION="1"
+TERMS_URL="https://encha.ai/termos"
 
 # Redireciona stdin para o terminal — necessário quando o script é executado
 # via "curl | bash", onde stdin é o pipe (o próprio script) e não o teclado.
@@ -161,13 +167,29 @@ centralizar "██╔══██║╚██╗ ██╔╝██║╚══
 centralizar "██║  ██║ ╚████╔╝ ██║███████║╚██████╔╝"
 centralizar "╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝ ╚═════╝"
     echo ""
-    echo -e "${vermelho}${negrito}⚠ Aviso Legal:${reset}"
-    echo -e "${amarelo}A Encha.ai disponibiliza esta ferramenta para auxiliar na instalação de ambientes de IA.${reset}"
-    echo -e "${amarelo}O uso é de total responsabilidade do usuário. Não nos responsabilizamos por danos, configurações, conteúdos ou usos indevidos.${reset}"
+    echo -e "${vermelho}${negrito}⚠ Aviso Legal — leia antes de prosseguir:${reset}"
+    echo -e "${amarelo}O Encha Setup e o Encha Setup Panel são cedidos GRATUITAMENTE para ajudar a${reset}"
+    echo -e "${amarelo}comunidade a instalar suas aplicações na própria VPS. O uso é facultativo —${reset}"
+    echo -e "${amarelo}existem outras opções no mercado, como Orion e EasyPanel.${reset}"
+    echo ""
+    echo -e "${ciano}${negrito}O QUE ESTE INSTALADOR VAI FAZER NA SUA VPS:${reset}"
+    echo -e "${amarelo} • Rodar 'apt upgrade' no sistema inteiro, como root${reset}"
+    echo -e "${amarelo} • Trocar o hostname e editar o /etc/hosts do servidor${reset}"
+    echo -e "${amarelo} • Instalar Docker, iniciar o Swarm e abrir as portas 80 e 443${reset}"
+    echo -e "${amarelo} • Emitir certificado SSL (Let's Encrypt), enviando seu e-mail a ela${reset}"
+    echo ""
+    echo -e "${vermelho}${negrito}O QUE ELE NÃO FAZ (fica por sua conta):${reset}"
+    echo -e "${amarelo} • NÃO configura firewall, NÃO cria swap, NÃO faz backup${reset}"
+    echo -e "${amarelo} • Senhas e API keys geradas ficam em TEXTO PURO em /root/dados_vps/${reset}"
+    echo -e "${amarelo} • Algumas stacks abrem portas extras no host (ex.: 3306, 27017)${reset}"
+    echo ""
+    echo -e "${amarelo}Fornecido \"no estado em que se encontra\", sem garantia. Use uma VPS nova${reset}"
+    echo -e "${amarelo}ou faça backup antes. Termos completos: ${ciano}${TERMS_URL}${amarelo} (versão ${TERMS_VERSION}).${reset}"
+    echo -e "${amarelo}Script original da ${ciano}OrionDesign${amarelo}, refatorado pela ${verde}Encha AI${amarelo}.${reset}"
     echo ""
 
     while true; do
-        echo -en "${ciano}Você aceita seguir com total responsabilidade pelo uso da ferramenta? (Y/N): ${reset}"
+        echo -en "${ciano}Li o aviso acima, aceito os Termos de Uso e desejo prosseguir? (Y/N): ${reset}"
         if ! read -r confirmacao; then
             echo ""
             echo -e "${vermelho}✖ Sem entrada interativa (EOF). Instalação cancelada.${reset}"
@@ -196,7 +218,7 @@ integrar, publicar, distribuir e/ou vender cópias dos produtos finais, desde qu
 este aviso e declare, de forma visível, que ${ciano}OrionDesign${amarelo} é o autor original e que foi refatorado
 pela ${verde}Encha AI${amarelo}, incluindo os links para https://oriondesign.art.br/setup e https://encha.ai.
 ==================================================================================================${reset}"
-                
+
                 echo ""
                 echo ""
                 echo -e "${ciano}Prosseguindo com a instalação em 5 segundos...${reset}"

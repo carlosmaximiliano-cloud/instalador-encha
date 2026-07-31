@@ -6,8 +6,11 @@ import {
   ensurePostgresDatabase,
   ensureSwarmVolume,
   listStacks,
+  pullImageWithRegistry,
   type Stack,
 } from "./portainer";
+import { ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
+import { ensureHostDirs } from "./host-dirs";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
@@ -31,6 +34,19 @@ export type InstallResult = {
 
 function shouldEncryptField(name: string): boolean {
   return /pass|senha|secret|token|key|apikey/i.test(name);
+}
+
+// Remove campos que nunca devem ser persistidos (ex.: chave de licença) —
+// nem no blob criptografado, nem no meta do audit log. Cópia rasa; não muda
+// o objeto original.
+function stripTransient(
+  values: Record<string, unknown>,
+  transientFields?: string[]
+): Record<string, unknown> {
+  if (!transientFields?.length) return values;
+  const out = { ...values };
+  for (const f of transientFields) delete out[f];
+  return out;
 }
 
 function buildSecretMap(secrets: GeneratedSecret[], reused: Record<string, string>): Record<string, string> {
@@ -74,7 +90,17 @@ function saveSharedSecrets(secrets: Record<string, string>): void {
   ).run("__shared__", blob, now, now);
 }
 
-function saveStackSecrets(stackName: string, envs: Record<string, unknown>, generated: GeneratedSecret[]): void {
+function saveStackSecrets(
+  stackName: string,
+  envs: Record<string, unknown>,
+  generated: GeneratedSecret[],
+  transientFields?: string[]
+): void {
+  // Defesa em profundidade: mesmo que o chamador já tenha filtrado, nunca
+  // deixar um campo transiente (ex.: chave de licença) chegar aqui dentro.
+  if (transientFields?.some((f) => f in envs)) {
+    throw new Error("Tentativa de persistir campo transiente em stack_secrets — bug no installer.");
+  }
   const safe: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(envs)) {
     safe[k] = shouldEncryptField(k) ? "[encrypted]" : v;
@@ -122,6 +148,50 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     const yaml = def.generateYaml(parsed.data, secretMap, input.swarmCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
+
+    // Credencial de registro privado (ex.: GHCR) — precisa existir no
+    // Portainer ANTES do deploy, é lá que ele resolve o EncodedRegistryAuth
+    // por serviço. O pré-pull falha rápido se a chave não tiver acesso, em
+    // vez de deixar as tasks presas em `pending` sem explicação.
+    if (def.registryAuth) {
+      try {
+        const chave = String(parsed.data[def.registryAuth.licenseField] ?? "");
+        const creds = await exchangeLicenseForGhcrCredentials(def.registryAuth.exchangeUrl, chave);
+        const registryId = await ensureRegistry(input.token, {
+          url: def.registryAuth.registryHost,
+          name: def.registryAuth.registryName,
+          username: creds.username,
+          password: creds.token,
+        });
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "registry.auth",
+          target: def.registryAuth.registryHost,
+          result: "ok",
+          meta: { registryId, username: creds.username }, // nunca a chave nem o token
+        });
+        for (const img of def.registryAuth.images(parsed.data)) {
+          await pullImageWithRegistry(input.token, endpointId, img, registryId);
+        }
+      } catch (e) {
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "registry.auth.fail",
+          target: def.registryAuth.registryHost,
+          result: "error",
+          meta: { error: e instanceof Error ? e.message : "Erro desconhecido" },
+        });
+        throw e;
+      }
+    }
+
+    // Diretórios de bind mount no node manager — o Swarm não os cria sozinho.
+    if (def.hostDirs?.length) {
+      await ensureHostDirs(input.token, endpointId, def.hostDirs);
+    }
+
     for (const vol of def.externalVolumes ?? []) {
       await ensureSwarmVolume(input.token, endpointId, vol);
     }
@@ -136,7 +206,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       endpointId,
     });
 
-    saveStackSecrets(input.stackId, parsed.data, generated);
+    saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields);
     if (Object.keys(sharedToPersist).length > 0) saveSharedSecrets(sharedToPersist);
 
     logAudit({

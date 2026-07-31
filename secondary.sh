@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.0.5"
+ENCHA_VERSION="0.0.6"
 
 #FERRAMENTAS VISUAIS
 
@@ -976,6 +976,19 @@ centralizar "╚═════╝  ╚═════╝  ╚═════╝
     echo ""
 }
 
+msg_enchat(){
+    clear
+    echo -e "${roxo}"
+centralizar "███████╗███╗   ██╗ ██████╗██╗  ██╗ █████╗ ████████╗"
+centralizar "██╔════╝████╗  ██║██╔════╝██║  ██║██╔══██╗╚══██╔══╝"
+centralizar "█████╗  ██╔██╗ ██║██║     ███████║███████║   ██║   "
+centralizar "██╔══╝  ██║╚██╗██║██║     ██╔══██║██╔══██║   ██║   "
+centralizar "███████╗██║ ╚████║╚██████╗██║  ██║██║  ██║   ██║   "
+centralizar "╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   "
+    echo -e "${reset}"
+    echo ""
+}
+
 msg_moodle() {
     clear
     echo -e "${roxo}"
@@ -1540,6 +1553,69 @@ stack_editavel(){
     fi
 
     rm "$erro_output" "$response_output"
+}
+
+# Registra (ou atualiza) a credencial do GHCR como registry no Portainer,
+# para que o `docker stack deploy` nativo do Portainer anexe o
+# EncodedRegistryAuth às tasks de imagem privada automaticamente — o mesmo
+# mecanismo que a variante do painel usa (installer.ts). Type 3 = registry
+# customizado (o Portainer rejeita Type 8/GithubRegistry no create). URL
+# precisa ser exatamente "ghcr.io" — sem esquema/barra — pois o Portainer
+# casa a credencial com o domínio da imagem por igualdade de string.
+#
+# Espera $GHCR_USER e $GHCR_TOKEN já definidos. Falha aqui é aviso, não
+# fatal: ferramenta_enchat tem um fallback via `docker login` do host +
+# `docker stack deploy --with-registry-auth` direto.
+registrar_registry_portainer() {
+    if ! command -v jq &> /dev/null; then
+        sudo apt-get update -y > /dev/null 2>&1
+        sudo apt-get install -y jq > /dev/null 2>&1
+    fi
+
+    local arquivo="/root/dados_vps/dados_portainer"
+    if [ ! -f "$arquivo" ]; then
+        echo "⚠️  Não foi possível registrar o GHCR no Portainer: credenciais do Portainer não encontradas."
+        return 1
+    fi
+
+    local usuario senha portainer_url token
+    usuario=$(grep "Usuario: " "$arquivo" | awk -F "Usuario: " '{print $2}' | tr -d '\r')
+    senha=$(grep "Senha: " "$arquivo" | awk -F "Senha: " '{print $2}' | tr -d '\r')
+    portainer_url=$(grep "Dominio: " "$arquivo" | awk -F "Dominio: " '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
+
+    local json_payload
+    json_payload=$(jq -n --arg u "$usuario" --arg p "$senha" '{username: $u, password: $p}')
+    token=$(curl -k -s -X POST -H "Content-Type: application/json" \
+        -d "$json_payload" "https://$portainer_url/api/auth" | jq -r .jwt)
+    if [ -z "$token" ] || [ "$token" == "null" ]; then
+        echo "⚠️  Não foi possível autenticar no Portainer para registrar o GHCR."
+        return 1
+    fi
+
+    local existing_id reg_payload http_code
+    existing_id=$(curl -k -s -H "Authorization: Bearer $token" "https://$portainer_url/api/registries" \
+        | jq -r '.[] | select(.URL=="ghcr.io") | .Id' | head -n1)
+
+    reg_payload=$(jq -n --arg u "$GHCR_USER" --arg p "$GHCR_TOKEN" \
+        '{Name:"GHCR EnchaT", Type:3, URL:"ghcr.io", Authentication:true, Username:$u, Password:$p, TLS:true}')
+
+    if [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
+        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X PUT \
+            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+            -d "$reg_payload" "https://$portainer_url/api/registries/$existing_id")
+    else
+        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+            -d "$reg_payload" "https://$portainer_url/api/registries")
+    fi
+
+    if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+        echo "✔ GHCR registrado no Portainer."
+        return 0
+    else
+        echo "⚠️  Falha ao registrar o GHCR no Portainer (HTTP $http_code)."
+        return 1
+    fi
 }
 
 verificar_container_postgres() {
@@ -12214,6 +12290,249 @@ EOL
 
 }
 
+ferramenta_enchat(){
+  msg_enchat
+  dados
+
+  while true; do
+    echo -e "\n📍 Passo 1/3"
+    echo -en "🔗 \e[33mDigite o domínio do painel EnchaT (ex: crm.suaempresa.com): \e[0m" && read -r url_enchat
+    echo ""
+    echo -e "\n📍 Passo 2/3"
+    echo -en "🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m" && read -r versao_enchat
+    versao_enchat="${versao_enchat:-1.0.0}"
+    if [ "$versao_enchat" = "latest" ] || ! [[ "$versao_enchat" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo -e "\e[31m❌ Use uma versão fixa no formato X.Y.Z indicada no portal EnchaT (nunca 'latest').\e[0m"
+      sleep 3
+      msg_enchat
+      continue
+    fi
+    echo ""
+    echo -e "\n📍 Passo 3/3"
+    echo -en "🔑 \e[33mChave de licença EnchaT (não é gravada em disco): \e[0m" && read -s -r chave_licenca
+    echo ""
+
+    esconder_senha "$chave_licenca"
+
+    clear
+    msg_enchat
+    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "🌐 \e[33mDomínio:\e[97m $url_enchat\e[0m"
+    echo -e "🔢 \e[33mVersão:\e[97m $versao_enchat\e[0m"
+    echo -e "🔑 \e[33mChave de licença:\e[97m $SENHAOCULTA\e[0m"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_enchat; fi
+  done
+
+  clear
+  echo -e "\e[97m🚀 Iniciando a instalação do EnchaT Grátis...\e[0m"
+
+  if ! command -v jq &> /dev/null; then
+    sudo apt-get update -y > /dev/null 2>&1
+    sudo apt-get install -y jq > /dev/null 2>&1
+  fi
+
+  echo -e "\e[97m• OBTENDO CREDENCIAL DO REGISTRO DE IMAGENS \e[33m[1/5]\e[0m"
+  echo ""
+  # A chave vai por stdin do curl (--data @-), nunca em argv — argv fica
+  # visível em `ps` enquanto a requisição roda.
+  AUTH_JSON=$(printf '{"chave":"%s"}' "$chave_licenca" | curl -fsS -X POST \
+    "https://console.enchat.pro/api/v1/installs/registry-auth" \
+    -H 'Content-Type: application/json' --data @- 2>/dev/null || true)
+  GHCR_USER=$(printf '%s' "$AUTH_JSON" | jq -r '.username // empty' 2>/dev/null || true)
+  GHCR_TOKEN=$(printf '%s' "$AUTH_JSON" | jq -r '.token // empty' 2>/dev/null || true)
+
+  if [ -z "$GHCR_USER" ] || [ -z "$GHCR_TOKEN" ]; then
+    echo -e "\e[31m❌ Não foi possível obter credencial de acesso ao GHCR (chave inválida ou console indisponível).\e[0m"
+    unset chave_licenca
+    msg_retorno_menu
+    return 1
+  fi
+
+  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+  registrar_registry_portainer
+  REGISTRY_OK=$?
+
+  echo -e "\e[97m• GERANDO SEGREDOS \e[33m[2/5]\e[0m"
+  echo ""
+  enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
+  postgres_password=$(openssl rand -hex 24)
+  pinfy_master_key=$(openssl rand -hex 24)
+  pinfy_webhook_token=$(openssl rand -hex 24)
+  pinfy_panel_password=$(openssl rand -hex 24)
+
+  mkdir -p /var/enchat/media /var/enchat/postgres
+
+  echo -e "\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
+  echo ""
+
+  cat > enchat.yaml <<EOL
+version: "3.7"
+services:
+
+  enchat_app:
+    image: ghcr.io/carlosmaximiliano-cloud/enchat-free:$versao_enchat
+    hostname: enchat-app
+    networks:
+      - $nome_rede_interna
+      - enchat_net
+    volumes:
+      - /var/enchat/media:/data/media
+    environment:
+      DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?sslmode=disable"
+      WHATSAPP_APP_SECRET: ""
+      WHATSAPP_VERIFY_TOKEN: ""
+      WHATSAPP_API_VERSION: "v21.0"
+      INSTAGRAM_APP_ID: ""
+      INSTAGRAM_APP_SECRET: ""
+      INSTAGRAM_REDIRECT_URI: "https://$url_enchat/api/instagram/oauth/callback"
+      INSTAGRAM_VERIFY_TOKEN: ""
+      INSTAGRAM_API_VERSION: "v21.0"
+      PINFY_BASE_URL: "http://enchat_pinfy:3000"
+      PINFY_MASTER_KEY: "$pinfy_master_key"
+      PINFY_WEBHOOK_URL: "http://enchat_app:8080/api/webhooks/pinfy"
+      PINFY_WEBHOOK_TOKEN: "$pinfy_webhook_token"
+      MAUTIC_BASE_URL: ""
+      MAUTIC_USER: ""
+      MAUTIC_PASSWORD: ""
+      MAUTIC_WEBHOOK_TOKEN: ""
+      SMS_GATEWAY_ENABLED: "false"
+      SMS_GATEWAY_WEBHOOK_TOKEN: ""
+      WORDPRESS_WEBHOOK_TOKEN: ""
+      PUBLIC_BASE_URL: "https://$url_enchat"
+      MEDIA_DIR: "/data/media"
+      LICENSE_SERVER_URL: "https://console.enchat.pro"
+      ENCHAT_CANAL: "stable"
+      ENCHAT_MASTER_KEY: "$enchat_master_key"
+      TZ: "America/Sao_Paulo"
+      UPDATER_URL: ""
+      UPDATER_TOKEN: ""
+      UPDATE_MODE: ""
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=$nome_rede_interna"
+        - "traefik.http.routers.enchat-free.rule=Host(\`$url_enchat\`)"
+        - "traefik.http.routers.enchat-free.entrypoints=websecure"
+        - "traefik.http.routers.enchat-free.tls=true"
+        - "traefik.http.routers.enchat-free.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.enchat-free-http.rule=Host(\`$url_enchat\`)"
+        - "traefik.http.routers.enchat-free-http.entrypoints=web"
+        - "traefik.http.routers.enchat-free-http.middlewares=enchat-free-https-redirect"
+        - "traefik.http.middlewares.enchat-free-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.enchat-free-https-redirect.redirectscheme.permanent=true"
+        - "traefik.http.services.enchat-free.loadbalancer.server.port=8080"
+
+  enchat_pinfy:
+    image: ghcr.io/carlosmaximiliano-cloud/pinfy-api:1.0.0
+    hostname: enchat-pinfy
+    networks:
+      - enchat_net
+    environment:
+      DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
+      MASTER_KEY: "$pinfy_master_key"
+      PANEL_PASSWORD: "$pinfy_panel_password"
+      LICENSE_SERVER_URL: "https://app.pinfy.fun/"
+      TZ: "America/Sao_Paulo"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+
+  enchat_postgres:
+    image: pgvector/pgvector:pg16
+    networks:
+      - enchat_net
+    volumes:
+      - /var/enchat/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: "enchat"
+      POSTGRES_PASSWORD: "$postgres_password"
+      POSTGRES_DB: "enchat"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  $nome_rede_interna:
+    external: true
+    name: $nome_rede_interna
+  enchat_net:
+    driver: overlay
+    attachable: true
+
+EOL
+
+  STACK_NAME="enchat"
+  stack_editavel
+
+  # stack_editavel engole falha de deploy (imprime e retorna 0) — confirma
+  # via `docker stack ls`; se não subiu (ou se o registry não foi
+  # registrado), tenta o caminho independente do Portainer, só com o
+  # `docker login` do host.
+  if ! docker stack ls --format "{{.Name}}" | grep -q "^enchat$"; then
+    echo -e "\e[33m⚠️  Deploy via Portainer não confirmado — tentando via docker stack deploy direto...\e[0m"
+    docker stack deploy --with-registry-auth -c enchat.yaml enchat
+  fi
+
+  echo -e "\e[97m• VERIFICANDO SERVIÇOS \e[33m[4/5]\e[0m"
+  echo ""
+
+  pull ghcr.io/carlosmaximiliano-cloud/enchat-free:$versao_enchat ghcr.io/carlosmaximiliano-cloud/pinfy-api:1.0.0
+  wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
+
+  echo -e "\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
+  echo ""
+
+  cd /root/dados_vps
+  cat > dados_enchat <<EOL
+[ ENCHAT GRÁTIS ]
+
+Painel: https://$url_enchat
+Versão: $versao_enchat
+ENCHAT_MASTER_KEY: $enchat_master_key
+Senha do Postgres: $postgres_password
+Senha do painel Pinfy: $pinfy_panel_password
+
+⚠️ GUARDE a ENCHAT_MASTER_KEY em local seguro! Sem ela, os segredos
+   gravados no banco são irrecuperáveis.
+EOL
+  cd
+
+  unset chave_licenca GHCR_TOKEN AUTH_JSON
+
+  msg_resumo_informacoes
+  echo -e "\e[32m[ ENCHAT GRÁTIS ]\e[0m\n"
+  echo -e "\e[33m🌐 Painel:\e[97m https://$url_enchat\e[0m"
+  echo -e "\e[33m🔢 Versão:\e[97m $versao_enchat\e[0m"
+  echo -e ""
+  echo -e "\e[33m  Próximo passo — ATIVAÇÃO:\e[0m"
+  echo -e "  1. Abra https://$url_enchat no navegador (DNS já deve apontar para esta VPS)."
+  echo -e "  2. Pareie pelo WhatsApp (ou digite o CPF, fluxo legado) no primeiro acesso."
+  echo -e "  3. Crie o usuário administrador e comece a usar."
+  msg_retorno_menu
+
+}
+
 ferramenta_keycloak() {
   msg_keycloak
   dados
@@ -19024,7 +19343,8 @@ exibir_pagina2() {
         "$(printf "${amarelo_escuro}[ 59 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 79 ]${reset} - Krayin CRM${reset}" "Hoppscotch")" \
         "$(printf "${amarelo_escuro}[ 60 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" "Bolt")" \
         "$(printf "${amarelo_escuro}[ 61 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 81 ]${reset} - Duplicati${reset}" "Planka")" \
-        "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Webtop${reset}" "WPPConnect")"
+        "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Webtop${reset}" "WPPConnect")" \
+        "$(printf "${amarelo_escuro}[ 84 ]${reset} ${cinza}- %-${width}s |" "EnchaT Grátis")"
 }
 
 # --- Função Principal do Menu ---
@@ -19114,6 +19434,7 @@ processar_menu_unlimited() {
     OPCOES[80]="Shlink"
     OPCOES[81]="Duplicati"
     OPCOES[82]="Webtop"
+    OPCOES[84]="EnchaT Grátis"
     # outras opções
     OPCOES[97]="Atualizar painel" # Ação: pull da imagem nova + redeploy
     OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
@@ -19690,6 +20011,13 @@ processar_menu_unlimited() {
                 ferramenta_webtop
               fi
               ;;
+            84)
+                verificar_stack "enchat" && continue || echo ""
+                if verificar_docker_e_portainer_traefik; then
+                    STACK_NAME="enchat"
+                    ferramenta_enchat
+                fi
+                ;;
             97)
                 ferramenta_atualizar_painel
                 echo "Aperte ENTER para retornar ao menu de ferramentas"
