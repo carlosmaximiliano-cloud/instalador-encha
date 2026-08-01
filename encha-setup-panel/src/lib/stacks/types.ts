@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ReleaseInfo } from "../release-info";
 
 export type FieldKind = "text" | "domain" | "email" | "password" | "username" | "port" | "checkbox" | "slug";
 
@@ -18,6 +19,12 @@ export type SwarmContext = {
   networkName: string;
   serverName: string;
   email: string;
+  /**
+   * Preenchido pelo installer ANTES de generateYaml quando a stack declara
+   * `release` — a versão/imagem resolvidas na hora, consultando o Console.
+   * Ausente se a stack não declarar `release`.
+   */
+  release?: ReleaseInfo;
 };
 
 export type GeneratedSecret = {
@@ -40,8 +47,27 @@ export type RegistryAuthSpec = {
   exchangeUrl: string;
   /** Nome do campo do formulário que carrega a chave (deve também estar em transientFields). */
   licenseField: string;
-  /** Imagens privadas a pré-puxar (com a credencial) antes do deploy — falha rápido se a chave não tiver acesso. */
-  images: (values: Record<string, unknown>) => string[];
+  /**
+   * Imagens privadas a pré-puxar (com a credencial) antes do deploy — falha
+   * rápido se a chave não tiver acesso. `release` vem preenchido quando a
+   * stack declara `release` (ver StackDefinition.release) — resolvido pelo
+   * installer antes deste ponto, então nunca é `undefined` nesse caso.
+   */
+  images: (values: Record<string, unknown>, release?: ReleaseInfo) => string[];
+};
+
+/**
+ * Consulta `GET {baseUrl}/api/version?app=&edicao=&canal=` no Console EnchaT
+ * para resolver a versão/imagem a instalar, em vez de pedir isso num campo
+ * do formulário — evita o operador digitar uma versão que não existe
+ * publicada. Resolvido pelo installer ANTES de generateYaml/registryAuth.images,
+ * e exposto em `ctx.release`. Ver release-info.ts.
+ */
+export type ReleaseSpec = {
+  baseUrl: string;
+  app: string;
+  edicao: string;
+  canal: string;
 };
 
 export type StackDefinition = {
@@ -89,6 +115,8 @@ export type StackDefinition = {
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;
+  /** Resolve a versão/imagem a instalar pelo Console, em vez de pedir num campo do formulário. */
+  release?: ReleaseSpec;
   /**
    * Serviços cuja imagem pode ser trocada in-place (rolling update do Swarm),
    * sem recriar a stack nem tocar em volumes/banco. `service` é o nome do

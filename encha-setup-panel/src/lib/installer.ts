@@ -11,6 +11,7 @@ import {
   type Stack,
 } from "./portainer";
 import { RegistryAuthError, ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
+import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
 import { ensureHostDirs } from "./host-dirs";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
@@ -147,7 +148,49 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       if (def.id === "mysql" && g.name === "senha_mysql") sharedToPersist.senha_mysql = g.value;
     }
 
-    const yaml = def.generateYaml(parsed.data, secretMap, input.swarmCtx);
+    // Resolve a versão/imagem pelo Console ANTES do YAML e do registryAuth —
+    // as duas etapas seguintes dependem do resultado (generateYaml monta
+    // `image:` a partir daqui; registryAuth.images pré-puxa a mesma imagem).
+    let effectiveCtx = input.swarmCtx;
+    if (def.release) {
+      try {
+        const release = await fetchLatestRelease(
+          def.release.baseUrl,
+          def.release.app,
+          def.release.edicao,
+          def.release.canal
+        );
+        effectiveCtx = { ...input.swarmCtx, release };
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "release.resolve",
+          target: def.release.baseUrl,
+          result: "ok",
+          meta: { version: release.version, image_repo: release.imageRepo, image_tag: release.imageTag },
+        });
+      } catch (e) {
+        const meta: Record<string, unknown> = {
+          error: e instanceof Error ? e.message : "Erro desconhecido",
+        };
+        if (e instanceof ReleaseInfoError) {
+          meta.reason = e.reason;
+          if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
+          if (e.serverDetail !== undefined) meta.serverDetail = e.serverDetail;
+        }
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "release.resolve.fail",
+          target: def.release.baseUrl,
+          result: "error",
+          meta,
+        });
+        throw e;
+      }
+    }
+
+    const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
 
     // Credencial de registro privado (ex.: GHCR) — precisa existir no
@@ -172,7 +215,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
           result: "ok",
           meta: { registryId, username: creds.username }, // nunca a chave nem o token
         });
-        for (const img of def.registryAuth.images(parsed.data)) {
+        for (const img of def.registryAuth.images(parsed.data, effectiveCtx.release)) {
           await pullImageWithRegistry(input.token, endpointId, img, registryId);
         }
       } catch (e) {

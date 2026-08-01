@@ -17,7 +17,9 @@ export type AuditAction =
   | "host.scripts.update"
   | "host.scripts.update.fail"
   | "registry.auth"
-  | "registry.auth.fail";
+  | "registry.auth.fail"
+  | "release.resolve"
+  | "release.resolve.fail";
 
 export type AuditEntry = {
   user: string;
