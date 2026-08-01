@@ -126,6 +126,34 @@ async function loadReusedSecrets(): Promise<Record<string, string>> {
   }
 }
 
+// Segredos que a PRÓPRIA stack já gerou numa instalação anterior (ex.:
+// enchat_master_key, postgres_password do "enchat"). Diferente de
+// loadReusedSecrets (que só cobre os sentinels REUSE_* compartilhados entre
+// stacks distintas), isto cobre o reinstall/retry da MESMA stack: sem isso,
+// cada POST /api/stacks gera valores novos via randomBytes, e um segundo
+// install (retry após falha parcial, ou o operador clicando "Instalar" de
+// novo) troca ENCHAT_MASTER_KEY e a senha do Postgres por baixo do capô —
+// a app já teria dados gravados sob a chave/senha antigas e o boot aborta
+// no canary de criptografia (ver internal/crypto no repo do EnchaT).
+async function loadStackOwnSecrets(stackName: string): Promise<Record<string, string>> {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT encrypted_envs FROM stack_secrets WHERE stack_name = ?")
+    .get(stackName) as { encrypted_envs: string } | undefined;
+  if (!row) return {};
+  try {
+    const { decryptSecret } = await import("./crypto");
+    const parsed = JSON.parse(decryptSecret(row.encrypted_envs)) as { generated?: GeneratedSecret[] };
+    const out: Record<string, string> = {};
+    for (const g of parsed.generated ?? []) {
+      if (g && typeof g.name === "string" && typeof g.value === "string") out[g.name] = g.value;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 function saveSharedSecrets(secrets: Record<string, string>): void {
   const db = getDb();
   const blob = encryptSecret(JSON.stringify(secrets));
@@ -182,7 +210,12 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
   try {
     const reused = await loadReusedSecrets();
-    const generated = def.generateSecrets?.(parsed.data) ?? [];
+    const previousOwn = await loadStackOwnSecrets(input.stackId);
+    const generated = (def.generateSecrets?.(parsed.data) ?? []).map((g) => {
+      if (g.value === "REUSE_POSTGRES" || g.value === "REUSE_MINIO" || g.value === "REUSE_MYSQL") return g;
+      const prev = previousOwn[g.name];
+      return prev !== undefined ? { ...g, value: prev } : g;
+    });
     const secretMap = buildSecretMap(generated, reused);
 
     const sharedToPersist: Record<string, string> = { ...reused };

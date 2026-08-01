@@ -214,5 +214,11 @@ export async function POST(req: NextRequest) {
     stackId: result.stack?.Id,
     accessUrl: def.postInstall?.accessUrl?.(parsed.data.values),
     notes: def.postInstall?.notes ?? [],
+    // Só os segredos marcados `reveal: true` saem daqui — é a ÚNICA vez que
+    // o operador consegue ver um valor como o enchat_master_key; o painel
+    // guarda uma cópia criptografada para reinstalls, mas não a reexibe.
+    revealSecrets: (result.generatedSecrets ?? [])
+      .filter((s) => s.reveal)
+      .map((s) => ({ name: s.name, value: s.value })),
   });
 }

@@ -106,7 +106,7 @@ export const enchat: StackDefinition = {
   ],
   schema,
   generateSecrets: () => [
-    { name: "enchat_master_key", value: randomBytes(32).toString("base64") },
+    { name: "enchat_master_key", value: randomBytes(32).toString("base64"), reveal: true },
     { name: "postgres_password", value: randomBytes(24).toString("hex") },
     { name: "pinfy_master_key", value: randomBytes(24).toString("hex") },
     { name: "pinfy_webhook_token", value: randomBytes(24).toString("hex") },

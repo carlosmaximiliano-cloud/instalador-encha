@@ -30,6 +30,15 @@ export type SwarmContext = {
 export type GeneratedSecret = {
   name: string;
   value: string;
+  /**
+   * Se true, o valor é devolvido uma única vez na resposta de instalação
+   * (POST /api/stacks) para o operador copiar — nunca fica só no banco do
+   * painel. Reservado para segredos cuja perda é irrecuperável fora daqui
+   * (ex.: enchat_master_key). NÃO marcar segredos internos de uso exclusivo
+   * entre containers (ex.: senha do Postgres, token do Pinfy) — esses não
+   * precisam sair do painel e só aumentariam a superfície de exposição.
+   */
+  reveal?: boolean;
 };
 
 /**

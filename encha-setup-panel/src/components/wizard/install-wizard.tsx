@@ -37,10 +37,12 @@ type Props = {
   swarmCtx: { networkName: string; serverName: string; email: string };
 };
 
+type RevealSecret = { name: string; value: string };
+
 type InstallState =
   | { kind: "form" }
   | { kind: "installing" }
-  | { kind: "success"; accessUrl?: string; notes: string[] }
+  | { kind: "success"; accessUrl?: string; notes: string[]; revealSecrets: RevealSecret[] }
   | { kind: "error"; message: string };
 
 export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
@@ -83,7 +85,12 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         setState({ kind: "error", message: data.error ?? "Erro na instalação" });
         return;
       }
-      setState({ kind: "success", accessUrl: data.accessUrl, notes: data.notes ?? [] });
+      setState({
+        kind: "success",
+        accessUrl: data.accessUrl,
+        notes: data.notes ?? [],
+        revealSecrets: data.revealSecrets ?? [],
+      });
       onInstalled?.();
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : "Erro de rede" });
@@ -175,6 +182,28 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
               >
                 {state.accessUrl}
               </a>
+            )}
+            {state.revealSecrets.length > 0 && (
+              <div className="max-w-md mx-auto text-left space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+                <p className="text-xs font-semibold text-amber-500">
+                  ⚠ Copie agora — não será mostrado de novo nesta tela.
+                </p>
+                {state.revealSecrets.map((s) => (
+                  <div key={s.name} className="space-y-1">
+                    <Label className="text-xs">{s.name}</Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={s.value} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigator.clipboard.writeText(s.value)}
+                      >
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
             {state.notes.length > 0 && (
               <ul className="text-sm text-muted-foreground space-y-1 max-w-md mx-auto text-left">
