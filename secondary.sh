@@ -3,7 +3,7 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com main.sh, encha-setup-panel/package.json
 # e encha-setup-panel/src/lib/version.ts.
-ENCHA_VERSION="0.1.3"
+ENCHA_VERSION="0.1.4"
 
 # Versão fixa da Evolution API. Mantenha em sincronia com EVOLUTION_IMAGE em
 # encha-setup-panel/src/lib/stacks/evolution.ts.
@@ -2355,7 +2355,7 @@ EOL
   # Verificação Final
   if ! command -v docker &> /dev/null; then
      echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
-     return
+     return 1
   fi
   
   sudo systemctl enable docker > /dev/null 2>&1
@@ -12575,7 +12575,11 @@ version: "3.7"
 services:
 
   enchat_app:
-    image: ghcr.io/carlosmaximiliano-cloud/enchat-free:$versao_enchat
+    # Owner separado do da edição MAX de propósito — ver
+    # ENCHAT GRÁTIS/README.md no repo do EnchaT. Este caminho (menu legado
+    # de secondary.sh) não é chamado por main.sh; a instalação suportada é
+    # pelo painel (src/lib/stacks/enchat.ts), que resolve isso pelo Console.
+    image: ghcr.io/enchainterno/enchat-free:$versao_enchat
     hostname: enchat-app
     networks:
       - $nome_rede_interna
@@ -12638,7 +12642,7 @@ services:
         - "traefik.http.services.enchat-free.loadbalancer.server.port=8080"
 
   enchat_pinfy:
-    image: ghcr.io/carlosmaximiliano-cloud/pinfy-api:1.0.0
+    image: ghcr.io/enchainterno/pinfy-api:1.0.0
     hostname: enchat-pinfy
     networks:
       - enchat_net
@@ -12699,7 +12703,7 @@ EOL
   echo -e "\e[97m• VERIFICANDO SERVIÇOS \e[33m[4/5]\e[0m"
   echo ""
 
-  pull ghcr.io/carlosmaximiliano-cloud/enchat-free:$versao_enchat ghcr.io/carlosmaximiliano-cloud/pinfy-api:1.0.0
+  pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy-api:1.0.0
   wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
 
   echo -e "\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
@@ -18227,7 +18231,7 @@ EOL
   # Verificação Final
   if ! command -v docker &> /dev/null; then
      echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
-     return
+     return 1
   fi
   
   sudo systemctl enable docker > /dev/null 2>&1
@@ -20377,7 +20381,7 @@ atualizar_fonte_painel() {
 
     rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
     git clone --depth 1 \
-        https://github.com/carlosmaximiliano-cloud/instalador-encha.git \
+        https://github.com/enchaaluno/setupteste.git \
         /tmp/_setupteste_clone >/dev/null 2>&1 || return 1
     if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
         rm -rf /tmp/_setupteste_clone
@@ -20497,12 +20501,18 @@ deploy_stack_painel_via_portainer() {
         return 1
     fi
 
+    # A tag PRECISA bater com APP_VERSION bakeada na imagem (src/lib/version.ts) —
+    # host-dirs.ts procura localmente "setup-panel:${APP_VERSION}" antes de
+    # puxar um fallback do Docker Hub. Se a stack rodasse "latest" mas só a
+    # tag $ENCHA_VERSION estivesse cacheada localmente (ou vice-versa), o
+    # ensureHostDirs de QUALQUER stack com hostDirs (ex.: EnchaT Grátis)
+    # cairia no fallback alpine/git e puxaria do Hub no meio do install.
     local env_json
     env_json=$(jq -nc \
         --arg host "$url_painel" \
         --arg pu "$panel_user_val" --arg pp "$panel_pass_val" \
         --arg su "$user_portainer" --arg sp "$pass_portainer" \
-        --arg tag "latest" \
+        --arg tag "$ENCHA_VERSION" \
         '[{name:"ENCHA_PANEL_HOST",value:$host},
           {name:"PANEL_ADMIN_USER",value:$pu},
           {name:"PANEL_ADMIN_PASSWORD",value:$pp},
@@ -20629,13 +20639,18 @@ ferramenta_encha_panel() {
         echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
     fi
 
-    echo -e "\e[97m• [4/6] Obtendo imagem ghcr.io/enchaaluno/setup-panel:latest\e[0m"
-    if docker pull ghcr.io/enchaaluno/setup-panel:latest >/dev/null 2>&1; then
+    # Puxa pela tag pinada ($ENCHA_VERSION), não "latest" — host-dirs.ts, no
+    # painel, procura localmente "setup-panel:${APP_VERSION}" antes de puxar
+    # um fallback do Docker Hub pra criar bind mounts; se só ":latest"
+    # estivesse cacheado, essa checagem local nunca bateria (Docker não sabe
+    # que duas tags apontam pro mesmo dígest sem baixar as duas).
+    echo -e "\e[97m• [4/6] Obtendo imagem ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION\e[0m"
+    if docker pull "ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION" >/dev/null 2>&1; then
         echo -e "  \e[32m✓ Imagem baixada do GHCR.\e[0m"
     elif [[ -d /root/encha-setup-panel/src ]]; then
         echo -e "  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
         echo -e "  \e[97m  Log completo: /var/log/encha-build.log\e[0m"
-        docker build -t ghcr.io/enchaaluno/setup-panel:latest /root/encha-setup-panel/ \
+        docker build -t "ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION" /root/encha-setup-panel/ \
             > /var/log/encha-build.log 2>&1 &
         local build_pid=$!
         local start=$SECONDS
@@ -20690,7 +20705,9 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
-      - MONITOR_BASE_URL=https://monitor.encha.com.br
+      # Vazio de propósito: o Monitor foi descontinuado. Ver docker-stack.yaml
+      # do painel (fonte da verdade) e monitor.ts (fetchWithTimeout).
+      - MONITOR_BASE_URL=
       - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
       - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}
       - PORTAINER_USER=${PORTAINER_USER}
@@ -20745,9 +20762,15 @@ TEMPLATE
         return 1
     fi
 
-    # 7) Aguarda o serviço subir
+    # 7) Aguarda o serviço subir — o retorno de wait_stack (1 no timeout)
+    # precisa ser propagado, senão a instalação declara sucesso com o
+    # painel fora do ar e o operador só descobre tentando acessar depois.
     if type wait_stack &> /dev/null; then
-        wait_stack "encha-panel"
+        if ! wait_stack "encha-panel"; then
+            echo -e "\e[41m❌ A stack encha-panel foi publicada no Portainer, mas o serviço não ficou ativo a tempo.\e[0m"
+            echo -e "\e[41m   Verifique 'docker service ps encha-panel_panel' e 'docker service logs encha-panel_panel'.\e[0m"
+            return 1
+        fi
     else
         sleep 30
     fi

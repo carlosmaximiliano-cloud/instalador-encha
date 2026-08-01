@@ -27,6 +27,14 @@ export type MonitorRelease = {
 };
 
 async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response | null> {
+  // MONITOR_BASE_URL="" (explícito, ver docker-stack.yaml) desliga o Monitor
+  // sem pagar timeout nenhum. O Monitor foi descontinuado (substituído pelo
+  // Console em console.enchat.pro); hoje o painel já falha aberto se o fetch
+  // cair (ver terms-gate.tsx), mas isso ainda paga TIMEOUT_MS por chamada e
+  // deixa uma porta aberta: se monitor.encha.com.br for reciclado por
+  // terceiro e responder 200 com um JSON de termos, o diálogo obrigatório
+  // (sem botão recusar) volta a bloquear a frota inteira.
+  if (!MONITOR_BASE_URL) return null;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {

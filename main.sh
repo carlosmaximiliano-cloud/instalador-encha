@@ -2,7 +2,16 @@
 
 # Versão do Encha Setup. Mantenha em sincronia com encha-setup-panel/src/lib/version.ts
 # e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
-ENCHA_VERSION="0.1.3"
+ENCHA_VERSION="0.1.4"
+
+# Exportado ANTES de qualquer apt/docker-ce install, inclusive dentro de
+# secondary.sh (é `source`ado neste mesmo shell — main.sh:710 — então herda
+# estas env vars sem precisar prefixar cada chamada individualmente). Sem
+# NEEDRESTART_MODE=a, o `needrestart` do Ubuntu 22/24 pode abrir um prompt
+# whiptail que fica invisível numa sessão não-interativa (curl | bash) e
+# parece travamento — DEBIAN_FRONTEND já cobre os prompts do dpkg/apt em si.
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
 
 # Versão e URL dos Termos de Uso (texto integral em legal/TERMOS-DE-USO.md).
 # Ao publicar uma revisão material do texto, atualize TERMS_VERSION em conjunto
@@ -21,7 +30,7 @@ if [ ! -t 0 ]; then
     else
         echo "ERRO: este instalador precisa de um terminal interativo." >&2
         echo "Rode com um TTY, por exemplo:" >&2
-        echo "  bash <(curl -fsSL https://raw.githubusercontent.com/carlosmaximiliano-cloud/instalador-encha/main/main.sh)" >&2
+        echo "  bash <(curl -fsSL https://raw.githubusercontent.com/enchaaluno/setupteste/main/main.sh)" >&2
         exit 1
     fi
 fi
@@ -262,6 +271,47 @@ obter_ip_publico() {
         ip_publico=$(hostname -I | awk '{print $1}')
     fi
     echo "$ip_publico"
+}
+
+# Checagem de pré-requisito ANTES de subir Traefik: DNS errado faz o Let's
+# Encrypt falhar em silêncio (docker stack deploy do Traefik já manda tudo
+# pra /dev/null) e o painel sobe sem HTTPS — e sem HTTPS o login nem
+# funciona, porque o cookie de sessão exige `Secure` (__Host-). Isto é só
+# AVISO, nunca bloqueia: DNS em propagação é um caso legítimo, e forçar
+# abort aqui travaria instalação de quem sabe o que está fazendo.
+checar_dns_e_portas() {
+    echo ""
+    barra_meio
+    echo -e "${ciano}${negrito}🔎 PRÉ-CHECAGEM (informativa — não bloqueia)${reset}"
+    barra_meio
+
+    local ip_atual
+    ip_atual=$(curl -s --max-time 10 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$ip_atual" ]; then
+        ip_atual=$(hostname -I | awk '{print $1}')
+    fi
+    status_info "IP público desta VPS: ${negrito}${ip_atual:-desconhecido}${reset}"
+
+    local dominio resolvido
+    for dominio in "$url_portainer" "$url_painel"; do
+        [ -z "$dominio" ] && continue
+        resolvido=$(getent ahostsv4 "$dominio" 2>/dev/null | awk '{print $1}' | head -n1)
+        if [ -z "$resolvido" ]; then
+            status_warning "DNS de '${dominio}' não resolveu ainda. Se acabou de criar o registro, aguarde a propagação — o Let's Encrypt vai falhar até resolver."
+        elif [ -n "$ip_atual" ] && [ "$resolvido" != "$ip_atual" ]; then
+            status_warning "DNS de '${dominio}' aponta para ${resolvido}, não para o IP desta VPS (${ip_atual}). Confirme o registro A antes de seguir."
+        else
+            status_ok "DNS de '${dominio}' já aponta para esta VPS."
+        fi
+    done
+
+    local ocupadas
+    ocupadas=$(ss -ltn 2>/dev/null | awk '{print $4}' | grep -E ':(80|443)$')
+    if [ -n "$ocupadas" ]; then
+        status_warning "Porta 80 e/ou 443 já está em uso por outro processo nesta VPS — o Traefik pode falhar ao subir. Rode 'ss -ltnp | grep -E \":(80|443)\"' para identificar."
+    else
+        status_ok "Portas 80 e 443 livres."
+    fi
 }
 
 executar_instalacoes() {
@@ -643,7 +693,7 @@ download_secondary() {
 
     status_info "Baixando secondary.sh da fonte oficial..."
     if curl -fsSL --retry 3 --connect-timeout 10 \
-        https://raw.githubusercontent.com/carlosmaximiliano-cloud/instalador-encha/main/secondary.sh \
+        https://raw.githubusercontent.com/enchaaluno/setupteste/main/secondary.sh \
         -o SetupEnchaAI; then
         chmod +x SetupEnchaAI
         status_ok "Script baixado com sucesso"
@@ -670,10 +720,10 @@ preparar_fonte_painel() {
         && git -C /root/encha-setup-panel reset --hard FETCH_HEAD >/dev/null 2>&1; then
         status_info "Repositório atualizado (fetch --depth 1 + reset)."
     else
-        status_info "Clonando carlosmaximiliano-cloud/instalador-encha..."
+        status_info "Clonando enchaaluno/setupteste..."
         rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
         git clone --depth 1 \
-            https://github.com/carlosmaximiliano-cloud/instalador-encha.git \
+            https://github.com/enchaaluno/setupteste.git \
             /tmp/_setupteste_clone >/dev/null 2>&1 \
             || { status_fail "Falha no git clone"; exit 1; }
         if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
@@ -758,11 +808,15 @@ fi
 
 if [ "$INSTALAR_INFRA" -eq 1 ]; then
     coletar_inputs_instalacao
+    checar_dns_e_portas
     echo ""
     barra_meio
     echo -e "${roxo}${negrito}🐳 INSTALANDO TRAEFIK + PORTAINER${reset}"
     barra_meio
-    ferramenta_traefik_e_portainer
+    if ! ferramenta_traefik_e_portainer; then
+        status_fail "Falha ao instalar Traefik/Portainer (Docker ausente ou stack não subiu). Verifique 'docker service ls' e 'journalctl -u docker'."
+        exit 1
+    fi
 else
     coletar_inputs_so_painel
     status_info "Reaproveitando Traefik+Portainer existentes (rede: ${nome_rede_interna})."

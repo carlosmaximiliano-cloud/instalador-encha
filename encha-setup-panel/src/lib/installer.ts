@@ -31,8 +31,53 @@ export type InstallResult = {
   ok: boolean;
   stack?: Stack;
   error?: string;
+  /** Causa estruturada (ver RegistryAuthReason/ReleaseInfoReason) — permite o cliente/API distinguir "chave errada" de "Console fora do ar" em vez de um 400 genérico pra tudo. */
+  reason?: string;
+  /** Status HTTP sugerido pra API route devolver — falha do lado do EnchaT vira 502/504/429, nunca 400. */
+  httpStatus?: number;
   generatedSecrets?: GeneratedSecret[];
 };
+
+// Mapeia a causa estruturada de RegistryAuthError/ReleaseInfoError pro status
+// HTTP que a API route deve devolver. Sem isso, TODO erro de install virava
+// 400 — foi exatamente isso que escondeu o 503 "registry_nao_configurado" do
+// Console original: o cliente via só "Erro na instalação", sem status nem
+// motivo, e não dava pra saber se o problema era a chave ou o serviço do
+// EnchaT. Ver registry-auth.ts e release-info.ts para as taxonomias.
+function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
+  if (e instanceof RegistryAuthError) {
+    switch (e.reason) {
+      case "timeout":
+        return { httpStatus: 504, reason: e.reason };
+      case "rate_limited":
+        return { httpStatus: 429, reason: e.reason };
+      case "unauthorized":
+        // Único caso que é mesmo "culpa do usuário" — chave de licença errada.
+        return { httpStatus: 400, reason: e.reason };
+      case "network":
+      case "server":
+      case "not_found":
+      case "malformed":
+      case "contract":
+        return { httpStatus: 502, reason: e.reason };
+    }
+  }
+  if (e instanceof ReleaseInfoError) {
+    switch (e.reason) {
+      case "timeout":
+        return { httpStatus: 504, reason: e.reason };
+      case "network":
+      case "not_found":
+      case "server":
+      case "malformed":
+      case "contract":
+        return { httpStatus: 502, reason: e.reason };
+    }
+  }
+  // Erro não estruturado (bug de código, falha do Portainer, etc.) — 500
+  // continua correto: não é nem "chave errada" nem "Console fora do ar".
+  return { httpStatus: 500 };
+}
 
 function shouldEncryptField(name: string): boolean {
   return /pass|senha|secret|token|key|apikey/i.test(name);
@@ -283,15 +328,16 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     return { ok: true, stack, generatedSecrets: generated };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro desconhecido";
+    const { httpStatus, reason } = statusForCause(e);
     logAudit({
       user: input.user,
       ip: input.ip,
       action: "stack.install.fail",
       target: input.stackId,
       result: "error",
-      meta: { error: msg },
+      meta: { error: msg, reason, httpStatus },
     });
-    return { ok: false, error: msg };
+    return { ok: false, error: msg, reason, httpStatus };
   }
 }
 

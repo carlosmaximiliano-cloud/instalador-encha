@@ -52,7 +52,10 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
-      - MONITOR_BASE_URL=https://monitor.encha.com.br
+      # Vazio de propósito: o Monitor foi descontinuado (substituído pelo
+      # Console em console.enchat.pro). Vazio desliga o cliente monitor.ts
+      # sem timeout nenhum — ver o comentário em fetchWithTimeout.
+      - MONITOR_BASE_URL=
       - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
       - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}
       - PORTAINER_USER=${PORTAINER_USER}

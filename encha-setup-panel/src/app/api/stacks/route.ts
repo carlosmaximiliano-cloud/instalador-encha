@@ -15,7 +15,12 @@ const installSchema = z.object({
   swarmCtx: z.object({
     networkName: z.string().min(1),
     serverName: z.string().min(1),
-    email: z.string().email(),
+    // Vazio é um valor LEGÍTIMO aqui, não ausência de validação: vem de
+    // /root/dados_vps/dados_vps (vps-context.ts), que pode não ter a linha
+    // de e-mail numa VPS reaproveitada ou provisionada fora do fluxo padrão.
+    // Rejeitar string vazia derrubava TODA instalação de TODA stack (só
+    // dify.ts e traefik-portainer.ts realmente usam este campo).
+    email: z.union([z.literal(""), z.string().email()]),
   }),
 });
 
@@ -194,7 +199,16 @@ export async function POST(req: NextRequest) {
     ip,
   });
 
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+  if (!result.ok) {
+    // httpStatus vem de installer.ts (statusForCause) — falha do lado do
+    // EnchaT (Console fora do ar, timeout, resposta malformada) devolve
+    // 502/504/429, não 400. 400 fica só pra chave de licença errada ou bug
+    // de validação. Ver plano de correção do Encha Setup para o motivo.
+    return NextResponse.json(
+      { error: result.error, reason: result.reason },
+      { status: result.httpStatus ?? 400 }
+    );
+  }
   return NextResponse.json({
     ok: true,
     stackId: result.stack?.Id,
