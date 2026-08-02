@@ -22,7 +22,11 @@ function pinfyRepoFrom(imageRepo: string): string {
   return `${imageRepo.slice(0, idx)}/pinfy`;
 }
 // O default do upstream (licenca.pinfy.com.br) tem DNS morto.
-const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun/";
+// SEM barra final: o backend do Pinfy concatena "${LICENSE_SERVER_URL}/api/agent/activate"
+// sem normalizar — uma URL terminada em "/" vira "..//api/agent/activate" e
+// o POST /api/license/activate falha com 404 (achado no primeiro onboarding
+// real: ativação presa em "ativacao_pinfy_falhou" apesar do token já emitido).
+const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun";
 
 // A edição Grátis do EnchaT (e o Pinfy embutido) vivem num owner GHCR
 // SEPARADO do da edição MAX — de propósito, é o que permite a credencial de
