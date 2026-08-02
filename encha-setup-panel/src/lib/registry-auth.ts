@@ -16,8 +16,13 @@ export type ExchangedCredentials = { username: string; token: string };
 export type RegistryAuthReason =
   | "timeout" // AbortController estourou (EXCHANGE_TIMEOUT_MS) — Console lento/travado
   | "network" // fetch rejeitou por transporte: DNS, TCP recusado, TLS
-  | "unauthorized" // 401/403 — chave inválida, expirada ou revogada
-  | "not_found" // 404 — exchangeUrl mudou ou está errado
+  | "unauthorized" // 401/403 sem motivo reconhecido no corpo — chave inválida por algum motivo não mapeado
+  | "chave_nao_encontrada" // 403 {error:"not_found"} — a chave não existe no Console
+  | "chave_revogada" // 403 {error:"revoked"}
+  | "chave_expirada" // 403 {error:"expired"}
+  | "fingerprint_mismatch" // 403 {error:"fingerprint_mismatch"} — licença já vinculada a OUTRA VPS
+  | "updates_expirados" // 403 {error:"updates_expirados"} — licença válida, mas fora da janela de updates
+  | "not_found" // 404 HTTP — exchangeUrl mudou ou está errado (bug do lado do EnchaT, não da chave)
   | "rate_limited" // 429 — Console pediu para esperar
   | "server" // 5xx — falha no backend do Console EnchaT, não na chave
   | "malformed" // 2xx mas corpo não é JSON (ex.: página de erro de proxy)
@@ -57,9 +62,18 @@ async function readErrorDetail(res: Response): Promise<string | undefined> {
 
 // Lança em vez de best-effort (ao contrário de monitor.ts): uma falha aqui
 // deve abortar a instalação, nunca seguir silenciosamente sem credencial.
+//
+// `fingerprint` é opcional e existe para o caminho de pareamento self-service
+// (ver license-pairing.ts): uma licença que acabou de ser pareada já nasce
+// VINCULADA a um fingerprint no Console, e a partir desse instante o campo
+// passa a ser exigido por lá — sem ele, /installs/registry-auth recusa com
+// `fingerprint_mismatch` (ver route.ts do Console: fingerprint vazio nunca
+// bate com `outra_vps`). Chaves coladas manualmente (nunca pareadas, sem
+// fingerprint vinculado) continuam funcionando sem passar nada aqui.
 export async function exchangeLicenseForGhcrCredentials(
   exchangeUrl: string,
-  chave: string
+  chave: string,
+  fingerprint?: string
 ): Promise<ExchangedCredentials> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), EXCHANGE_TIMEOUT_MS);
@@ -68,7 +82,7 @@ export async function exchangeLicenseForGhcrCredentials(
     res = await fetch(exchangeUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chave }),
+      body: JSON.stringify(fingerprint ? { chave, fingerprint } : { chave }),
       signal: ctrl.signal,
       cache: "no-store",
     });
@@ -93,6 +107,51 @@ export async function exchangeLicenseForGhcrCredentials(
     const detail = await readErrorDetail(res);
     const status = res.status;
     if (status === 401 || status === 403) {
+      // O Console devolve {error:"<motivo>"} — readErrorDetail já extrai
+      // esse campo, então `detail` aqui É o motivo em si (não uma frase
+      // livre). Diferenciar por ele evita colapsar "esta licença já está
+      // em outra VPS" (recuperável só migrando/desvinculando) na mesma
+      // mensagem genérica de "chave errada" (recuperável digitando de novo)
+      // — ver Console: src/app/api/v1/installs/registry-auth/route.ts.
+      switch (detail) {
+        case "not_found":
+          throw new RegistryAuthError(
+            "chave_nao_encontrada",
+            "Esta chave de licença não existe no Console EnchaT — confira se foi digitada certo.",
+            status,
+            detail
+          );
+        case "revoked":
+          throw new RegistryAuthError(
+            "chave_revogada",
+            "Esta licença foi revogada — fale com o suporte EnchaT para liberar um novo cadastro.",
+            status,
+            detail
+          );
+        case "expired":
+          throw new RegistryAuthError(
+            "chave_expirada",
+            "Esta licença expirou — renove com o suporte EnchaT.",
+            status,
+            detail
+          );
+        case "fingerprint_mismatch":
+          throw new RegistryAuthError(
+            "fingerprint_mismatch",
+            "Esta licença já está vinculada a outra VPS — não é possível reutilizá-la aqui. " +
+              "Se você migrou de servidor de propósito, fale com o suporte EnchaT para desvincular.",
+            status,
+            detail
+          );
+        case "updates_expirados":
+          throw new RegistryAuthError(
+            "updates_expirados",
+            "Esta licença está fora da janela de atualizações gratuitas — a versão instalada pode " +
+              "ficar desatualizada. Fale com o suporte EnchaT se isso for inesperado.",
+            status,
+            detail
+          );
+      }
       throw new RegistryAuthError(
         "unauthorized",
         "Chave de licença inválida, expirada ou revogada.",

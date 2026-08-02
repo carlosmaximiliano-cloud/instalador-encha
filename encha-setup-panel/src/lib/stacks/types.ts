@@ -25,6 +25,27 @@ export type SwarmContext = {
    * Ausente se a stack não declarar `release`.
    */
   release?: ReleaseInfo;
+  /**
+   * Fingerprint de instalação já vinculado a uma licença via pareamento
+   * self-service (ver license-pairing.ts) — precisa ser o MESMO valor que
+   * o app vai calcular no primeiro boot (sha256(machineId + "|" + hostname)),
+   * nunca recalculado aqui. Repassado ao registryAuth.exchangeUrl: uma
+   * licença recém-pareada já nasce vinculada no Console, e a partir desse
+   * instante o campo passa a ser exigido por lá. Ausente quando a stack não
+   * tem pareamento (fields.chave_licenca colada manualmente) ou quando o
+   * pareamento ainda não populou este contexto.
+   */
+  fingerprint?: string;
+  /**
+   * ENCHAT_MACHINE_ID desta instalação (ver enchat-fingerprint.ts +
+   * pairing-store.ts) — precisa ir pro env da stack IDENTICO ao que gerou
+   * `fingerprint` acima; a stack então calcula o mesmo fingerprint no
+   * primeiro boot. Vazio ("") numa instalação que já existia antes deste
+   * campo existir (fingerprint legado preservado de propósito — ver
+   * getOrCreateMachineId). Ausente só quando a stack não usa este
+   * mecanismo.
+   */
+  machineId?: string;
 };
 
 export type GeneratedSecret = {
@@ -79,6 +100,25 @@ export type ReleaseSpec = {
   canal: string;
 };
 
+/**
+ * Pareamento self-service de licença (ver license-pairing.ts +
+ * pairing-store.ts) — o cliente gera a própria licença dentro do wizard, em
+ * vez de precisar de uma license_key já criada por um admin. Consumido pelo
+ * componente LicensePairing (wizard) e pelas rotas /api/license/pair/*.
+ */
+export type PairingSpec = {
+  /** Base do Console EnchaT a parear (mesmo valor de release.baseUrl/registryAuth.exchangeUrl, tipicamente). */
+  consoleBaseUrl: string;
+  /** Edição enviada ao Console no pair/start (ex.: "free") — sempre a MESMA edição que a imagem instalada, nunca escolhida pelo usuário (ver risco de instalar a imagem free com uma chave MAX). */
+  edicao: string;
+  /** Nome do campo do schema que recebe a chave confirmada pelo pareamento (deve também estar em transientFields). */
+  targetField: string;
+  /** Nome do campo (hidden, registrado no form) que carrega o id opaco da sessão de pareamento até o submit. */
+  sessionField: string;
+  /** Grupo visual (StackField.group) onde o componente de pareamento é renderizado no wizard. */
+  group?: string;
+};
+
 export type StackDefinition = {
   id: string;
   name: string;
@@ -126,6 +166,8 @@ export type StackDefinition = {
   registryAuth?: RegistryAuthSpec;
   /** Resolve a versão/imagem a instalar pelo Console, em vez de pedir num campo do formulário. */
   release?: ReleaseSpec;
+  /** Pareamento self-service de licença — ver PairingSpec. Ausente = a stack não oferece esse fluxo (chave só manual). */
+  pairing?: PairingSpec;
   /**
    * Serviços cuja imagem pode ser trocada in-place (rolling update do Swarm),
    * sem recriar a stack nem tocar em volumes/banco. `service` é o nome do
@@ -145,7 +187,12 @@ export type StackDefinition = {
   ) => string;
   postInstall?: {
     accessUrl?: (values: Record<string, unknown>) => string;
-    notes?: string[];
+    /**
+     * Função quando as notas dependem de COMO a instalação foi feita (ex.:
+     * pareamento self-service vs. chave colada à mão) — ver enchat.ts para
+     * o caso real. Lista fixa quando não há essa distinção.
+     */
+    notes?: string[] | ((values: Record<string, unknown>) => string[]);
   };
 };
 

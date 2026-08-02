@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { LicensePairing } from "./license-pairing";
 
 type Field = {
   name: string;
@@ -20,12 +21,15 @@ type Field = {
   group?: string;
 };
 
+type PairingSpecUI = { targetField: string; sessionField: string; group?: string };
+
 type StackMeta = {
   id: string;
   name: string;
   description: string;
   fields: Field[];
   postInstallNotes?: string[];
+  pairing?: PairingSpecUI | null;
 };
 
 type Props = {
@@ -110,6 +114,9 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
             {groups.map((g) => (
               <div key={g} className="space-y-3">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{g}</div>
+                {stack.pairing && (stack.pairing.group ?? "Configuração") === g && (
+                  <LicensePairing stackId={stack.id} csrfToken={csrfToken} spec={stack.pairing} form={form} />
+                )}
                 {stack.fields
                   .filter((f) => (f.group ?? "Configuração") === g)
                   .map((f) => {

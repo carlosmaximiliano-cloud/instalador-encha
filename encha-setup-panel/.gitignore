@@ -10,3 +10,6 @@ data/*.db
 data/*.db-journal
 data/*.db-wal
 data/*.db-shm
+# Fallback de dev de getMasterKey() (security/master-key.ts) — em produção
+# a chave vem do Swarm Secret; isso só existe fora de NODE_ENV=production.
+data/master.key
