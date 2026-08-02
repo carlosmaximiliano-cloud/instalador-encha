@@ -16,6 +16,8 @@ import { ensureHostDirs } from "./host-dirs";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
+import { getOrCreateMachineId, buscarPareamento, chaveDoPareamento, consumirPareamento } from "./pairing-store";
+import { fingerprintEnchat } from "./enchat-fingerprint";
 import type { SwarmContext, GeneratedSecret } from "./stacks/types";
 
 export type InstallInput = {
@@ -52,7 +54,15 @@ function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
       case "rate_limited":
         return { httpStatus: 429, reason: e.reason };
       case "unauthorized":
-        // Único caso que é mesmo "culpa do usuário" — chave de licença errada.
+      case "chave_nao_encontrada":
+      case "chave_revogada":
+      case "chave_expirada":
+      case "fingerprint_mismatch":
+      case "updates_expirados":
+        // Casos que são "culpa" da chave/licença informada, não do serviço
+        // do EnchaT — a distinção fina entre eles vive só na `message` e no
+        // `reason` (ver registry-auth.ts); o status HTTP pro chamador é o
+        // mesmo 400 pros seis.
         return { httpStatus: 400, reason: e.reason };
       case "network":
       case "server":
@@ -209,6 +219,59 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
   }
 
   try {
+    // Pareamento self-service de licença (Fase 4): se a stack declara
+    // `pairing` e o form mandou uma sessão confirmada, a chave e o
+    // machine_id vêm DAQUI — nunca da chave digitada à mão nem recomputados
+    // por getOrCreateMachineId. É essa fonte única que garante que o
+    // fingerprint usado no exchange do registryAuth (abaixo) e o
+    // ENCHAT_MACHINE_ID injetado no YAML são EXATAMENTE o que o Console já
+    // vinculou no pareamento — qualquer divergência aqui vira
+    // fingerprint_mismatch irreversível depois do primeiro boot.
+    let pareamentoId: string | undefined;
+    let pareamentoMachineId: string | undefined;
+    let pareamentoFingerprint: string | undefined;
+    if (def.pairing) {
+      const pid = String(parsed.data[def.pairing.sessionField] ?? "");
+      if (pid) {
+        const row = buscarPareamento(pid);
+        if (!row || row.stack_id !== input.stackId) {
+          throw new Error("Sessão de pareamento de licença não encontrada — gere um novo pareamento e tente de novo.");
+        }
+        if (row.status !== "confirmado") {
+          throw new Error(`Sessão de pareamento de licença ainda não confirmada (status: ${row.status}).`);
+        }
+        // Sanidade: o fingerprint gravado tem que bater com a fórmula
+        // aplicada ao machine_id gravado — nunca deveria divergir (os dois
+        // nascem juntos em getOrCreateMachineId), mas seguir com uma
+        // inconsistência aqui instalaria com um fingerprint errado, então
+        // aborta em vez de tentar adivinhar qual dos dois está certo.
+        if (fingerprintEnchat(row.machine_id) !== row.fingerprint) {
+          throw new Error("Inconsistência no pareamento de licença (fingerprint não bate com machine_id) — instalação abortada.");
+        }
+        // Guarda contra instalar a edição errada com o plano errado: como
+        // pairStart manda suporta_selecao=true, o Console pode confirmar
+        // com uma licença PAGA (basico/pro/max) se for a única elegível pro
+        // CPF — mas esta stack só instala a imagem "free". Sem esta
+        // checagem, o cliente instalaria o binário Grátis com uma chave
+        // paga, que na melhor hipótese é desperdício e na pior confunde o
+        // /licenses/check depois. `plano` fica nulo em pareamentos de antes
+        // desta checagem existir — não bloqueia esses retroativamente.
+        if (def.pairing.edicao === "free" && row.plano && row.plano !== "gratis") {
+          throw new Error(
+            `Esta licença é do plano "${row.plano}", não do Grátis — gere uma licença grátis para instalar esta edição, ou instale a edição MAX com esta chave.`
+          );
+        }
+        const chave = chaveDoPareamento(pid);
+        if (!chave) {
+          throw new Error("Não foi possível recuperar a chave de licença do pareamento confirmado.");
+        }
+        parsed.data[def.pairing.targetField] = chave;
+        pareamentoId = pid;
+        pareamentoMachineId = row.machine_id;
+        pareamentoFingerprint = row.fingerprint;
+      }
+    }
+
     const reused = await loadReusedSecrets();
     const previousOwn = await loadStackOwnSecrets(input.stackId);
     const generated = (def.generateSecrets?.(parsed.data) ?? []).map((g) => {
@@ -268,6 +331,25 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       }
     }
 
+    // Machine id + fingerprint de instalação — mesmo gate declarativo de
+    // `release` acima (stacks com registryAuth são as que precisam de
+    // licenciamento vinculado a ESTA VPS). Cunhado ANTES do generateYaml
+    // porque o YAML e o exchange de registryAuth precisam do MESMO valor;
+    // recalcular depois abriria a chance de divergir. Se um pareamento foi
+    // resolvido acima, os valores vêm DELE (nunca recomputados) — é a
+    // mesma dupla que o Console já vinculou. Sem pareamento (chave colada
+    // à mão), `getOrCreateMachineId` decide (e já cuida de preservar o
+    // fingerprint de uma instalação anterior, nunca cunhando um novo por
+    // cima de uma stack já instalada).
+    if (def.registryAuth) {
+      if (pareamentoMachineId !== undefined && pareamentoFingerprint !== undefined) {
+        effectiveCtx = { ...effectiveCtx, machineId: pareamentoMachineId, fingerprint: pareamentoFingerprint };
+      } else {
+        const { machineId, fingerprint } = getOrCreateMachineId(input.stackId);
+        effectiveCtx = { ...effectiveCtx, machineId, fingerprint };
+      }
+    }
+
     const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
 
@@ -275,50 +357,93 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     // Portainer ANTES do deploy, é lá que ele resolve o EncodedRegistryAuth
     // por serviço. O pré-pull falha rápido se a chave não tiver acesso, em
     // vez de deixar as tasks presas em `pending` sem explicação.
+    //
+    // Retry (3 tentativas, backoff): a credencial devolvida pelo exchange
+    // pode ter vida curta — repetir SÓ o pull com a mesma credencial vencida
+    // falha do mesmo jeito, então cada tentativa refaz o exchange +
+    // ensureRegistry (que já faz UPDATE, não INSERT, quando o registry
+    // existe) antes de repetir o pré-pull. `pullImageWithRegistry` lê a
+    // senha por `registryId`, então basta atualizar o registry no Portainer
+    // pra a MESMA chamada de pull passar a usar a credencial nova. Só NÃO
+    // repete em erro que não é transitório (chave inválida/revogada,
+    // fingerprint_mismatch etc.) — aí é erro do cliente, não da rede.
     if (def.registryAuth) {
-      try {
-        const chave = String(parsed.data[def.registryAuth.licenseField] ?? "");
-        const creds = await exchangeLicenseForGhcrCredentials(def.registryAuth.exchangeUrl, chave);
-        const registryId = await ensureRegistry(input.token, {
-          url: def.registryAuth.registryHost,
-          name: def.registryAuth.registryName,
-          username: creds.username,
-          password: creds.token,
-        });
-        logAudit({
-          user: input.user,
-          ip: input.ip,
-          action: "registry.auth",
-          target: def.registryAuth.registryHost,
-          result: "ok",
-          meta: { registryId, username: creds.username }, // nunca a chave nem o token
-        });
-        for (const img of def.registryAuth.images(parsed.data, effectiveCtx.release)) {
-          await pullImageWithRegistry(input.token, endpointId, img, registryId);
+      const MAX_TENTATIVAS = 3;
+      let ultimoErro: unknown;
+      let sucesso = false;
+      for (let tentativa = 1; tentativa <= MAX_TENTATIVAS && !sucesso; tentativa++) {
+        if (tentativa > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000 * tentativa));
         }
-      } catch (e) {
-        // RegistryAuthError carrega a causa estruturada (reason/httpStatus/
-        // serverDetail) — grava tudo no audit em vez de só a mensagem final,
-        // pra dar pra distinguir depois "chave errada" de "Console fora do
-        // ar" sem precisar reproduzir o problema. Nunca inclui a chave nem
-        // o token (RegistryAuthError já não os captura em lugar nenhum).
-        const meta: Record<string, unknown> = {
-          error: e instanceof Error ? e.message : "Erro desconhecido",
-        };
-        if (e instanceof RegistryAuthError) {
-          meta.reason = e.reason;
-          if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
-          if (e.serverDetail !== undefined) meta.serverDetail = e.serverDetail;
+        try {
+          const chave = String(parsed.data[def.registryAuth.licenseField] ?? "");
+          const creds = await exchangeLicenseForGhcrCredentials(
+            def.registryAuth.exchangeUrl,
+            chave,
+            effectiveCtx.fingerprint
+          );
+          const registryId = await ensureRegistry(input.token, {
+            url: def.registryAuth.registryHost,
+            name: def.registryAuth.registryName,
+            username: creds.username,
+            password: creds.token,
+          });
+          logAudit({
+            user: input.user,
+            ip: input.ip,
+            action: "registry.auth",
+            target: def.registryAuth.registryHost,
+            result: "ok",
+            meta: { registryId, username: creds.username, tentativa }, // nunca a chave nem o token
+          });
+          for (const img of def.registryAuth.images(parsed.data, effectiveCtx.release)) {
+            await pullImageWithRegistry(input.token, endpointId, img, registryId);
+          }
+          sucesso = true;
+        } catch (e) {
+          ultimoErro = e;
+          // RegistryAuthError carrega a causa estruturada (reason/httpStatus/
+          // serverDetail) — grava tudo no audit em vez de só a mensagem
+          // final, pra dar pra distinguir depois "chave errada" de "Console
+          // fora do ar" sem precisar reproduzir o problema. Nunca inclui a
+          // chave nem o token (RegistryAuthError já não os captura em lugar
+          // nenhum). Falha de PULL (não é RegistryAuthError — é
+          // PortainerError, lançada dentro de pullImageRaw) sempre é tratada
+          // como transitória: é justamente o caso "credencial venceu no
+          // meio do download", que só se resolve tentando de novo.
+          const meta: Record<string, unknown> = {
+            error: e instanceof Error ? e.message : "Erro desconhecido",
+            tentativa,
+          };
+          let transitorio = true;
+          if (e instanceof RegistryAuthError) {
+            meta.reason = e.reason;
+            if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
+            if (e.serverDetail !== undefined) meta.serverDetail = e.serverDetail;
+            transitorio =
+              e.reason === "timeout" ||
+              e.reason === "network" ||
+              e.reason === "rate_limited" ||
+              e.reason === "server";
+          }
+          logAudit({
+            user: input.user,
+            ip: input.ip,
+            action: "registry.auth.fail",
+            target: def.registryAuth.registryHost,
+            result: "error",
+            meta,
+          });
+          if (!transitorio || tentativa === MAX_TENTATIVAS) {
+            throw e;
+          }
         }
-        logAudit({
-          user: input.user,
-          ip: input.ip,
-          action: "registry.auth.fail",
-          target: def.registryAuth.registryHost,
-          result: "error",
-          meta,
-        });
-        throw e;
+      }
+      if (!sucesso) {
+        // Inatingível de fato (o laço só sai sem sucesso lançando acima),
+        // mas o TypeScript não sabe disso — guarda explícita evita "possibly
+        // used before assigned" mais adiante e documenta a invariante.
+        throw ultimoErro instanceof Error ? ultimoErro : new Error("Falha desconhecida no registry-auth");
       }
     }
 
@@ -348,6 +473,12 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields);
     if (Object.keys(sharedToPersist).length > 0) saveSharedSecrets(sharedToPersist);
+
+    // Só consome o pareamento DEPOIS do deploy ter sucesso — se o Console
+    // caísse ou o deploy falhasse antes deste ponto, a chave continua
+    // recuperável (cifrada em license_pairings) para uma nova tentativa,
+    // em vez de perdida junto com uma sessão já marcada como usada.
+    if (pareamentoId) consumirPareamento(pareamentoId);
 
     logAudit({
       user: input.user,

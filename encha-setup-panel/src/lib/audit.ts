@@ -19,7 +19,18 @@ export type AuditAction =
   | "registry.auth"
   | "registry.auth.fail"
   | "release.resolve"
-  | "release.resolve.fail";
+  | "release.resolve.fail"
+  // Pareamento self-service de licença (ver license-pairing.ts). Nunca a
+  // chave nem PII (nome/CPF/celular) no `meta` — só identificadores opacos
+  // (pairing_id) e causas estruturadas (reason/httpStatus).
+  | "license.pair.start"
+  | "license.pair.start.fail"
+  | "license.pair.poll.fail"
+  | "license.pair.confirm"
+  | "license.pair.cpf.fail"
+  | "license.pair.choose.fail"
+  | "license.signup"
+  | "license.signup.fail";
 
 export type AuditEntry = {
   user: string;

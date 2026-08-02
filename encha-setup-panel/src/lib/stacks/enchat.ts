@@ -2,17 +2,31 @@ import { z } from "zod";
 import { type StackDefinition, fqdn } from "./types";
 import { randomBytes } from "node:crypto";
 
-// Imagem do Pinfy (WhatsApp não-oficial, bundled) — o docker-stack.yaml
-// upstream do EnchaT Grátis (ENCHAT GRÁTIS/swarm/) aponta por padrão pra
-// ghcr.io/octavioEncha/pinfy. Divergência NÃO resolvida com o time do EnchaT
-// ainda (ver plano de validação e2e). Republicada em 2026-08-01 sob
-// ghcr.io/enchainterno/ (mesmo digest do original, `docker buildx imagetools`)
-// pelo mesmo motivo do enchat-free: "Manage access" cross-conta no GHCR não
-// governa `docker pull` de verdade (testado, ver [[ghcr-isolamento-pacotes]]
-// na memória do repo ENCHAT) — só a fronteira de conta isola de fato.
-const PINFY_IMAGE = "ghcr.io/enchainterno/pinfy-api:1.0.0";
+// Imagem do Pinfy (WhatsApp não-oficial, bundled). Antes fixa em
+// "ghcr.io/enchainterno/pinfy-api:1.0.0" (uma republicação manual,
+// mesmo digest do upstream ghcr.io/octavioEncha/pinfy, feita só pra ficar
+// sob o mesmo owner do enchat-free — "Manage access" cross-conta no GHCR
+// não governa `docker pull` de verdade, só a fronteira de CONTA isola,
+// ver [[ghcr-isolamento-pacotes]] na memória do repo ENCHAT). Isso ficou
+// obsoleto: o commit 6a2bf7f (repo ENCHAT) vendorizou o Pinfy como
+// submodule e passou a publicá-lo pelo MESMO CI/release do enchat-free,
+// sob "ghcr.io/enchainterno/pinfy" (nome do repo mudou de "pinfy-api" pra
+// "pinfy") e com a MESMA tag de versão do app, nunca mais "1.0.0" fixo.
+// Deriva do release resolvido pelo Console em vez de hardcode, no mesmo
+// padrão de updaterRepoFrom logo abaixo.
+function pinfyRepoFrom(imageRepo: string): string {
+  const idx = imageRepo.lastIndexOf("/");
+  if (idx === -1) {
+    throw new Error(`image_repo do Console ("${imageRepo}") sem "/" — não dá pra derivar o repo do Pinfy.`);
+  }
+  return `${imageRepo.slice(0, idx)}/pinfy`;
+}
 // O default do upstream (licenca.pinfy.com.br) tem DNS morto.
-const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun/";
+// SEM barra final: o backend do Pinfy concatena "${LICENSE_SERVER_URL}/api/agent/activate"
+// sem normalizar — uma URL terminada em "/" vira "..//api/agent/activate" e
+// o POST /api/license/activate falha com 404 (achado no primeiro onboarding
+// real: ativação presa em "ativacao_pinfy_falhou" apesar do token já emitido).
+const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun";
 
 // A edição Grátis do EnchaT (e o Pinfy embutido) vivem num owner GHCR
 // SEPARADO do da edição MAX — de propósito, é o que permite a credencial de
@@ -34,10 +48,23 @@ function updaterRepoFrom(imageRepo: string): string {
   return imageRepo.replace(/\/enchat-free$/, "/enchat-updater");
 }
 
-const schema = z.object({
-  url_enchat: fqdn,
-  chave_licenca: z.string().min(8, "Chave de licença inválida").max(200),
-});
+const schema = z
+  .object({
+    url_enchat: fqdn,
+    // Opcional agora — o caminho principal é o pareamento self-service
+    // (StackDefinition.pairing abaixo), que preenche licenca_pareamento_id.
+    // Este campo continua existindo como fallback pra quem já tem uma chave
+    // emitida (ex.: por um admin, ou de uma instalação anterior).
+    chave_licenca: z.string().min(8, "Chave de licença inválida").max(200).optional(),
+    // Preenchido pelo componente LicensePairing (wizard) quando o
+    // pareamento confirma — nunca digitado pelo usuário. 32 hex = mesmo
+    // formato de id de license_pairings (pairing-store.ts).
+    licenca_pareamento_id: z.string().regex(/^[0-9a-f]{32}$/).optional(),
+  })
+  .refine((v) => !!v.chave_licenca || !!v.licenca_pareamento_id, {
+    message: "Gere sua licença EnchaT Grátis pelo pareamento acima, ou informe uma chave existente.",
+    path: ["chave_licenca"],
+  });
 
 export const enchat: StackDefinition = {
   id: "enchat",
@@ -48,8 +75,17 @@ export const enchat: StackDefinition = {
   dependsOn: ["traefik-portainer"], // Postgres é dedicado a esta stack, não o compartilhado.
   optionNumber: 84,
   installVia: "panel",
-  hostDirs: ["/var/enchat/media", "/var/enchat/postgres"],
-  transientFields: ["chave_licenca"],
+  // media: dono 1000:1000 pra bater com `USER enchat` do Dockerfile (uid
+  // fixado em -u 1000) — sem isso o bind mount nasce root:root e o app não
+  // consegue escrever nele (achado real: upload de mídia sempre falhava com
+  // "permission denied", em toda instalação já feita). postgres: SEM owner
+  // — o próprio entrypoint da imagem ajusta o dono dele no boot.
+  hostDirs: [{ path: "/var/enchat/media", owner: "1000:1000" }, "/var/enchat/postgres"],
+  // licenca_pareamento_id também nunca deve ser persistido — é só uma
+  // referência a uma linha de license_pairings (que já guarda a chave
+  // CIFRADA); persisti-lo em stack_secrets seria redundante e aumentaria a
+  // superfície de coisas a proteger.
+  transientFields: ["chave_licenca", "licenca_pareamento_id"],
   // Sem `updatableImages` DE PROPÓSITO — não é omissão, é decisão. Dois
   // motivos reais impedem um botão de update in-place funcionar hoje:
   //   1. updateServiceImage() (portainer.ts) não manda X-Registry-Auth; só o
@@ -72,6 +108,17 @@ export const enchat: StackDefinition = {
     canal: "stable",
   },
 
+  // Pareamento self-service de licença — ver LicensePairing (wizard) e
+  // /api/license/pair/* (rotas do painel, license-pairing.ts). O cliente
+  // gera a própria licença sem precisar de uma chave criada por admin.
+  pairing: {
+    consoleBaseUrl: CONSOLE_BASE_URL,
+    edicao: "free",
+    targetField: "chave_licenca",
+    sessionField: "licenca_pareamento_id",
+    group: "Licença",
+  },
+
   registryAuth: {
     registryHost: "ghcr.io",
     registryName: "GHCR EnchaT",
@@ -82,7 +129,7 @@ export const enchat: StackDefinition = {
       return [
         `${release.imageRepo}:${release.imageTag}`,
         `${updaterRepoFrom(release.imageRepo)}:${release.imageTag}`,
-        PINFY_IMAGE,
+        `${pinfyRepoFrom(release.imageRepo)}:${release.imageTag}`,
       ];
     },
   },
@@ -97,11 +144,12 @@ export const enchat: StackDefinition = {
     },
     {
       name: "chave_licenca",
-      label: "Chave de licença EnchaT",
+      label: "Já tenho uma chave de licença",
       kind: "password",
       sensitive: true,
+      optional: true,
       group: "Licença",
-      helpText: "Usada para obter a credencial de download da imagem e resolver a versão mais recente. Não é gravada em disco.",
+      helpText: "Só preencha se já tiver uma chave emitida — pule esta se estiver usando o pareamento acima. Não é gravada em disco.",
     },
   ],
   schema,
@@ -123,6 +171,7 @@ export const enchat: StackDefinition = {
     const domain = san(v.url_enchat);
     const { imageRepo, imageTag } = ctx.release;
     const updaterRepo = updaterRepoFrom(imageRepo);
+    const pinfyRepo = pinfyRepoFrom(imageRepo);
     return `version: "3.7"
 services:
 
@@ -160,6 +209,8 @@ services:
       LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       ENCHAT_CANAL: "stable"
       ENCHAT_MASTER_KEY: "${secrets.enchat_master_key}"
+      ENCHAT_MACHINE_ID: "${san(ctx.machineId ?? "")}"
+      LICENSE_KEY: "${san(String(values.chave_licenca ?? ""))}"
       TZ: "America/Sao_Paulo"
       UPDATER_URL: "http://enchat_updater:9000"
       UPDATER_TOKEN: "${secrets.updater_token}"
@@ -219,7 +270,7 @@ services:
           - node.role == manager
 
   enchat_pinfy:
-    image: ${PINFY_IMAGE}
+    image: ${pinfyRepo}:${imageTag}
     hostname: enchat-pinfy
     networks:
       - enchat_net
@@ -266,10 +317,20 @@ networks:
   },
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_enchat}`,
-    notes: [
-      "Ativação: abra o domínio e pareie pelo WhatsApp (ou digite o CPF, fluxo legado) no primeiro acesso.",
-      "Guarde a ENCHAT_MASTER_KEY exibida — sem ela, os segredos gravados no banco são irrecuperáveis.",
-      "O painel do Pinfy não é exposto por domínio — diagnóstico só via docker exec no container enchat_pinfy.",
-    ],
+    // Função, não lista fixa: a primeira nota muda dependendo de como a
+    // licença chegou. `values` aqui é o que o BROWSER submeteu (antes do
+    // installer injetar a chave do pareamento) — licenca_pareamento_id
+    // preenchido é o sinal de que o LicensePairing confirmou e o app já
+    // nasce ativado (LICENSE_KEY semeada, ver generateYaml acima).
+    notes: (values) => {
+      const pareado = !!(values as Record<string, unknown>).licenca_pareamento_id;
+      return [
+        pareado
+          ? "Licença já vinculada pelo pareamento — o app deve subir ativado, sem passar pela tela de ativação."
+          : "Ativação: abra o domínio e pareie pelo WhatsApp (ou digite o CPF, fluxo legado) no primeiro acesso.",
+        "Guarde a ENCHAT_MASTER_KEY exibida — sem ela, os segredos gravados no banco são irrecuperáveis.",
+        "O painel do Pinfy não é exposto por domínio — diagnóstico só via docker exec no container enchat_pinfy.",
+      ];
+    },
   },
 };

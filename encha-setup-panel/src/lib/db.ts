@@ -45,6 +45,57 @@ function initSchema(d: Database.Database) {
       updated_at INTEGER NOT NULL
     );
 
+    -- Fonte ÚNICA do machine_id/fingerprint de cada stack (ver
+    -- enchat-fingerprint.ts) — 1 linha por stack_id, criada uma vez e
+    -- reaproveitada em TODO install/reinstall/pareamento subsequente dessa
+    -- mesma stack. Deliberadamente separada de license_pairings (que é o
+    -- histórico de SESSÕES de pareamento, cada uma efêmera): o machine_id
+    -- tem que sobreviver a qualquer sessão de pareamento individual expirar,
+    -- ser abandonada ou falhar — recalculá-lo por instalação divergiria do
+    -- fingerprint já vinculado no Console, o que é irreversível
+    -- (licenses_fingerprint_imutavel_trg).
+    CREATE TABLE IF NOT EXISTS stack_machine_ids (
+      stack_id TEXT PRIMARY KEY,
+      machine_id TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    -- Sessões de pareamento self-service de licença (ver license-pairing.ts).
+    -- machine_id/fingerprint aqui são uma CÓPIA histórica (o que valia
+    -- quando esta sessão foi aberta) — a fonte da verdade pra "qual é o
+    -- machine_id desta stack" é stack_machine_ids, não esta tabela.
+    CREATE TABLE IF NOT EXISTS license_pairings (
+      id TEXT PRIMARY KEY,               -- 32 hex, opaco — o que o browser vê
+      stack_id TEXT NOT NULL,
+      machine_id TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      console_session_id TEXT,
+      codigo_exibicao TEXT,
+      status TEXT NOT NULL,              -- aberto|confirmado|consumido|falhou
+      chave_encrypted TEXT,
+      -- Campos de EXIBIÇÃO da resposta original de pair/start — persistidos
+      -- pra sobreviver a RETOMADA (reabrir o wizard antes de confirmar):
+      -- nem o Console nem o poll re-enviam wa_link/wa_qr_svg depois do
+      -- start, então sem guardar aqui uma retomada perderia QR/link/número.
+      wa_link TEXT,
+      wa_qr_svg TEXT,
+      numero_exibicao TEXT,
+      signup_url TEXT,
+      -- Plano devolvido na confirmação (ver risco #7 do plano: um CPF com
+      -- licença paga não pode instalar a imagem free com essa chave) — nulo
+      -- até confirmar.
+      plano TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      expires_at INTEGER
+    );
+    -- Um pareamento ATIVO por stack — mata na raiz a corrida de duas abas
+    -- abrindo duas sessões (dois fingerprints) pra mesma instalação.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pairing_ativo
+      ON license_pairings(stack_id) WHERE status IN ('aberto','confirmado');
+    CREATE INDEX IF NOT EXISTS idx_pairing_stack ON license_pairings(stack_id);
+
     CREATE TABLE IF NOT EXISTS terms_acceptances (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       ts INTEGER NOT NULL,
