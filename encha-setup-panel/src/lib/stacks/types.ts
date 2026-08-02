@@ -159,8 +159,17 @@ export type StackDefinition = {
    * também estar em `postgresDatabases`.
    */
   postgresExtensions?: { database: string; extensions: string[] }[];
-  /** Diretórios a garantir (mkdir -p) no node manager antes do deploy — necessário para bind mounts, que o Swarm não cria sozinho. */
-  hostDirs?: string[];
+  /**
+   * Diretórios a garantir (mkdir -p) no node manager antes do deploy —
+   * necessário para bind mounts, que o Swarm não cria sozinho. Passe
+   * `{ path, owner }` quando o processo dentro do container NÃO roda como
+   * root (ex.: `USER enchat` no Dockerfile) — sem isso o bind mount nasce
+   * `root:root` e o app não consegue escrever nele (achado real:
+   * `/data/media` ficava mudo, "permission denied", em toda instalação).
+   * String pura continua valendo para diretórios que o próprio container
+   * (ex.: postgres) já ajusta sozinho no boot — não dar chown neles.
+   */
+  hostDirs?: (string | { path: string; owner: string })[];
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;

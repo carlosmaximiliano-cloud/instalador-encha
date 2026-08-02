@@ -16,10 +16,20 @@ const FALLBACK_IMAGE = "alpine/git:2.45.2";
 // (nunca interpolar caminho de usuário arbitrário aqui).
 const ALLOWED_DIR_RE = /^\/var\/enchat\/[a-z0-9_-]+$/;
 
-export async function ensureHostDirs(token: string, endpointId: number, dirs: string[]): Promise<void> {
-  if (!dirs.length) return;
+// Só aceita "usuário:grupo" numérico ou alfanumérico simples — vira
+// argumento de `chown`, nunca interpolar algo vindo de fora deste arquivo.
+const ALLOWED_OWNER_RE = /^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$/;
+
+export type HostDirSpec = string | { path: string; owner: string };
+
+export async function ensureHostDirs(token: string, endpointId: number, dirsSpec: HostDirSpec[]): Promise<void> {
+  if (!dirsSpec.length) return;
+  const dirs = dirsSpec.map((d) => (typeof d === "string" ? { path: d, owner: null as string | null } : d));
   for (const d of dirs) {
-    if (!ALLOWED_DIR_RE.test(d)) throw new Error(`Diretório de host não permitido: "${d}"`);
+    if (!ALLOWED_DIR_RE.test(d.path)) throw new Error(`Diretório de host não permitido: "${d.path}"`);
+    if (d.owner != null && !ALLOWED_OWNER_RE.test(d.owner)) {
+      throw new Error(`Dono de diretório não permitido: "${d.owner}"`);
+    }
   }
 
   let image = `${PANEL_IMAGE_REPO}:${APP_VERSION}`;
@@ -32,8 +42,16 @@ export async function ensureHostDirs(token: string, endpointId: number, dirs: st
 
   // Mapeia /var/X -> /host-var/X (o bind é /var:/host-var, mais estreito que
   // o /root do host-updater).
-  const targets = dirs.map((d) => `/host-var${d.slice("/var".length)}`);
-  const script = `set -eu\nmkdir -p ${targets.map((t) => `"${t}"`).join(" ")}`;
+  const linhas = dirs.map((d) => {
+    const target = `/host-var${d.path.slice("/var".length)}`;
+    // chown só na criação (idempotente do jeito errado: um restart não deve
+    // re-chown um diretório que o próprio container já ajustou por dentro,
+    // ex. Postgres — por isso `owner` é opt-in por diretório, não global).
+    return d.owner != null
+      ? `mkdir -p "${target}" && chown -R ${d.owner} "${target}"`
+      : `mkdir -p "${target}"`;
+  });
+  const script = `set -eu\n${linhas.join("\n")}`;
 
   try {
     const { exitCode, logs, timedOut } = await runOneShotContainer(token, endpointId, {

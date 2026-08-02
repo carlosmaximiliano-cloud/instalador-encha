@@ -75,7 +75,12 @@ export const enchat: StackDefinition = {
   dependsOn: ["traefik-portainer"], // Postgres é dedicado a esta stack, não o compartilhado.
   optionNumber: 84,
   installVia: "panel",
-  hostDirs: ["/var/enchat/media", "/var/enchat/postgres"],
+  // media: dono 1000:1000 pra bater com `USER enchat` do Dockerfile (uid
+  // fixado em -u 1000) — sem isso o bind mount nasce root:root e o app não
+  // consegue escrever nele (achado real: upload de mídia sempre falhava com
+  // "permission denied", em toda instalação já feita). postgres: SEM owner
+  // — o próprio entrypoint da imagem ajusta o dono dele no boot.
+  hostDirs: [{ path: "/var/enchat/media", owner: "1000:1000" }, "/var/enchat/postgres"],
   // licenca_pareamento_id também nunca deve ser persistido — é só uma
   // referência a uma linha de license_pairings (que já guarda a chave
   // CIFRADA); persisti-lo em stack_secrets seria redundante e aumentaria a
