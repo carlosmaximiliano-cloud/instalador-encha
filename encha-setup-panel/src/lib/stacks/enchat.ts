@@ -201,6 +201,7 @@ services:
       ENCHAT_CANAL: "stable"
       ENCHAT_MASTER_KEY: "${secrets.enchat_master_key}"
       ENCHAT_MACHINE_ID: "${san(ctx.machineId ?? "")}"
+      LICENSE_KEY: "${san(String(values.chave_licenca ?? ""))}"
       TZ: "America/Sao_Paulo"
       UPDATER_URL: "http://enchat_updater:9000"
       UPDATER_TOKEN: "${secrets.updater_token}"
