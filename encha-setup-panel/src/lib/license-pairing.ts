@@ -180,12 +180,14 @@ export type LicencaOfertada = {
   jaAtivadaAqui?: boolean;
 };
 
+export type InstalacaoAtual = { ultimoCheck?: number; apelido?: string };
+
 export type PairPollResult =
   | { status: "aguardando"; expiraEm?: number; aviso?: string; avisoRemetente?: string }
   | { status: "aguardando_cpf"; remetenteMascarado?: string }
   | { status: "escolha_pendente"; licencas: LicencaOfertada[]; escolhaExpiraEm?: number }
   | { status: "expirado" }
-  | { status: "recusado"; motivo?: string }
+  | { status: "recusado"; motivo?: string; instalacaoAtual?: InstalacaoAtual }
   | { status: "consumido" }
   | { status: "confirmado"; chave: string; cliente?: string; plano?: string };
 
@@ -221,8 +223,13 @@ export async function pairPoll(
     }
     case "expirado":
       return { status };
-    case "recusado":
-      return { status, motivo: str(json, "motivo") };
+    case "recusado": {
+      const inst = (json as { instalacao_atual?: unknown })?.instalacao_atual;
+      const instalacaoAtual = inst
+        ? { ultimoCheck: num(inst, "ultimo_check"), apelido: str(inst, "apelido") }
+        : undefined;
+      return { status, motivo: str(json, "motivo"), instalacaoAtual };
+    }
     case "consumido":
       return { status };
     case "confirmado": {
@@ -244,6 +251,24 @@ export async function pairCpf(
     fingerprint: params.fingerprint,
     cpf: params.cpf,
   });
+}
+
+export type PairMigrarResult = { sessaoReutilizavel: boolean };
+
+// Migração self-service de VPS (reformatou/reinstalou → licença presa a um
+// fingerprint antigo) — ver .../licenses/pair/migrar/route.ts no repo
+// Console pro porquê disto ser um REBIND, nunca um unbind. Só funciona
+// depois do CPF já conferido nesta sessão (o Console reautentica pela
+// mesma prova de posse).
+export async function pairMigrar(
+  consoleBaseUrl: string,
+  params: { sessionId: string; fingerprint: string }
+): Promise<PairMigrarResult> {
+  const json = await postConsole(consoleBaseUrl, "/api/v1/licenses/pair/migrar", {
+    session_id: params.sessionId,
+    fingerprint: params.fingerprint,
+  });
+  return { sessaoReutilizavel: bool(json, "sessao_reutilizavel") === true };
 }
 
 export async function pairChoose(

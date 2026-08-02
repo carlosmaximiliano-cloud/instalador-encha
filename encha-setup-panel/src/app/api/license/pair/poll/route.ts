@@ -72,7 +72,11 @@ export async function POST(req: NextRequest) {
       case "expirado":
       case "recusado":
         falharPareamento(pairingId);
-        return NextResponse.json(result.status === "recusado" ? { status: "recusado", motivo: result.motivo } : { status: "expirado" });
+        return NextResponse.json(
+          result.status === "recusado"
+            ? { status: "recusado", motivo: result.motivo, instalacaoAtual: result.instalacaoAtual }
+            : { status: "expirado" }
+        );
       case "aguardando_cpf":
         return NextResponse.json({ status: "aguardando_cpf", remetenteMascarado: result.remetenteMascarado });
       case "escolha_pendente":

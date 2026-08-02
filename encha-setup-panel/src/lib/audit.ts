@@ -29,6 +29,8 @@ export type AuditAction =
   | "license.pair.confirm"
   | "license.pair.cpf.fail"
   | "license.pair.choose.fail"
+  | "license.pair.migrar"
+  | "license.pair.migrar.fail"
   | "license.signup"
   | "license.signup.fail";
 

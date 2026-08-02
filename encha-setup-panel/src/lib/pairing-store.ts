@@ -183,3 +183,14 @@ export function falharPareamento(pairingId: string): void {
   const db = getDb();
   db.prepare("UPDATE license_pairings SET status = 'falhou', updated_at = ? WHERE id = ?").run(Date.now(), pairingId);
 }
+
+// Migração self-service de VPS (.../pair/migrar): a sessão já tinha sido
+// marcada 'falhou' pelo poll que recebeu 'ja_ativada_em_outra_vps' — o
+// Console reabriu a MESMA sessão (rebind + license_id de volta), então o
+// painel precisa voltar a pollá-la em vez de continuar short-circuitando
+// em "recusado" pra sempre (ver o guard no início de pair/poll/route.ts).
+// Só chamar depois de um pair/migrar bem-sucedido com sessaoReutilizavel:true.
+export function reabrirPareamento(pairingId: string): void {
+  const db = getDb();
+  db.prepare("UPDATE license_pairings SET status = 'aberto', updated_at = ? WHERE id = ?").run(Date.now(), pairingId);
+}

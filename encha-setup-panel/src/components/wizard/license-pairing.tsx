@@ -4,7 +4,8 @@ import type { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MessageCircleWarning, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, MessageCircleWarning, RefreshCw, ArrowRightLeft } from "lucide-react";
 
 // Pareamento self-service de licença — o cliente gera a própria licença
 // EnchaT de dentro do wizard, sem precisar de uma chave criada por um admin
@@ -38,12 +39,14 @@ type Etapa =
   | { kind: "aguardando_cpf"; pairingId: string; remetenteMascarado?: string }
   | { kind: "escolha"; pairingId: string; licencas: LicencaOfertada[]; escolhaExpiraEm?: number }
   | { kind: "confirmado"; cliente?: string; plano?: string }
-  | { kind: "recusado"; motivo?: string }
+  | { kind: "recusado"; pairingId: string; motivo?: string; instalacaoAtual?: InstalacaoAtual }
+  | { kind: "migrando"; pairingId: string }
   | { kind: "expirado" }
   | { kind: "erro"; mensagem: string }
   | { kind: "manual" }; // usuário escolheu colar uma chave existente — não pareia
 
 type LicencaOfertada = { id: number; apelido?: string; plano?: string; vitalicia?: boolean; jaAtivadaAqui?: boolean };
+type InstalacaoAtual = { ultimoCheck?: number; apelido?: string };
 
 const POLL_INTERVALO_MS = 3000;
 
@@ -77,8 +80,22 @@ function mensagemRecusa(motivo?: string): string {
 
 // Motivos em que "Gerar outro código" reabriria uma sessão que vai recusar
 // do mesmo jeito — mostrar o botão nesses casos é um beco sem saída sem
-// explicação de por que não adianta.
-const MOTIVOS_SEM_RETRY_UTIL = new Set(["ja_ativada_em_outra_vps", "licenca_revogada"]);
+// explicação de por que não adianta. ja_ativada_em_outra_vps SAIU desta
+// lista de propósito: agora tem uma saída própria (migrar a licença pra
+// esta instalação), não o retry genérico.
+const MOTIVOS_SEM_RETRY_UTIL = new Set(["licenca_revogada"]);
+
+// Descrição legível de há quanto tempo a instalação atual deu sinal —
+// alimenta o aviso antes de migrar ("ativa há 2 minutos" vs "sem sinal há
+// 6 dias"), pro cliente perceber se está prestes a derrubar algo em uso.
+function sinalHaQuanto(ultimoCheckS?: number): string {
+  if (!ultimoCheckS) return "nunca fez uma verificação de licença";
+  const segundos = Math.max(0, Math.floor(Date.now() / 1000) - ultimoCheckS);
+  if (segundos < 120) return "ativa há menos de 2 minutos";
+  if (segundos < 3600) return `ativa há ${Math.floor(segundos / 60)} minutos`;
+  if (segundos < 86400) return `ativa há ${Math.floor(segundos / 3600)} hora(s)`;
+  return `sem sinal há ${Math.floor(segundos / 86400)} dia(s)`;
+}
 
 function formatarCpf(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -124,6 +141,8 @@ export function LicensePairing({
   const [etapa, setEtapa] = useState<Etapa>({ kind: "iniciando" });
   const [cpf, setCpf] = useState("");
   const [erroCpf, setErroCpf] = useState<string | null>(null);
+  const [confirmandoMigracao, setConfirmandoMigracao] = useState(false);
+  const [erroMigracao, setErroMigracao] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Campo escondido no form pai — RHF só inclui no submit o que está
@@ -216,7 +235,12 @@ export function LicensePairing({
           return;
         case "recusado":
           pararPoll();
-          setEtapa({ kind: "recusado", motivo: d.motivo as string | undefined });
+          setEtapa({
+            kind: "recusado",
+            pairingId,
+            motivo: d.motivo as string | undefined,
+            instalacaoAtual: d.instalacaoAtual as InstalacaoAtual | undefined,
+          });
           return;
         case "expirado":
           pararPoll();
@@ -265,6 +289,34 @@ export function LicensePairing({
     }
   }
 
+  async function migrar() {
+    if (etapa.kind !== "recusado") return;
+    const pairingId = etapa.pairingId;
+    setConfirmandoMigracao(false);
+    setEtapa({ kind: "migrando", pairingId });
+    try {
+      const d = await chamar("pair/migrar", { pairingId });
+      if (d.sessao_reutilizavel) {
+        // Mesma sessão, agora com a licença já vinculada a esta VPS — deixa
+        // a etapa "migrando" (spinner) até o próximo poll resolver
+        // "confirmado" sozinho; não precisa de estado intermediário novo.
+        iniciarPoll(pairingId);
+      } else {
+        // Sessão anterior foi consumida (caminho de múltiplas licenças) — a
+        // licença já foi migrada, mas esta sessão específica não serve
+        // mais; abre uma nova, que resolve de primeira (fingerprint já bate).
+        iniciar();
+      }
+    } catch (e) {
+      setEtapa({
+        kind: "recusado",
+        pairingId,
+        motivo: "ja_ativada_em_outra_vps", // mantém o CTA de migrar visível pra tentar de novo
+      });
+      setErroMigracao(e instanceof Error ? e.message : "Não foi possível migrar a licença — tente de novo.");
+    }
+  }
+
   useEffect(() => {
     iniciar();
     return () => pararPoll();
@@ -297,20 +349,64 @@ export function LicensePairing({
     );
   }
 
+  if (etapa.kind === "migrando") {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Migrando a licença para esta instalação...
+      </div>
+    );
+  }
+
   if (etapa.kind === "recusado" || etapa.kind === "expirado") {
-    const semRetryUtil = etapa.kind === "recusado" && MOTIVOS_SEM_RETRY_UTIL.has(etapa.motivo ?? "");
+    const ehOutraVps = etapa.kind === "recusado" && etapa.motivo === "ja_ativada_em_outra_vps";
+    const semRetryUtil = etapa.kind === "recusado" && MOTIVOS_SEM_RETRY_UTIL.has(etapa.motivo ?? "") && !ehOutraVps;
     return (
       <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
         <p className="text-sm text-amber-600 dark:text-amber-400">
           {etapa.kind === "expirado" ? "O tempo para confirmar o pareamento acabou." : mensagemRecusa(etapa.motivo)}
         </p>
-        {!semRetryUtil && (
-          <Button type="button" variant="outline" size="sm" onClick={iniciar}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-            Gerar outro código
+        {erroMigracao && <p className="text-xs text-destructive">{erroMigracao}</p>}
+        {ehOutraVps ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(true)}>
+            <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+            Esta licença é minha — migrar para esta instalação
           </Button>
+        ) : (
+          !semRetryUtil && (
+            <Button type="button" variant="outline" size="sm" onClick={iniciar}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Gerar outro código
+            </Button>
+          )
         )}
         <p className="text-xs text-muted-foreground">Ou informe uma chave de licença já existente no campo abaixo.</p>
+
+        {ehOutraVps && (
+          <Dialog open={confirmandoMigracao} onOpenChange={setConfirmandoMigracao}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Migrar esta licença para esta instalação?</DialogTitle>
+                <DialogDescription>
+                  A instalação anterior está{" "}
+                  <strong>{sinalHaQuanto(etapa.instalacaoAtual?.ultimoCheck)}</strong>
+                  {etapa.instalacaoAtual?.apelido ? ` ("${etapa.instalacaoAtual.apelido}")` : ""}. Migrar vincula a
+                  licença a ESTA VPS — a instalação anterior vai parar de funcionar assim que ela verificar a
+                  licença de novo (em até algumas horas).
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(false)}>
+                  Cancelar
+                </Button>
+                <Button type="button" size="sm" onClick={migrar}>
+                  <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+                  Migrar mesmo assim
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     );
   }
