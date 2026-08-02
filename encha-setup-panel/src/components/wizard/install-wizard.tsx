@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { LicensePairing } from "./license-pairing";
+import { SuportePanel } from "./suporte-panel";
 
 type Field = {
   name: string;
@@ -43,11 +44,18 @@ type Props = {
 
 type RevealSecret = { name: string; value: string };
 
+type ErrorState = { kind: "error"; message: string; reason?: string; httpStatus?: number };
+
 type InstallState =
   | { kind: "form" }
   | { kind: "installing" }
-  | { kind: "success"; accessUrl?: string; notes: string[]; revealSecrets: RevealSecret[] }
-  | { kind: "error"; message: string };
+  | { kind: "success"; accessUrl?: string; notes: string[]; revealSecrets: RevealSecret[]; aviso?: string }
+  | ErrorState
+  // Suporte embutido no wizard (ver suporte-panel.tsx) — `voltarPara` guarda
+  // pra onde "Voltar"/"Fechar" devem devolver o usuário: o formulário (link
+  // do rodapé, sem erro ainda) ou a MESMA tela de erro que o trouxe aqui
+  // (botão "Falar com o suporte"), com a mensagem intacta.
+  | { kind: "suporte"; contextoErro?: string; voltarPara: { kind: "form" } | ErrorState };
 
 export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
   const [state, setState] = useState<InstallState>({ kind: "form" });
@@ -86,7 +94,12 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
       });
       const data = await res.json();
       if (!res.ok) {
-        setState({ kind: "error", message: data.error ?? "Erro na instalação" });
+        // reason vem de statusForCause (installer.ts) quando a falha é do
+        // lado do EnchaT (chave errada, Console fora do ar, timeout) —
+        // ausente só em erro de validação/dependência do próprio painel.
+        // Sem isto o card mostrava só a frase crua, sem nada pra copiar
+        // pro suporte ou pra bater com o que apareceu nos logs do serviço.
+        setState({ kind: "error", message: data.error ?? "Erro na instalação", reason: data.reason, httpStatus: res.status });
         return;
       }
       setState({
@@ -166,6 +179,13 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
               <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
               <Button type="submit">Instalar</Button>
             </div>
+            <button
+              type="button"
+              onClick={() => setState({ kind: "suporte", voltarPara: { kind: "form" } })}
+              className="text-xs text-muted-foreground hover:text-foreground underline block mx-auto"
+            >
+              Precisa de ajuda antes de instalar? Fale com o suporte
+            </button>
           </form>
         )}
 
@@ -228,11 +248,62 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
             <AlertCircle className="h-14 w-14 text-destructive mx-auto" />
             <h3 className="text-xl font-semibold">Falha na instalação</h3>
             <p className="text-sm text-muted-foreground">{state.message}</p>
+            {state.reason && (
+              <Badge variant="outline" className="font-mono text-xs">
+                {state.reason}
+                {state.httpStatus ? ` · HTTP ${state.httpStatus}` : ""}
+              </Badge>
+            )}
             <div className="flex gap-2 justify-center">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    [
+                      `Stack: ${stack.id}`,
+                      `Mensagem: ${state.message}`,
+                      state.reason ? `Causa: ${state.reason}` : null,
+                      state.httpStatus ? `HTTP: ${state.httpStatus}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("\n")
+                  )
+                }
+              >
+                Copiar detalhes
+              </Button>
               <Button variant="outline" onClick={() => setState({ kind: "form" })}>Tentar de novo</Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setState({
+                    kind: "suporte",
+                    contextoErro: [
+                      `Stack: ${stack.id}`,
+                      `Mensagem: ${state.message}`,
+                      state.reason ? `Causa: ${state.reason}` : null,
+                      state.httpStatus ? `HTTP: ${state.httpStatus}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("\n"),
+                    voltarPara: state,
+                  })
+                }
+              >
+                Falar com o suporte
+              </Button>
               <Button onClick={onClose}>Fechar</Button>
             </div>
           </div>
+        )}
+
+        {state.kind === "suporte" && (
+          <SuportePanel
+            stackId={stack.id}
+            csrfToken={csrfToken}
+            contextoErro={state.contextoErro}
+            onVoltar={() => setState(state.voltarPara)}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -31,8 +31,18 @@ export type AuditAction =
   | "license.pair.choose.fail"
   | "license.pair.migrar"
   | "license.pair.migrar.fail"
+  | "license.pair.credencial"
+  | "license.pair.credencial.fail"
+  | "license.pair.trocar-telefone"
+  | "license.pair.trocar-telefone.fail"
   | "license.signup"
-  | "license.signup.fail";
+  | "license.signup.fail"
+  // Sistema de tickets de suporte (ver suporte.ts). Nunca o texto do ticket
+  // nem nome de anexo no `meta` — só ticket_id e causas estruturadas.
+  | "suporte.abrir"
+  | "suporte.abrir.fail"
+  | "suporte.anexo"
+  | "suporte.anexo.fail";
 
 export type AuditEntry = {
   user: string;

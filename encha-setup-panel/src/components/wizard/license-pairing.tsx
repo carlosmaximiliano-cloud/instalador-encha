@@ -37,10 +37,16 @@ type Etapa =
       aviso?: string;
     }
   | { kind: "aguardando_cpf"; pairingId: string; remetenteMascarado?: string }
+  // Fase 2: 2 tentativas de CPF erradas destravam com email+senha do Super
+  // Admin do app, em vez de queimar a sessão (ver informarCPF no Console).
+  | { kind: "aguardando_credencial"; pairingId: string }
   | { kind: "escolha"; pairingId: string; licencas: LicencaOfertada[]; escolhaExpiraEm?: number }
   | { kind: "confirmado"; cliente?: string; plano?: string }
   | { kind: "recusado"; pairingId: string; motivo?: string; instalacaoAtual?: InstalacaoAtual }
   | { kind: "migrando"; pairingId: string }
+  // Fase 2.2: "celular novo, CPF que já tem cadastro" — troca o telefone
+  // cadastrado pelo número já confirmado nesta sessão, via credencial.
+  | { kind: "trocando_telefone"; pairingId: string }
   | { kind: "expirado" }
   | { kind: "erro"; mensagem: string }
   | { kind: "manual" }; // usuário escolheu colar uma chave existente — não pareia
@@ -141,6 +147,10 @@ export function LicensePairing({
   const [etapa, setEtapa] = useState<Etapa>({ kind: "iniciando" });
   const [cpf, setCpf] = useState("");
   const [erroCpf, setErroCpf] = useState<string | null>(null);
+  const [credEmail, setCredEmail] = useState("");
+  const [credSenha, setCredSenha] = useState("");
+  const [erroCredencial, setErroCredencial] = useState<string | null>(null);
+  const [enviandoCredencial, setEnviandoCredencial] = useState(false);
   const [confirmandoMigracao, setConfirmandoMigracao] = useState(false);
   const [erroMigracao, setErroMigracao] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -271,12 +281,49 @@ export function LicensePairing({
       return;
     }
     setErroCpf(null);
+    const pairingId = etapa.pairingId;
     try {
-      await chamar("pair/cpf", { pairingId: etapa.pairingId, cpf: digitos });
+      await chamar("pair/cpf", { pairingId, cpf: digitos });
       // sucesso: o PRÓXIMO poll é quem resolve (confirmado/recusado) — este
       // endpoint só aciona a etapa, mesmo padrão do app Go.
     } catch (e) {
+      const data = (e as Error & { data?: { error?: string; tentativas_restantes?: number } }).data;
+      if (data?.error === "aguardando_credencial") {
+        // 2ª tentativa errada — Fase 2: destrava com email+senha em vez de
+        // exigir suporte. Não é um erro de transporte nem de digitação.
+        setEtapa({ kind: "aguardando_credencial", pairingId });
+        return;
+      }
+      if (data?.error === "cpf_nao_confere") {
+        setErroCpf(
+          typeof data.tentativas_restantes === "number"
+            ? `CPF não confere — resta ${data.tentativas_restantes} tentativa${data.tentativas_restantes === 1 ? "" : "s"}.`
+            : "CPF não confere."
+        );
+        return;
+      }
       setErroCpf(e instanceof Error ? e.message : "Não foi possível confirmar com este CPF — confira os dados e tente de novo.");
+    }
+  }
+
+  async function confirmarCredencial() {
+    if (etapa.kind !== "aguardando_credencial") return;
+    if (!credEmail || !credSenha) {
+      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      return;
+    }
+    setErroCredencial(null);
+    setEnviandoCredencial(true);
+    try {
+      await chamar("pair/credencial", { pairingId: etapa.pairingId, email: credEmail, senha: credSenha });
+      // sucesso: o poll (que continua rodando em segundo plano) resolve
+      // "confirmado" no próximo tick — mesmo padrão de confirmarCpf/escolher.
+    } catch (e) {
+      setErroCredencial(
+        e instanceof Error ? e.message : "Não foi possível entrar com essas credenciais — confira e tente de novo."
+      );
+    } finally {
+      setEnviandoCredencial(false);
     }
   }
 
@@ -314,6 +361,29 @@ export function LicensePairing({
         motivo: "ja_ativada_em_outra_vps", // mantém o CTA de migrar visível pra tentar de novo
       });
       setErroMigracao(e instanceof Error ? e.message : "Não foi possível migrar a licença — tente de novo.");
+    }
+  }
+
+  async function confirmarTrocaTelefone() {
+    if (etapa.kind !== "trocando_telefone") return;
+    if (!credEmail || !credSenha) {
+      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      return;
+    }
+    setErroCredencial(null);
+    setEnviandoCredencial(true);
+    const pairingId = etapa.pairingId;
+    try {
+      await chamar("pair/trocar-telefone", { pairingId, email: credEmail, senha: credSenha });
+      // sucesso: mesma sessão, agora com o telefone trocado e a licença já
+      // resolvida — o próximo poll confirma sozinho (mesmo padrão de migrar).
+      iniciarPoll(pairingId);
+    } catch (e) {
+      setErroCredencial(
+        e instanceof Error ? e.message : "Não foi possível trocar o número — confira as credenciais e tente de novo."
+      );
+    } finally {
+      setEnviandoCredencial(false);
     }
   }
 
@@ -358,9 +428,42 @@ export function LicensePairing({
     );
   }
 
+  if (etapa.kind === "trocando_telefone") {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Confirme com o email e a senha do Super Admin da sua conta EnchaT — isso troca o celular
+          cadastrado pelo número que você acabou de confirmar aqui.
+        </p>
+        <Label htmlFor="pairing-troca-email">Email</Label>
+        <Input
+          id="pairing-troca-email"
+          type="email"
+          placeholder="voce@empresa.com"
+          value={credEmail}
+          onChange={(e) => setCredEmail(e.target.value)}
+        />
+        <Label htmlFor="pairing-troca-senha">Senha</Label>
+        <Input
+          id="pairing-troca-senha"
+          type="password"
+          value={credSenha}
+          onChange={(e) => setCredSenha(e.target.value)}
+        />
+        {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
+        <Button type="button" size="sm" onClick={confirmarTrocaTelefone} disabled={enviandoCredencial}>
+          {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+          Trocar número
+        </Button>
+      </div>
+    );
+  }
+
   if (etapa.kind === "recusado" || etapa.kind === "expirado") {
     const ehOutraVps = etapa.kind === "recusado" && etapa.motivo === "ja_ativada_em_outra_vps";
-    const semRetryUtil = etapa.kind === "recusado" && MOTIVOS_SEM_RETRY_UTIL.has(etapa.motivo ?? "") && !ehOutraVps;
+    const ehCpfJaCadastrado = etapa.kind === "recusado" && etapa.motivo === "cpf_ja_cadastrado";
+    const semRetryUtil =
+      etapa.kind === "recusado" && MOTIVOS_SEM_RETRY_UTIL.has(etapa.motivo ?? "") && !ehOutraVps && !ehCpfJaCadastrado;
     return (
       <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
         <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -371,6 +474,16 @@ export function LicensePairing({
           <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(true)}>
             <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
             Esta licença é minha — migrar para esta instalação
+          </Button>
+        ) : ehCpfJaCadastrado ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setEtapa({ kind: "trocando_telefone", pairingId: etapa.pairingId })}
+          >
+            <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+            Este CPF é meu — trocar meu número
           </Button>
         ) : (
           !semRetryUtil && (
@@ -434,6 +547,36 @@ export function LicensePairing({
         />
         {erroCpf && <p className="text-xs text-destructive">{erroCpf}</p>}
         <Button type="button" size="sm" onClick={confirmarCpf}>Continuar</Button>
+      </div>
+    );
+  }
+
+  if (etapa.kind === "aguardando_credencial") {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Não deu pra confirmar pelo CPF. Entre com o email e a senha do Super Admin da sua conta EnchaT pra continuar.
+        </p>
+        <Label htmlFor="pairing-cred-email">Email</Label>
+        <Input
+          id="pairing-cred-email"
+          type="email"
+          placeholder="voce@empresa.com"
+          value={credEmail}
+          onChange={(e) => setCredEmail(e.target.value)}
+        />
+        <Label htmlFor="pairing-cred-senha">Senha</Label>
+        <Input
+          id="pairing-cred-senha"
+          type="password"
+          value={credSenha}
+          onChange={(e) => setCredSenha(e.target.value)}
+        />
+        {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
+        <Button type="button" size="sm" onClick={confirmarCredencial} disabled={enviandoCredencial}>
+          {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+          Entrar
+        </Button>
       </div>
     );
   }

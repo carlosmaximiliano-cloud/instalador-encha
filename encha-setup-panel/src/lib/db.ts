@@ -111,5 +111,27 @@ function initSchema(d: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_terms_version ON terms_acceptances(terms_version);
     CREATE INDEX IF NOT EXISTS idx_terms_unsynced ON terms_acceptances(synced) WHERE synced = 0;
+
+    -- Sistema de tickets de suporte (ver suporte.ts/suporte-store.ts).
+    -- requester_token: um por SCOPE (hoje, stack_id — cada wizard lista só
+    -- os próprios chamados), cunhado no primeiro ticket aberto daquele
+    -- escopo. Cifrado como stack_secrets.encrypted_envs — credencial durável
+    -- numa máquina cujo trabalho é rodar stacks de terceiros.
+    CREATE TABLE IF NOT EXISTS suporte_solicitante (
+      scope TEXT PRIMARY KEY,
+      token_encrypted TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    -- acesso_token: um por TICKET, devolvido pelo Console só na resposta do
+    -- POST que abre o ticket. Sem isto, um upload de anexo posterior (ação
+    -- separada do usuário, depois de ver "ticket aberto") não teria como se
+    -- autenticar contra o Console sem o token chegar ao navegador.
+    CREATE TABLE IF NOT EXISTS suporte_tickets_locais (
+      ticket_id INTEGER PRIMARY KEY,
+      scope TEXT NOT NULL,
+      acesso_token_encrypted TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
   `);
 }

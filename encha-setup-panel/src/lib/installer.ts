@@ -38,6 +38,8 @@ export type InstallResult = {
   /** Status HTTP sugerido pra API route devolver — falha do lado do EnchaT vira 502/504/429, nunca 400. */
   httpStatus?: number;
   generatedSecrets?: GeneratedSecret[];
+  /** Aviso não-bloqueante pós-deploy (ex.: fingerprint divergente — ver checarFingerprintPosDeploy). Instalação já subiu; isto é só um alerta pro card final. */
+  aviso?: string;
 };
 
 // Mapeia a causa estruturada de RegistryAuthError/ReleaseInfoError pro status
@@ -207,6 +209,46 @@ function saveStackSecrets(
     result: "ok",
     meta: payload,
   });
+}
+
+// Confere, depois do deploy, se o fingerprint que o APP ACABOU DE CALCULAR
+// (GET /api/license, já rodando na VPS) bate com o que o PAINEL vinculou no
+// Console durante o pareamento. Existem dois clientes independentes falando
+// o mesmo protocolo (painel via SQLite local, app via ENCHAT_MACHINE_ID no
+// env) — só coincidem porque o painel copia machineId pro YAML; nada
+// verificava que deu certo. Quando diverge, o app pede pareamento de novo e
+// a nova sessão é recusada como "já ativada em outro servidor", sobre uma
+// licença que é do próprio cliente — exatamente o bug real encontrado no
+// teste E2E. Best-effort: nunca lança, nunca derruba um install que já
+// funcionou; só alimenta `aviso` no InstallResult pro card final avisar cedo
+// em vez do cliente descobrir pela tela de pareamento.
+async function checarFingerprintPosDeploy(accessUrl: string, fingerprintEsperado: string): Promise<string | undefined> {
+  const tentativas = 3;
+  for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const r = await fetch(`${accessUrl}/api/license`, { signal: controller.signal, cache: "no-store" });
+      clearTimeout(timeout);
+      if (!r.ok) continue;
+      const body = (await r.json()) as { fingerprint?: string };
+      if (!body.fingerprint) continue;
+      if (body.fingerprint !== fingerprintEsperado) {
+        return (
+          "O app subiu, mas o identificador que ele calculou não bate com o que foi vinculado à licença " +
+          "durante o pareamento — ele pode pedir ativação de novo. Se isso acontecer, use a opção " +
+          "\"esta licença é minha\" na tela de ativação para resolver sem precisar de suporte."
+        );
+      }
+      return undefined; // bateu — sem aviso.
+    } catch {
+      // App ainda subindo, rede instável, etc. — tenta de novo, e se todas
+      // as tentativas falharem, simplesmente não há aviso (não é evidência
+      // de divergência, só de indisponibilidade transitória).
+    }
+  }
+  return undefined;
 }
 
 export async function installStack(input: InstallInput): Promise<InstallResult> {
@@ -480,16 +522,21 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     // em vez de perdida junto com uma sessão já marcada como usada.
     if (pareamentoId) consumirPareamento(pareamentoId);
 
+    let aviso: string | undefined;
+    if (pareamentoFingerprint && def.postInstall?.accessUrl) {
+      aviso = await checarFingerprintPosDeploy(def.postInstall.accessUrl(parsed.data), pareamentoFingerprint);
+    }
+
     logAudit({
       user: input.user,
       ip: input.ip,
       action: "stack.install",
       target: input.stackId,
       result: "ok",
-      meta: { portainer_stack_id: stack.Id },
+      meta: { portainer_stack_id: stack.Id, ...(aviso ? { aviso_fingerprint: true } : {}) },
     });
 
-    return { ok: true, stack, generatedSecrets: generated };
+    return { ok: true, stack, generatedSecrets: generated, aviso };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro desconhecido";
     const { httpStatus, reason } = statusForCause(e);

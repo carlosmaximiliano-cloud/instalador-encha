@@ -16,9 +16,9 @@ const bodySchema = z.object({
 
 // Informa o CPF depois do telefone já confirmado por WhatsApp (protocolo
 // "aguardando_cpf" — ver pair/poll). O CPF em si NUNCA é persistido aqui
-// nem em audit — só repassado ao Console, que decide (recusa genérica de
-// propósito, anti-oráculo — ver internal/license/pareamento.go no repo
-// ENCHAT). O motivo real, se houver, chega no PRÓXIMO poll.
+// nem em audit — só repassado ao Console. cpf_nao_confere/aguardando_
+// credencial (Fase 2, 2 tentativas) SÃO revelados de propósito — ver o
+// catch abaixo; os demais motivos continuam genéricos (anti-oráculo).
 export async function POST(req: NextRequest) {
   if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
   if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
@@ -58,12 +58,26 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const meta: Record<string, unknown> = { error: e instanceof Error ? e.message : "Erro desconhecido", pairing_id: pairingId }; // nunca o CPF
     let httpStatus = 502;
+    let motivoConsole: string | undefined;
+    let tentativasRestantes: number | undefined;
     if (e instanceof PairingError) {
       meta.reason = e.reason;
       if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
       httpStatus = e.reason === "recusado" ? 409 : e.reason === "rate_limited" ? 429 : 502;
+      motivoConsole = (e.body?.error as string | undefined) ?? e.serverDetail;
+      if (typeof e.body?.tentativas_restantes === "number") tentativasRestantes = e.body.tentativas_restantes;
     }
     logAudit({ user: session.user, ip, action: "license.pair.cpf.fail", target: stackId, result: "error", meta });
+
+    // cpf_nao_confere/aguardando_credencial (Fase 2) SÃO revelados — quem
+    // chega aqui já provou posse de um WhatsApp cadastrado, então só
+    // descobre algo sobre a PRÓPRIA conta, nunca de terceiros.
+    if (motivoConsole === "cpf_nao_confere" || motivoConsole === "aguardando_credencial") {
+      return NextResponse.json(
+        { ok: false, error: motivoConsole, tentativas_restantes: tentativasRestantes },
+        { status: httpStatus }
+      );
+    }
     return NextResponse.json(
       { error: "Não foi possível confirmar com este CPF — confira os dados e tente de novo" },
       { status: httpStatus }

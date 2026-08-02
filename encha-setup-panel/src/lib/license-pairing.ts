@@ -28,27 +28,33 @@ export class PairingError extends Error {
     public reason: PairingReason,
     message: string,
     public httpStatus?: number,
-    public serverDetail?: string
+    public serverDetail?: string,
+    // body: corpo JSON cru da recusa, quando existir — Fase 2 (2ª tentativa
+    // de CPF errada) precisa de `tentativas_restantes`, um número que
+    // `serverDetail` (só a string de `error`) não carrega.
+    public body?: Record<string, unknown>
   ) {
     super(message);
     this.name = "PairingError";
   }
 }
 
-async function readErrorDetail(res: Response): Promise<string | undefined> {
+async function readErrorInfo(res: Response): Promise<{ detail?: string; body?: Record<string, unknown> }> {
   try {
     const text = (await res.text()).slice(0, 300);
-    if (!text) return undefined;
+    if (!text) return {};
     try {
       const parsed = JSON.parse(text);
       const detail = parsed?.error ?? parsed?.message ?? parsed?.motivo;
-      if (typeof detail === "string" && detail) return detail;
+      const body = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : undefined;
+      if (typeof detail === "string" && detail) return { detail, body };
+      return { body };
     } catch {
       // não era JSON — usa o texto cru mesmo
+      return { detail: text };
     }
-    return text;
   } catch {
-    return undefined;
+    return {};
   }
 }
 
@@ -80,18 +86,19 @@ async function postConsole(baseUrl: string, path: string, body: Record<string, u
   }
 
   if (!res.ok) {
-    const detail = await readErrorDetail(res);
+    const { detail, body } = await readErrorInfo(res);
     const status = res.status;
-    if (status === 429) throw new PairingError("rate_limited", "O Console EnchaT pediu para aguardar antes de tentar de novo.", status, detail);
-    if (status === 404 || status === 410) throw new PairingError("not_found", "Sessão de pareamento não encontrada ou expirada — gere um novo código.", status, detail);
-    if (status >= 500) throw new PairingError("server", `O Console EnchaT respondeu com erro ${status}${detail ? ` (${detail})` : ""}.`, status, detail);
+    if (status === 429) throw new PairingError("rate_limited", "O Console EnchaT pediu para aguardar antes de tentar de novo.", status, detail, body);
+    if (status === 404 || status === 410) throw new PairingError("not_found", "Sessão de pareamento não encontrada ou expirada — gere um novo código.", status, detail, body);
+    if (status >= 500) throw new PairingError("server", `O Console EnchaT respondeu com erro ${status}${detail ? ` (${detail})` : ""}.`, status, detail, body);
     // 400/403/409 do protocolo de pareamento (ex.: cpf_obrigatorio,
     // ja_ativada_em_outra_vps, sessao_ja_confirmada) — não é falha de
     // transporte, é uma recusa de negócio. `detail` carrega o motivo real
     // (ver mensagemDeErro em web/src/components/AtivacaoScreen.tsx no repo
     // ENCHAT para a tradução — o painel espelha essas mensagens em
-    // license-pairing-messages.ts).
-    throw new PairingError("recusado", detail ?? `Console recusou (HTTP ${status}).`, status, detail);
+    // license-pairing-messages.ts). `body` carrega campos extras como
+    // tentativas_restantes (Fase 2 — CPF errado).
+    throw new PairingError("recusado", detail ?? `Console recusou (HTTP ${status}).`, status, detail, body);
   }
 
   let json: unknown;
@@ -250,6 +257,41 @@ export async function pairCpf(
     session_id: params.sessionId,
     fingerprint: params.fingerprint,
     cpf: params.cpf,
+  });
+}
+
+export type PairCredencialResult = { escolhaPendente: boolean };
+
+// Segundo fator de posse (Fase 2 do plano): destrava a sessão depois do CPF
+// errar 2x — email+senha do Super Admin do app, sincronizados via
+// credencial-proprietario.ts no Console. Autentica o customerId de forma
+// INDEPENDENTE do CPF pinado na sessão (que pode estar errado).
+export async function pairCredencial(
+  consoleBaseUrl: string,
+  params: { sessionId: string; fingerprint: string; email: string; senha: string }
+): Promise<PairCredencialResult> {
+  const json = await postConsole(consoleBaseUrl, "/api/v1/licenses/pair/credencial", {
+    session_id: params.sessionId,
+    fingerprint: params.fingerprint,
+    email: params.email,
+    senha: params.senha,
+  });
+  return { escolhaPendente: bool(json, "escolha_pendente") === true };
+}
+
+// Fase 2.2 — "celular novo, CPF que já tem cadastro" (motivo
+// cpf_ja_cadastrado): mesma credencial de pairCredencial, mas troca o
+// telefone cadastrado pelo número JÁ CONFIRMADO nesta sessão em vez de só
+// confirmar o pareamento.
+export async function pairTrocarTelefone(
+  consoleBaseUrl: string,
+  params: { sessionId: string; fingerprint: string; email: string; senha: string }
+): Promise<void> {
+  await postConsole(consoleBaseUrl, "/api/v1/licenses/pair/trocar-telefone", {
+    session_id: params.sessionId,
+    fingerprint: params.fingerprint,
+    email: params.email,
+    senha: params.senha,
   });
 }
 

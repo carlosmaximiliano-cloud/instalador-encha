@@ -213,6 +213,8 @@ export async function POST(req: NextRequest) {
     ok: true,
     stackId: result.stack?.Id,
     accessUrl: def.postInstall?.accessUrl?.(parsed.data.values),
+    // Não-bloqueante — ver checarFingerprintPosDeploy em installer.ts.
+    aviso: result.aviso,
     notes:
       typeof def.postInstall?.notes === "function"
         ? def.postInstall.notes(parsed.data.values)
