@@ -32,7 +32,16 @@ TMP=/tmp/encha-src
 rm -rf "$TMP"; mkdir -p "$TMP"
 
 fetch() { wget -qO- "https://codeload.github.com/${SETUPTESTE_REPO}/tar.gz/$1"; }
-fetch "$ENCHA_SRC_REF" > /tmp/src.tgz 2>/dev/null || fetch refs/heads/main > /tmp/src.tgz
+# SEM fallback pra refs/heads/main: com o release.yml novo, main sempre
+# carrega o commit de release mais recente, então um fallback silencioso
+# aqui baixaria scripts de main achando que é a tag pedida — o grep de
+# ENCHA_VERSION logo abaixo coincidiria por acidente (main também tem uma
+# versão válida), e o container instalaria em /root, como root, um commit
+# diferente do que a versão-alvo pretendia, reportando sucesso.
+if ! fetch "$ENCHA_SRC_REF" > /tmp/src.tgz; then
+  echo "ERRO: falha ao baixar $ENCHA_SRC_REF de ${SETUPTESTE_REPO} — a tag existe?" >&2
+  exit 1
+fi
 tar xzf /tmp/src.tgz -C "$TMP" --strip-components=1
 
 test -f "$TMP/main.sh"

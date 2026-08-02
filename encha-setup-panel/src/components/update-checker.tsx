@@ -36,9 +36,23 @@ export function UpdateChecker() {
   const [scriptsFailed, setScriptsFailed] = useState(false);
   const [scriptsDone, setScriptsDone] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Botão manual "Verificar atualizações" — só existe quando updateAvailable
+  // já é false (senão o botão de atualizar já está lá). Debounce simples
+  // por timestamp, não por setInterval: evita clique repetido acidental
+  // sem precisar de mais um cleanup no unmount.
+  const [checking, setChecking] = useState(false);
+  const [justChecked, setJustChecked] = useState(false);
+  const lastCheckAtRef = useRef(0);
+  const CHECK_COOLDOWN_MS = 10_000;
 
+  // cache: "no-store" sempre — sem isso, a resposta de /api/version (que
+  // manda Cache-Control: private, max-age=300) fica presa no cache HTTP do
+  // browser por até 5min. Isso já quebrava o polling silenciosamente: toda
+  // atualização bem-sucedida batia o timeout de 300s abaixo achando que
+  // "current" nunca convergia com "target", porque o browser respondia com
+  // a versão antiga em cache em vez de perguntar de novo pro servidor.
   const loadVersion = useCallback(() => {
-    return fetch("/api/version")
+    return fetch("/api/version", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: VersionInfo | null) => {
         if (d?.current) setInfo(d);
@@ -133,6 +147,18 @@ export function UpdateChecker() {
     await updatePanelImage();
   }
 
+  async function manualCheck() {
+    const now = Date.now();
+    if (checking || now - lastCheckAtRef.current < CHECK_COOLDOWN_MS) return;
+    lastCheckAtRef.current = now;
+    setChecking(true);
+    setJustChecked(false);
+    await loadVersion();
+    setChecking(false);
+    setJustChecked(true);
+    setTimeout(() => setJustChecked(false), 4000);
+  }
+
   if (!info) return null;
 
   return (
@@ -152,9 +178,18 @@ export function UpdateChecker() {
           <span className="text-[10px] opacity-70">Atualizar</span>
         </button>
       ) : (
-        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground tabular-nums">
-          <span>v{info.current}</span>
-        </div>
+        <button
+          onClick={manualCheck}
+          disabled={checking}
+          className="w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[10px] text-muted-foreground tabular-nums hover:bg-glass-strong transition-all disabled:opacity-60"
+          title="Verificar atualizações"
+        >
+          <RefreshCw className={`h-3 w-3 shrink-0 ${checking ? "animate-spin" : ""}`} />
+          <span>
+            v{info.current}
+            {justChecked && !checking ? " — você já está na versão mais recente" : ""}
+          </span>
+        </button>
       )}
 
       <Dialog

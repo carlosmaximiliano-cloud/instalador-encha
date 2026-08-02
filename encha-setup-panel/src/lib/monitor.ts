@@ -1,7 +1,21 @@
 // Cliente server-side do Monitor Encha (backend central). Server-to-server, sem CORS.
 // Todas as chamadas são best-effort: timeout curto + try/catch, nunca lançam pro caller.
 
-const MONITOR_BASE_URL = process.env.MONITOR_BASE_URL ?? "https://monitor.encha.com.br";
+// || (não ??) de propósito: instalações antigas têm MONITOR_BASE_URL=""
+// (string vazia) gravado no compose da stack — "Monitor descontinuado" era
+// verdade quando essa env foi zerada, mas o Monitor voltou a ser a fonte de
+// releases/termos/auto-update do Encha Setup. Com ??, uma string vazia
+// (definida, não undefined) nunca cairia no default, e a frota inteira
+// ficaria cega ao Monitor pra sempre — mesmo depois de reativar tudo aqui,
+// porque atualizar a imagem não reescreve o compose armazenado no Portainer
+// (ver tryUpdateViaStack em updater.ts). Com ||, o vazio cai no default e a
+// frota existente volta a enxergar o Monitor sem precisar de SSH manual.
+//
+// O domínio é (e deve continuar sendo) constante de compilação, nunca um
+// valor editável pelo operador na env da stack — um MONITOR_BASE_URL
+// apontável pelo cliente é exatamente o vetor de sequestro de domínio
+// descrito no comentário de fetchWithTimeout logo abaixo.
+const MONITOR_BASE_URL = process.env.MONITOR_BASE_URL || "https://monitor.encha.com.br";
 
 export type BannerPosition = "top" | "sidebar";
 const TIMEOUT_MS = 4000;

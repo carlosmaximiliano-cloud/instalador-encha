@@ -20360,29 +20360,53 @@ ferramenta_atualizar_painel() {
 }
 
 ################################################################################
-# atualizar_fonte_painel — Garante /root/encha-setup-panel na ponta do main.
+# atualizar_fonte_painel — Garante /root/encha-setup-panel na ponta da tag
+# v$ENCHA_VERSION (não de main).
+#
+# Antes clonava "main" direto — mas com o pipeline de release (build.yml +
+# release.yml), main só recebe um commit por publish; entre publishes ela
+# pode estar num estado que nunca virou release (branch de trabalho). Clonar
+# a TAG garante que o fonte baixado é exatamente o mesmo commit da imagem
+# :$ENCHA_VERSION que acabamos de (tentar) puxar do GHCR — sem isso, se o
+# pull falhar e o painel cair no build local, a imagem buildada carregaria
+# código de main rotulado com a versão da tag, uma mentira silenciosa sobre
+# o que está rodando.
+#
+# Fallback pra main é EXPLÍCITO (avisa), nunca silencioso — só existe pra
+# cobrir a primeira instalação antes de qualquer release ter sido publicada
+# pelo pipeline novo (tag v$ENCHA_VERSION ainda não existe).
 #
 # Auto-contida (não depende de preparar_fonte_painel do main.sh) porque
 # secondary.sh também pode rodar isolado (BASH_SOURCE == 0, ver fim do
 # arquivo). Se o pull de ghcr.io/enchaaluno/setup-panel falhar por qualquer
 # motivo (pacote ainda não publicado, virou privado, rede fora), o painel cai
 # no build local a partir deste diretório — se ele ficar desatualizado, um fix
-# no painel não chega à imagem buildada, mesmo com o fix já em main. Chamar
+# no painel não chega à imagem buildada, mesmo com o fix já publicado. Chamar
 # sempre antes de buildar.
 ################################################################################
 atualizar_fonte_painel() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1
 
+    local tag_ref="refs/tags/v${ENCHA_VERSION}"
+
     if [[ -d /root/encha-setup-panel/.git ]] \
-        && git -C /root/encha-setup-panel fetch --depth 1 origin main >/dev/null 2>&1 \
+        && git -C /root/encha-setup-panel fetch --depth 1 origin "$tag_ref" >/dev/null 2>&1 \
         && git -C /root/encha-setup-panel reset --hard FETCH_HEAD >/dev/null 2>&1; then
         return 0
     fi
 
     rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
-    git clone --depth 1 \
+    if ! git clone --depth 1 --branch "v${ENCHA_VERSION}" \
         https://github.com/enchaaluno/setupteste.git \
-        /tmp/_setupteste_clone >/dev/null 2>&1 || return 1
+        /tmp/_setupteste_clone >/dev/null 2>&1; then
+        echo -e "  \e[33m↳ Tag v${ENCHA_VERSION} não encontrada em setupteste — clonando main como fallback.\e[0m"
+        rm -rf /tmp/_setupteste_clone
+        if ! git clone --depth 1 \
+            https://github.com/enchaaluno/setupteste.git \
+            /tmp/_setupteste_clone >/dev/null 2>&1; then
+            return 1
+        fi
+    fi
     if [[ ! -d /tmp/_setupteste_clone/encha-setup-panel ]]; then
         rm -rf /tmp/_setupteste_clone
         return 1

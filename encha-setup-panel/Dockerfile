@@ -2,8 +2,12 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache python3 make g++ libc6-compat
-COPY package.json ./
-RUN npm install --no-audit --no-fund
+# package-lock.json também é copiado e npm ci (não npm install) é usado de
+# propósito: sem lockfile, o build de release podia resolver dependências
+# diferentes das que rodaram no build testado do mesmo commit — o log de
+# builds passaria uma sensação de rastreabilidade que o pipeline não entregava.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 # --- build stage ---
 FROM node:20-alpine AS builder

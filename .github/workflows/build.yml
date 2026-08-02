@@ -1,0 +1,108 @@
+name: build
+
+# Todo push na main vira uma imagem `:sha-<short>` no GHCR e uma linha no
+# log de builds do Monitor (/admin/builds) — NUNCA uma versão. Publicar uma
+# versão de verdade (tag git + imagem :X.Y.Z + release visível a
+# /api/version) só acontece quando o admin clica "Publicar" no Monitor, que
+# dispara release.yml separadamente. Ver o plano "Log de builds +
+# publicação sob demanda" no histórico do repo.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # Guarda obrigatória em TODO job deste workflow: o repo tem um espelho
+  # (carlosmaximiliano-cloud/instalador-encha) que recebe os mesmos pushes.
+  # O GitHub executa workflows em qualquer repo que os contenha — sem essa
+  # condição, o mesmo push dispara build duas vezes (e a execução no
+  # espelho não tem os secrets, então falharia e geraria e-mail de erro em
+  # todo push, ruído que acaba escondendo falhas reais).
+  build-image:
+    if: github.repository == 'enchaaluno/setupteste'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+      image_digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: vars
+        run: echo "image_tag=sha-$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Não pusha `:latest` aqui de propósito — main.sh/secondary.sh puxam
+      # `:latest` em instalação nova; um `:latest` móvel a cada push
+      # entregaria código não testado pra quem está instalando agora.
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./encha-setup-panel
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/enchaaluno/setup-panel:${{ steps.vars.outputs.image_tag }}
+
+  # Job separado e não-bloqueante: se BUILDS_INGEST_SECRET rotacionar ou o
+  # Monitor cair, isso não deve derrubar o build em si (a imagem já subiu).
+  # O `continue-on-error` fica no PASSO, não no job, pra a annotation de
+  # falha continuar visível na aba Actions em vez de sumir silenciosamente.
+  register-build:
+    # always() pra registrar também builds com falha (needs: por padrão só
+    # roda se o job anterior teve sucesso) — mas continua restrito ao repo
+    # de produção.
+    if: always() && github.repository == 'enchaaluno/setupteste'
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Registrar build no Monitor
+        continue-on-error: true
+        env:
+          SECRET: ${{ secrets.BUILDS_INGEST_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SECRET:-}" ]; then
+            echo "::warning::BUILDS_INGEST_SECRET não configurado — build não registrado no Monitor."
+            exit 0
+          fi
+
+          COMMIT_MSG=$(git log -1 --pretty=%s HEAD | head -c 500)
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an HEAD)
+          COMMITTED_AT=$(git log -1 --pretty=%ct HEAD)
+
+          BODY=$(jq -n \
+            --arg sha "${{ github.sha }}" \
+            --arg branch "main" \
+            --arg msg "$COMMIT_MSG" \
+            --arg author "$COMMIT_AUTHOR" \
+            --argjson committed_at "$COMMITTED_AT" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg image_repo "ghcr.io/enchaaluno/setup-panel" \
+            --arg image_tag "${{ needs.build-image.outputs.image_tag }}" \
+            --arg image_digest "${{ needs.build-image.outputs.image_digest }}" \
+            --arg status "${{ needs.build-image.result == 'success' && 'success' || 'failed' }}" \
+            '{commit_sha:$sha, branch:$branch, commit_message:$msg, commit_author:$author,
+              committed_at:$committed_at, run_id:$run_id, run_url:$run_url,
+              image_repo:$image_repo, image_tag:$image_tag, image_digest:$image_digest,
+              status:$status}')
+
+          TS=$(date +%s)
+          SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')
+
+          curl -sf -X POST "https://monitor.encha.com.br/api/v1/builds" \
+            -H "Content-Type: application/json" \
+            -H "x-encha-signature: $SIG" \
+            -H "x-encha-timestamp: $TS" \
+            --data "$BODY"
