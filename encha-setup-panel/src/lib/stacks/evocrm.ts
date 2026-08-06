@@ -232,7 +232,9 @@ services:
       - ${net}
     environment:${authCommonEnv}
     volumes:
-      - evoauth_storage:/app/storage
+      ## A imagem tem WorkingDir=/rails — montar em /app/storage deixava os
+      ## blobs do ActiveStorage fora do volume (perdidos a cada redeploy).
+      - evoauth_storage:/rails/storage
     deploy:
       mode: replicated
       replicas: 1
@@ -247,7 +249,12 @@ services:
       - ${net}
     environment:${authCommonEnv}
     volumes:
-      - evoauth_storage:/app/storage
+      - evoauth_storage:/rails/storage
+    ## A imagem 1.0.0-rc2 do auth traz healthcheck embutido (curl no /health da
+    ## porta 3001) que não é role-aware nesta versão — um container Sidekiq não
+    ## serve HTTP, então a sonda nunca passa e o Swarm reagenda pra sempre.
+    healthcheck:
+      disable: true
     deploy:
       mode: replicated
       replicas: 1
@@ -257,7 +264,10 @@ services:
 
   evocrm_crm:
     image: ${EVOCRM_CRM_IMAGE}
-    command: bash -c "bundle exec rails db:migrate 2>&1 || echo 'Migration had errors, continuing...'; bundle exec rails s -p 3000 -b 0.0.0.0"
+    ## Runtime é ruby:3.4.4-alpine (sem bash) — precisa ser sh. O wait-for-auth
+    ## também é necessário: o Swarm não respeita depends_on, e sem esperar o
+    ## auth responder o CRM sobe e falha a primeira request de autenticação.
+    command: sh -c "until wget -qO- http://evocrm_auth:3001/health >/dev/null 2>&1; do echo 'Waiting for auth...'; sleep 5; done; bundle exec rails db:migrate 2>&1 || echo 'Migration had errors, continuing...'; bundle exec rails s -p 3000 -b 0.0.0.0"
     networks:
       - ${net}
     environment:
@@ -342,14 +352,41 @@ services:
     networks:
       - ${net}
     environment:
+    ## 🗄️ PostgreSQL
+    ## ⚠️ O entrypoint.sh da imagem monta a URL de migração por interpolação
+    ## (postgres://\${DB_USER}:\${DB_PASSWORD}@...?sslmode=\${DB_SSLMODE}) e sai
+    ## com exit 1 se o migrate falhar. É DB_USER, não DB_USERNAME — e sem
+    ## DB_SSLMODE a imagem assume "require", que o nosso Postgres não tem
+    ## (pgvector/pgvector:pg16 sobe sem SSL). Faltando qualquer um dos dois, o
+    ## service entra em crash-loop antes do binário Go rodar.
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USERNAME=postgres
+      - DB_USER=postgres
       - DB_PASSWORD=${secrets.senha_postgres}
       - DB_NAME=evocrm
+      - DB_SSLMODE=disable
+
+    ## 📈 Pool de conexões
+      - DB_MAX_IDLE_CONNS=10
+      - DB_MAX_OPEN_CONNS=100
+      - DB_CONN_MAX_LIFETIME=1h
+      - DB_CONN_MAX_IDLE_TIME=30m
+
+    ## 🌐 API
+      - PORT=5555
+
+    ## 🔐 Segredos e JWT — mesmos valores dos demais serviços
       - SECRET_KEY_BASE=${secrets.secret_key_base}
       - JWT_SECRET_KEY=${secrets.jwt_secret_key}
+      - JWT_ALGORITHM=HS256
       - ENCRYPTION_KEY=${secrets.encryption_key}
+
+    ## 🔗 Serviços internos — o config.go usa LoadEnvOrPanic nestes três:
+    ## ausentes, o processo morre no boot com "Environment variable X is required".
+      - EVOLUTION_BASE_URL=http://evocrm_crm:3000
+      - EVO_AUTH_BASE_URL=http://evocrm_auth:3001
+      - AI_PROCESSOR_URL=http://evocrm_processor:8000
+      - AI_PROCESSOR_VERSION=v1
     deploy:
       mode: replicated
       replicas: 1
@@ -402,8 +439,13 @@ services:
     networks:
       - ${net}
     environment:
+    ## O config.go usa mustGetEnv para LISTEN_ADDR e REDIS_URL — sem os dois,
+    ## Load() falha na entrada e o service nem chega a escutar a porta.
+      - LISTEN_ADDR=0.0.0.0:8080
+      - REDIS_URL=redis://evocrm_redis:6379/1
+      - AI_PROCESSOR_URL=http://evocrm_processor:8000
+      - AI_CALL_TIMEOUT_SECONDS=30
       - BOT_RUNTIME_SECRET=${secrets.bot_runtime_secret}
-      - EVOAI_CRM_URL=http://evocrm_crm:3000
     deploy:
       mode: replicated
       replicas: 1
@@ -476,7 +518,7 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_frontend}`,
     notes: [
       "Os dois domínios (API e painel) precisam ter DNS apontado para esta VPS antes de instalar.",
-      "O boot é lento — Rails e o processor Python rodam migrations na subida. A stack pode levar vários minutos para ficar 'Instalado'.",
+      "O boot é lento — Rails e o processor Python rodam migrations na subida. A stack pode levar vários minutos para ficar 'Instalado'. Se passar de ~10 minutos parada em 'Instalando...', algo travou: remova a stack 'evocrm' no Portainer (Stacks) e instale de novo por aqui — os dados ficam preservados.",
       "Primeiro acesso: crie a conta pelo próprio painel (cadastro aberto).",
       "Módulo de Segments/campanhas (EvoFlow) não está incluído nesta edição.",
       "Ainda é um release candidate (1.0.0-rc2) do upstream — espere instabilidade.",
