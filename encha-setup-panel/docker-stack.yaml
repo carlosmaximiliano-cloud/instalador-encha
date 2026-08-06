@@ -52,9 +52,15 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
-      # Vazio de propósito: o Monitor foi descontinuado (substituído pelo
-      # Console em console.enchat.pro). Vazio desliga o cliente monitor.ts
-      # sem timeout nenhum — ver o comentário em fetchWithTimeout.
+      # Vazio de propósito, mas NÃO porque o Monitor esteja descontinuado —
+      # ele voltou a ser a fonte de releases/termos/auto-update do Encha
+      # Setup (monitor.encha.com.br). O vazio aqui é um limite de segurança:
+      # monitor.ts trata este valor com `||`, não `??`, então uma string
+      # vazia cai no domínio fixo em código, e o operador nunca consegue
+      # apontar o painel pra um MONITOR_BASE_URL arbitrário (ver o comentário
+      # em fetchWithTimeout — é o vetor de sequestro de domínio que isso
+      # fecha). Trocar este valor aqui não muda nada; o domínio de verdade
+      # só muda recompilando o painel.
       - MONITOR_BASE_URL=
       - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
       - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}

@@ -20729,8 +20729,10 @@ services:
       - PORTAINER_URL=http://portainer_portainer:9000
       - DB_PATH=/app/data/panel.db
       - VPS_CONTEXT_DIR=/app/vps-context
-      # Vazio de propósito: o Monitor foi descontinuado. Ver docker-stack.yaml
-      # do painel (fonte da verdade) e monitor.ts (fetchWithTimeout).
+      # Vazio de propósito — NÃO por o Monitor estar descontinuado (ele não
+      # está). Ver o comentário completo em docker-stack.yaml do painel
+      # (fonte da verdade) e monitor.ts (fetchWithTimeout): é um limite de
+      # segurança, o domínio real cai no fallback fixo em código via `||`.
       - MONITOR_BASE_URL=
       - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
       - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}

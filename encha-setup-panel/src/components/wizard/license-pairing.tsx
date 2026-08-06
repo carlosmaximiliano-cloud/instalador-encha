@@ -44,6 +44,9 @@ type Etapa =
   | { kind: "confirmado"; cliente?: string; plano?: string }
   | { kind: "recusado"; pairingId: string; motivo?: string; instalacaoAtual?: InstalacaoAtual }
   | { kind: "migrando"; pairingId: string }
+  // Terceiro fator antes do rebind de verdade — abre depois que o usuário
+  // confirma o aviso do Dialog ("instalação anterior está ativa há X").
+  | { kind: "confirmar_migracao"; pairingId: string; instalacaoAtual?: InstalacaoAtual }
   // Fase 2.2: "celular novo, CPF que já tem cadastro" — troca o telefone
   // cadastrado pelo número já confirmado nesta sessão, via credencial.
   | { kind: "trocando_telefone"; pairingId: string }
@@ -152,7 +155,6 @@ export function LicensePairing({
   const [erroCredencial, setErroCredencial] = useState<string | null>(null);
   const [enviandoCredencial, setEnviandoCredencial] = useState(false);
   const [confirmandoMigracao, setConfirmandoMigracao] = useState(false);
-  const [erroMigracao, setErroMigracao] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Campo escondido no form pai — RHF só inclui no submit o que está
@@ -337,12 +339,17 @@ export function LicensePairing({
   }
 
   async function migrar() {
-    if (etapa.kind !== "recusado") return;
+    if (etapa.kind !== "confirmar_migracao") return;
+    if (!credEmail || !credSenha) {
+      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      return;
+    }
+    setErroCredencial(null);
+    setEnviandoCredencial(true);
     const pairingId = etapa.pairingId;
-    setConfirmandoMigracao(false);
-    setEtapa({ kind: "migrando", pairingId });
     try {
-      const d = await chamar("pair/migrar", { pairingId });
+      const d = await chamar("pair/migrar", { pairingId, email: credEmail, senha: credSenha });
+      setEtapa({ kind: "migrando", pairingId });
       if (d.sessao_reutilizavel) {
         // Mesma sessão, agora com a licença já vinculada a esta VPS — deixa
         // a etapa "migrando" (spinner) até o próximo poll resolver
@@ -355,12 +362,13 @@ export function LicensePairing({
         iniciar();
       }
     } catch (e) {
-      setEtapa({
-        kind: "recusado",
-        pairingId,
-        motivo: "ja_ativada_em_outra_vps", // mantém o CTA de migrar visível pra tentar de novo
-      });
-      setErroMigracao(e instanceof Error ? e.message : "Não foi possível migrar a licença — tente de novo.");
+      // Fica na MESMA etapa (confirmar_migracao) — credenciais erradas são
+      // pra tentar de novo aqui, não pra voltar pro aviso do Dialog.
+      setErroCredencial(
+        e instanceof Error ? e.message : "Não foi possível migrar a licença — confira as credenciais e tente de novo."
+      );
+    } finally {
+      setEnviandoCredencial(false);
     }
   }
 
@@ -459,6 +467,43 @@ export function LicensePairing({
     );
   }
 
+  if (etapa.kind === "confirmar_migracao") {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Confirme com o email e a senha do Super Admin da sua conta EnchaT — isso move a licença desta
+          conta pra ESTA VPS.
+        </p>
+        {etapa.instalacaoAtual && (
+          <p className="text-xs text-muted-foreground">
+            Instalação anterior: {sinalHaQuanto(etapa.instalacaoAtual.ultimoCheck)}
+            {etapa.instalacaoAtual.apelido ? ` ("${etapa.instalacaoAtual.apelido}")` : ""}.
+          </p>
+        )}
+        <Label htmlFor="pairing-migrar-email">Email</Label>
+        <Input
+          id="pairing-migrar-email"
+          type="email"
+          placeholder="voce@empresa.com"
+          value={credEmail}
+          onChange={(e) => setCredEmail(e.target.value)}
+        />
+        <Label htmlFor="pairing-migrar-senha">Senha</Label>
+        <Input
+          id="pairing-migrar-senha"
+          type="password"
+          value={credSenha}
+          onChange={(e) => setCredSenha(e.target.value)}
+        />
+        {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
+        <Button type="button" size="sm" onClick={migrar} disabled={enviandoCredencial}>
+          {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+          Migrar licença
+        </Button>
+      </div>
+    );
+  }
+
   if (etapa.kind === "recusado" || etapa.kind === "expirado") {
     const ehOutraVps = etapa.kind === "recusado" && etapa.motivo === "ja_ativada_em_outra_vps";
     const ehCpfJaCadastrado = etapa.kind === "recusado" && etapa.motivo === "cpf_ja_cadastrado";
@@ -469,7 +514,6 @@ export function LicensePairing({
         <p className="text-sm text-amber-600 dark:text-amber-400">
           {etapa.kind === "expirado" ? "O tempo para confirmar o pareamento acabou." : mensagemRecusa(etapa.motivo)}
         </p>
-        {erroMigracao && <p className="text-xs text-destructive">{erroMigracao}</p>}
         {ehOutraVps ? (
           <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(true)}>
             <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
@@ -512,9 +556,20 @@ export function LicensePairing({
                 <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(false)}>
                   Cancelar
                 </Button>
-                <Button type="button" size="sm" onClick={migrar}>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    if (etapa.kind !== "recusado") return;
+                    setConfirmandoMigracao(false);
+                    setErroCredencial(null);
+                    // Terceiro fator: só o aviso do Dialog não autoriza o
+                    // rebind — precisa da senha do dono, próxima tela.
+                    setEtapa({ kind: "confirmar_migracao", pairingId: etapa.pairingId, instalacaoAtual: etapa.instalacaoAtual });
+                  }}
+                >
                   <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
-                  Migrar mesmo assim
+                  Continuar
                 </Button>
               </DialogFooter>
             </DialogContent>

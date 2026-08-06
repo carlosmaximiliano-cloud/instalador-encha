@@ -107,6 +107,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         accessUrl: data.accessUrl,
         notes: data.notes ?? [],
         revealSecrets: data.revealSecrets ?? [],
+        aviso: data.aviso,
       });
       onInstalled?.();
     } catch (e) {
@@ -238,6 +239,12 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                   <li key={i}>• {n}</li>
                 ))}
               </ul>
+            )}
+            {state.aviso && (
+              <div className="max-w-md mx-auto text-left rounded-md border border-amber-500/40 bg-amber-500/10 p-3 flex gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                <p className="text-xs text-amber-500">{state.aviso}</p>
+              </div>
             )}
             <Button onClick={onClose}>Fechar</Button>
           </div>

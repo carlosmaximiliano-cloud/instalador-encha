@@ -299,16 +299,20 @@ export type PairMigrarResult = { sessaoReutilizavel: boolean };
 
 // Migração self-service de VPS (reformatou/reinstalou → licença presa a um
 // fingerprint antigo) — ver .../licenses/pair/migrar/route.ts no repo
-// Console pro porquê disto ser um REBIND, nunca um unbind. Só funciona
-// depois do CPF já conferido nesta sessão (o Console reautentica pela
-// mesma prova de posse).
+// Console pro porquê disto ser um REBIND, nunca um unbind. Terceiro fator
+// (email+senha do Super Admin do app, mesma credencial de pairCredencial/
+// pairTrocarTelefone) além do CPF já conferido nesta sessão — sem ele, quem
+// só soubesse o CPF de um estranho (dado público no Brasil) e clonasse o
+// pareamento WhatsApp poderia mover a licença de outra pessoa.
 export async function pairMigrar(
   consoleBaseUrl: string,
-  params: { sessionId: string; fingerprint: string }
+  params: { sessionId: string; fingerprint: string; email: string; senha: string }
 ): Promise<PairMigrarResult> {
   const json = await postConsole(consoleBaseUrl, "/api/v1/licenses/pair/migrar", {
     session_id: params.sessionId,
     fingerprint: params.fingerprint,
+    email: params.email,
+    senha: params.senha,
   });
   return { sessaoReutilizavel: bool(json, "sessao_reutilizavel") === true };
 }

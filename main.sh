@@ -320,7 +320,12 @@ executar_instalacoes() {
     echo -e "${verde}${negrito}📦 Iniciando a instalação dos pacotes necessários...${reset}"
     barra_meio
     
-    pacotes=(sudo apt-utils dialog jq apache2-utils git python3 neofetch curl wget htop vim nano)
+    # neofetch foi removido do Debian trixie (13) e não tem substituto direto
+    # nos repos oficiais nesta lista — cada tentativa de instalá-lo falhava
+    # com "❌ ERROR" no meio da instalação em VPS trixie, mesmo sem nunca ser
+    # de fato invocado em lugar nenhum do script (grep confirma: só aparece
+    # aqui). Puramente cosmético, então tirado em vez de trocado.
+    pacotes=(sudo apt-utils dialog jq apache2-utils git python3 curl wget htop vim nano)
     total_pacotes=${#pacotes[@]}
 
     for i in "${!pacotes[@]}"; do

@@ -11,6 +11,8 @@ import { logAudit } from "@/lib/audit";
 const bodySchema = z.object({
   stackId: z.string().min(1).max(60),
   pairingId: z.string().regex(/^[0-9a-f]{32}$/),
+  email: z.string().min(1).max(200),
+  senha: z.string().min(1).max(200),
 });
 
 // Migração self-service de VPS — o cliente clicou "esta licença é minha,
@@ -33,8 +35,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Inválido" }, { status: 400 });
-  const { stackId, pairingId } = parsed.data;
+  if (!parsed.success) return NextResponse.json({ error: "Informe email e senha" }, { status: 400 });
+  const { stackId, pairingId, email, senha } = parsed.data;
 
   const def = getStack(stackId);
   if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
@@ -54,6 +56,8 @@ export async function POST(req: NextRequest) {
     const result = await pairMigrar(def.pairing.consoleBaseUrl, {
       sessionId: row.console_session_id ?? "",
       fingerprint: row.fingerprint,
+      email,
+      senha,
     });
     if (result.sessaoReutilizavel) {
       // A sessão local já tinha sido marcada 'falhou' pelo poll anterior —
