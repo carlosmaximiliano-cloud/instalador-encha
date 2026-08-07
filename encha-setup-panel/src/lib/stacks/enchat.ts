@@ -232,10 +232,16 @@ services:
       replicas: 1
       update_config:
         order: start-first
+      # Sem max_attempts DE PROPÓSITO (igual enchat_pinfy/enchat_postgres
+      # abaixo) — o Swarm não tem depends_on com condição de saúde, então
+      # num boot a frio o app precisa poder tentar reconectar ao Postgres
+      # indefinidamente. Com max_attempts:5/delay:5s, uma VPS lenta o
+      # bastante (~25s+ pro Postgres aceitar conexão) esgotava as tentativas
+      # e derrubava a instalação de vez, sem auto-recuperação — achado em
+      # teste de instalação ponta-a-ponta (2026-08-07).
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 5
       placement:
         constraints:
           - node.role == manager
