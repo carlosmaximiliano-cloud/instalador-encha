@@ -246,7 +246,28 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                 <p className="text-xs text-amber-500">{state.aviso}</p>
               </div>
             )}
-            <Button onClick={onClose}>Fechar</Button>
+            <div className="flex gap-2 justify-center">
+              {state.accessUrl ? (
+                <>
+                  {/* Abre em nova aba SEM fechar o modal — os segredos acima
+                      (ex.: enchat_master_key) só existem neste useState e
+                      somem quando o componente desmonta; fechar junto do
+                      clique destruiria o que o aviso pede pra copiar antes.
+                      "Fechar" continua disponível ao lado, e Esc/clique fora/✕
+                      já cobrem quem só quer sair. */}
+                  <Button asChild>
+                    <a href={state.accessUrl} target="_blank" rel="noopener noreferrer">
+                      Abrir {stack.name}
+                    </a>
+                  </Button>
+                  <Button variant="outline" onClick={onClose}>Fechar</Button>
+                </>
+              ) : (
+                // 3 stacks (postgres/mysql/redis) não expõem accessUrl —
+                // headless, sem porta pública. Fallback pro botão único de sempre.
+                <Button onClick={onClose}>Fechar</Button>
+              )}
+            </div>
           </div>
         )}
 
