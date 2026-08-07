@@ -12642,7 +12642,13 @@ services:
         - "traefik.http.services.enchat-free.loadbalancer.server.port=8080"
 
   enchat_pinfy:
-    image: ghcr.io/enchainterno/pinfy-api:1.0.0
+    # ghcr.io/enchainterno/pinfy-api:1.0.0 era uma republicação manual
+    # obsoleta (ver o comentário de pinfyRepoFrom em
+    # encha-setup-panel/src/lib/stacks/enchat.ts) — o Pinfy agora é
+    # vendorizado como submodule do ENCHAT e publicado no MESMO CI/release
+    # do enchat-free, sob "ghcr.io/enchainterno/pinfy", com a MESMA tag do
+    # app (nunca mais fixo).
+    image: ghcr.io/enchainterno/pinfy:$versao_enchat
     hostname: enchat-pinfy
     networks:
       - enchat_net
@@ -12650,7 +12656,12 @@ services:
       DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
       MASTER_KEY: "$pinfy_master_key"
       PANEL_PASSWORD: "$pinfy_panel_password"
-      LICENSE_SERVER_URL: "https://app.pinfy.fun/"
+      # SEM barra final — o backend do Pinfy concatena
+      # "${LICENSE_SERVER_URL}/api/agent/activate" sem normalizar; uma URL
+      # terminada em "/" vira "..//api/agent/activate" e falha com 404 (ver
+      # o comentário de PINFY_LICENSE_SERVER_URL em
+      # encha-setup-panel/src/lib/stacks/enchat.ts).
+      LICENSE_SERVER_URL: "https://app.pinfy.fun"
       TZ: "America/Sao_Paulo"
     deploy:
       replicas: 1
