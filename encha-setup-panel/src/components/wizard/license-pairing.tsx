@@ -474,6 +474,10 @@ export function LicensePairing({
           Confirme com o email e a senha do Super Admin da sua conta EnchaT — isso move a licença desta
           conta pra ESTA VPS.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Primeira vez migrando? Se sua conta ainda não tem uma senha cadastrada, o que você digitar aqui
+          vira a senha do Super Admin (mínimo 10 caracteres).
+        </p>
         {etapa.instalacaoAtual && (
           <p className="text-xs text-muted-foreground">
             Instalação anterior: {sinalHaQuanto(etapa.instalacaoAtual.ultimoCheck)}

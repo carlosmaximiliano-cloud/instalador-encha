@@ -77,15 +77,23 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const meta: Record<string, unknown> = { error: e instanceof Error ? e.message : "Erro desconhecido", pairing_id: pairingId };
     let httpStatus = 502;
+    // Mensagem genérica por padrão — mas dois motivos NOVOS (Console cria a
+    // credencial de dono na hora, quando o customer ainda não tinha nenhuma,
+    // ver verificarOuCriarCredencialDoCliente no repo Console) precisam de
+    // texto específico: "tente de novo" faria o cliente repetir a MESMA
+    // senha fraca / o MESMO email já usado pra sempre, sem entender por quê.
+    let mensagem = "Não foi possível migrar a licença — tente de novo em instantes";
     if (e instanceof PairingError) {
       meta.reason = e.reason;
       if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
       httpStatus = e.reason === "recusado" ? 409 : e.reason === "rate_limited" ? 429 : 502;
+      if (e.reason === "recusado" && e.serverDetail === "senha_fraca") {
+        mensagem = "Senha muito curta — use pelo menos 10 caracteres (esta será a senha do Super Admin da sua conta).";
+      } else if (e.reason === "recusado" && e.serverDetail === "email_em_uso") {
+        mensagem = "Este email já está em uso por outra conta — informe o email do dono desta licença.";
+      }
     }
     logAudit({ user: session.user, ip, action: "license.pair.migrar.fail", target: stackId, result: "error", meta });
-    return NextResponse.json(
-      { ok: false, error: "Não foi possível migrar a licença — tente de novo em instantes" },
-      { status: httpStatus }
-    );
+    return NextResponse.json({ ok: false, error: mensagem }, { status: httpStatus });
   }
 }
