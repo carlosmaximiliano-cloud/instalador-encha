@@ -21,31 +21,24 @@ function pinfyRepoFrom(imageRepo: string): string {
   }
   return `${imageRepo.slice(0, idx)}/pinfy`;
 }
-// O default do upstream (licenca.pinfy.com.br) tem DNS morto — pinfy.com.br
-// nem é domínio registrado (NXDOMAIN). Confirmado ao vivo de novo em
-// 2026-08-07: app.pinfy.fun responde /api/health, o .com.br não resolve.
-// SEM barra final: o backend do Pinfy concatena "${LICENSE_SERVER_URL}/api/agent/activate"
-// sem normalizar — uma URL terminada em "/" vira "..//api/agent/activate" e
-// o POST /api/license/activate falha com 404 (achado no primeiro onboarding
-// real: ativação presa em "ativacao_pinfy_falhou" apesar do token já emitido).
-//
-// ESPELHADO em (mantenha os três em sincronia — o mesmo achado ficou 6 dias
-// sem voltar pros outros dois repos e travou toda emissão de cortesia em
-// produção):
-//   - EnchaT Console: deploy/docker-compose.prod.yml, docker-compose.pinfy.yml,
-//     .env.example, public/instalador/{docker-compose.yml,env.example}
-//     (ali É env-configurável — PINFY_LICENSE_SERVER_URL — porque roda na
-//     NOSSA infra; aqui fica hardcoded de propósito, ver o comentário de
-//     CONSOLE_BASE_URL em src/lib/suporte.ts sobre vetor de sequestro de
-//     domínio quando o valor roda na VPS do cliente)
-//   - ENCHAT: deploy/docker-compose.prod.yml, ENCHAT GRÁTIS/swarm/{docker-stack.yaml,enchat.env.example}
-const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun";
-
 // A edição Grátis do EnchaT (e o Pinfy embutido) vivem num owner GHCR
 // SEPARADO do da edição MAX — de propósito, é o que permite a credencial de
 // pull entregue por registryAuth.exchangeUrl alcançar só as imagens do
 // Grátis, nunca a MAX.
 const CONSOLE_BASE_URL = "https://console.enchat.pro";
+
+// COMPATIBILIDADE (temporário). O Pinfy virou nativo do EnchaT e a imagem
+// nova IGNORA esta URL — mas enquanto a tag publicada como `:stable` for a
+// anterior à remoção do licenciamento, uma instalação NOVA ainda ativa
+// licença, e sem esta variável ela cai no default morto do upstream do Pinfy
+// (licenca.pinfy.com.br, domínio que nunca existiu) e o canal nunca conecta.
+// Hardcoded, não env: roda na VPS do cliente, e uma env aqui seria vetor de
+// sequestro de domínio (mesmo raciocínio do CONSOLE_BASE_URL acima). SEM
+// barra final — o backend do Pinfy concatena "${LICENSE_SERVER_URL}/api/..."
+// sem normalizar, e a barra dupla dava 404 (achado no primeiro onboarding
+// real). Remover — junto com o `hostname` fixo do serviço enchat_pinfy —
+// quando a frota tiver migrado para a imagem nativa.
+const PINFY_LICENSE_SERVER_URL = "https://app.pinfy.fun";
 
 // Deriva o repo do sidecar enchat-updater a partir do repo resolvido pelo
 // Console para a imagem principal — os dois são publicados sob o mesmo owner
@@ -288,6 +281,10 @@ services:
         constraints:
           - node.role == manager
 
+  # Pinfy é nativo do EnchaT, sem licença própria — o limite de instâncias
+  # por plano é entitlement do Console imposto pelo app. O hostname fixo e o
+  # LICENSE_SERVER_URL abaixo são compatibilidade temporária com a imagem
+  # anterior à remoção do licenciamento (ver PINFY_LICENSE_SERVER_URL).
   enchat_pinfy:
     image: ${pinfyRepo}:${imageTag}
     hostname: enchat-pinfy

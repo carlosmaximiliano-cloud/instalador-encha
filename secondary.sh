@@ -12645,10 +12645,17 @@ services:
     # ghcr.io/enchainterno/pinfy-api:1.0.0 era uma republicação manual
     # obsoleta (ver o comentário de pinfyRepoFrom em
     # encha-setup-panel/src/lib/stacks/enchat.ts) — o Pinfy agora é
-    # vendorizado como submodule do ENCHAT e publicado no MESMO CI/release
-    # do enchat-free, sob "ghcr.io/enchainterno/pinfy", com a MESMA tag do
-    # app (nunca mais fixo).
+    # vendorizado dentro do ENCHAT e publicado no MESMO CI/release do
+    # enchat-free, sob "ghcr.io/enchainterno/pinfy", com a MESMA tag do app
+    # (nunca mais fixo).
     image: ghcr.io/enchainterno/pinfy:$versao_enchat
+    # COMPATIBILIDADE (temporário) — hostname fixo + LICENSE_SERVER_URL só
+    # para a imagem anterior à remoção do licenciamento do Pinfy, que ainda
+    # ativa licença (fingerprint sha256(machine-id + hostname); sem o
+    # license-server ela cai no default morto licenca.pinfy.com.br). A imagem
+    # nativa ignora as duas. Ver PINFY_LICENSE_SERVER_URL em
+    # encha-setup-panel/src/lib/stacks/enchat.ts — remover nos dois lugares
+    # quando a frota migrar.
     hostname: enchat-pinfy
     networks:
       - enchat_net
@@ -12656,11 +12663,6 @@ services:
       DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
       MASTER_KEY: "$pinfy_master_key"
       PANEL_PASSWORD: "$pinfy_panel_password"
-      # SEM barra final — o backend do Pinfy concatena
-      # "${LICENSE_SERVER_URL}/api/agent/activate" sem normalizar; uma URL
-      # terminada em "/" vira "..//api/agent/activate" e falha com 404 (ver
-      # o comentário de PINFY_LICENSE_SERVER_URL em
-      # encha-setup-panel/src/lib/stacks/enchat.ts).
       LICENSE_SERVER_URL: "https://app.pinfy.fun"
       TZ: "America/Sao_Paulo"
     deploy:
@@ -12714,7 +12716,7 @@ EOL
   echo -e "\e[97m• VERIFICANDO SERVIÇOS \e[33m[4/5]\e[0m"
   echo ""
 
-  pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy-api:1.0.0
+  pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy:$versao_enchat
   wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
 
   echo -e "\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
