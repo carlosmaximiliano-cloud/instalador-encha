@@ -18,7 +18,20 @@ import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
 import { getOrCreateMachineId, buscarPareamento, chaveDoPareamento, consumirPareamento } from "./pairing-store";
 import { fingerprintEnchat } from "./enchat-fingerprint";
-import type { SwarmContext, GeneratedSecret } from "./stacks/types";
+import type { SwarmContext, GeneratedSecret, StackDefinition } from "./stacks/types";
+
+// resolverAppHostname é o ÚNICO ponto que os dois call sites de
+// getOrCreateMachineId/fingerprintEnchat usam pra obter o hostname (Ciclo
+// 20) — extraído como função PURA e exportada para ser testável sem
+// precisar montar um installStack inteiro (Portainer/DB/rede). `contexto`
+// é só para a mensagem de erro dizer QUAL branch (registryAuth vs pairing)
+// estava sem appHostname.
+export function resolverAppHostname(def: StackDefinition, contexto: "registryAuth" | "pairing"): string {
+  if (!def.appHostname) {
+    throw new Error(`stack "${def.id}" declara ${contexto} mas não tem appHostname — fingerprint indeterminado.`);
+  }
+  return def.appHostname;
+}
 
 export type InstallInput = {
   stackId: string;
@@ -273,9 +286,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     let pareamentoMachineId: string | undefined;
     let pareamentoFingerprint: string | undefined;
     if (def.pairing) {
-      if (!def.appHostname) {
-        throw new Error(`stack "${def.id}" declara pairing mas não tem appHostname — fingerprint indeterminado.`);
-      }
+      const hostnameParaPareamento = resolverAppHostname(def, "pairing");
       const pid = String(parsed.data[def.pairing.sessionField] ?? "");
       if (pid) {
         const row = buscarPareamento(pid);
@@ -290,7 +301,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
         // nascem juntos em getOrCreateMachineId), mas seguir com uma
         // inconsistência aqui instalaria com um fingerprint errado, então
         // aborta em vez de tentar adivinhar qual dos dois está certo.
-        if (fingerprintEnchat(row.machine_id, def.appHostname) !== row.fingerprint) {
+        if (fingerprintEnchat(row.machine_id, hostnameParaPareamento) !== row.fingerprint) {
           throw new Error("Inconsistência no pareamento de licença (fingerprint não bate com machine_id) — instalação abortada.");
         }
         // Guarda contra instalar a edição errada com o plano errado: como
@@ -390,10 +401,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       if (pareamentoMachineId !== undefined && pareamentoFingerprint !== undefined) {
         effectiveCtx = { ...effectiveCtx, machineId: pareamentoMachineId, fingerprint: pareamentoFingerprint };
       } else {
-        if (!def.appHostname) {
-          throw new Error(`stack "${def.id}" declara registryAuth mas não tem appHostname — fingerprint indeterminado.`);
-        }
-        const { machineId, fingerprint } = getOrCreateMachineId(input.stackId, def.appHostname);
+        const { machineId, fingerprint } = getOrCreateMachineId(input.stackId, resolverAppHostname(def, "registryAuth"));
         effectiveCtx = { ...effectiveCtx, machineId, fingerprint };
       }
     }
