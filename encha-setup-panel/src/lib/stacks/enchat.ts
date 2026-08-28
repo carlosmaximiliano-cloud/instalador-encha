@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { type StackDefinition, fqdn } from "./types";
 import { randomBytes } from "node:crypto";
+import { ENCHAT_APP_HOSTNAME } from "../enchat-fingerprint";
 
 // Imagem do Pinfy (WhatsApp não-oficial, bundled). Antes fixa em
 // "ghcr.io/enchainterno/pinfy-api:1.0.0" (uma republicação manual,
@@ -81,6 +82,10 @@ export const enchat: StackDefinition = {
   dependsOn: ["traefik-portainer"], // Postgres é dedicado a esta stack, não o compartilhado.
   optionNumber: 84,
   installVia: "panel",
+  // Ciclo 20: OBRIGATÓRIO em toda stack com registryAuth/pairing — ver o
+  // comentário do campo em stacks/types.ts. Este é o valor que já estava
+  // implícito (o default de fingerprintEnchat) — agora explícito.
+  appHostname: ENCHAT_APP_HOSTNAME,
   // media: dono 1000:1000 pra bater com `USER enchat` do Dockerfile (uid
   // fixado em -u 1000) — sem isso o bind mount nasce root:root e o app não
   // consegue escrever nele (achado real: upload de mídia sempre falhava com

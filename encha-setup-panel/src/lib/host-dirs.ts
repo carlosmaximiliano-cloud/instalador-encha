@@ -13,12 +13,14 @@ const PANEL_IMAGE_REPO = "ghcr.io/enchaaluno/setup-panel";
 const FALLBACK_IMAGE = "alpine/git:2.45.2";
 
 // Só diretórios sob /var/enchat/<slug> — mantém o comando do container fixo
-// (nunca interpolar caminho de usuário arbitrário aqui).
-const ALLOWED_DIR_RE = /^\/var\/enchat\/[a-z0-9_-]+$/;
+// (nunca interpolar caminho de usuário arbitrário aqui). Exportada (Ciclo
+// 20) para que testes de OUTRAS stacks (ex.: encha-tracker.test.ts) validem
+// hostDirs contra a regex REAL, nunca uma cópia dela.
+export const ALLOWED_DIR_RE = /^\/var\/enchat\/[a-z0-9_-]+$/;
 
 // Só aceita "usuário:grupo" numérico ou alfanumérico simples — vira
 // argumento de `chown`, nunca interpolar algo vindo de fora deste arquivo.
-const ALLOWED_OWNER_RE = /^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$/;
+export const ALLOWED_OWNER_RE = /^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$/;
 
 export type HostDirSpec = string | { path: string; owner: string };
 

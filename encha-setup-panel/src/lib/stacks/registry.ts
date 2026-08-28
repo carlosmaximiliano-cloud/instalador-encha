@@ -89,6 +89,7 @@ import { excalidraw } from "./excalidraw";
 import { infisical } from "./infisical";
 import { enchat } from "./enchat";
 import { evocrm } from "./evocrm";
+import { enchaTracker } from "./encha-tracker";
 
 export const ALL_STACKS: StackDefinition[] = [
   // Implementadas (instalam pelo painel)
@@ -106,6 +107,7 @@ export const ALL_STACKS: StackDefinition[] = [
   infisical,
   enchat,
   evocrm,
+  enchaTracker,
   // Stubs (instalação via SSH no momento)
   mysql,
   redis,

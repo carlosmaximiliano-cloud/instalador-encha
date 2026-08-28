@@ -39,7 +39,13 @@ function stackJaFoiInstaladaAntes(stackId: string): boolean {
 // devolve a mesma licença já vinculada) e o que impede o YAML de um
 // reinstall divergir do fingerprint que uma sessão de pareamento anterior
 // já usou pra vincular a licença.
-export function getOrCreateMachineId(stackId: string): MachineIdResult {
+// hostname é OBRIGATÓRIO (Ciclo 20) — antes era implícito via o default de
+// fingerprintEnchat ("enchat-app"), e qualquer stack com hostname de
+// container diferente (ex.: "encha-tracker") calculava um fingerprint
+// ERRADO em silêncio nos dois caminhos que cunham/recalculam abaixo. Cada
+// chamador passa def.appHostname (StackDefinition, ver stacks/types.ts) —
+// nunca um valor solto.
+export function getOrCreateMachineId(stackId: string, hostname: string): MachineIdResult {
   const db = getDb();
   const existing = db
     .prepare("SELECT machine_id, fingerprint FROM stack_machine_ids WHERE stack_id = ?")
@@ -48,10 +54,10 @@ export function getOrCreateMachineId(stackId: string): MachineIdResult {
     return { machineId: existing.machine_id, fingerprint: existing.fingerprint, legacy: false };
   }
   if (stackJaFoiInstaladaAntes(stackId)) {
-    return { machineId: "", fingerprint: fingerprintEnchat(""), legacy: true };
+    return { machineId: "", fingerprint: fingerprintEnchat("", hostname), legacy: true };
   }
   const machineId = machineIdNovo();
-  const fingerprint = fingerprintEnchat(machineId);
+  const fingerprint = fingerprintEnchat(machineId, hostname);
   const now = Date.now();
   db.prepare(
     "INSERT INTO stack_machine_ids (stack_id, machine_id, fingerprint, created_at) VALUES (?, ?, ?, ?)"

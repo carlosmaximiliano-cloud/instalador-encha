@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
 
   const def = getStack(stackId);
   if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
+  if (!def.appHostname) {
+    return NextResponse.json({ error: "Stack sem appHostname configurado — bug de configuração" }, { status: 500 });
+  }
 
   const ip = getClientIp(req);
   // Espelha MAX_POR_FINGERPRINT_HORA=5 do Console (pair/start/route.ts) —
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const { machineId, fingerprint, legacy } = getOrCreateMachineId(stackId);
+  const { machineId, fingerprint, legacy } = getOrCreateMachineId(stackId, def.appHostname);
   if (legacy) {
     // Instalação anterior a este mecanismo — pareamento mudaria o
     // fingerprint de uma licença possivelmente já ativada. Não abre sessão;

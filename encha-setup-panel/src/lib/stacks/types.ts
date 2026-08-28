@@ -178,6 +178,20 @@ export type StackDefinition = {
   /** Pareamento self-service de licença — ver PairingSpec. Ausente = a stack não oferece esse fluxo (chave só manual). */
   pairing?: PairingSpec;
   /**
+   * Hostname do CONTAINER do app desta stack (nunca o hostname da VPS) —
+   * é o segundo argumento de fingerprintEnchat(machineId, hostname)
+   * (enchat-fingerprint.ts), fixo no `hostname:` do serviço dentro de
+   * generateYaml. OBRIGATÓRIO em toda stack que declare `registryAuth`
+   * OU `pairing` — installer.ts lança um erro alto e explícito se estiver
+   * ausente nesse caso, em vez de deixar getOrCreateMachineId/
+   * fingerprintEnchat caírem no default "enchat-app" em silêncio (Ciclo
+   * 20 — achado: os 3 call sites desse mecanismo genérico nunca passavam
+   * hostname, então QUALQUER stack com hostname de container diferente de
+   * "enchat-app" calculava um fingerprint errado, e o Console torna esse
+   * erro IRREVERSÍVEL depois do primeiro vínculo).
+   */
+  appHostname?: string;
+  /**
    * Serviços cuja imagem pode ser trocada in-place (rolling update do Swarm),
    * sem recriar a stack nem tocar em volumes/banco. `service` é o nome do
    * serviço DENTRO do compose — o nome real no Swarm é `<stack>_<service>`.

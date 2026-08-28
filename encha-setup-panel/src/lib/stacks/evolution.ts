@@ -48,7 +48,7 @@ export const evolution: StackDefinition = {
     { service: "evolution_api", image: EVOLUTION_IMAGE },
     { service: "evolution_redis", image: EVOLUTION_REDIS_IMAGE },
   ],
-  optionNumber: 3,
+  optionNumber: 1,
   fields: [
     {
       name: "url_evolution",
