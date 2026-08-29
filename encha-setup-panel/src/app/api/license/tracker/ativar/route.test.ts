@@ -41,10 +41,17 @@ describe("POST /api/license/tracker/ativar — forma do código-fonte", () => {
     }
   });
 
-  it("mutação M5: os três guards (origem, CSRF, sessão) aparecem antes de qualquer chamada ao Console", () => {
-    const idxOrigin = FONTE.indexOf("verifyOrigin");
-    const idxCsrf = FONTE.indexOf("verifyCsrf");
-    const idxSessao = FONTE.indexOf("requireSessionToken");
+  it("mutação M5: os três guards (origem, CSRF, sessão) são REALMENTE CHAMADOS antes de qualquer chamada ao Console", () => {
+    // Procura a CHAMADA de verdade (identificador + parênteses de invocação
+    // com o argumento certo), não só o identificador — um `import
+    // { verifyCsrf, ... }` sem uso nenhum ainda faria `indexOf("verifyCsrf")`
+    // achar alguma coisa, mascarando a mutação que remove só a LINHA que
+    // invoca a função (achado ao rodar a mutação ao vivo: o teste antigo,
+    // que só procurava o identificador solto, passou mesmo com a chamada
+    // apagada, porque o import continuava mencionando o nome).
+    const idxOrigin = FONTE.search(/verifyOrigin\(req\)/);
+    const idxCsrf = FONTE.search(/verifyCsrf\(req\)/);
+    const idxSessao = FONTE.search(/requireSessionToken\(\)/);
     const idxAtivar = FONTE.indexOf("ativarTrackerPorEmail(");
     expect(idxOrigin).toBeGreaterThan(-1);
     expect(idxCsrf).toBeGreaterThan(-1);
