@@ -16,10 +16,21 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FONTE = readFileSync(path.join(__dirname, "route.ts"), "utf8");
 
+// Remove linhas de comentário `//` — usado pelas checagens de M1/M2 abaixo
+// pra não deixar uma menção em PROSA (ex.: um comentário explicando o que a
+// função faz) satisfazer uma asserção de presença de chamada de verdade.
+function semComentarios(fonte: string): string {
+  return fonte
+    .split("\n")
+    .filter((linha) => !linha.trim().startsWith("//"))
+    .join("\n");
+}
+
 describe("POST /api/license/tracker/ativar — forma do código-fonte", () => {
   it("mutação M1: chama getOrCreateMachineId (reuso persistido), NUNCA machineIdNovo diretamente", () => {
-    expect(FONTE).toMatch(/getOrCreateMachineId\(/);
-    expect(FONTE).not.toMatch(/machineIdNovo\(/);
+    const codigo = semComentarios(FONTE);
+    expect(codigo).toMatch(/getOrCreateMachineId\(/);
+    expect(codigo).not.toMatch(/machineIdNovo\(/);
   });
 
   it("resolve o hostname via resolverAppHostname (nunca um literal solto)", () => {
@@ -30,14 +41,10 @@ describe("POST /api/license/tracker/ativar — forma do código-fonte", () => {
     const blocosLogAudit = FONTE.match(/logAudit\(\{[\s\S]*?\}\);/g) ?? [];
     expect(blocosLogAudit.length).toBeGreaterThan(0);
     for (const bloco of blocosLogAudit) {
-      // Remove linhas de comentário `//` antes de checar — o próprio
-      // código explica em prosa "nunca a chave", o que citaria a palavra
-      // sem vazar nada (achado ao rodar este teste pela primeira vez).
-      const semComentarios = bloco
-        .split("\n")
-        .filter((linha) => !linha.trim().startsWith("//"))
-        .join("\n");
-      expect(semComentarios).not.toMatch(/\bchave\b/);
+      // O próprio código explica em prosa "nunca a chave" — sem tirar os
+      // comentários, essa frase citaria a palavra sem vazar nada (achado
+      // ao rodar este teste pela primeira vez).
+      expect(semComentarios(bloco)).not.toMatch(/\bchave\b/);
     }
   });
 
