@@ -59,9 +59,14 @@ describe("TrackerEmailActivation", () => {
 
   // Mutação M4 do contrato (ciclos/ciclo-20b.md): o componente NUNCA pode
   // reusar/reimplementar a máquina de polling de license-pairing.tsx —
-  // depois de uma ativação bem-sucedida, nenhum timer pendente e nenhuma
-  // segunda chamada de rede, mesmo avançando o relógio.
-  it("depois do sucesso, nenhum timer pendente dispara uma segunda chamada", async () => {
+  // depois de uma ativação bem-sucedida, nenhuma segunda chamada de rede
+  // acontece sozinha, mesmo passado o intervalo de poll do outro
+  // componente (3s). PRECISA ser um `setTimeout` REAL aqui, não fake
+  // timers: um `setInterval` já agendado com o relógio real ANTES de
+  // `vi.useFakeTimers()` ser ativado não é interceptado por ele — a
+  // primeira versão deste teste tinha exatamente esse defeito e passava
+  // por acidente mesmo sob a mutação (achado ao rodar a mutação ao vivo).
+  it("depois do sucesso, nenhuma chamada nova acontece sozinha (sem polling)", async () => {
     const chamadas = vi.fn(async () => new Response(JSON.stringify({ chave: "TRACKER-XYZ" }), { status: 200 }));
     vi.stubGlobal("fetch", chamadas);
     render(<Wrapper />);
@@ -72,14 +77,11 @@ describe("TrackerEmailActivation", () => {
 
     expect(chamadas).toHaveBeenCalledTimes(1);
 
-    vi.useFakeTimers();
-    vi.advanceTimersByTime(10_000);
-    vi.useRealTimers();
-
-    // Sem microtasks pendentes de um poll que "esqueceu" de ser cancelado.
-    await new Promise((r) => setTimeout(r, 0));
+    // Passa do intervalo de poll de license-pairing.tsx (3000ms) com o
+    // relógio de verdade — um setInterval esquecido dispararia aqui.
+    await new Promise((r) => setTimeout(r, 3500));
     expect(chamadas).toHaveBeenCalledTimes(1);
-  });
+  }, 10_000);
 
   it("o botão fica desabilitado sem e-mail digitado", () => {
     render(<Wrapper />);
