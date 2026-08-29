@@ -22,5 +22,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     pairing: def.pairing
       ? { targetField: def.pairing.targetField, sessionField: def.pairing.sessionField, group: def.pairing.group }
       : null,
+    // Mesma disciplina de pairing acima (Ciclo 20b) — consoleBaseUrl fica
+    // só no servidor (installer.ts e /api/license/tracker/ativar); o
+    // browser nunca fala direto com o Console.
+    emailActivation: def.emailActivation
+      ? { targetField: def.emailActivation.targetField, group: def.emailActivation.group }
+      : null,
   });
 }

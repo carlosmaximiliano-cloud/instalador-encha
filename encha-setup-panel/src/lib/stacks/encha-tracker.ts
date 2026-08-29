@@ -70,6 +70,15 @@ export const enchaTracker: StackDefinition = {
     canal: "stable",
   },
 
+  // Ciclo 20b: o wizard oferece ativação por e-mail ANTES do caminho manual
+  // (o campo chave_licenca continua existindo — quem já tem uma chave
+  // emitida por outro canal ainda pode colar direto).
+  emailActivation: {
+    consoleBaseUrl: CONSOLE_BASE_URL,
+    targetField: "chave_licenca",
+    group: "Licença",
+  },
+
   registryAuth: {
     registryHost: "ghcr.io",
     registryName: "GHCR Encha Tracker",

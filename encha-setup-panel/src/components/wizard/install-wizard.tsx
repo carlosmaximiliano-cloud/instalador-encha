@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { LicensePairing } from "./license-pairing";
+import { TrackerEmailActivation } from "./tracker-email-activation";
 import { SuportePanel } from "./suporte-panel";
 
 type Field = {
@@ -23,6 +24,7 @@ type Field = {
 };
 
 type PairingSpecUI = { targetField: string; sessionField: string; group?: string };
+type EmailActivationSpecUI = { targetField: string; group?: string };
 
 type StackMeta = {
   id: string;
@@ -31,6 +33,7 @@ type StackMeta = {
   fields: Field[];
   postInstallNotes?: string[];
   pairing?: PairingSpecUI | null;
+  emailActivation?: EmailActivationSpecUI | null;
 };
 
 type Props = {
@@ -130,6 +133,9 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{g}</div>
                 {stack.pairing && (stack.pairing.group ?? "Configuração") === g && (
                   <LicensePairing stackId={stack.id} csrfToken={csrfToken} spec={stack.pairing} form={form} />
+                )}
+                {stack.emailActivation && (stack.emailActivation.group ?? "Configuração") === g && (
+                  <TrackerEmailActivation stackId={stack.id} csrfToken={csrfToken} spec={stack.emailActivation} form={form} />
                 )}
                 {stack.fields
                   .filter((f) => (f.group ?? "Configuração") === g)

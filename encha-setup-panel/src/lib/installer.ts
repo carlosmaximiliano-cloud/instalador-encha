@@ -26,7 +26,7 @@ import type { SwarmContext, GeneratedSecret, StackDefinition } from "./stacks/ty
 // precisar montar um installStack inteiro (Portainer/DB/rede). `contexto`
 // é só para a mensagem de erro dizer QUAL branch (registryAuth vs pairing)
 // estava sem appHostname.
-export function resolverAppHostname(def: StackDefinition, contexto: "registryAuth" | "pairing"): string {
+export function resolverAppHostname(def: StackDefinition, contexto: "registryAuth" | "pairing" | "emailActivation"): string {
   if (!def.appHostname) {
     throw new Error(`stack "${def.id}" declara ${contexto} mas não tem appHostname — fingerprint indeterminado.`);
   }

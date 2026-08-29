@@ -33,4 +33,17 @@ describe("resolverAppHostname", () => {
     expect(() => resolverAppHostname(semHostname, "pairing")).toThrow(/stack-de-teste-xyz/);
     expect(() => resolverAppHostname(semHostname, "pairing")).toThrow(/pairing/);
   });
+
+  // Mutação M3 do Ciclo 20b: o terceiro contexto ("emailActivation",
+  // acrescentado pela rota /api/license/tracker/ativar) tem que ficar
+  // sujeito à MESMA checagem — nenhum atalho especial pra ele.
+  it("devolve appHostname da stack real do Tracker no contexto emailActivation", () => {
+    expect(resolverAppHostname(enchaTracker, "emailActivation")).toBe("encha-tracker");
+  });
+
+  it("lança no contexto emailActivation se appHostname estiver ausente", () => {
+    const semHostname = { ...enchaTracker, id: "stack-sem-hostname", appHostname: undefined } as StackDefinition;
+    expect(() => resolverAppHostname(semHostname, "emailActivation")).toThrow(/stack-sem-hostname/);
+    expect(() => resolverAppHostname(semHostname, "emailActivation")).toThrow(/emailActivation/);
+  });
 });

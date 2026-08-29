@@ -119,6 +119,19 @@ export type PairingSpec = {
   group?: string;
 };
 
+/**
+ * Ativação síncrona por e-mail (Ciclo 20b) — POST direto, sem sessão nem
+ * polling: o cliente digita o e-mail, a rota do painel resolve o
+ * fingerprint (via getOrCreateMachineId, NUNCA recunhado) e troca por uma
+ * chave num passo só. Ver src/lib/tracker-ativacao.ts.
+ */
+export type EmailActivationSpec = {
+  consoleBaseUrl: string;
+  /** Nome do campo do formulário que recebe a chave devolvida. */
+  targetField: string;
+  group?: string;
+};
+
 export type StackDefinition = {
   id: string;
   name: string;
@@ -177,6 +190,12 @@ export type StackDefinition = {
   release?: ReleaseSpec;
   /** Pareamento self-service de licença — ver PairingSpec. Ausente = a stack não oferece esse fluxo (chave só manual). */
   pairing?: PairingSpec;
+  /**
+   * Ativação síncrona por e-mail — ver EmailActivationSpec (Ciclo 20b).
+   * Diferente de `pairing`: um POST só, sem sessão, sem polling. Ausente =
+   * a stack não oferece esse fluxo (chave só manual/pairing).
+   */
+  emailActivation?: EmailActivationSpec;
   /**
    * Hostname do CONTAINER do app desta stack (nunca o hostname da VPS) —
    * é o segundo argumento de fingerprintEnchat(machineId, hostname)

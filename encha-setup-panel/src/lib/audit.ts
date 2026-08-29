@@ -37,6 +37,11 @@ export type AuditAction =
   | "license.pair.trocar-telefone.fail"
   | "license.signup"
   | "license.signup.fail"
+  // Ativação síncrona por e-mail do Tracker (ver tracker-ativacao.ts, Ciclo
+  // 20b). Nunca a chave nem o e-mail no `meta` — só o stackId e a causa
+  // estruturada (reason) no caminho de falha.
+  | "license.tracker.ativar"
+  | "license.tracker.ativar.fail"
   // Sistema de tickets de suporte (ver suporte.ts). Nunca o texto do ticket
   // nem nome de anexo no `meta` — só ticket_id e causas estruturadas.
   | "suporte.abrir"

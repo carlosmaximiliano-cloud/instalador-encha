@@ -22,8 +22,9 @@ type Field = {
 };
 
 type PairingSpecUI = { targetField: string; sessionField: string; group?: string };
+type EmailActivationSpecUI = { targetField: string; group?: string };
 
-type FullStack = CatalogEntry & { fields?: Field[]; pairing?: PairingSpecUI | null };
+type FullStack = CatalogEntry & { fields?: Field[]; pairing?: PairingSpecUI | null; emailActivation?: EmailActivationSpecUI | null };
 
 const CATEGORY_LABEL: Record<string, string> = {
   infra: "Infraestrutura",
@@ -183,7 +184,7 @@ function CatalogPageInner() {
     let full: FullStack | null = stack;
     if (fullRes?.ok) {
       const j = await fullRes.json();
-      full = { ...stack, fields: j.fields, pairing: j.pairing };
+      full = { ...stack, fields: j.fields, pairing: j.pairing, emailActivation: j.emailActivation };
     }
     if (full) setOpenStack(full);
   }
@@ -274,6 +275,7 @@ function CatalogPageInner() {
               default: f.default ?? vpsDefaults[f.name] ?? undefined,
             })),
             pairing: openStack.pairing,
+            emailActivation: openStack.emailActivation,
           }}
           open
           onClose={() => setOpenStack(null)}
