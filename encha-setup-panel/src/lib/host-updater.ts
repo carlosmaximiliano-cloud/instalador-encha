@@ -2,7 +2,7 @@ import {
   discoverContext,
   imageExistsLocally,
   pullImage,
-  runOneShotContainer,
+  runOneShotJob,
   PortainerError,
 } from "./portainer";
 import { APP_VERSION } from "./version";
@@ -90,7 +90,7 @@ export async function updateHostScripts(
       if (!hasFallback) await pullImage(token, endpointId, image);
     }
 
-    const { exitCode, logs, timedOut } = await runOneShotContainer(token, endpointId, {
+    const { exitCode, logs, timedOut } = await runOneShotJob(token, endpointId, {
       name: CONTAINER_NAME,
       label: CONTAINER_LABEL,
       timeoutMs: 120_000,

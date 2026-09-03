@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpCircle, Loader2, RefreshCw, Check, CircleCheck } from "lucide-react";
+import { ArrowUpCircle, Loader2, RefreshCw, Check, CircleCheck, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +31,13 @@ export function UpdateChecker() {
   const [csrf, setCsrf] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
-  // true quando o passo de scripts falhou e o usuário pode optar por seguir
-  // só com o painel — decisão explícita, registrada no audit log do servidor.
+  // true quando o passo de scripts falhou. Não bloqueia mais o update: o
+  // painel segue sozinho pro passo 2, e a frota se autocorrige assim que uma
+  // release seguinte rodar os scripts com sucesso (ver CLAUDE.md do painel).
   const [scriptsFailed, setScriptsFailed] = useState(false);
+  // Mensagem de erro do passo de scripts, mantida visível durante os passos
+  // seguintes (painel/done) mesmo depois que o fluxo já seguiu em frente.
+  const [scriptsWarning, setScriptsWarning] = useState("");
   const [scriptsDone, setScriptsDone] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Botão manual "Verificar atualizações" — só existe quando updateAvailable
@@ -118,6 +122,7 @@ export function UpdateChecker() {
     if (!csrf || !info?.latest) return;
     setError("");
     setScriptsFailed(false);
+    setScriptsWarning("");
     setPhase("scripts");
     try {
       const res = await fetch("/api/update/scripts", {
@@ -127,21 +132,24 @@ export function UpdateChecker() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Falha ao atualizar os scripts do servidor");
+        // Não bloqueia mais aqui: a imagem do painel segue sozinha, e os
+        // scripts ficam para trás até a atualização seguinte tentar de novo.
         setScriptsFailed(true);
-        setPhase("confirm");
+        setScriptsWarning(data.error ?? "Falha ao atualizar os scripts do servidor");
+        await updatePanelImage();
         return;
       }
       setScriptsDone(true);
       await updatePanelImage();
     } catch {
-      setError("Erro de rede ao atualizar os scripts do servidor");
       setScriptsFailed(true);
-      setPhase("confirm");
+      setScriptsWarning("Erro de rede ao atualizar os scripts do servidor");
+      await updatePanelImage();
     }
   }
 
-  // Override explícito: segue só com o painel depois que os scripts falharam.
+  // Retry manual do passo do painel, sem repetir o passo de scripts — usado
+  // quando o passo do painel falhou depois de scripts que já haviam falhado.
   async function skipScriptsAndUpdatePanel() {
     setError("");
     await updatePanelImage();
@@ -168,6 +176,7 @@ export function UpdateChecker() {
           onClick={() => {
             setError("");
             setScriptsFailed(false);
+            setScriptsWarning("");
             setScriptsDone(false);
             setPhase("confirm");
           }}
@@ -218,13 +227,27 @@ export function UpdateChecker() {
 
           {(phase === "scripts" || phase === "panel" || phase === "done") && (
             <div className="flex flex-col gap-1.5 text-sm">
-              <StepRow label="Scripts do servidor" state={scriptsDone ? "done" : "active"} />
+              <StepRow
+                label="Scripts do servidor"
+                state={scriptsDone ? "done" : scriptsFailed ? "warning" : "active"}
+              />
               <StepRow
                 label="Painel"
                 state={phase === "done" ? "done" : phase === "panel" ? "active" : "pending"}
               />
             </div>
           )}
+
+          {scriptsWarning ? (
+            <div className="rounded-md bg-warning-soft text-warning-foreground px-3 py-2 text-xs space-y-1">
+              <p>Scripts do servidor não atualizados: {scriptsWarning}</p>
+              <p className="opacity-80">
+                O painel segue atualizando sozinho — os scripts ficam para trás até a
+                próxima atualização. Alternativa: conecte por SSH e rode a opção 97 do
+                menu (<code>bash /root/SetupEnchaAI</code>).
+              </p>
+            </div>
+          ) : null}
 
           {phase === "confirm" && !error && info.releaseNotesHtml ? (
             <div
@@ -237,12 +260,6 @@ export function UpdateChecker() {
           {error ? (
             <div className="rounded-md bg-destructive-soft text-destructive px-3 py-2 text-xs space-y-1">
               <p>{error}</p>
-              {scriptsFailed ? (
-                <p className="opacity-80">
-                  Alternativa: conecte por SSH e rode a opção 97 do menu (
-                  <code>bash /root/SetupEnchaAI</code>).
-                </p>
-              ) : null}
             </div>
           ) : null}
 
@@ -280,11 +297,19 @@ export function UpdateChecker() {
   );
 }
 
-function StepRow({ label, state }: { label: string; state: "pending" | "active" | "done" }) {
+function StepRow({
+  label,
+  state,
+}: {
+  label: string;
+  state: "pending" | "active" | "done" | "warning";
+}) {
   return (
     <div className="flex items-center gap-2">
       {state === "done" ? (
         <CircleCheck className="h-4 w-4 text-success shrink-0" />
+      ) : state === "warning" ? (
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
       ) : state === "active" ? (
         <Loader2 className="h-4 w-4 animate-spin text-coral-600 shrink-0" />
       ) : (

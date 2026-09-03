@@ -1,4 +1,4 @@
-import { discoverContext, imageExistsLocally, pullImage, runOneShotContainer, PortainerError } from "./portainer";
+import { discoverContext, imageExistsLocally, pullImage, runOneShotJob, PortainerError } from "./portainer";
 import { APP_VERSION } from "./version";
 
 // Garante que diretórios existam no node manager antes de um deploy que usa
@@ -56,7 +56,7 @@ export async function ensureHostDirs(token: string, endpointId: number, dirsSpec
   const script = `set -eu\n${linhas.join("\n")}`;
 
   try {
-    const { exitCode, logs, timedOut } = await runOneShotContainer(token, endpointId, {
+    const { exitCode, logs, timedOut } = await runOneShotJob(token, endpointId, {
       name: CONTAINER_NAME,
       label: CONTAINER_LABEL,
       timeoutMs: 30_000,

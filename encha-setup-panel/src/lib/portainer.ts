@@ -805,3 +805,239 @@ export async function runOneShotContainer(
     await removeContainer(token, endpointId, Id).catch(() => {});
   }
 }
+
+// ---------------------------------------------------------------------------
+// Job avulso via Swarm (services/create com Mode.ReplicatedJob) — substitui
+// createContainer+startContainer para evitar um bug do proxy Portainer/agent:
+// `POST .../containers/{id}/start` SEM corpo sai como `Content-Length: 0` do
+// painel (confirmado com undici), mas em Go um request de saída com
+// `ContentLength == 0` e `Body` não-nulo é tratado como tamanho desconhecido
+// e reencodado como `Transfer-Encoding: chunked` — o Docker rejeita isso em
+// `/start` com "starting container with non-empty request body was
+// deprecated since API v1.22 and removed in v1.24". Todo POST para
+// services/create SEMPRE leva corpo JSON, então nunca bate nesse caminho.
+
+export type SwarmJobMount = { Type: "bind"; Source: string; Target: string; ReadOnly?: boolean };
+
+export type SwarmJobSpec = {
+  Name: string;
+  Labels?: Record<string, string>;
+  TaskTemplate: {
+    ContainerSpec: {
+      Image: string;
+      Command?: string[];
+      Args?: string[];
+      Env?: string[];
+      User?: string;
+      TTY?: boolean;
+      Labels?: Record<string, string>;
+      Mounts?: SwarmJobMount[];
+    };
+    RestartPolicy: { Condition: "none" };
+    Placement?: { Constraints?: string[] };
+  };
+  Mode: { ReplicatedJob: { MaxConcurrent: number; TotalCompletions: number } };
+};
+
+// Converte o ContainerSpec (usado hoje pelo caminho de container avulso) num
+// SwarmJobSpec equivalente. Função pura — ver portainer-job-spec.test.ts.
+// `NetworkMode`, `AutoRemove` e `Privileged:false` não têm equivalente/uso
+// aqui: `Privileged:false` já é o default, e o Swarm sempre limpa a task ao
+// remover o service.
+//
+// NÃO fixar `Networks: []` no ServiceSpec: o script do updater faz I/O
+// externo (wget no codeload). Sem `Networks` explícito, o Docker anexa o
+// service à rede `ingress` por padrão — igual a qualquer outro service Swarm
+// sem `--network` — e essa rede tem saída via docker_gwbridge/NAT no node,
+// dando acesso à internet mesmo sem publicar porta nenhuma (confirmado:
+// não é um "sem rede nenhuma" como pareceria à primeira vista comparando com
+// o antigo `NetworkMode: "bridge"` de container avulso).
+export function containerSpecToServiceSpec(
+  name: string,
+  spec: ContainerSpec,
+  constraints: string[]
+): SwarmJobSpec {
+  const mounts: SwarmJobMount[] = (spec.HostConfig.Binds ?? []).map((bind) => {
+    const [source, target, mode] = bind.split(":");
+    return { Type: "bind", Source: source, Target: target, ReadOnly: mode === "ro" };
+  });
+
+  return {
+    Name: name,
+    Labels: spec.Labels,
+    TaskTemplate: {
+      ContainerSpec: {
+        Image: spec.Image,
+        Command: spec.Entrypoint,
+        Args: spec.Cmd,
+        Env: spec.Env,
+        User: spec.User,
+        TTY: spec.Tty,
+        Labels: spec.Labels,
+        Mounts: mounts.length ? mounts : undefined,
+      },
+      RestartPolicy: { Condition: "none" },
+      Placement: constraints.length ? { Constraints: constraints } : undefined,
+    },
+    Mode: { ReplicatedJob: { MaxConcurrent: 1, TotalCompletions: 1 } },
+  };
+}
+
+export async function createSwarmJob(
+  token: string,
+  endpointId: number,
+  spec: SwarmJobSpec
+): Promise<{ ID: string }> {
+  return call<{ ID: string }>(`/api/endpoints/${endpointId}/docker/services/create`, {
+    method: "POST",
+    token,
+    body: spec,
+  });
+}
+
+export type SwarmTask = {
+  ID: string;
+  ServiceID: string;
+  NodeID?: string;
+  DesiredState?: string;
+  Status?: {
+    State?: string;
+    Err?: string;
+    Timestamp?: string;
+    ContainerStatus?: { ContainerID?: string; ExitCode?: number };
+  };
+};
+
+export async function listServiceTasks(
+  token: string,
+  endpointId: number,
+  serviceId: string
+): Promise<SwarmTask[]> {
+  const filters = encodeURIComponent(JSON.stringify({ service: [serviceId] }));
+  return call<SwarmTask[]>(`/api/endpoints/${endpointId}/docker/tasks?filters=${filters}`, {
+    token,
+  });
+}
+
+const TERMINAL_TASK_STATES = new Set(["complete", "failed", "rejected", "shutdown", "orphaned"]);
+
+// Classifica o conjunto de tasks de um service Swarm (função pura — testável
+// sem rede). Escolhe a task mais recente por Status.Timestamp e devolve o
+// exit code se ela já chegou num estado terminal.
+export function taskOutcome(tasks: SwarmTask[]): { done: false } | { done: true; exitCode: number } {
+  if (!tasks.length) return { done: false };
+  const newest = [...tasks].sort((a, b) =>
+    (b.Status?.Timestamp ?? "").localeCompare(a.Status?.Timestamp ?? "")
+  )[0];
+  const state = newest.Status?.State ?? "";
+  if (!TERMINAL_TASK_STATES.has(state)) return { done: false };
+  if (state === "complete") {
+    return { done: true, exitCode: newest.Status?.ContainerStatus?.ExitCode ?? 0 };
+  }
+  return { done: true, exitCode: newest.Status?.ContainerStatus?.ExitCode ?? -1 };
+}
+
+export async function getServiceLogs(
+  token: string,
+  endpointId: number,
+  serviceId: string,
+  tail = 200
+): Promise<string> {
+  const { text } = await callRaw(
+    `/api/endpoints/${endpointId}/docker/services/${serviceId}/logs?stdout=1&stderr=1&tail=${tail}`,
+    { token }
+  );
+  return text;
+}
+
+export async function removeService(token: string, endpointId: number, serviceId: string): Promise<void> {
+  try {
+    await call(`/api/endpoints/${endpointId}/docker/services/${serviceId}`, {
+      method: "DELETE",
+      token,
+    });
+  } catch (e) {
+    // 404 = já não existe — ok, alvo era remover.
+    if (!(e instanceof PortainerError) || e.status !== 404) throw e;
+  }
+}
+
+export async function listServicesByLabel(
+  token: string,
+  endpointId: number,
+  label: string
+): Promise<Array<{ ID: string }>> {
+  const filters = encodeURIComponent(JSON.stringify({ label: [label] }));
+  return call(`/api/endpoints/${endpointId}/docker/services?filters=${filters}`, { token });
+}
+
+// Resolve o NodeID onde o próprio service do painel está rodando, para
+// constranger o job avulso a esse nó exato — mais seguro que
+// `node.role == manager` num cluster com mais de um manager, onde o job
+// poderia cair num manager cujo /root é um filesystem diferente do que o
+// painel está rodando. Cai para `node.role == manager` se não conseguir
+// resolver (comportamento de hoje, correto em cluster de manager único).
+export async function resolvePanelNodeConstraint(token: string, endpointId: number): Promise<string[]> {
+  try {
+    const service = await getServiceByName(token, endpointId, "encha-panel_panel");
+    if (!service) return ["node.role == manager"];
+    const tasks = await listServiceTasks(token, endpointId, service.ID);
+    const running = tasks.find((t) => t.Status?.State === "running" && t.NodeID);
+    return running?.NodeID ? [`node.id == ${running.NodeID}`] : ["node.role == manager"];
+  } catch {
+    return ["node.role == manager"];
+  }
+}
+
+// Cria, roda até o fim, coleta logs e remove um job avulso do Swarm — mesmo
+// contrato de retorno de runOneShotContainer, para que os chamadores só
+// troquem o nome da função. Se o ambiente não suportar services/create com
+// Mode.ReplicatedJob (Swarm não iniciado, ou Docker Engine antigo pré-1.41 —
+// possível pelo fallback de instalação sem pin em secondary.sh), cai de
+// volta para o caminho de container avulso.
+export async function runOneShotJob(
+  token: string,
+  endpointId: number,
+  args: { name: string; label: string; spec: ContainerSpec; timeoutMs?: number; constraints?: string[] }
+): Promise<{ exitCode: number; logs: string; timedOut: boolean }> {
+  const orphans = await listServicesByLabel(token, endpointId, args.label);
+  for (const o of orphans) {
+    await removeService(token, endpointId, o.ID);
+  }
+
+  const constraints = args.constraints ?? (await resolvePanelNodeConstraint(token, endpointId));
+  const jobSpec = containerSpecToServiceSpec(args.name, args.spec, constraints);
+
+  let serviceId: string;
+  try {
+    ({ ID: serviceId } = await createSwarmJob(token, endpointId, jobSpec));
+  } catch (e) {
+    // Ambiente sem suporte a job do Swarm — volta ao caminho de container avulso.
+    if (e instanceof PortainerError && [400, 404, 501].includes(e.status)) {
+      return runOneShotContainer(token, endpointId, args);
+    }
+    throw e;
+  }
+
+  const timeoutMs = args.timeoutMs ?? 120_000;
+  const intervalMs = 2000;
+  const deadline = Date.now() + timeoutMs;
+  try {
+    let exitCode = -1;
+    let timedOut = true;
+    while (Date.now() < deadline) {
+      const tasks = await listServiceTasks(token, endpointId, serviceId);
+      const outcome = taskOutcome(tasks);
+      if (outcome.done) {
+        exitCode = outcome.exitCode;
+        timedOut = false;
+        break;
+      }
+      await sleep(intervalMs);
+    }
+    const logs = await getServiceLogs(token, endpointId, serviceId).catch(() => "");
+    return { exitCode, logs, timedOut };
+  } finally {
+    await removeService(token, endpointId, serviceId).catch(() => {});
+  }
+}
