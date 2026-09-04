@@ -93,6 +93,7 @@ function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
         return { httpStatus: 504, reason: e.reason };
       case "network":
       case "not_found":
+      case "nao_publicada":
       case "server":
       case "malformed":
       case "contract":

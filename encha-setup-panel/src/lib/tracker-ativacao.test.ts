@@ -49,6 +49,22 @@ describe("ativarTrackerPorEmail", () => {
     });
   });
 
+  // Ciclo C (fechamento da instalação) — a mensagem antiga dizia
+  // "temporariamente indisponível", que manda o operador esperar por algo
+  // que nunca se resolve sozinho: registry_nao_configurado é config
+  // ausente no Console, não uma falha passageira.
+  it("503: a mensagem NUNCA sugere que é passageiro (nem 'temporariamente' nem 'tente de novo')", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => respostaFalsa(503)));
+    try {
+      await ativarTrackerPorEmail("https://c.x", "a@b.com", "fp", "1");
+      expect.unreachable("deveria ter lançado TrackerAtivacaoError");
+    } catch (e) {
+      const msg = (e as Error).message.toLowerCase();
+      expect(msg).not.toMatch(/temporariamente/);
+      expect(msg).not.toMatch(/tente de novo/);
+    }
+  });
+
   it("500 vira server", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => respostaFalsa(500)));
     await expect(ativarTrackerPorEmail("https://c.x", "a@b.com", "fp", "1")).rejects.toMatchObject({ reason: "server" });

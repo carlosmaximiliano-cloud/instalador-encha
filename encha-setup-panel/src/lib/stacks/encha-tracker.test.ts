@@ -124,4 +124,29 @@ describe("encha-tracker — release (produto/edicao)", () => {
     expect(enchaTracker.release?.app).toBe("tracker");
     expect(enchaTracker.release?.edicao).toBe("full");
   });
+
+  // Mutação M1 (Ciclo C, fechamento da instalação) — a única release do
+  // Tracker que o Console conhece hoje é canal=beta (release.yml do
+  // Tracker só registra nesse canal). "stable" faria GET /api/version
+  // devolver 404 pra sempre — o próprio defeito que motivou este ciclo.
+  it("canal='beta' — é a única release que o Console conhece hoje", () => {
+    expect(enchaTracker.release?.canal).toBe("beta");
+  });
+
+  // O canal de RESOLUÇÃO na instalação (release.canal, acima) é um valor
+  // diferente do TRACKER_CANAL que o generateYaml grava no ambiente do
+  // container — os dois não se validam entre si em runtime nenhum. Achado
+  // ao investigar este ciclo: os dois TRACKER_CANAL (app e sidecar
+  // updater) estavam hardcoded "stable" enquanto release.canal já dizia
+  // "beta" — a instalação funcionaria, mas o autoupdate depois de
+  // instalado nunca acharia uma release nova (mesma consulta
+  // GET /api/version?...&canal=..., feita pelo binário Go em produção).
+  it("os dois TRACKER_CANAL do YAML (app e updater) batem com release.canal", () => {
+    const yaml = enchaTracker.generateYaml(valuesValidos, secrets, ctxBase);
+    const ocorrencias = yaml.match(/TRACKER_CANAL: "([^"]*)"/g) ?? [];
+    expect(ocorrencias).toHaveLength(2);
+    for (const linha of ocorrencias) {
+      expect(linha).toBe(`TRACKER_CANAL: "${enchaTracker.release?.canal}"`);
+    }
+  });
 });

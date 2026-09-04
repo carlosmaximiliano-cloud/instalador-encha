@@ -22,7 +22,8 @@ export type ReleaseInfo = {
 export type ReleaseInfoReason =
   | "timeout" // AbortController estourou — Console lento/travado
   | "network" // fetch rejeitou por transporte: DNS, TCP recusado, TLS
-  | "not_found" // 404 — endpoint mudou ou está errado
+  | "not_found" // 404 sem o corpo {error:"no_release_published"} — endpoint mudou ou está errado
+  | "nao_publicada" // 404 COM {error:"no_release_published"} — endpoint existe, ninguém publicou essa versão/canal ainda
   | "server" // 5xx — falha no backend do Console, não no instalador
   | "malformed" // 2xx mas corpo não é JSON
   | "contract"; // JSON válido, mas sem os campos esperados (ou versão fora do formato X.Y.Z)
@@ -88,6 +89,22 @@ export async function fetchLatestRelease(
     const detail = await readErrorDetail(res);
     const status = res.status;
     if (status === 404) {
+      // readErrorDetail já leu o corpo — {error:"no_release_published"} é
+      // o Console dizendo "a rota existe, mas ninguém publicou release
+      // nenhuma pra esse app/edição/canal ainda" (GET /api/version, Console
+      // releases-resolver.ts). Achado ao investigar o defeito que motivou
+      // esta distinção: TODO 404 virava "endpoint não existe" — inclusive
+      // este, que é configuração pendente do lado do EnchaT, não um bug de
+      // integração. Antes desta mudança, `detail` era lido e nunca chegava
+      // à tela (installer.ts só o gravava no audit log).
+      if (detail === "no_release_published") {
+        throw new ReleaseInfoError(
+          "nao_publicada",
+          `Nenhuma versão do Encha Tracker foi publicada ainda no canal "${canal}". Isso é configuração pendente do lado do EnchaT — não adianta tentar de novo até alguém publicar.`,
+          status,
+          detail
+        );
+      }
       throw new ReleaseInfoError(
         "not_found",
         "O endpoint de versão do Console EnchaT não foi encontrado (404). Falha do lado do EnchaT.",

@@ -79,7 +79,16 @@ export async function ativarTrackerPorEmail(
     throw new TrackerAtivacaoError("rate_limited", "Muitas tentativas — aguarde e tente de novo.", 429);
   }
   if (res.status === 503) {
-    throw new TrackerAtivacaoError("registry_nao_configurado", "Serviço de ativação temporariamente indisponível.", 503);
+    // "temporariamente" era enganoso: registry_nao_configurado é
+    // TRACKER_GHCR_PULL_USERNAME/TOKEN ausentes no Console — não passa
+    // sozinho com o tempo, é configuração pendente do lado do EnchaT
+    // (achado ao investigar o defeito que motivou esta mensagem: mandava o
+    // operador esperar por algo que nunca ia se resolver tentando de novo).
+    throw new TrackerAtivacaoError(
+      "registry_nao_configurado",
+      "O Console EnchaT ainda não está configurado para distribuir a imagem do Tracker (credencial de registry ausente). Isso é configuração do lado do EnchaT — tentar de novo não resolve.",
+      503
+    );
   }
   if (res.status >= 500) {
     throw new TrackerAtivacaoError("server", `O Console EnchaT respondeu ${res.status}.`, res.status);

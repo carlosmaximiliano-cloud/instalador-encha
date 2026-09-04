@@ -9,6 +9,20 @@ import { randomBytes } from "node:crypto";
 // isolamento de imagem é a CONTA, nunca o Console.
 const CONSOLE_BASE_URL = "https://console.enchat.pro";
 
+// Ciclo C (fechamento da instalação) — a única release do Tracker que o
+// Console conhece hoje é canal=beta (é o que o release.yml do Tracker
+// registra — casa com o plano tracker-beta da licença de teste). Uma
+// constante ÚNICA porque este valor precisa bater em TRÊS lugares
+// diferentes que não se validam entre si: a resolução de versão na
+// INSTALAÇÃO (release.canal, abaixo), e o TRACKER_CANAL de cada um dos
+// dois processos que rodam DEPOIS de instalado (app e sidecar
+// tracker-updater, generateYaml) — os dois fazem a MESMA consulta
+// GET /api/version?...&canal=... pra decidir se há atualização. Divergir
+// um dos três faria a instalação funcionar mas o autoupdate nunca achar
+// nada (achado ao investigar o ciclo: os dois TRACKER_CANAL estavam
+// hardcoded "stable" enquanto a única release publicável é beta).
+const CANAL_TRACKER = "beta";
+
 // O hostname FIXO do serviço `app` — TEM que bater com o hostname
 // que internal/licenca/fingerprint.go lê via os.Hostname() no primeiro
 // boot (ver generateYaml abaixo, `hostname: encha-tracker`). É também o
@@ -67,7 +81,7 @@ export const enchaTracker: StackDefinition = {
     baseUrl: CONSOLE_BASE_URL,
     app: "tracker",
     edicao: "full", // o Tracker não tem edição grátis — plans.edicao é sempre 'full'.
-    canal: "stable",
+    canal: CANAL_TRACKER,
   },
 
   // Ciclo 20b: o wizard oferece ativação por e-mail ANTES do caminho manual
@@ -153,7 +167,7 @@ services:
       TRACKER_ADMIN_SENHA: "${secrets.admin_senha}"
       TRACKER_CONSOLE_URL: "${CONSOLE_BASE_URL}"
       TRACKER_CHAVE: "${san(v.chave_licenca)}"
-      TRACKER_CANAL: "stable"
+      TRACKER_CANAL: "${CANAL_TRACKER}"
       TRACKER_MACHINE_ID: "${san(ctx.machineId ?? "")}"
       TRACKER_UPDATER_URL: "http://encha_tracker_updater:9000"
       TRACKER_UPDATER_TOKEN: "${secrets.updater_token}"
@@ -199,7 +213,7 @@ services:
       TRACKER_UPDATER_TOKEN: "${secrets.updater_token}"
       TRACKER_LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       TRACKER_LICENSE_KEY: "${san(v.chave_licenca)}"
-      TRACKER_CANAL: "stable"
+      TRACKER_CANAL: "${CANAL_TRACKER}"
       TRACKER_IMAGEM_PADRAO: "${imageRepo}"
       TRACKER_SWARM_SERVICE: "encha_tracker_app"
       TRACKER_HEALTHZ_URL: "http://encha_tracker_app:8080/api/healthz"
