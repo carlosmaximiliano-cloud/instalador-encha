@@ -4,14 +4,13 @@ import type { SwarmContext } from "./types";
 
 const valuesValidos = {
   dominio_tracker: "tracker.exemplo.com",
-  email_admin: "admin@exemplo.com",
   email_ativacao: "cliente@exemplo.com",
+  senha_admin: "SenhaForte#123",
 };
 
 const secrets = {
   tracker_master_key: "master-key-fake",
   postgres_password: "postgres-pw-fake",
-  admin_senha: "admin-senha-fake",
   updater_token: "updater-token-fake",
 };
 
@@ -48,7 +47,30 @@ describe("encha-tracker — schema", () => {
   });
 
   it("recusa e-mail inválido", () => {
-    expect(enchaTracker.schema.safeParse({ ...valuesValidos, email_admin: "não é email" }).success).toBe(false);
+    expect(enchaTracker.schema.safeParse({ ...valuesValidos, email_ativacao: "não é email" }).success).toBe(false);
+  });
+});
+
+describe("encha-tracker — senha_admin (Ciclo 25: escolhida pelo cliente, não mais gerada)", () => {
+  it("recusa senha fraca (menos de 12 chars, sem símbolo etc. — mesma régua de strongPassword)", () => {
+    expect(enchaTracker.schema.safeParse({ ...valuesValidos, senha_admin: "curta1A!" }).success).toBe(false);
+    expect(enchaTracker.schema.safeParse({ ...valuesValidos, senha_admin: "semsimbolobemlongo123" }).success).toBe(false);
+  });
+
+  // Mutação M2 (Onda 1) — a mais importante depois da M1: san() no
+  // generateYaml REMOVE aspas dupla/crase/quebra de linha em vez de
+  // escapar, e não trata barra invertida (caractere de escape dentro de um
+  // scalar YAML entre aspas duplas). Sem esta recusa no schema, o cliente
+  // digitaria uma senha e o container subiria com OUTRA, silenciosamente.
+  it.each(['Senha"Forte#123', "Senha`Forte#123", "Senha\\Forte#123", "Senha\nForte#123", "Senha\rForte#123"])(
+    "recusa senha contendo caractere perigoso para o YAML: %j",
+    (senhaPerigosa) => {
+      expect(enchaTracker.schema.safeParse({ ...valuesValidos, senha_admin: senhaPerigosa }).success).toBe(false);
+    }
+  );
+
+  it("aceita senha forte sem caracteres perigosos", () => {
+    expect(enchaTracker.schema.safeParse({ ...valuesValidos, senha_admin: "OutraSenha#456" }).success).toBe(true);
   });
 });
 
@@ -82,6 +104,18 @@ describe("encha-tracker — generateYaml", () => {
 
   it("TRACKER_SWARM_SERVICE bate com <stackId com _>_app", () => {
     expect(yaml).toContain('TRACKER_SWARM_SERVICE: "encha_tracker_app"');
+  });
+
+  // Ciclo 25 — o e-mail de login do painel é o MESMO da ativação (decisão
+  // do usuário: um e-mail só), e a senha é a que o cliente digitou, não
+  // mais um valor de generateSecrets.
+  it("TRACKER_ADMIN_EMAIL usa email_ativacao (não existe mais email_admin)", () => {
+    expect(yaml).toContain(`TRACKER_ADMIN_EMAIL: "${valuesValidos.email_ativacao}"`);
+  });
+
+  it("TRACKER_ADMIN_SENHA usa a senha digitada pelo cliente (values.senha_admin), não secrets", () => {
+    expect(yaml).toContain(`TRACKER_ADMIN_SENHA: "${valuesValidos.senha_admin}"`);
+    expect(yaml).not.toContain("admin_senha");
   });
 
   it("lança sem ctx.release", () => {
@@ -128,6 +162,24 @@ describe("encha-tracker — registryAuth.images (mutação M5)", () => {
   });
 });
 
+describe("encha-tracker — generateSecrets (Ciclo 25: senha sai daqui)", () => {
+  const gerados = enchaTracker.generateSecrets!(valuesValidos);
+
+  it("não gera mais admin_senha — a senha vem do formulário, não é sorteada", () => {
+    expect(gerados.find((s) => s.name === "admin_senha")).toBeUndefined();
+  });
+
+  // Mutação M4 (Onda 1) — sob a mutação, admin_senha volta a ser gerada e
+  // marcada reveal:true, e a tela final volta a despejar DOIS valores
+  // crus (a chave mestra e uma senha que o cliente nem escolheu).
+  it("exatamente um segredo é revelado ao final, e é a chave mestra", () => {
+    const revelados = gerados.filter((s) => s.reveal);
+    expect(revelados).toHaveLength(1);
+    expect(revelados[0].name).toBe("tracker_master_key");
+    expect(revelados[0].label).toBe("Chave mestra");
+  });
+});
+
 describe("encha-tracker — ativação só por e-mail (Ciclo D, fechamento da instalação)", () => {
   // Mutação M1 (a mais importante do ciclo) — nenhum campo de chave/token
   // pode aparecer no wizard. `fields` é a fonte usada pelo componente do
@@ -144,6 +196,23 @@ describe("encha-tracker — ativação só por e-mail (Ciclo D, fechamento da in
     const campo = enchaTracker.fields.find((f) => f.name === "email_ativacao");
     expect(campo).toBeDefined();
     expect(campo?.kind).toBe("email");
+  });
+
+  // Mutação M3 (Onda 1) — decisão do usuário: um e-mail só (compra = login).
+  // Sob a mutação (email_admin volta como campo separado), existiriam DOIS
+  // campos de e-mail no wizard — exatamente o atrito que a Onda 1 remove.
+  it("existe exatamente UM campo de e-mail no wizard — não há mais email_admin separado", () => {
+    const camposDeEmail = enchaTracker.fields.filter((f) => f.kind === "email");
+    expect(camposDeEmail).toHaveLength(1);
+    expect(camposDeEmail[0].name).toBe("email_ativacao");
+  });
+
+  it("senha_admin é campo do tipo password, sensível, com helpText de regra de senha", () => {
+    const campo = enchaTracker.fields.find((f) => f.name === "senha_admin");
+    expect(campo).toBeDefined();
+    expect(campo?.kind).toBe("password");
+    expect(campo?.sensitive).toBe(true);
+    expect(campo?.helpText).toBeTruthy();
   });
 
   it("chave_licenca está em transientFields — nunca é persistida mesmo se algum dia voltar a ser digitável", () => {

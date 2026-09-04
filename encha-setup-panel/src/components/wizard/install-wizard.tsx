@@ -42,7 +42,7 @@ type Props = {
   swarmCtx: { networkName: string; serverName: string; email: string };
 };
 
-type RevealSecret = { name: string; value: string };
+type RevealSecret = { name: string; label?: string; value: string };
 
 type ErrorState = { kind: "error"; message: string; reason?: string; httpStatus?: number };
 
@@ -218,7 +218,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                 </p>
                 {state.revealSecrets.map((s) => (
                   <div key={s.name} className="space-y-1">
-                    <Label className="text-xs">{s.name}</Label>
+                    <Label className="text-xs">{s.label ?? s.name}</Label>
                     <div className="flex gap-2">
                       <Input readOnly value={s.value} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
                       <Button

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn } from "./types";
+import { type StackDefinition, fqdn, strongPassword } from "./types";
 import { randomBytes } from "node:crypto";
 
 // Console EnchaT — o mesmo Console emite licenças de EnchaT e Encha
@@ -48,6 +48,19 @@ function updaterRepoFromTracker(imageRepo: string): string {
   return imageRepo.replace(/\/encha-tracker$/, "/tracker-updater");
 }
 
+// Caracteres que `san()` (generateYaml, abaixo) REMOVE em vez de escapar —
+// aspas duplas, crase e quebra de linha — mais barra invertida, que `san()`
+// não trata e é caractere de escape dentro de um scalar YAML entre aspas
+// duplas. Uma senha GERADA nunca continha nada disso (randomBytes().
+// toString('base64url')); uma senha DIGITADA pelo cliente pode conter
+// qualquer um dos cinco, e sem esta recusa o container subiria com uma
+// senha DIFERENTE da que o cliente digitou, sem nenhum aviso — a pior forma
+// de bug de senha, porque some silenciosamente.
+const SENHA_CARACTERES_PROIBIDOS = /["`\\\r\n]/;
+const senhaAdmin = strongPassword.refine((s) => !SENHA_CARACTERES_PROIBIDOS.test(s), {
+  message: 'A senha não pode conter aspas duplas, crase, barra invertida (\\) nem quebra de linha.',
+});
+
 const schema = z.object({
   dominio_tracker: fqdn,
   // Ciclo D (fechamento da instalação) — o cliente nunca digita/cola uma
@@ -56,10 +69,15 @@ const schema = z.object({
   // (ativarTrackerPorEmail) ANTES de resolver release/registry, e injeta o
   // resultado em `chave_licenca` — que por isso é opcional aqui (nunca
   // chega preenchido do formulário; existe só pra generateYaml/registryAuth
-  // lerem depois de injetado).
+  // lerem depois de injetado). O MESMO e-mail vira o login do painel
+  // (TRACKER_ADMIN_EMAIL, Ciclo 25) — decisão do usuário: um e-mail só,
+  // menos atrito no início.
   email_ativacao: z.string().email("E-mail inválido"),
   chave_licenca: z.string().min(8, "Chave de licença inválida").max(200).optional(),
-  email_admin: z.string().email("E-mail inválido"),
+  // Ciclo 25 — a senha de acesso ao painel deixa de ser gerada e exibida
+  // uma vez só: o cliente escolhe a dele, igual a qualquer outro produto
+  // (ver strongPassword em directus.ts/pgadmin.ts/traefik-portainer.ts).
+  senha_admin: senhaAdmin,
 });
 
 export const enchaTracker: StackDefinition = {
@@ -94,7 +112,7 @@ export const enchaTracker: StackDefinition = {
     consoleBaseUrl: CONSOLE_BASE_URL,
     sourceField: "email_ativacao",
     targetField: "chave_licenca",
-    group: "Licença",
+    group: "Acesso",
   },
 
   registryAuth: {
@@ -123,25 +141,31 @@ export const enchaTracker: StackDefinition = {
       helpText: "O DNS já deve apontar para esta VPS antes de instalar.",
     },
     {
-      name: "email_admin",
-      label: "E-mail de login do painel",
-      kind: "email",
-      group: "Acesso",
-      helpText: "Identidade de login do painel do Tracker — a senha é gerada e exibida ao final.",
-    },
-    {
       name: "email_ativacao",
       label: "E-mail da compra",
       kind: "email",
-      group: "Licença",
-      helpText: "Usamos este e-mail só para ativar a licença junto ao Console — nenhum token é pedido.",
+      group: "Acesso",
+      helpText: "Ativa a licença junto ao Console e também é o login do painel — nenhum token é pedido.",
+    },
+    {
+      name: "senha_admin",
+      label: "Senha de acesso ao painel",
+      kind: "password",
+      sensitive: true,
+      group: "Acesso",
+      helpText: "Mínimo 12 caracteres, com maiúscula, minúscula, número e símbolo.",
     },
   ],
   schema,
   generateSecrets: () => [
-    { name: "tracker_master_key", value: randomBytes(32).toString("base64"), reveal: true },
+    { name: "tracker_master_key", label: "Chave mestra", value: randomBytes(32).toString("base64"), reveal: true },
     { name: "postgres_password", value: randomBytes(24).toString("hex") },
-    { name: "admin_senha", value: randomBytes(12).toString("base64url"), reveal: true },
+    // admin_senha SAIU daqui no Ciclo 25 — a senha de acesso ao painel
+    // agora é escolhida pelo cliente (values.senha_admin, ver schema),
+    // nunca mais gerada/revelada nesta tela. `tracker_master_key` continua
+    // sendo o único segredo revelado: é irrecuperável se perdido (os dados
+    // gravados no banco dependem dela), diferente da senha, que o cliente
+    // já sabe porque acabou de digitar.
     // Compartilhado entre o app e o sidecar tracker-updater (Authorization: Bearer).
     { name: "updater_token", value: randomBytes(24).toString("hex") },
   ],
@@ -166,8 +190,8 @@ services:
       DATABASE_URL: "postgresql://tracker:${secrets.postgres_password}@encha_tracker_postgres:5432/tracker?sslmode=disable"
       PORT: "8080"
       TRACKER_MASTER_KEY: "${secrets.tracker_master_key}"
-      TRACKER_ADMIN_EMAIL: "${san(v.email_admin)}"
-      TRACKER_ADMIN_SENHA: "${secrets.admin_senha}"
+      TRACKER_ADMIN_EMAIL: "${san(v.email_ativacao)}"
+      TRACKER_ADMIN_SENHA: "${san(v.senha_admin)}"
       TRACKER_CONSOLE_URL: "${CONSOLE_BASE_URL}"
       TRACKER_CHAVE: "${san(v.chave_licenca)}"
       TRACKER_CANAL: "${CANAL_TRACKER}"
@@ -260,9 +284,9 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).dominio_tracker}`,
     notes: (values) => [
-      `Login do painel: ${(values as Record<string, unknown>).email_admin} — a senha gerada aparece só nesta tela, guarde-a.`,
-      "Guarde a TRACKER_MASTER_KEY exibida — sem ela, os segredos gravados no banco são irrecuperáveis.",
-      "O fingerprint desta instalação já está vinculado à licença informada — trocar a chave por outra licença exige uma nova instalação.",
+      `Login do painel: ${(values as Record<string, unknown>).email_ativacao} — use a senha que você acabou de escolher.`,
+      "Guarde a chave mestra exibida acima — sem ela, os dados já gravados no banco do Tracker ficam irrecuperáveis.",
+      "O fingerprint desta instalação já está vinculado à licença informada — trocar por outra licença exige uma nova instalação.",
     ],
   },
 };

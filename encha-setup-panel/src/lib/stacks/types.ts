@@ -60,6 +60,14 @@ export type GeneratedSecret = {
    * precisam sair do painel e só aumentariam a superfície de exposição.
    */
   reveal?: boolean;
+  /**
+   * Rótulo amigável mostrado no card "copie agora" (Ciclo 25) — sem isto o
+   * card cai no `name` cru (ex.: "tracker_master_key"), que é o nome da
+   * variável, não algo que um cliente sem contexto técnico reconheça.
+   * Opcional: stacks que ainda não definem `label` continuam mostrando o
+   * `name`, sem quebrar nada (ver install-wizard.tsx).
+   */
+  label?: string;
 };
 
 /**

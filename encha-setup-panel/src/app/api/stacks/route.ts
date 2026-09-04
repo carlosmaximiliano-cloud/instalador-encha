@@ -224,6 +224,6 @@ export async function POST(req: NextRequest) {
     // guarda uma cópia criptografada para reinstalls, mas não a reexibe.
     revealSecrets: (result.generatedSecrets ?? [])
       .filter((s) => s.reveal)
-      .map((s) => ({ name: s.name, value: s.value })),
+      .map((s) => ({ name: s.name, label: s.label, value: s.value })),
   });
 }
