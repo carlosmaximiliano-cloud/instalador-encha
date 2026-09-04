@@ -165,3 +165,24 @@ export async function fetchLatestRelease(
 
   return { version, imageRepo, imageTag, obrigatoria: obj.obrigatoria === true };
 }
+
+// Cache em memória (módulo-level), TTL 5 minutos, chaveado por `cacheKey`
+// (tipicamente o `id` da stack) — existe pra GET /api/stacks não bater no
+// Console uma vez por stack a cada carregamento de página (Ciclo 29). Erro
+// NÃO é cacheado (só sucesso): uma falha transitória não deve "travar" o
+// catálogo mostrando ausência de atualização por 5 minutos.
+const RELEASE_CACHE_TTL_MS = 5 * 60_000;
+const releaseCache = new Map<string, { value: ReleaseInfo; expiresAt: number }>();
+
+export async function fetchLatestReleaseCached(
+  spec: { baseUrl: string; app: string; edicao: string; canal: string },
+  cacheKey: string
+): Promise<ReleaseInfo> {
+  const cached = releaseCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value;
+  }
+  const value = await fetchLatestRelease(spec.baseUrl, spec.app, spec.edicao, spec.canal);
+  releaseCache.set(cacheKey, { value, expiresAt: Date.now() + RELEASE_CACHE_TTL_MS });
+  return value;
+}

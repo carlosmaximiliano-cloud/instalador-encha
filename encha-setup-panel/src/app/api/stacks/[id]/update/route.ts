@@ -8,9 +8,10 @@ import {
   updateServiceImage,
 } from "@/lib/portainer";
 import { getStack } from "@/lib/stacks/registry";
-import { computePendingUpdates } from "@/lib/stacks/updates";
+import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { applyReleaseUpdate } from "@/lib/stack-update-release";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,7 +31,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   try {
     const { endpointId } = await discoverContext(token);
     const statuses = await listSwarmStackStatuses(token, endpointId);
-    const pending = computePendingUpdates(def, statuses);
+    const pending = def.updateViaRelease
+      ? await computeReleaseBasedPendingUpdates(def, statuses)
+      : computePendingUpdates(def, statuses);
     return NextResponse.json({ updateAvailable: pending.length > 0, pending });
   } catch (e) {
     console.error(`[api/stacks/${id}/update] falha checando atualização:`, e);
@@ -64,11 +67,31 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   const def = getStack(id);
   if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
-  if (!def.updatableImages?.length) {
+  if (!def.updatableImages?.length && !def.updateViaRelease) {
     return NextResponse.json(
       { error: "Esta stack não suporta atualização in-place" },
       { status: 400 }
     );
+  }
+
+  // Caminho novo (Ciclo 29) — versão vinda de `release:`, pré-pull
+  // autenticado + troca de imagem via applyReleaseUpdate. Vem ANTES do
+  // caminho de `updatableImages` (que continua intocado para as outras
+  // stacks), mas DEPOIS do rate limit/CSRF/Origin acima — nunca pula esses
+  // guards de entrada.
+  if (def.updateViaRelease) {
+    try {
+      const { atualizados } = await applyReleaseUpdate({ token, stackId: id, def, user: session.user, ip });
+      return NextResponse.json({
+        ok: true,
+        updated: atualizados,
+        message: atualizados.length ? undefined : "Já está na versão mais recente",
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[api/stacks/${id}/update] falhou (updateViaRelease):`, e);
+      return NextResponse.json({ error: `Falha ao atualizar: ${msg}` }, { status: 500 });
+    }
   }
 
   try {

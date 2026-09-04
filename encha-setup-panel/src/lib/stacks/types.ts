@@ -92,6 +92,22 @@ export type RegistryAuthSpec = {
    * installer antes deste ponto, então nunca é `undefined` nesse caso.
    */
   images: (values: Record<string, unknown>, release?: ReleaseInfo) => string[];
+  /**
+   * Nome da env var no serviço RODANDO que carrega a chave de licença (ex.:
+   * "TRACKER_CHAVE") — usado só no caminho de UPDATE (Ciclo 29): como
+   * `licenseField` só existe no formulário de instalação e a chave nunca é
+   * persistida (`transientFields`), o update relê a mesma chave de volta do
+   * `Env` do serviço já rodando em vez de pedi-la de novo ao operador. Ver
+   * stack-update-release.ts. Ausente = a stack não oferece update in-place
+   * via release (só `updatableImages`, ou nenhum update).
+   */
+  licenseEnvVar?: string;
+  /**
+   * Qual `service` (chave do compose, a mesma usada em
+   * updateViaRelease/updatableImages) tem a env var acima — ex.: "app". Deve
+   * vir preenchido sempre que `licenseEnvVar` estiver.
+   */
+  licenseEnvService?: string;
 };
 
 /**
@@ -234,6 +250,16 @@ export type StackDefinition = {
    * para decidir se há atualização disponível. Ver /api/stacks/[id]/update.
    */
   updatableImages?: { service: string; image: string }[];
+  /**
+   * Equivalente de `updatableImages` para uma stack cuja versão/imagem vem
+   * de `release:` (Console EnchaT), não de uma constante fixa em código —
+   * recebe a release já resolvida e devolve os alvos service->imagem. Só
+   * uma das duas (`updatableImages`/`updateViaRelease`) é esperada por
+   * stack, nunca as duas (Ciclo 29). Ver stack-update-release.ts para a
+   * sequência completa de update (pré-pull autenticado antes da troca de
+   * imagem — mesmo raciocínio do caminho de instalação).
+   */
+  updateViaRelease?: (release: ReleaseInfo) => { service: string; image: string }[];
   repoUrl?: string;
   logoUrl?: string;
   installVia?: "panel" | "bash";

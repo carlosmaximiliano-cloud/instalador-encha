@@ -36,6 +36,8 @@ afterEach(() => {
   vi.doUnmock("./tracker-ativacao");
   vi.doUnmock("./host-dirs");
   vi.doUnmock("./stacks/registry");
+  vi.doUnmock("./registry-auth");
+  vi.useRealTimers();
 });
 
 const FAKE_STACK_ID = "fake-tracker-ciclo-d";
@@ -250,5 +252,135 @@ describe("installStack — ativação por e-mail (Ciclo D)", () => {
       expect.any(String),
       expect.any(String)
     );
+  });
+});
+
+// Ciclo 29 — registry-pull.ts extraiu o bloco de retry/pré-pull que
+// installStack usava inline (ver ciclos/ciclo-29.md, entregável
+// registry-pull.ts + mutação M4). Esta suíte NÃO duplica a cobertura
+// isolada de resolveRegistryAndPullImages (isso é registry-pull.test.ts) —
+// ela prova que o CALL SITE ANTIGO (installStack) continua sendo o MESMO
+// código, não uma cópia paralela: se installStack parar de chamar a função
+// extraída (ou voltar a ter lógica própria divergente — contagem de
+// tentativas diferente, campos de audit diferentes), estes testes falham.
+describe("installStack — registry-auth via a extração registry-pull.ts (Ciclo 29, mutação M4)", () => {
+  const REGISTRY_STACK_ID = "fake-registry-ciclo-29";
+
+  function fakeRegistryStack(): StackDefinition {
+    return {
+      id: REGISTRY_STACK_ID,
+      name: "Fake Registry Stack",
+      description: "Stack sintética só para testar o call site de resolveRegistryAndPullImages dentro de installStack.",
+      category: "analytics",
+      icon: "bar-chart-3",
+      dependsOn: [],
+      optionNumber: 997,
+      appHostname: "fake-registry-app",
+      transientFields: ["chave_licenca"],
+      fields: [{ name: "chave_licenca", label: "Chave", kind: "password" }],
+      schema: z.object({ chave_licenca: z.string().min(1) }),
+      release: { baseUrl: "https://console.exemplo.com", app: "fake", edicao: "full", canal: "beta" },
+      registryAuth: {
+        registryHost: "ghcr.io",
+        registryName: "GHCR Fake",
+        exchangeUrl: "https://console.exemplo.com/api/v1/fake/registry-auth",
+        licenseField: "chave_licenca",
+        images: (_v, release) => [`${release!.imageRepo}:${release!.imageTag}`],
+      },
+      generateYaml: () => 'version: "3.7"\nservices:\n  app:\n    image: fake:1\n',
+    };
+  }
+
+  async function setupRegistryMocks(opts: { exchangeImpl?: () => Promise<{ username: string; token: string }> }) {
+    const stack = fakeRegistryStack();
+    vi.doMock("./stacks/registry", () => ({
+      getStack: (id: string) => (id === stack.id ? stack : undefined),
+    }));
+    vi.doMock("./portainer", () => ({
+      deploySwarmStack: vi.fn(async () => ({ Id: "swarm-stack-2" })),
+      discoverContext: vi.fn(async () => ({ endpointId: 1, swarmId: "swarm-1" })),
+      ensurePostgresDatabase: vi.fn(async () => undefined),
+      ensurePostgresExtension: vi.fn(async () => undefined),
+      ensureSwarmVolume: vi.fn(async () => undefined),
+      listStacks: vi.fn(async () => []),
+      pullImageWithRegistry: vi.fn(async () => undefined),
+    }));
+    vi.doMock("./release-info", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("./release-info")>();
+      return {
+        ...actual,
+        fetchLatestRelease: vi.fn(async () => ({
+          version: "1.0.0",
+          imageRepo: "ghcr.io/x/fake",
+          imageTag: "1.0.0",
+          obrigatoria: false,
+        })),
+      };
+    });
+    vi.doMock("./registry-auth", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("./registry-auth")>();
+      const exchangeLicenseForGhcrCredentials = vi.fn(
+        opts.exchangeImpl ?? (async () => ({ username: "user1", token: "tok1" }))
+      );
+      const ensureRegistry = vi.fn(async () => 7);
+      return { ...actual, exchangeLicenseForGhcrCredentials, ensureRegistry };
+    });
+    vi.doMock("./host-dirs", () => ({ ensureHostDirs: vi.fn(async () => undefined) }));
+    return { stack };
+  }
+
+  it("M4a: installStack chama a extração — pré-pull acontece e o audit registra registry.auth ok com tentativa=1", async () => {
+    await setupRegistryMocks({});
+    const { installStack } = await import("./installer");
+    const { pullImageWithRegistry, deploySwarmStack } = await import("./portainer");
+    const { exchangeLicenseForGhcrCredentials } = await import("./registry-auth");
+    const { listAudit } = await import("./audit");
+
+    const result = await installStack({
+      stackId: REGISTRY_STACK_ID,
+      values: { chave_licenca: "CHAVE-XYZ" },
+      swarmCtx: swarmCtx(),
+      token: "tok",
+      user: "tester",
+      ip: "127.0.0.1",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(exchangeLicenseForGhcrCredentials).toHaveBeenCalledTimes(1);
+    expect(pullImageWithRegistry).toHaveBeenCalledTimes(1);
+    expect(deploySwarmStack).toHaveBeenCalledTimes(1);
+
+    const rows = listAudit(50);
+    const ok = rows.find((r) => r.action === "registry.auth");
+    expect(ok).toBeTruthy();
+    expect(JSON.parse(ok!.meta ?? "{}")).toMatchObject({ tentativa: 1 });
+  });
+
+  it("M4b: falha transitória retenta até 3x (mesma contagem/backoff que resolveRegistryAndPullImages promete) antes de abortar a instalação", async () => {
+    vi.useFakeTimers();
+    const { RegistryAuthError } = await import("./registry-auth");
+    await setupRegistryMocks({
+      exchangeImpl: async () => {
+        throw new RegistryAuthError("network", "falha de rede");
+      },
+    });
+    const { installStack } = await import("./installer");
+    const { deploySwarmStack } = await import("./portainer");
+    const { exchangeLicenseForGhcrCredentials } = await import("./registry-auth");
+
+    const promise = installStack({
+      stackId: REGISTRY_STACK_ID,
+      values: { chave_licenca: "CHAVE-XYZ" },
+      swarmCtx: swarmCtx(),
+      token: "tok",
+      user: "tester",
+      ip: "127.0.0.1",
+    });
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result.ok).toBe(false);
+    expect(exchangeLicenseForGhcrCredentials).toHaveBeenCalledTimes(3);
+    expect(deploySwarmStack).not.toHaveBeenCalled();
   });
 });

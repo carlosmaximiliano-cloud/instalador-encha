@@ -7,10 +7,10 @@ import {
   ensurePostgresExtension,
   ensureSwarmVolume,
   listStacks,
-  pullImageWithRegistry,
   type Stack,
 } from "./portainer";
-import { RegistryAuthError, ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
+import { RegistryAuthError } from "./registry-auth";
+import { resolveRegistryAndPullImages } from "./registry-pull";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
 import { ativarTrackerPorEmail, TrackerAtivacaoError } from "./tracker-ativacao";
 import { ensureHostDirs } from "./host-dirs";
@@ -507,93 +507,22 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     // por serviço. O pré-pull falha rápido se a chave não tiver acesso, em
     // vez de deixar as tasks presas em `pending` sem explicação.
     //
-    // Retry (3 tentativas, backoff): a credencial devolvida pelo exchange
-    // pode ter vida curta — repetir SÓ o pull com a mesma credencial vencida
-    // falha do mesmo jeito, então cada tentativa refaz o exchange +
-    // ensureRegistry (que já faz UPDATE, não INSERT, quando o registry
-    // existe) antes de repetir o pré-pull. `pullImageWithRegistry` lê a
-    // senha por `registryId`, então basta atualizar o registry no Portainer
-    // pra a MESMA chamada de pull passar a usar a credencial nova. Só NÃO
-    // repete em erro que não é transitório (chave inválida/revogada,
-    // fingerprint_mismatch etc.) — aí é erro do cliente, não da rede.
+    // Extraído para registry-pull.ts (Ciclo 29) — mesmo comportamento
+    // (3 tentativas, backoff, classificação de erro transitório, os dois
+    // logAudit), reaproveitado pelo caminho de UPDATE
+    // (stack-update-release.ts) sem duplicar a lógica.
     if (def.registryAuth) {
-      const MAX_TENTATIVAS = 3;
-      let ultimoErro: unknown;
-      let sucesso = false;
-      for (let tentativa = 1; tentativa <= MAX_TENTATIVAS && !sucesso; tentativa++) {
-        if (tentativa > 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000 * tentativa));
-        }
-        try {
-          const chave = String(parsed.data[def.registryAuth.licenseField] ?? "");
-          const creds = await exchangeLicenseForGhcrCredentials(
-            def.registryAuth.exchangeUrl,
-            chave,
-            effectiveCtx.fingerprint
-          );
-          const registryId = await ensureRegistry(input.token, {
-            url: def.registryAuth.registryHost,
-            name: def.registryAuth.registryName,
-            username: creds.username,
-            password: creds.token,
-          });
-          logAudit({
-            user: input.user,
-            ip: input.ip,
-            action: "registry.auth",
-            target: def.registryAuth.registryHost,
-            result: "ok",
-            meta: { registryId, username: creds.username, tentativa }, // nunca a chave nem o token
-          });
-          for (const img of def.registryAuth.images(parsed.data, effectiveCtx.release)) {
-            await pullImageWithRegistry(input.token, endpointId, img, registryId);
-          }
-          sucesso = true;
-        } catch (e) {
-          ultimoErro = e;
-          // RegistryAuthError carrega a causa estruturada (reason/httpStatus/
-          // serverDetail) — grava tudo no audit em vez de só a mensagem
-          // final, pra dar pra distinguir depois "chave errada" de "Console
-          // fora do ar" sem precisar reproduzir o problema. Nunca inclui a
-          // chave nem o token (RegistryAuthError já não os captura em lugar
-          // nenhum). Falha de PULL (não é RegistryAuthError — é
-          // PortainerError, lançada dentro de pullImageRaw) sempre é tratada
-          // como transitória: é justamente o caso "credencial venceu no
-          // meio do download", que só se resolve tentando de novo.
-          const meta: Record<string, unknown> = {
-            error: e instanceof Error ? e.message : "Erro desconhecido",
-            tentativa,
-          };
-          let transitorio = true;
-          if (e instanceof RegistryAuthError) {
-            meta.reason = e.reason;
-            if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
-            if (e.serverDetail !== undefined) meta.serverDetail = e.serverDetail;
-            transitorio =
-              e.reason === "timeout" ||
-              e.reason === "network" ||
-              e.reason === "rate_limited" ||
-              e.reason === "server";
-          }
-          logAudit({
-            user: input.user,
-            ip: input.ip,
-            action: "registry.auth.fail",
-            target: def.registryAuth.registryHost,
-            result: "error",
-            meta,
-          });
-          if (!transitorio || tentativa === MAX_TENTATIVAS) {
-            throw e;
-          }
-        }
-      }
-      if (!sucesso) {
-        // Inatingível de fato (o laço só sai sem sucesso lançando acima),
-        // mas o TypeScript não sabe disso — guarda explícita evita "possibly
-        // used before assigned" mais adiante e documenta a invariante.
-        throw ultimoErro instanceof Error ? ultimoErro : new Error("Falha desconhecida no registry-auth");
-      }
+      const chave = String(parsed.data[def.registryAuth.licenseField] ?? "");
+      await resolveRegistryAndPullImages({
+        token: input.token,
+        endpointId,
+        user: input.user,
+        ip: input.ip,
+        registryAuth: def.registryAuth,
+        chave,
+        fingerprint: effectiveCtx.fingerprint,
+        images: def.registryAuth.images(parsed.data, effectiveCtx.release),
+      });
     }
 
     // Diretórios de bind mount no node manager — o Swarm não os cria sozinho.

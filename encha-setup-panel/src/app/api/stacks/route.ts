@@ -6,7 +6,7 @@ import { installStack, listInstalledStacks } from "@/lib/installer";
 import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames, isStackReady } from "@/lib/stacks/types";
-import { computePendingUpdates } from "@/lib/stacks/updates";
+import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 const installSchema = z.object({
@@ -62,30 +62,39 @@ export async function GET() {
     "| online:", portainerOnline
   );
 
-  const catalogPayload = catalog.map((s) => {
-    const expected = expectedStackNames(s);
-    const present = expected.every((n) => installedNames.has(n));
-    const ready = isStackReady(s, installedNames, statusByName);
-    // Só oferece atualização quando a stack já subiu por completo — trocar a
-    // imagem no meio de um deploy ainda em andamento só embaralharia o estado.
-    const pendingUpdates = ready ? computePendingUpdates(s, swarmStatuses) : [];
-    return {
-      id: s.id,
-      name: s.name,
-      description: s.description,
-      category: s.category,
-      icon: s.icon,
-      dependsOn: s.dependsOn,
-      repoUrl: s.repoUrl,
-      logoUrl: s.logoUrl,
-      installVia: s.installVia ?? "panel",
-      optionNumber: s.optionNumber,
-      installed: present,
-      ready,
-      updateAvailable: pendingUpdates.length > 0,
-      pendingUpdates,
-    };
-  });
+  const catalogPayload = await Promise.all(
+    catalog.map(async (s) => {
+      const expected = expectedStackNames(s);
+      const present = expected.every((n) => installedNames.has(n));
+      const ready = isStackReady(s, installedNames, statusByName);
+      // Só oferece atualização quando a stack já subiu por completo — trocar
+      // a imagem no meio de um deploy ainda em andamento só embaralharia o
+      // estado. updatableImages/updateViaRelease são mutuamente exclusivos
+      // por stack (nunca coexistem) — a condicional escolhe qual mecanismo
+      // usar, nunca soma os dois.
+      const pendingUpdates = ready
+        ? s.updateViaRelease
+          ? await computeReleaseBasedPendingUpdates(s, swarmStatuses)
+          : computePendingUpdates(s, swarmStatuses)
+        : [];
+      return {
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        category: s.category,
+        icon: s.icon,
+        dependsOn: s.dependsOn,
+        repoUrl: s.repoUrl,
+        logoUrl: s.logoUrl,
+        installVia: s.installVia ?? "panel",
+        optionNumber: s.optionNumber,
+        installed: present,
+        ready,
+        updateAvailable: pendingUpdates.length > 0,
+        pendingUpdates,
+      };
+    })
+  );
 
   const knownNames = new Set<string>();
   for (const s of catalog) {

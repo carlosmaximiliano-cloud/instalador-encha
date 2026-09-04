@@ -101,10 +101,20 @@ export const enchaTracker: StackDefinition = {
   // estado em reinstall.
   externalVolumes: ["encha_tracker_updater_data"],
   transientFields: ["chave_licenca", "email_ativacao"],
-  // Sem `updatableImages` — o Tracker tem seu PRÓPRIO botão de atualizar
-  // dentro do produto (sidecar tracker-updater, Ciclo 19/19b), que já lida
-  // com pré-pull autenticado e rollback. Um botão de update in-place aqui
-  // teria as duas mesmas limitações documentadas em enchat.ts.
+  // Sem `updatableImages` — a versão-alvo do Tracker vem de `release:`
+  // (Console), não de uma constante fixa; `updateViaRelease` abaixo é o
+  // equivalente pra esse caso (Ciclo 29). Fecha o botão de atualizar do
+  // painel Encha Setup pro Tracker: mesma sequência de pré-pull autenticado
+  // + troca de imagem que `installStack` já usa (ver
+  // stack-update-release.ts), só sem pedir a chave de novo — ela é relida
+  // do `Env` do serviço `app` já rodando (ver registryAuth.licenseEnvVar
+  // abaixo). O sidecar tracker-updater (dentro do PRODUTO, não do painel)
+  // continua existindo e resolvendo o mesmo problema por outra via — os
+  // dois não competem, é só mais um caminho pro cliente atualizar.
+  updateViaRelease: (release) => [
+    { service: "app", image: `${release.imageRepo}:${release.imageTag}` },
+    { service: "updater", image: `${updaterRepoFromTracker(release.imageRepo)}:${release.imageTag}` },
+  ],
 
   release: {
     baseUrl: CONSOLE_BASE_URL,
@@ -132,6 +142,13 @@ export const enchaTracker: StackDefinition = {
     // ({username, token} no topo) — nenhum adaptador necessário.
     exchangeUrl: `${CONSOLE_BASE_URL}/api/v1/tracker/registry-auth`,
     licenseField: "chave_licenca",
+    // Ciclo 29 — caminho de UPDATE: `chave_licenca` é transientField (nunca
+    // persistida) e o formulário de instalação não roda de novo aqui. A
+    // chave é relida do Env do serviço `app` já rodando (TRACKER_CHAVE, ver
+    // generateYaml abaixo) — mesma disciplina de nunca recunhar
+    // machine_id/fingerprint, aplicada à chave.
+    licenseEnvVar: "TRACKER_CHAVE",
+    licenseEnvService: "app",
     images: (_v, release) => {
       if (!release) throw new Error("release não resolvida antes de registryAuth.images — bug no installer.");
       return [`${release.imageRepo}:${release.imageTag}`, `${updaterRepoFromTracker(release.imageRepo)}:${release.imageTag}`];
