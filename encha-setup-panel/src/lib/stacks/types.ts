@@ -120,14 +120,22 @@ export type PairingSpec = {
 };
 
 /**
- * Ativação síncrona por e-mail (Ciclo 20b) — POST direto, sem sessão nem
- * polling: o cliente digita o e-mail, a rota do painel resolve o
- * fingerprint (via getOrCreateMachineId, NUNCA recunhado) e troca por uma
- * chave num passo só. Ver src/lib/tracker-ativacao.ts.
+ * Ativação síncrona por e-mail (Ciclo 20b, virou o ÚNICO caminho no Ciclo
+ * D) — o cliente só digita o e-mail da compra; nenhum token passa pela mão
+ * dele. `sourceField` é um campo de formulário NORMAL (kind:"email" em
+ * `fields`, renderizado como qualquer outro) — não há componente/rota
+ * dedicados no wizard. installer.ts resolve o fingerprint desta VPS
+ * (getOrCreateMachineId, NUNCA recunhado), troca o e-mail por uma chave via
+ * Console (ver tracker-ativacao.ts) ANTES de resolver release/registry — é
+ * essa chave que os dois passos seguintes consomem — e injeta o resultado
+ * em `targetField`, que por sua vez NUNCA aparece em `fields` (por isso
+ * precisa estar em `transientFields`).
  */
 export type EmailActivationSpec = {
   consoleBaseUrl: string;
-  /** Nome do campo do formulário que recebe a chave devolvida. */
+  /** Nome do campo do formulário (visível, `fields`) que carrega o e-mail digitado pelo cliente. */
+  sourceField: string;
+  /** Nome do campo (ausente de `fields` — só existe internamente) que recebe a chave devolvida pelo Console. */
   targetField: string;
   group?: string;
 };

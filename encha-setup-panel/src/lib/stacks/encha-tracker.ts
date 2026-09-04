@@ -50,11 +50,15 @@ function updaterRepoFromTracker(imageRepo: string): string {
 
 const schema = z.object({
   dominio_tracker: fqdn,
-  // Nesta rodada (Ciclo 20) só o caminho manual existe — colar uma chave
-  // já emitida. A ativação síncrona por e-mail (POST /tracker/ativar,
-  // já existe no Console desde o Ciclo 7) entra no wizard no Ciclo 20b;
-  // até lá, o cliente recebe a chave por outro canal e cola aqui.
-  chave_licenca: z.string().min(8, "Chave de licença inválida").max(200),
+  // Ciclo D (fechamento da instalação) — o cliente nunca digita/cola uma
+  // chave. `email_ativacao` é o ÚNICO campo de licenciamento visível no
+  // wizard; installer.ts troca esse e-mail por uma chave via Console
+  // (ativarTrackerPorEmail) ANTES de resolver release/registry, e injeta o
+  // resultado em `chave_licenca` — que por isso é opcional aqui (nunca
+  // chega preenchido do formulário; existe só pra generateYaml/registryAuth
+  // lerem depois de injetado).
+  email_ativacao: z.string().email("E-mail inválido"),
+  chave_licenca: z.string().min(8, "Chave de licença inválida").max(200).optional(),
   email_admin: z.string().email("E-mail inválido"),
 });
 
@@ -71,7 +75,7 @@ export const enchaTracker: StackDefinition = {
   // postgres: SEM owner — a imagem postgres:16-alpine ajusta o dono dela
   // sozinha no boot, mesmo tratamento de enchat_postgres em enchat.ts.
   hostDirs: ["/var/enchat/tracker-postgres"],
-  transientFields: ["chave_licenca"],
+  transientFields: ["chave_licenca", "email_ativacao"],
   // Sem `updatableImages` — o Tracker tem seu PRÓPRIO botão de atualizar
   // dentro do produto (sidecar tracker-updater, Ciclo 19/19b), que já lida
   // com pré-pull autenticado e rollback. Um botão de update in-place aqui
@@ -84,11 +88,11 @@ export const enchaTracker: StackDefinition = {
     canal: CANAL_TRACKER,
   },
 
-  // Ciclo 20b: o wizard oferece ativação por e-mail ANTES do caminho manual
-  // (o campo chave_licenca continua existindo — quem já tem uma chave
-  // emitida por outro canal ainda pode colar direto).
+  // Ciclo D: ativação por e-mail é o ÚNICO caminho — não sobrou campo de
+  // chave manual no wizard (ver `fields` abaixo e o schema).
   emailActivation: {
     consoleBaseUrl: CONSOLE_BASE_URL,
+    sourceField: "email_ativacao",
     targetField: "chave_licenca",
     group: "Licença",
   },
@@ -126,12 +130,11 @@ export const enchaTracker: StackDefinition = {
       helpText: "Identidade de login do painel do Tracker — a senha é gerada e exibida ao final.",
     },
     {
-      name: "chave_licenca",
-      label: "Chave de licença do Encha Tracker",
-      kind: "password",
-      sensitive: true,
+      name: "email_ativacao",
+      label: "E-mail da compra",
+      kind: "email",
       group: "Licença",
-      helpText: "A chave emitida na compra. Não é gravada em disco.",
+      helpText: "Usamos este e-mail só para ativar a licença junto ao Console — nenhum token é pedido.",
     },
   ],
   schema,

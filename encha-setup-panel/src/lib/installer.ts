@@ -12,12 +12,14 @@ import {
 } from "./portainer";
 import { RegistryAuthError, ensureRegistry, exchangeLicenseForGhcrCredentials } from "./registry-auth";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
+import { ativarTrackerPorEmail, TrackerAtivacaoError } from "./tracker-ativacao";
 import { ensureHostDirs } from "./host-dirs";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
 import { getOrCreateMachineId, buscarPareamento, chaveDoPareamento, consumirPareamento } from "./pairing-store";
 import { fingerprintEnchat } from "./enchat-fingerprint";
+import { APP_VERSION } from "./version";
 import type { SwarmContext, GeneratedSecret, StackDefinition } from "./stacks/types";
 
 // resolverAppHostname é o ÚNICO ponto que os dois call sites de
@@ -94,6 +96,26 @@ function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
       case "network":
       case "not_found":
       case "nao_publicada":
+      case "server":
+      case "malformed":
+      case "contract":
+        return { httpStatus: 502, reason: e.reason };
+    }
+  }
+  if (e instanceof TrackerAtivacaoError) {
+    switch (e.reason) {
+      case "timeout":
+        return { httpStatus: 504, reason: e.reason };
+      case "rate_limited":
+        return { httpStatus: 429, reason: e.reason };
+      case "ativacao_recusada":
+        // "Culpa" do e-mail informado (não reconhecido, licença revogada, já
+        // vinculado a outra VPS) — mesmo tratamento 400 que as causas
+        // equivalentes de RegistryAuthError acima, nunca 502.
+        return { httpStatus: 400, reason: e.reason };
+      case "registry_nao_configurado":
+        return { httpStatus: 503, reason: e.reason };
+      case "network":
       case "server":
       case "malformed":
       case "contract":
@@ -329,6 +351,74 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       }
     }
 
+    // Ativação síncrona por e-mail (Ciclo D) — se a stack declara
+    // `emailActivation`, o e-mail digitado no campo-fonte é trocado por uma
+    // chave AQUI, antes de qualquer outra coisa: é essa chave que
+    // registryAuth (mais abaixo) e generateYaml precisam para funcionar.
+    // Fingerprint resolvido do MESMO jeito que registryAuth usa quando não
+    // há pareamento (getOrCreateMachineId) — guardado para reaproveitar lá
+    // embaixo em vez de recalcular (idempotente, mas reaproveitar deixa
+    // explícito que é o MESMO valor em todo o fluxo). Falha aqui aborta
+    // ANTES de discoverContext/deploySwarmStack — nenhuma instalação sobe
+    // pra VPS com um e-mail que o Console não reconheceu.
+    let ativacaoMachineId: string | undefined;
+    let ativacaoFingerprint: string | undefined;
+    if (def.emailActivation) {
+      // Normaliza (trim + minúsculas) ANTES de mandar pro Console — o
+      // Console também normaliza do lado dele, mas o instalador não pode
+      // DEPENDER disso: é o instalador quem decide se um e-mail digitado
+      // com espaço/maiúscula bateu ou não, então tem que aplicar a mesma
+      // normalização por conta própria (achado do Ciclo D: sem isto, " E@X.com "
+      // e "e@x.com" pareceriam entradas diferentes em qualquer comparação
+      // futura feita aqui, mesmo os dois ativando a MESMA licença no Console).
+      const email = String(parsed.data[def.emailActivation.sourceField] ?? "")
+        .trim()
+        .toLowerCase();
+      if (!email) {
+        throw new Error(
+          `Campo "${def.emailActivation.sourceField}" (e-mail da compra) é obrigatório para instalar esta stack.`
+        );
+      }
+      const hostnameParaAtivacao = resolverAppHostname(def, "emailActivation");
+      const { machineId, fingerprint } = getOrCreateMachineId(input.stackId, hostnameParaAtivacao);
+      try {
+        const { chave } = await ativarTrackerPorEmail(
+          def.emailActivation.consoleBaseUrl,
+          email,
+          fingerprint,
+          APP_VERSION
+        );
+        parsed.data[def.emailActivation.targetField] = chave;
+        ativacaoMachineId = machineId;
+        ativacaoFingerprint = fingerprint;
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "license.tracker.ativar",
+          target: input.stackId,
+          result: "ok",
+          meta: {}, // nunca o e-mail nem a chave.
+        });
+      } catch (e) {
+        const meta: Record<string, unknown> = {
+          error: e instanceof Error ? e.message : "Erro desconhecido",
+        };
+        if (e instanceof TrackerAtivacaoError) {
+          meta.reason = e.reason;
+          if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
+        }
+        logAudit({
+          user: input.user,
+          ip: input.ip,
+          action: "license.tracker.ativar.fail",
+          target: input.stackId,
+          result: "error",
+          meta,
+        });
+        throw e;
+      }
+    }
+
     const reused = await loadReusedSecrets();
     const previousOwn = await loadStackOwnSecrets(input.stackId);
     const generated = (def.generateSecrets?.(parsed.data) ?? []).map((g) => {
@@ -401,6 +491,8 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     if (def.registryAuth) {
       if (pareamentoMachineId !== undefined && pareamentoFingerprint !== undefined) {
         effectiveCtx = { ...effectiveCtx, machineId: pareamentoMachineId, fingerprint: pareamentoFingerprint };
+      } else if (ativacaoMachineId !== undefined && ativacaoFingerprint !== undefined) {
+        effectiveCtx = { ...effectiveCtx, machineId: ativacaoMachineId, fingerprint: ativacaoFingerprint };
       } else {
         const { machineId, fingerprint } = getOrCreateMachineId(input.stackId, resolverAppHostname(def, "registryAuth"));
         effectiveCtx = { ...effectiveCtx, machineId, fingerprint };

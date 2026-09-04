@@ -5,7 +5,7 @@ import type { SwarmContext } from "./types";
 const valuesValidos = {
   dominio_tracker: "tracker.exemplo.com",
   email_admin: "admin@exemplo.com",
-  chave_licenca: "TRACKER-CHAVE-DE-TESTE-12345",
+  email_ativacao: "cliente@exemplo.com",
 };
 
 const secrets = {
@@ -29,9 +29,18 @@ describe("encha-tracker — schema", () => {
     expect(enchaTracker.schema.safeParse(valuesValidos).success).toBe(true);
   });
 
-  it("recusa sem chave_licenca", () => {
-    const { chave_licenca: _omit, ...semChave } = valuesValidos;
-    expect(enchaTracker.schema.safeParse(semChave).success).toBe(false);
+  // Ciclo D (fechamento da instalação) — chave_licenca deixou de ser
+  // pedida ao cliente; email_ativacao é o único campo de licenciamento
+  // obrigatório (installer.ts troca o e-mail por uma chave via Console
+  // antes de qualquer outra coisa).
+  it("recusa sem email_ativacao", () => {
+    const { email_ativacao: _omit, ...semEmail } = valuesValidos;
+    expect(enchaTracker.schema.safeParse(semEmail).success).toBe(false);
+  });
+
+  it("aceita SEM chave_licenca — é opcional (injetada por installer.ts depois da ativação)", () => {
+    expect(enchaTracker.schema.safeParse(valuesValidos).success).toBe(true);
+    expect("chave_licenca" in valuesValidos).toBe(false);
   });
 
   it("recusa domínio inválido", () => {
@@ -116,6 +125,35 @@ describe("encha-tracker — registryAuth.images (mutação M5)", () => {
   it("registryAuth.licenseField é 'chave_licenca', e ela está em transientFields", () => {
     expect(enchaTracker.registryAuth!.licenseField).toBe("chave_licenca");
     expect(enchaTracker.transientFields).toContain("chave_licenca");
+  });
+});
+
+describe("encha-tracker — ativação só por e-mail (Ciclo D, fechamento da instalação)", () => {
+  // Mutação M1 (a mais importante do ciclo) — nenhum campo de chave/token
+  // pode aparecer no wizard. `fields` é a fonte usada pelo componente do
+  // wizard para renderizar inputs — se um campo de licença voltar a
+  // aparecer aqui, o cliente volta a ver um token que não tem em mãos.
+  it("nenhum campo de fields expõe chave/token de licença", () => {
+    for (const f of enchaTracker.fields) {
+      expect(f.name).not.toBe("chave_licenca");
+      expect(f.label.toLowerCase()).not.toMatch(/chave|token/);
+    }
+  });
+
+  it("email_ativacao é o único campo de licenciamento visível, do tipo email", () => {
+    const campo = enchaTracker.fields.find((f) => f.name === "email_ativacao");
+    expect(campo).toBeDefined();
+    expect(campo?.kind).toBe("email");
+  });
+
+  it("chave_licenca está em transientFields — nunca é persistida mesmo se algum dia voltar a ser digitável", () => {
+    expect(enchaTracker.transientFields).toContain("chave_licenca");
+    expect(enchaTracker.transientFields).toContain("email_ativacao");
+  });
+
+  it("emailActivation.sourceField é o campo visível (email_ativacao), targetField é a chave interna (chave_licenca)", () => {
+    expect(enchaTracker.emailActivation?.sourceField).toBe("email_ativacao");
+    expect(enchaTracker.emailActivation?.targetField).toBe("chave_licenca");
   });
 });
 
