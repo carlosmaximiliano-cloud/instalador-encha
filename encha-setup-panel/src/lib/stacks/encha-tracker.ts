@@ -93,6 +93,13 @@ export const enchaTracker: StackDefinition = {
   // postgres: SEM owner — a imagem postgres:16-alpine ajusta o dono dela
   // sozinha no boot, mesmo tratamento de enchat_postgres em enchat.ts.
   hostDirs: ["/var/enchat/tracker-postgres"],
+  // Ciclo 27 — o sidecar tracker-updater grava TRACKER_STATE_FILE
+  // (/data/estado.json: histórico de update/rollback que a SPA mostra) e
+  // até agora não tinha volume nenhum: o arquivo morria no primeiro
+  // restart do container. installer.ts cria este volume via Portainer API
+  // antes do deploy (mesmo mecanismo de redis_data etc.), preservando o
+  // estado em reinstall.
+  externalVolumes: ["encha_tracker_updater_data"],
   transientFields: ["chave_licenca", "email_ativacao"],
   // Sem `updatableImages` — o Tracker tem seu PRÓPRIO botão de atualizar
   // dentro do produto (sidecar tracker-updater, Ciclo 19/19b), que já lida
@@ -172,6 +179,7 @@ export const enchaTracker: StackDefinition = {
   generateYaml(values, secrets, ctx) {
     const v = values as z.infer<typeof schema>;
     if (!ctx.release) throw new Error("ctx.release ausente em generateYaml — bug no installer.");
+    if (!ctx.fingerprint) throw new Error("ctx.fingerprint ausente em generateYaml — bug no installer.");
     const net = ctx.networkName;
     const san = (x: unknown) => String(x ?? "").replace(/[`"\n\r]/g, "");
     const domain = san(v.dominio_tracker);
@@ -236,10 +244,12 @@ services:
       - encha_tracker_net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - encha_tracker_updater_data:/data
     environment:
       TRACKER_UPDATER_TOKEN: "${secrets.updater_token}"
       TRACKER_LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       TRACKER_LICENSE_KEY: "${san(v.chave_licenca)}"
+      TRACKER_FINGERPRINT: "${san(ctx.fingerprint)}"
       TRACKER_CANAL: "${CANAL_TRACKER}"
       TRACKER_IMAGEM_PADRAO: "${imageRepo}"
       TRACKER_SWARM_SERVICE: "encha_tracker_app"
@@ -271,6 +281,11 @@ services:
       placement:
         constraints:
           - node.role == manager
+
+volumes:
+  encha_tracker_updater_data:
+    external: true
+    name: encha_tracker_updater_data
 
 networks:
   ${net}:

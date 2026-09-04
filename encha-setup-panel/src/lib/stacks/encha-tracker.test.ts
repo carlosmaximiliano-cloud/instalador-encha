@@ -80,6 +80,15 @@ describe("encha-tracker — appHostname (Ciclo 20)", () => {
   });
 });
 
+// Ciclo 27 — memória do sidecar tracker-updater. installer.ts cria este
+// volume via Portainer API antes do deploy (mesmo mecanismo de redis_data
+// etc. em outras stacks), preservando estado.json em reinstall.
+describe("encha-tracker — externalVolumes (Ciclo 27)", () => {
+  it("é exatamente ['encha_tracker_updater_data']", () => {
+    expect(enchaTracker.externalVolumes).toEqual(["encha_tracker_updater_data"]);
+  });
+});
+
 describe("encha-tracker — generateYaml", () => {
   const yaml = enchaTracker.generateYaml(valuesValidos, secrets, ctxBase);
 
@@ -120,6 +129,34 @@ describe("encha-tracker — generateYaml", () => {
 
   it("lança sem ctx.release", () => {
     expect(() => enchaTracker.generateYaml(valuesValidos, secrets, { ...ctxBase, release: undefined })).toThrow();
+  });
+
+  // Ciclo 27 — o Console exige `fingerprint` em /tracker/registry-auth (sem
+  // "antes de ativar" como em /tracker/ativar). A única fonte confiável é o
+  // painel (ctx.fingerprint, calculado por installer.ts via
+  // getOrCreateMachineId), então generateYaml recusa gerar o compose sem
+  // ele — mesmo padrão de guarda de ctx.release.
+  it("lança sem ctx.fingerprint (undefined)", () => {
+    expect(() => enchaTracker.generateYaml(valuesValidos, secrets, { ...ctxBase, fingerprint: undefined })).toThrow();
+  });
+
+  // Mutação M5 — generateYaml não pode aceitar fingerprint vazio em
+  // silêncio: "" passaria pelo `if (!ctx.fingerprint)` só se a guarda for
+  // removida ou trocada por uma checagem mais fraca (ex.: `=== undefined`).
+  it("lança sem ctx.fingerprint (string vazia)", () => {
+    expect(() => enchaTracker.generateYaml(valuesValidos, secrets, { ...ctxBase, fingerprint: "" })).toThrow();
+  });
+
+  // Mutação M1 (a mais importante do ciclo) e M2 — o serviço `updater`
+  // precisa carregar TRACKER_FINGERPRINT (pro C28 chamar
+  // /tracker/registry-auth) E ter memória persistente (volume /data,
+  // declarado external:true no bloco top-level) — sem isso estado.json
+  // some no primeiro restart do container.
+  it("o serviço updater ganha TRACKER_FINGERPRINT, o volume /data montado, e o bloco top-level volumes é external", () => {
+    const yaml = enchaTracker.generateYaml(valuesValidos, secrets, ctxBase);
+    expect(yaml).toContain(`TRACKER_FINGERPRINT: "${ctxBase.fingerprint}"`);
+    expect(yaml).toContain("- encha_tracker_updater_data:/data");
+    expect(yaml).toMatch(/\nvolumes:\n {2}encha_tracker_updater_data:\n {4}external: true\n {4}name: encha_tracker_updater_data\n/);
   });
 
   it("sanitiza o domínio contra injeção de YAML/label (aspas, crase, quebra de linha)", () => {
