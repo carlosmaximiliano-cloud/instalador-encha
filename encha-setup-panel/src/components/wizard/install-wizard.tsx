@@ -23,7 +23,6 @@ type Field = {
 };
 
 type PairingSpecUI = { targetField: string; sessionField: string; group?: string };
-type EmailActivationSpecUI = { targetField: string; group?: string };
 
 type StackMeta = {
   id: string;
@@ -32,7 +31,6 @@ type StackMeta = {
   fields: Field[];
   postInstallNotes?: string[];
   pairing?: PairingSpecUI | null;
-  emailActivation?: EmailActivationSpecUI | null;
 };
 
 type Props = {

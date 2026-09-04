@@ -3,13 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 // Ciclo 20: primeiro test runner deste repositório — antes só havia `tsc
-// --noEmit`. Ambiente padrão "node": a maioria dos testes é lógica de
-// servidor (fingerprint, geração de YAML, validação de diretórios), sem
-// DOM nenhum. Ciclo 20b acrescenta um componente React
-// (tracker-email-activation.tsx) — o teste dele tem seu PRÓPRIO
-// `// @vitest-environment jsdom` no topo do arquivo, não muda o default
-// global (jsdom em todo teste seria mais lento e desnecessário pros
-// outros).
+// --noEmit`. Ambiente padrão "node": todos os testes são lógica de
+// servidor (fingerprint, geração de YAML, validação de diretórios,
+// orquestração de installStack), sem DOM nenhum — nenhum teste deste
+// repositório usa `// @vitest-environment jsdom` hoje (o único que usava,
+// do componente TrackerEmailActivation, foi removido no Ciclo D junto com
+// o componente).
 export default defineConfig({
   plugins: [react()],
   resolve: {
