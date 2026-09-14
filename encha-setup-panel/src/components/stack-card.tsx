@@ -11,6 +11,7 @@ import {
   PencilRuler, Activity, Mail, Loader2, ArrowUpCircle,
 } from "lucide-react";
 import { useDict } from "@/lib/i18n/use-dict";
+import { useLocale } from "./locale-provider";
 import { stackCardText } from "./stack-card.i18n";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -70,6 +71,7 @@ export function StackCard({
   updateError?: string;
 }) {
   const t = useDict(stackCardText);
+  const { locale } = useLocale();
   const Icon = ICONS[stack.icon] ?? Shield;
   const [logoOk, setLogoOk] = useState(true);
   const missingDeps = stack.dependsOn.filter((d) => !readySet.has(d));
@@ -143,7 +145,7 @@ export function StackCard({
               )}
             </CardTitle>
             <CardDescription className="text-xs mt-1">
-              {getCategoryLabel(stack.category)}
+              {getCategoryLabel(stack.category, locale)}
             </CardDescription>
           </div>
         </div>

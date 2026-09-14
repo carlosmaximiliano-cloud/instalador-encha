@@ -13,10 +13,12 @@ import { BannerAd } from "./banner-ad";
 import { UpdateChecker } from "./update-checker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { useDict } from "@/lib/i18n/use-dict";
+import { useLocale } from "./locale-provider";
 import { sidebarText } from "./sidebar.i18n";
 
 export function Sidebar() {
   const t = useDict(sidebarText);
+  const { locale } = useLocale();
   const navLinks = [
     { href: "/catalog", label: t.catalog, icon: Boxes },
     { href: "/stacks", label: t.installed, icon: ListChecks },
@@ -115,7 +117,7 @@ export function Sidebar() {
                         : "text-warm-600 dark:text-warm-400 hover:bg-glass-strong hover:text-foreground"
                     )}
                   >
-                    <span className="truncate">{getCategoryLabel(slug)}</span>
+                    <span className="truncate">{getCategoryLabel(slug, locale)}</span>
                     <span className="text-[10px] opacity-60 tabular-nums">{count}</span>
                   </Link>
                 );

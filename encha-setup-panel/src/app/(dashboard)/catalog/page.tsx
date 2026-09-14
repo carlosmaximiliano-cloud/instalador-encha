@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { getCategoryLabel } from "@/lib/category-labels";
 import { Search, Boxes, X, AlertTriangle } from "lucide-react";
 import { useDict } from "@/lib/i18n/use-dict";
+import { useLocale } from "@/components/locale-provider";
 import { catalogPageText } from "./page.i18n";
 
 const MAX_DEPLOY_MS = 10 * 60 * 1000;
@@ -39,6 +40,7 @@ export default function CatalogPage() {
 
 function CatalogPageInner() {
   const t = useDict(catalogPageText);
+  const { locale } = useLocale();
   const search_params = useSearchParams();
   const router = useRouter();
   const category = search_params.get("category");
@@ -177,7 +179,7 @@ function CatalogPageInner() {
     router.push("/catalog");
   }
 
-  const categoryLabel = category ? getCategoryLabel(category) : null;
+  const categoryLabel = category ? getCategoryLabel(category, locale) : null;
 
   return (
     <div className="space-y-6">
