@@ -164,31 +164,40 @@ export type EmailActivationSpec = {
   group?: string;
 };
 
+/**
+ * Todas as categorias possíveis de uma stack — fonte da verdade única, usada
+ * tanto pelo schema de `StackDefinition.category` abaixo quanto pelo rótulo
+ * exibido na UI (ver category-labels.ts, que exige um rótulo por categoria
+ * daqui via `Record<StackCategory, string>` — o TS acusa erro se a lista
+ * divergir).
+ */
+export type StackCategory =
+  | "infra"
+  | "database"
+  | "messaging"
+  | "automation"
+  | "ai"
+  | "crm"
+  | "cms"
+  | "communication"
+  | "marketing"
+  | "scheduling"
+  | "storage"
+  | "monitoring"
+  | "erp"
+  | "analytics"
+  | "auth"
+  | "chatbot"
+  | "media"
+  | "remote"
+  | "design"
+  | "admin";
+
 export type StackDefinition = {
   id: string;
   name: string;
   description: string;
-  category:
-    | "infra"
-    | "database"
-    | "messaging"
-    | "automation"
-    | "ai"
-    | "crm"
-    | "cms"
-    | "communication"
-    | "marketing"
-    | "scheduling"
-    | "storage"
-    | "monitoring"
-    | "erp"
-    | "analytics"
-    | "auth"
-    | "chatbot"
-    | "media"
-    | "remote"
-    | "design"
-    | "admin";
+  category: StackCategory;
   icon: string;
   dependsOn: string[];
   optionNumber: number;

@@ -4,6 +4,15 @@
 # e package.json. Fluxo de publicação documentado em encha-setup-panel/CLAUDE.md.
 ENCHA_VERSION="0.2.13"
 
+# Branch de onde este instalador baixa secondary.sh e a fonte do painel
+# (download_secondary, preparar_fonte_painel). SEMPRE "main" em produção —
+# nunca mude o padrão aqui. Existe só para permitir testar uma branch de
+# desenvolvimento numa VPS real antes de publicar: exporte
+# ENCHA_SRC_BRANCH=minha-branch antes de rodar o curl. Não afeta
+# atualizar_fonte_painel() em secondary.sh, que usa a tag da versão já
+# publicada (ver ali).
+ENCHA_SRC_BRANCH="${ENCHA_SRC_BRANCH:-main}"
+
 # Exportado ANTES de qualquer apt/docker-ce install, inclusive dentro de
 # secondary.sh (é `source`ado neste mesmo shell — main.sh:710 — então herda
 # estas env vars sem precisar prefixar cada chamada individualmente). Sem
@@ -131,6 +140,59 @@ status_info() {
 
 status_warning() {
     echo -e "${amarelo}${negrito}⚠️  WARNING${reset} ${amarelo}│${reset} $1"
+}
+
+################################################################################
+# i18n — infraestrutura de tradução (Fase 0)
+#
+# Nada aqui muda o que o instalador mostra hoje: as ~1.500 linhas de echo/
+# read -p existentes continuam com o texto em português embutido, sem passar
+# por t(). Essa camada existe pronta para a Fase 1 (pergunta de idioma) e a
+# Fase 4 (tradução do instalador inteiro), que migram as strings uma função
+# por vez — ver i18n/GLOSSARY.md e o plano.
+#
+# ENCHA_LANG: "pt" (default), "en" ou "es". Não confundir com ENCHA_SRC_BRANCH
+# acima (aquele escolhe DE ONDE baixar o código; este escolhe EM QUE IDIOMA
+# falar). Setável por env var só para teste manual antes da Fase 1 existir de
+# verdade (pergunta interativa); em produção, a Fase 1 é quem define isso.
+ENCHA_LANG="${ENCHA_LANG:-pt}"
+
+# Sem "=()" de propósito: main.sh fica em memória junto com secondary.sh (é
+# `source`ado no mesmo shell, main.sh:~815) — se os dois usassem "declare -A
+# MSG_PT=()", o segundo `declare` apagaria tudo que o primeiro já tivesse
+# posto no catálogo. "declare -A NOME" sem atribuição é idempotente: cria se
+# não existir, não mexe se já existir.
+declare -A MSG_PT
+declare -A MSG_EN
+declare -A MSG_ES
+
+# t chave [args...] — resolve `chave` no catálogo de ENCHA_LANG, caindo para
+# MSG_PT e por fim para a própria chave se não encontrar em lugar nenhum
+# (nunca quebra por chave faltando — mostra algo em vez de nada). args viram
+# argumentos posicionais de `printf`, então uma entrada do catálogo com "%s"
+# recebe variáveis sem depender de interpolação de string do bash — o mesmo
+# texto serve pt/en/es mesmo quando a ordem das palavras muda.
+#
+# Exemplo de entrada no catálogo (Fase 1 em diante):
+#   MSG_PT[prompt_escolher_idioma]="Escolha o idioma (1=Português, 2=English, 3=Español): "
+#   MSG_EN[prompt_escolher_idioma]="Choose your language (1=Português, 2=English, 3=Español): "
+# Uso: echo -ne "$(t prompt_escolher_idioma)"
+t() {
+    local chave="$1"; shift
+    local template
+    # case explícito, não nameref dinâmico: um ENCHA_LANG não catalogado
+    # (typo, idioma futuro ainda sem catálogo) tem que cair em pt sempre,
+    # mesmo que o script rode sob `set -u` em algum ponto.
+    case "$ENCHA_LANG" in
+        en) template="${MSG_EN[$chave]:-${MSG_PT[$chave]:-$chave}}" ;;
+        es) template="${MSG_ES[$chave]:-${MSG_PT[$chave]:-$chave}}" ;;
+        *)  template="${MSG_PT[$chave]:-$chave}" ;;
+    esac
+    if [ "$#" -gt 0 ]; then
+        printf -- "$template" "$@"
+    else
+        printf '%s' "$template"
+    fi
 }
 
 # Logo animado do Encha AI
@@ -490,8 +552,9 @@ coletar_inputs_so_painel() {
     pass_portainer=""
     arquivo_portainer="/root/dados_vps/dados_portainer"
     if [ -f "$arquivo_portainer" ]; then
-        detectado_user=$(grep "Usuario: " "$arquivo_portainer" | awk -F"Usuario: " '{print $2}' | tr -d '\r')
-        detectado_senha=$(grep "Senha: " "$arquivo_portainer" | awk -F"Senha: " '{print $2}' | tr -d '\r')
+        # Chave nova (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
+        detectado_user=$(grep -E "^(Username|Usuario): " "$arquivo_portainer" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
+        detectado_senha=$(grep -E "^(Password|Senha): " "$arquivo_portainer" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
         if [[ -n "$detectado_user" && -n "$detectado_senha" && "$detectado_user" != *"criar"* ]]; then
             echo -e "${verde}✓ Credenciais do Portainer detectadas — usuário: ${detectado_user}${reset}"
             echo -ne "${ciano}2/4 Usar essas credenciais? (Y/n): ${reset}" && read -r usar_detectado
@@ -696,9 +759,9 @@ download_secondary() {
 
     [ -f SetupEnchaAI ] && rm -f SetupEnchaAI
 
-    status_info "Baixando secondary.sh da fonte oficial..."
+    status_info "Baixando secondary.sh da fonte oficial (branch ${ENCHA_SRC_BRANCH})..."
     if curl -fsSL --retry 3 --connect-timeout 10 \
-        https://raw.githubusercontent.com/enchaaluno/setupteste/main/secondary.sh \
+        "https://raw.githubusercontent.com/enchaaluno/setupteste/${ENCHA_SRC_BRANCH}/secondary.sh" \
         -o SetupEnchaAI; then
         chmod +x SetupEnchaAI
         status_ok "Script baixado com sucesso"
@@ -721,13 +784,13 @@ preparar_fonte_painel() {
     # reescrita de histórico: não depende de ancestral comum nem de origin/main).
     # Se qualquer passo falhar, cai no re-clone fresco abaixo.
     if [[ -d /root/encha-setup-panel/.git ]] \
-        && git -C /root/encha-setup-panel fetch --depth 1 origin main >/dev/null 2>&1 \
+        && git -C /root/encha-setup-panel fetch --depth 1 origin "$ENCHA_SRC_BRANCH" >/dev/null 2>&1 \
         && git -C /root/encha-setup-panel reset --hard FETCH_HEAD >/dev/null 2>&1; then
         status_info "Repositório atualizado (fetch --depth 1 + reset)."
     else
-        status_info "Clonando enchaaluno/setupteste..."
+        status_info "Clonando enchaaluno/setupteste (branch ${ENCHA_SRC_BRANCH})..."
         rm -rf /root/encha-setup-panel /tmp/_setupteste_clone
-        git clone --depth 1 \
+        git clone --depth 1 --branch "$ENCHA_SRC_BRANCH" \
             https://github.com/enchaaluno/setupteste.git \
             /tmp/_setupteste_clone >/dev/null 2>&1 \
             || { status_fail "Falha no git clone"; exit 1; }

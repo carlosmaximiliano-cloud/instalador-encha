@@ -1,0 +1,64 @@
+name: test
+
+# Roda em todo push e PR — checagens rápidas, sem secrets, para pegar erro
+# antes do merge em main (que é o que build.yml builda e registra no
+# Monitor). Ver plano de i18n em .claude/plans e i18n/GLOSSARY.md.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Mesma guarda que build.yml: o repo tem um espelho
+  # (carlosmaximiliano-cloud/instalador-encha) que recebe os mesmos pushes —
+  # sem isso, todo push roda este workflow duas vezes.
+  bash:
+    if: github.repository == 'enchaaluno/setupteste'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Gate real: sintaxe tem que ser válida. Roda com o bash do runner
+      # (Ubuntu), a mesma família de distro do alvo de produção (Debian).
+      - name: bash -n (sintaxe)
+        run: |
+          bash -n main.sh
+          bash -n secondary.sh
+
+      # Informativo, não bloqueante: o script tem ~21k linhas com débito
+      # técnico pré-existente (achados de severidade "error" que já existiam
+      # antes deste workflow, ex. SC1128 num shebang que nunca é executado
+      # diretamente). Travar nisso hoje bloquearia todo PR por coisa alheia
+      # à mudança. Revisitar quando o débito for endereçado.
+      - name: shellcheck (informativo)
+        continue-on-error: true
+        run: |
+          sudo apt-get update -y > /dev/null
+          sudo apt-get install -y shellcheck > /dev/null
+          shellcheck main.sh secondary.sh || true
+
+      - name: paridade de tradução (MSG_PT vs MSG_EN/MSG_ES)
+        run: bash i18n/check-parity.sh
+
+  painel:
+    if: github.repository == 'enchaaluno/setupteste'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: encha-setup-panel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: encha-setup-panel/package-lock.json
+
+      - run: npm ci
+
+      - name: type check
+        run: npx tsc --noEmit
+
+      - name: testes
+        run: npm test

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getCategoryLabel } from "@/lib/category-labels";
 import {
   Shield, Workflow, MessageCircle, Headphones, HardDrive, Bot, LayoutDashboard,
   Brain, TableProperties, DatabaseZap, Database, CheckCircle2, ExternalLink,
@@ -32,29 +33,6 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   pencil: PencilRuler,
   activity: Activity,
   mail: Mail,
-};
-
-const CATEGORY_LABEL: Record<string, string> = {
-  infra: "Infraestrutura",
-  database: "Banco de dados",
-  messaging: "Mensageria",
-  automation: "Automação",
-  ai: "IA",
-  crm: "CRM & Suporte",
-  cms: "CMS & No-Code",
-  communication: "Comunicação",
-  marketing: "Marketing & Formulários",
-  scheduling: "Agendamento",
-  storage: "Armazenamento",
-  monitoring: "Monitoramento & Infra",
-  erp: "ERP & Negócios",
-  analytics: "Analytics & BI",
-  auth: "Autenticação",
-  chatbot: "Chatbots",
-  media: "Mídia & Streaming",
-  remote: "Acesso Remoto",
-  design: "Design & Whiteboard",
-  admin: "Admin",
 };
 
 export type CatalogEntry = {
@@ -162,7 +140,7 @@ export function StackCard({
               )}
             </CardTitle>
             <CardDescription className="text-xs mt-1">
-              {CATEGORY_LABEL[stack.category] ?? stack.category}
+              {getCategoryLabel(stack.category)}
             </CardDescription>
           </div>
         </div>

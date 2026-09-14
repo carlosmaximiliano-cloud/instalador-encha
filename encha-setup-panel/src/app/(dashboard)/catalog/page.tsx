@@ -5,6 +5,7 @@ import { StackCard, type CatalogEntry } from "@/components/stack-card";
 import { InstallWizard } from "@/components/wizard/install-wizard";
 import { SshInstallHint } from "@/components/ssh-install-hint";
 import { Input } from "@/components/ui/input";
+import { getCategoryLabel } from "@/lib/category-labels";
 import { Search, Boxes, X, AlertTriangle } from "lucide-react";
 
 const MAX_DEPLOY_MS = 10 * 60 * 1000;
@@ -24,28 +25,6 @@ type Field = {
 type PairingSpecUI = { targetField: string; sessionField: string; group?: string };
 
 type FullStack = CatalogEntry & { fields?: Field[]; pairing?: PairingSpecUI | null };
-
-const CATEGORY_LABEL: Record<string, string> = {
-  infra: "Infraestrutura",
-  database: "Banco de dados",
-  messaging: "Mensageria",
-  automation: "Automação",
-  ai: "IA",
-  crm: "CRM & Suporte",
-  cms: "CMS & No-Code",
-  communication: "Comunicação",
-  marketing: "Marketing & Formulários",
-  scheduling: "Agendamento",
-  storage: "Armazenamento",
-  monitoring: "Monitoramento & Infra",
-  erp: "ERP & Negócios",
-  analytics: "Analytics & BI",
-  auth: "Autenticação",
-  chatbot: "Chatbots",
-  media: "Mídia & Streaming",
-  remote: "Acesso Remoto",
-  design: "Design & Whiteboard",
-};
 
 export default function CatalogPage() {
   return (
@@ -192,7 +171,7 @@ function CatalogPageInner() {
     router.push("/catalog");
   }
 
-  const categoryLabel = category ? CATEGORY_LABEL[category] ?? category : null;
+  const categoryLabel = category ? getCategoryLabel(category) : null;
 
   return (
     <div className="space-y-6">

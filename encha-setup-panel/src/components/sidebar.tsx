@@ -6,32 +6,11 @@ import {
   Boxes, ListChecks, ScrollText, LogOut, ChevronDown, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CATEGORY_ORDER, getCategoryLabel } from "@/lib/category-labels";
 import { ThemeToggle } from "./theme-toggle";
 import { BannerAd } from "./banner-ad";
 import { UpdateChecker } from "./update-checker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-
-const CATEGORY_ORDER: { slug: string; label: string }[] = [
-  { slug: "infra", label: "Infraestrutura" },
-  { slug: "database", label: "Banco de dados" },
-  { slug: "messaging", label: "Mensageria" },
-  { slug: "automation", label: "Automação" },
-  { slug: "ai", label: "IA" },
-  { slug: "crm", label: "CRM & Suporte" },
-  { slug: "cms", label: "CMS & No-Code" },
-  { slug: "communication", label: "Comunicação" },
-  { slug: "marketing", label: "Marketing" },
-  { slug: "scheduling", label: "Agendamento" },
-  { slug: "storage", label: "Armazenamento" },
-  { slug: "monitoring", label: "Monitoramento" },
-  { slug: "erp", label: "ERP" },
-  { slug: "analytics", label: "Analytics" },
-  { slug: "auth", label: "Autenticação" },
-  { slug: "chatbot", label: "Chatbots" },
-  { slug: "media", label: "Mídia" },
-  { slug: "remote", label: "Acesso Remoto" },
-  { slug: "design", label: "Design" },
-];
 
 const navLinks = [
   { href: "/catalog", label: "Catálogo", icon: Boxes },
@@ -118,14 +97,14 @@ export function Sidebar() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="mt-1 ml-2 pl-3 border-l border-glass-border space-y-0.5">
-              {CATEGORY_ORDER.map((c) => {
-                const count = counts[c.slug] ?? 0;
+              {CATEGORY_ORDER.map((slug) => {
+                const count = counts[slug] ?? 0;
                 if (count === 0) return null;
-                const isActive = activeCategory === c.slug;
+                const isActive = activeCategory === slug;
                 return (
                   <Link
-                    key={c.slug}
-                    href={`/catalog?category=${c.slug}`}
+                    key={slug}
+                    href={`/catalog?category=${slug}`}
                     className={cn(
                       "flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-xs transition-all",
                       isActive
@@ -133,7 +112,7 @@ export function Sidebar() {
                         : "text-warm-600 dark:text-warm-400 hover:bg-glass-strong hover:text-foreground"
                     )}
                   >
-                    <span className="truncate">{c.label}</span>
+                    <span className="truncate">{getCategoryLabel(slug)}</span>
                     <span className="text-[10px] opacity-60 tabular-nums">{count}</span>
                   </Link>
                 );

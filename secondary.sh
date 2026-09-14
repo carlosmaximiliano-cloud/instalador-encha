@@ -53,6 +53,41 @@ branco='\033[0;90m'   # Branco brilhante
 reset="\033[0m"
 ciano="\033[1;36m"
 amarelo_escuro='\033[0;33m'
+
+################################################################################
+# i18n — infraestrutura de tradução (Fase 0)
+#
+# Mesmo mecanismo de main.sh (não compartilham arquivo — cada um é baixado
+# sozinho via HTTP, então cada um carrega sua própria cópia). Nada aqui muda o
+# que o instalador mostra hoje: as strings existentes continuam em português,
+# sem passar por t(), até a Fase 4. Ver i18n/GLOSSARY.md e o plano.
+#
+# Quando secondary.sh é `source`ado por main.sh (mesmo processo), ENCHA_LANG
+# já chega herdado sem precisar de export. Quando roda sozinho
+# (`bash /root/SetupEnchaAI`, processo novo), a Fase 1 lê
+# /root/dados_vps/encha_locale aqui embaixo; até lá, o default é pt.
+ENCHA_LANG="${ENCHA_LANG:-pt}"
+
+declare -A MSG_PT=()
+declare -A MSG_EN=()
+declare -A MSG_ES=()
+
+# Mesma função de main.sh — ver comentário lá para o contrato completo.
+t() {
+    local chave="$1"; shift
+    local template
+    case "$ENCHA_LANG" in
+        en) template="${MSG_EN[$chave]:-${MSG_PT[$chave]:-$chave}}" ;;
+        es) template="${MSG_ES[$chave]:-${MSG_PT[$chave]:-$chave}}" ;;
+        *)  template="${MSG_PT[$chave]:-$chave}" ;;
+    esac
+    if [ "$#" -gt 0 ]; then
+        printf -- "$template" "$@"
+    else
+        printf '%s' "$template"
+    fi
+}
+
 banner(){
   clear
   clear
@@ -1476,8 +1511,12 @@ dados() {
         exit 1
     fi
 
-    nome_servidor=$(grep "Nome do Servidor:" "$dados_vps" | awk -F': ' '{print $2}')
-    nome_rede_interna=$(grep "Rede interna:" "$dados_vps" | awk -F': ' '{print $2}')
+    # Aceita a chave nova em inglês e a antiga em português (frota já
+    # instalada tem dados_vps com a chave antiga para sempre — esse arquivo só
+    # é regravado numa instalação completa nova, nunca por "Atualizar"). Ver
+    # i18n/GLOSSARY.md.
+    nome_servidor=$(grep -E "^(Server Name|Nome do Servidor):" "$dados_vps" | head -1 | awk -F': ' '{print $2}')
+    nome_rede_interna=$(grep -E "^(Internal Network|Rede interna):" "$dados_vps" | head -1 | awk -F': ' '{print $2}')
 }
 
 
@@ -1590,11 +1629,14 @@ stack_editavel(){
         return 1
     fi
 
-    # Extrai os dados limpando caracteres invisíveis (\r) que causam erros
-    USUARIO=$(grep "Usuario: " "$arquivo" | awk -F "Usuario: " '{print $2}' | tr -d '\r')
-    SENHA=$(grep "Senha: " "$arquivo" | awk -F "Senha: " '{print $2}' | tr -d '\r')
+    # Extrai os dados limpando caracteres invisíveis (\r) que causam erros.
+    # Aceita a chave nova em inglês e a antiga em português (ver
+    # i18n/GLOSSARY.md) — o separador do awk é o ": " genérico, não o texto
+    # da chave, então funciona com qualquer uma das duas que o grep casar.
+    USUARIO=$(grep -E "^(Username|Usuario): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
+    SENHA=$(grep -E "^(Password|Senha): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
     # Remove o https:// para limpar a URL
-    PORTAINER_URL=$(grep "Dominio: " "$arquivo" | awk -F "Dominio: " '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
+    PORTAINER_URL=$(grep -E "^(Domain|Dominio): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
 
     # Verifica se os dados são válidos
     if [[ "$USUARIO" == *"Precisa criar"* ]]; then
@@ -1711,10 +1753,11 @@ registrar_registry_portainer() {
         return 1
     fi
 
+    # Chave nova em inglês ou antiga em português — ver i18n/GLOSSARY.md.
     local usuario senha portainer_url token
-    usuario=$(grep "Usuario: " "$arquivo" | awk -F "Usuario: " '{print $2}' | tr -d '\r')
-    senha=$(grep "Senha: " "$arquivo" | awk -F "Senha: " '{print $2}' | tr -d '\r')
-    portainer_url=$(grep "Dominio: " "$arquivo" | awk -F "Dominio: " '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
+    usuario=$(grep -E "^(Username|Usuario): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
+    senha=$(grep -E "^(Password|Senha): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
+    portainer_url=$(grep -E "^(Domain|Dominio): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
 
     local json_payload
     json_payload=$(jq -n --arg u "$usuario" --arg p "$senha" '{username: $u, password: $p}')
@@ -2194,8 +2237,9 @@ verificar_container_redis_formacao_encha() {
 
 pegar_user_senha_rabbitmq() {
     if [ -f "/root/dados_vps/dados_rabbitmq" ]; then
-        user_rabbit_mqs=$(grep "Usuario:" "/root/dados_vps/dados_rabbitmq" | cut -d' ' -f2)
-        senha_rabbit_mqs=$(grep "Senha:" "/root/dados_vps/dados_rabbitmq" | cut -d' ' -f2)
+        # Chave nova (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
+        user_rabbit_mqs=$(grep -E "^(Username|Usuario):" "/root/dados_vps/dados_rabbitmq" | head -1 | cut -d' ' -f2)
+        senha_rabbit_mqs=$(grep -E "^(Password|Senha):" "/root/dados_vps/dados_rabbitmq" | head -1 | cut -d' ' -f2)
     else
         echo "Arquivo de dados do RabbitMQ não encontrado. É necessário instalar o RabbitMQ primeiro."
         ferramenta_rabbitmq
@@ -2295,10 +2339,10 @@ ferramenta_traefik_e_portainer() {
   mkdir -p dados_vps; cd dados_vps
   cat > dados_vps << EOL
 [DADOS DA VPS]
-Nome do Servidor: $nome_servidor
-Rede interna: $nome_rede_interna
-Email para SSL: $email_ssl
-Link do Portainer: $url_portainer
+Server Name: $nome_servidor
+Internal Network: $nome_rede_interna
+SSL Email: $email_ssl
+Portainer Link: $url_portainer
 EOL
   cd ~
 
@@ -2607,16 +2651,16 @@ EOL
   if [ "$CREDENCIAIS_APLICADAS" = true ]; then
     cat > dados_portainer <<EOL
 [ PORTAINER ]
-Dominio: https://$url_portainer
-Usuario: $USER_PORTAINER_FINAL
-Senha: $pass_portainer
+Domain: https://$url_portainer
+Username: $USER_PORTAINER_FINAL
+Password: $pass_portainer
 Token: $TOKEN_PORTAINER_FINAL
 EOL
   else
     cat > dados_portainer <<EOL
 [ PORTAINER ]
-Dominio: https://$url_portainer
-Usuario: Criar manualmente.
+Domain: https://$url_portainer
+Username: Criar manualmente.
 EOL
   fi
   # NÃO usar 700 no diretório: o container do painel roda como uid 1001
@@ -2731,102 +2775,9 @@ wait_stack "postgres_postgres"
 echo ""
 }
 
-ferramenta_postgres() {
-
-## Ativa a função dados para pegar os dados da vps
-dados
-
-
-## Gerando uma senha aleatória para o Postgres
-senha_postgres=$(openssl rand -hex 16)
-
-## Criando a stack postgres.yaml
-cat > postgres.yaml <<EOL
-version: "3.7"
-services:
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
-  postgres:
-    image: postgres:14 ## Versão do postgres
-    command: >
-      postgres
-      -c max_connections=500
-      -c shared_buffers=512MB
-
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-    networks:
-      - $nome_rede_interna ## Nome da rede interna
-
-    ## Descomente as linhas abaixo para uso externo
-    #ports:
-    #  - 5432:5432
-
-    environment:
-      ## Senha do postgres 
-      - POSTGRES_PASSWORD=$senha_postgres
-
-      ## Timezone
-      - TZ=America/Sao_Paulo
-
-    deploy:
-      mode: replicated
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      resources:
-        limits:
-          cpus: "1"
-          memory: 1024M
-
-# ░█▀▀░█▀█░█▀▀░█░█░█▀█░░░░█▀█░▀█▀
-# ░█▀▀░█░█░█░░░█▀█░█▀█░░░░█▀█░░█░
-# ░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░░▀░▀░▀▀▀
-
-volumes:
-  postgres_data:
-    external: true
-    name: postgres_data
-
-networks:
-  $nome_rede_interna: ## Nome da rede interna
-    external: true
-    name: $nome_rede_interna ## Nome da rede interna
-EOL
-if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres criada com sucesso"
-else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres.\e[0m"
-fi
-STACK_NAME="postgres"
-stack_editavel #> /dev/null 2>&1
-
-cd dados_vps
-
-cat > dados_postgres <<EOL
-[ POSTGRES ]
-
-Dominio do postgres: postgres://postgres:5432
-
-Usuario: postgres
-
-Senha: $senha_postgres
-EOL
-
-cd
-cd
-
-## Espera 30 segundos
-wait_stack "postgres_postgres"
-
-echo ""
-}
+# Nota: existia uma segunda definição de ferramenta_postgres() idêntica a esta
+# logo abaixo (bug — a segunda vencia em silêncio, mascarando a primeira).
+# Removida na fundação de i18n (Fase 0); nenhum comportamento muda.
 
 ferramenta_mysql() {
   dados
@@ -2872,13 +2823,16 @@ EOL
   wait_stack mysql_mysql
 
   cd /root/dados_vps
+  # "Password:" já migrada para inglês porque pegar_senha_mysql_da_stack() lê
+  # essa chave de volta (formato de fio). As outras 3 linhas são só exibidas
+  # ao usuário, sem leitor — ficam em português até a Fase 4 (i18n/GLOSSARY.md).
   cat > dados_mysql <<EOL
 [ MYSQL ]
 
 Host: mysql
 Porta: 3306
 Usuario: root
-Senha: ${senha_mysql}
+Password: ${senha_mysql}
 EOL
 
   cd
@@ -2896,7 +2850,7 @@ verificar_container_mysql() {
 pegar_senha_mysql_da_stack() {
   while :; do
     if [ -f /root/dados_vps/dados_mysql ]; then
-      senha_mysql=$(grep "Senha:" /root/dados_vps/dados_mysql | awk -F': ' '{print $2}')
+      senha_mysql=$(grep -E "^(Password|Senha):" /root/dados_vps/dados_mysql | head -1 | awk -F': ' '{print $2}')
       break
     else
       echo "Aguardando arquivo de dados do MySQL..."
@@ -6460,12 +6414,15 @@ EOL
   wait_stack rabbitmq${1:+_$1}_rabbitmq${1:+_$1}
 
   cd /root/dados_vps
+  # "Username:"/"Password:" já migradas para inglês porque
+  # pegar_user_senha_rabbitmq() lê essas chaves de volta. As outras duas
+  # ficam em português até a Fase 4 (i18n/GLOSSARY.md).
   cat > dados_rabbitmq${1:+_$1} <<EOL
 [ RABBITMQ ]
 
 Dominio do Painel: https://${url_rabbitmq}
-Usuario: ${user_rabbitmq}
-Senha: ${pass_rabbitmq}
+Username: ${user_rabbitmq}
+Password: ${pass_rabbitmq}
 URL de Conexão: amqp://${user_rabbitmq}:${pass_rabbitmq}@rabbitmq:5672
 EOL
 
@@ -14972,13 +14929,16 @@ EOL
   wait_stack clickhouse${1:+_$1}_clickhouse${1:+_$1}
 
   cd /root/dados_vps
+  # "Username:"/"Password:" já migradas porque ferramenta_clickhouse() lê
+  # essas chaves de volta. "Dashboard do clickhouse:" fica em português até a
+  # Fase 4 (i18n/GLOSSARY.md).
   cat > dados_clickhouse${1:+_$1} <<EOL
 [ CLICKHOUSE ]
 
 Dashboard do clickhouse: https://$url_clickhouse/dashboard
 API: https://$url_clickhouse
-Usuario: $user_clickhouse
-Senha: $pass_clickhouse
+Username: $user_clickhouse
+Password: $pass_clickhouse
 
 EOL
 
@@ -15003,10 +14963,11 @@ ferramenta_langfuse() {
     local arquivo_dados="/root/dados_vps/dados_clickhouse"
 
     if [ -f "$arquivo_dados" ]; then
-        # Usando awk para extrair os dados de forma segura
+        # Usando awk para extrair os dados de forma segura. Chave nova
+        # (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
         API_CLICKHOUSE=$(awk '/API:/ {print $2}' "$arquivo_dados")
-        USUARIO_CLICKHOUSE=$(awk '/Usuario:/ {print $2}' "$arquivo_dados")
-        SENHA_CLICKHOUSE=$(awk '/Senha:/ {print $2}' "$arquivo_dados")
+        USUARIO_CLICKHOUSE=$(awk '/^(Username|Usuario):/ {print $2}' "$arquivo_dados")
+        SENHA_CLICKHOUSE=$(awk '/^(Password|Senha):/ {print $2}' "$arquivo_dados")
 
         # Verificação se as variáveis foram preenchidas
         if [ -z "$API_CLICKHOUSE" ] || [ -z "$USUARIO_CLICKHOUSE" ] || [ -z "$SENHA_CLICKHOUSE" ]; then
@@ -18182,10 +18143,10 @@ instalar_traefik_e_portainer() {
   mkdir -p dados_vps; cd dados_vps
   cat > dados_vps << EOL
 [DADOS DA VPS]
-Nome do Servidor: $nome_servidor
-Rede interna: $nome_rede_interna
-Email para SSL: $email_ssl
-Link do Portainer: $url_portainer
+Server Name: $nome_servidor
+Internal Network: $nome_rede_interna
+SSL Email: $email_ssl
+Portainer Link: $url_portainer
 EOL
   cd ~
 
@@ -18488,16 +18449,16 @@ EOL
   if [ "$CREDENCIAIS_APLICADAS" = true ]; then
     cat > dados_portainer <<EOL
 [ PORTAINER ]
-Dominio: https://$url_portainer
-Usuario: $USER_PORTAINER_FINAL
-Senha: $pass_portainer
+Domain: https://$url_portainer
+Username: $USER_PORTAINER_FINAL
+Password: $pass_portainer
 Token: $TOKEN_PORTAINER_FINAL
 EOL
   else
     cat > dados_portainer <<EOL
 [ PORTAINER ]
-Dominio: https://$url_portainer
-Usuario: Criar manualmente.
+Domain: https://$url_portainer
+Username: Criar manualmente.
 EOL
   fi
   # Ver o comentário equivalente em ferramenta_traefik_e_portainer — 700 no
@@ -19235,10 +19196,11 @@ ferramenta_webtop() {
   else
       # Fallback: Tenta ler manualmente se a função 'dados' não existir
       if [ -f ~/dados_vps/dados_portainer ]; then
-          # Gambiarra segura para ler o arquivo formatado do seu script
-          user_portainer=$(grep "Usuario:" ~/dados_vps/dados_portainer | cut -d' ' -f2)
-          pass_portainer=$(grep "Senha:" ~/dados_vps/dados_portainer | cut -d' ' -f2)
-          url_portainer=$(grep "Dominio:" ~/dados_vps/dados_portainer | cut -d'/' -f3)
+          # Gambiarra segura para ler o arquivo formatado do seu script.
+          # Chave nova (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
+          user_portainer=$(grep -E "^(Username|Usuario):" ~/dados_vps/dados_portainer | head -1 | cut -d' ' -f2)
+          pass_portainer=$(grep -E "^(Password|Senha):" ~/dados_vps/dados_portainer | head -1 | cut -d' ' -f2)
+          url_portainer=$(grep -E "^(Domain|Dominio):" ~/dados_vps/dados_portainer | head -1 | cut -d'/' -f3)
       fi
   fi
   # ---------------------------------------------
@@ -20462,8 +20424,9 @@ deploy_stack_painel_via_portainer() {
     if [ -z "$user_portainer" ] || [ -z "$pass_portainer" ]; then
         local arq="/root/dados_vps/dados_portainer"
         if [ -f "$arq" ]; then
-            user_portainer=${user_portainer:-$(grep "Usuario: " "$arq" | awk -F"Usuario: " '{print $2}' | tr -d '\r')}
-            pass_portainer=${pass_portainer:-$(grep "Senha: " "$arq" | awk -F"Senha: " '{print $2}' | tr -d '\r')}
+            # Chave nova (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
+            user_portainer=${user_portainer:-$(grep -E "^(Username|Usuario): " "$arq" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')}
+            pass_portainer=${pass_portainer:-$(grep -E "^(Password|Senha): " "$arq" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')}
         fi
     fi
     if [ -z "$user_portainer" ] || [ -z "$pass_portainer" ]; then

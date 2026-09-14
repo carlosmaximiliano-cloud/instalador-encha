@@ -18,7 +18,9 @@ const FALLBACK: VpsContext = {
 
 let cached: VpsContext | null = null;
 
-function parseDadosVps(content: string): Partial<VpsContext> {
+// Exportada para teste direto (função pura) — mesmo padrão de
+// containerSpecToServiceSpec/taskOutcome em portainer.ts.
+export function parseDadosVps(content: string): Partial<VpsContext> {
   const out: Partial<VpsContext> = {};
   const lines = content.split(/\r?\n/);
   for (const line of lines) {
@@ -27,10 +29,17 @@ function parseDadosVps(content: string): Partial<VpsContext> {
     const key = m[1].trim().toLowerCase();
     const value = m[2].trim();
     if (!value) continue;
-    if (key.includes("nome do servidor") || key === "servidor") out.nome_servidor = value;
-    else if (key.includes("rede interna") || key === "rede") out.nome_rede_interna = value;
-    else if (key.includes("email") && key.includes("ssl")) out.email_ssl = value;
-    else if (key.includes("link do portainer") || key.includes("portainer")) {
+    // Aceita a chave nova em inglês (instalações a partir da Fase 0 de i18n)
+    // e a antiga em português (frota já instalada — dados_vps só é regravado
+    // numa instalação completa nova, nunca por "Atualizar", então essas
+    // instalações mantêm a chave antiga para sempre). Ver i18n/GLOSSARY.md.
+    if (key.includes("nome do servidor") || key === "servidor" || key.includes("server name")) {
+      out.nome_servidor = value;
+    } else if (key.includes("rede interna") || key === "rede" || key.includes("internal network")) {
+      out.nome_rede_interna = value;
+    } else if ((key.includes("email") && key.includes("ssl")) || key.includes("ssl email")) {
+      out.email_ssl = value;
+    } else if (key.includes("link do portainer") || key.includes("portainer link") || key.includes("portainer")) {
       out.url_portainer = value.replace(/^https?:\/\//, "");
     }
   }
