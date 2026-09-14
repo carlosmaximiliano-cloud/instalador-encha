@@ -2,14 +2,15 @@
 import { Languages } from "lucide-react";
 import { useLocale } from "./locale-provider";
 import { LOCALES, LOCALE_LABEL } from "@/lib/locale-shared";
+import { useDict } from "@/lib/i18n/use-dict";
+import { localeToggleText } from "./locale-toggle.i18n";
 import { cn } from "@/lib/utils";
 
 // Mesmo padrão do ThemeToggle: um botão que cicla entre as opções — não um
-// dropdown. A Fase 2 é quem traduz o resto da UI; por ora a troca já
-// funciona (persiste em cookie, <html lang> e as datas já respeitam),
-// mesmo que o texto ao redor continue em português até lá.
+// dropdown.
 export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale } = useLocale();
+  const t = useDict(localeToggleText);
 
   function cycle() {
     const next = LOCALES[(LOCALES.indexOf(locale) + 1) % LOCALES.length];
@@ -20,7 +21,7 @@ export function LocaleToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={cycle}
-      title={`Idioma: ${LOCALE_LABEL[locale]} (clique para alternar)`}
+      title={t.titleFor(LOCALE_LABEL[locale])}
       className={cn(
         "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-warm-700 dark:text-warm-300 hover:bg-glass-strong hover:text-foreground transition-all",
         className

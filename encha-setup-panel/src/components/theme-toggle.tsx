@@ -1,14 +1,17 @@
 "use client";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { useTheme, type Theme } from "./theme-provider";
+import { useDict } from "@/lib/i18n/use-dict";
+import { themeToggleText } from "./theme-toggle.i18n";
 import { cn } from "@/lib/utils";
 
 const ORDER: Theme[] = ["light", "dark", "system"];
 const ICONS = { light: Sun, dark: Moon, system: Monitor } as const;
-const LABELS = { light: "Claro", dark: "Escuro", system: "Sistema" } as const;
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
+  const t = useDict(themeToggleText);
+  const LABELS = { light: t.light, dark: t.dark, system: t.system } as const;
   const Icon = ICONS[theme];
 
   function cycle() {
@@ -20,7 +23,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={cycle}
-      title={`Tema: ${LABELS[theme]} (clique para alternar)`}
+      title={t.titleFor(LABELS[theme])}
       className={cn(
         "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-warm-700 dark:text-warm-300 hover:bg-glass-strong hover:text-foreground transition-all",
         className

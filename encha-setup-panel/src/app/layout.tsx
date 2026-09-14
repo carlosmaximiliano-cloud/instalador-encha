@@ -19,10 +19,23 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Encha Setup Panel",
-  description: "Painel visual para instalação de stacks no Portainer Swarm",
+const DESCRIPTIONS = {
+  pt: "Painel visual para instalação de stacks no Portainer Swarm",
+  en: "Visual panel for installing stacks on Portainer Swarm",
+  es: "Panel visual para instalar stacks en Portainer Swarm",
 };
+
+// generateMetadata (não `export const metadata` estático) porque a descrição
+// precisa do locale resolvido em runtime (cookie/arquivo/Accept-Language) —
+// um objeto estático é avaliado no carregamento do módulo, antes de
+// resolveLocale() rodar.
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await resolveLocale();
+  return {
+    title: "Encha Setup Panel",
+    description: DESCRIPTIONS[locale],
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await resolveLocale();

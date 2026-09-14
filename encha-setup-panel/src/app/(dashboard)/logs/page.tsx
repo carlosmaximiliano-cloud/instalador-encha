@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollText } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import { toBcp47 } from "@/lib/locale-shared";
+import { useDict } from "@/lib/i18n/use-dict";
+import { logsPageText } from "./page.i18n";
 
 type Row = {
   id: number;
@@ -19,6 +21,7 @@ type Row = {
 
 export default function LogsPage() {
   const { locale } = useLocale();
+  const t = useDict(logsPageText);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,28 +37,28 @@ export default function LogsPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <ScrollText className="h-6 w-6 text-primary" />
-          Audit log
+          {t.title}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Toda ação relevante registrada (append-only).
+          {t.subtitle}
         </p>
       </header>
       <Card variant="glass">
         <CardContent className="p-0 overflow-hidden rounded-lg">
           {loading ? (
-            <div className="py-12 text-center text-muted-foreground">Carregando...</div>
+            <div className="py-12 text-center text-muted-foreground">{t.loading}</div>
           ) : rows.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">Sem registros ainda.</div>
+            <div className="py-12 text-center text-muted-foreground">{t.empty}</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-glass-strong backdrop-blur-md border-b border-glass-border">
                 <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Quando</th>
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Usuário</th>
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">IP</th>
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Ação</th>
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Alvo</th>
-                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Resultado</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colWhen}</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colUser}</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colIp}</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colAction}</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colTarget}</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">{t.colResult}</th>
                 </tr>
               </thead>
               <tbody>
