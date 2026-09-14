@@ -97,6 +97,10 @@ t() {
     fi
 }
 
+MSG_PT[banner_subtitulo]="Sistema de Deploy Automatizado"
+MSG_EN[banner_subtitulo]="Automated Deploy System"
+MSG_ES[banner_subtitulo]="Sistema de Despliegue Automatizado"
+
 banner(){
   clear
   clear
@@ -109,7 +113,7 @@ centralizar "███████╗██║ ╚████║╚████
 centralizar "╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
     echo -e "${reset}"
     echo -e "${amarelo_escuro}"
-    centralizar "Sistema de Deploy Automatizado"
+    centralizar "$(t banner_subtitulo)"
     echo -e "${reset}"
     echo ""
 }
@@ -1209,6 +1213,10 @@ centralizar "╚═════╝  ╚═════╝ ╚═╝     ╚═�
     echo ""
 }
 
+MSG_PT[msg_resumo_informacoes_subtitulo]="Resumo da Configuração"
+MSG_EN[msg_resumo_informacoes_subtitulo]="Configuration Summary"
+MSG_ES[msg_resumo_informacoes_subtitulo]="Resumen de la Configuración"
+
 msg_resumo_informacoes(){
   clear
     echo -e "${roxo}"
@@ -1217,10 +1225,10 @@ centralizar "██╔══██╗██╔════╝██╔═══�
 centralizar "██████╔╝█████╗  ███████╗██║   ██║██╔████╔██║██║   ██║"
 centralizar "██╔══██╗██╔══╝  ╚════██║██║   ██║██║╚██╔╝██║██║   ██║"
 centralizar "██║  ██║███████╗███████║╚██████╔╝██║ ╚═╝ ██║╚██████╔╝"
-centralizar "╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝ ╚═════╝" 
+centralizar "╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝ ╚═════╝"
     echo -e "${reset}"
     echo -e "${azul}"
-    centralizar "Resumo da Configuração"
+    centralizar "$(t msg_resumo_informacoes_subtitulo)"
     echo -e "${reset}"
     echo ""
 }
