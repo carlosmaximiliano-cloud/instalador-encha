@@ -75,4 +75,30 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_calcom}`,
     notes: ["Crie seu usuário no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Open-source Calendly — meeting scheduling.",
+      fields: {
+        url_calcom: { label: "Cal.com Domain", group: "Domains" },
+        email_calcom: { label: "Sending Email (SMTP)", group: "SMTP" },
+        user_calcom: { label: "SMTP User", group: "SMTP" },
+        senha_email_calcom: { label: "SMTP Password", group: "SMTP" },
+        smtp_email_calcom: { label: "SMTP Host", group: "SMTP" },
+        porta_smtp_calcom: { label: "SMTP Port", group: "SMTP" },
+      },
+      notes: ["Create your user on first access."],
+    },
+    es: {
+      description: "Calendly de código abierto — programación de reuniones.",
+      fields: {
+        url_calcom: { label: "Dominio de Cal.com", group: "Dominios" },
+        email_calcom: { label: "Correo de envío (SMTP)", group: "SMTP" },
+        user_calcom: { label: "Usuario SMTP", group: "SMTP" },
+        senha_email_calcom: { label: "Contraseña SMTP", group: "SMTP" },
+        smtp_email_calcom: { label: "Host SMTP", group: "SMTP" },
+        porta_smtp_calcom: { label: "Puerto SMTP", group: "SMTP" },
+      },
+      notes: ["Cree su usuario en el primer acceso."],
+    },
+  },
 };

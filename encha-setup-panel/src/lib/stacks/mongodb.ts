@@ -80,4 +80,22 @@ networks:
 `;
   },
   postInstall: { accessUrl: (v) => `https://${(v as { url_mongo_express: string }).url_mongo_express}` },
+  i18n: {
+    en: {
+      description: "MongoDB NoSQL database + Mongo Express UI for visual management.",
+      fields: {
+        url_mongo_express: { label: "Mongo Express Domain (UI)", group: "Domains" },
+        usuario_mongo: { label: "Admin User", group: "Credentials" },
+        senha_mongo: { label: "Admin Password", group: "Credentials" },
+      },
+    },
+    es: {
+      description: "Base de datos NoSQL MongoDB + interfaz Mongo Express para gestión visual.",
+      fields: {
+        url_mongo_express: { label: "Dominio de Mongo Express (UI)", group: "Dominios" },
+        usuario_mongo: { label: "Usuario admin", group: "Credenciales" },
+        senha_mongo: { label: "Contraseña admin", group: "Credenciales" },
+      },
+    },
+  },
 };

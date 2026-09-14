@@ -59,4 +59,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_appsmith: string }).url_appsmith}`,
   },
+  i18n: {
+    en: {
+      description: "Visual builder for internal dashboards and tools.",
+      fields: {
+        url_appsmith: { label: "Appsmith Domain", placeholder: "apps.yourcompany.com", group: "Domains" },
+      },
+    },
+    es: {
+      description: "Constructor visual de paneles y herramientas internas.",
+      fields: {
+        url_appsmith: { label: "Dominio de Appsmith", placeholder: "apps.suempresa.com", group: "Dominios" },
+      },
+    },
+  },
 };

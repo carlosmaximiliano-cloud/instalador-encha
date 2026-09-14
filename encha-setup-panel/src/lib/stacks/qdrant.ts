@@ -97,4 +97,38 @@ networks:
     accessUrl: (v) => `http://${(v as { ip_vps: string }).ip_vps}:6333/dashboard`,
     notes: ["Dashboard disponível em http://<ip-vps>:6333/dashboard", "REST API na porta 6333, gRPC na 6334"],
   },
+  i18n: {
+    en: {
+      description: "Vector database for semantic search and RAG.",
+      fields: {
+        ip_vps: {
+          label: "VPS IP or Qdrant domain",
+          placeholder: "qdrant.encha.ai",
+          helpText: "Can be a domain or the VPS IP. Used only to display the dashboard URL.",
+        },
+        nodes_qdrant: {
+          label: "Number of nodes",
+          placeholder: "5",
+          helpText: "Number of nodes in the Qdrant cluster (recommended: 5).",
+        },
+      },
+      notes: ["Dashboard available at http://<vps-ip>:6333/dashboard", "REST API on port 6333, gRPC on 6334"],
+    },
+    es: {
+      description: "Base de datos vectorial para búsqueda semántica y RAG.",
+      fields: {
+        ip_vps: {
+          label: "IP de la VPS o dominio de Qdrant",
+          placeholder: "qdrant.encha.ai",
+          helpText: "Puede ser un dominio o la IP de la VPS. Se usa solo para mostrar la URL del dashboard.",
+        },
+        nodes_qdrant: {
+          label: "Cantidad de nodos",
+          placeholder: "5",
+          helpText: "Número de nodos del clúster Qdrant (recomendado: 5).",
+        },
+      },
+      notes: ["Dashboard disponible en http://<ip-vps>:6333/dashboard", "REST API en el puerto 6333, gRPC en el 6334"],
+    },
+  },
 };

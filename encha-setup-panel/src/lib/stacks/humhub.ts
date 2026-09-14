@@ -67,4 +67,20 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_humhub}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário admin."],
   },
+  i18n: {
+    en: {
+      description: "Private social network for communities and businesses.",
+      fields: {
+        url_humhub: { label: "HumHub Domain", placeholder: "social.encha.ai", group: "Domains" },
+      },
+      notes: ["Visit the domain to complete the installation and create your admin user."],
+    },
+    es: {
+      description: "Red social privada para comunidades y empresas.",
+      fields: {
+        url_humhub: { label: "Dominio de HumHub", placeholder: "social.encha.ai", group: "Dominios" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su usuario admin."],
+    },
+  },
 };

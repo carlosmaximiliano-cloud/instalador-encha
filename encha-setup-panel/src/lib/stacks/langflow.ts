@@ -77,4 +77,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_langflow: string }).url_langflow}`,
     notes: ["Acesse com o usuário e senha definidos na instalação"],
   },
+  i18n: {
+    en: {
+      description: "Visual editor for LangChain flows and AI agents.",
+      fields: {
+        url_langflow: { label: "Langflow Domain", placeholder: "langflow.yourcompany.com" },
+        user_langflow: { label: "Username", placeholder: "admin" },
+        pass_langflow: { label: "Password" },
+      },
+      notes: ["Log in with the username and password set during installation"],
+    },
+    es: {
+      description: "Editor visual para flujos LangChain y agentes de IA.",
+      fields: {
+        url_langflow: { label: "Dominio de Langflow", placeholder: "langflow.suempresa.com" },
+        user_langflow: { label: "Usuario", placeholder: "admin" },
+        pass_langflow: { label: "Contraseña" },
+      },
+      notes: ["Acceda con el usuario y la contraseña definidos en la instalación"],
+    },
+  },
 };

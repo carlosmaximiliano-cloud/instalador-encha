@@ -52,4 +52,14 @@ networks:
     name: ${net}
 `;
   },
+  i18n: {
+    en: {
+      description:
+        "In-memory cache used by several stacks (Chatwoot, Typebot, Evolution). No exposed port — internal communication only.",
+    },
+    es: {
+      description:
+        "Caché en memoria usada por varias stacks (Chatwoot, Typebot, Evolution). Sin puerto expuesto — comunicación interna.",
+    },
+  },
 };

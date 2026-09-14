@@ -154,4 +154,34 @@ networks:
     accessUrl: (v) => `https://${(v as { url_lowcoder: string }).url_lowcoder}`,
     notes: ["Crie seu usuário no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Open-source Retool — collaborative low-code apps.",
+      fields: {
+        url_lowcoder: { label: "Lowcoder Domain", group: "Domains" },
+        user_mongodb_lowcoder: { label: "MongoDB User", group: "MongoDB" },
+        pass_mongodb_lowcoder: { label: "MongoDB Password", group: "MongoDB" },
+        email_smtp_lowcoder: { label: "Sender Email", group: "SMTP" },
+        host_smtp_lowcoder: { label: "SMTP Host", group: "SMTP" },
+        porta_smtp_lowcoder: { label: "SMTP Port", group: "SMTP" },
+        user_smtp_lowcoder: { label: "SMTP User", group: "SMTP" },
+        senha_smtp_lowcoder: { label: "SMTP Password", group: "SMTP" },
+      },
+      notes: ["Create your user on first access."],
+    },
+    es: {
+      description: "Retool de código abierto — apps low-code colaborativas.",
+      fields: {
+        url_lowcoder: { label: "Dominio de Lowcoder", group: "Dominios" },
+        user_mongodb_lowcoder: { label: "Usuario de MongoDB", group: "MongoDB" },
+        pass_mongodb_lowcoder: { label: "Contraseña de MongoDB", group: "MongoDB" },
+        email_smtp_lowcoder: { label: "Correo remitente", group: "SMTP" },
+        host_smtp_lowcoder: { label: "Host SMTP", group: "SMTP" },
+        porta_smtp_lowcoder: { label: "Puerto SMTP", group: "SMTP" },
+        user_smtp_lowcoder: { label: "Usuario SMTP", group: "SMTP" },
+        senha_smtp_lowcoder: { label: "Contraseña SMTP", group: "SMTP" },
+      },
+      notes: ["Cree su usuario en el primer acceso."],
+    },
+  },
 };

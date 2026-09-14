@@ -71,4 +71,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_wisemapping: string }).url_wisemapping}`,
   },
+  i18n: {
+    en: {
+      description: "Open-source collaborative mind map editor.",
+      fields: {
+        url_wisemapping: { label: "WiseMapping Domain", placeholder: "map.yourcompany.com", group: "Domains" },
+      },
+    },
+    es: {
+      description: "Editor de mapas mentales colaborativo de código abierto.",
+      fields: {
+        url_wisemapping: { label: "Dominio de WiseMapping", placeholder: "mapa.suempresa.com", group: "Dominios" },
+      },
+    },
+  },
 };

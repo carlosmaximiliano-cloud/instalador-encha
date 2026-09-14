@@ -109,4 +109,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_strapi: string }).url_strapi}/admin`,
     notes: ["Aguarde até 5 minutos para a primeira inicialização e acesse o link para criar seu usuário."],
   },
+  i18n: {
+    en: {
+      description: "Leading headless CMS in Node.js.",
+      fields: {
+        url_strapi: { label: "Strapi Domain", placeholder: "strapi.encha.ai", group: "Domains" },
+      },
+      notes: ["Wait up to 5 minutes for the first startup, then open the link to create your user."],
+    },
+    es: {
+      description: "CMS headless líder del mercado en Node.js.",
+      fields: {
+        url_strapi: { label: "Dominio de Strapi", placeholder: "strapi.encha.ai", group: "Dominios" },
+      },
+      notes: ["Espere hasta 5 minutos para el primer inicio y acceda al enlace para crear su usuario."],
+    },
+  },
 };

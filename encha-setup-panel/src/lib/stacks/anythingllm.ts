@@ -67,4 +67,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_anythingllm: string }).url_anythingllm}`,
     notes: ["Usuário e senha criados no primeiro acesso"],
   },
+  i18n: {
+    en: {
+      description: "All-in-one LLM client with RAG over your documents.",
+      fields: {
+        url_anythingllm: { label: "AnythingLLM domain", placeholder: "anything.yourcompany.com" },
+        qdrant_anythingllm: { label: "Qdrant endpoint", placeholder: "http://qdrant:6333" },
+        api_qdrant_anythingllm: { label: "Qdrant API Key (optional)" },
+      },
+      notes: ["User and password created on first access"],
+    },
+    es: {
+      description: "Cliente LLM todo en uno con RAG sobre sus documentos.",
+      fields: {
+        url_anythingllm: { label: "Dominio de AnythingLLM", placeholder: "anything.suempresa.com" },
+        qdrant_anythingllm: { label: "Endpoint de Qdrant", placeholder: "http://qdrant:6333" },
+        api_qdrant_anythingllm: { label: "API Key de Qdrant (opcional)" },
+      },
+      notes: ["Usuario y contraseña creados en el primer acceso"],
+    },
+  },
 };

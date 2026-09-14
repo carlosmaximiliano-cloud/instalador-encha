@@ -55,4 +55,20 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_focalboard}`,
     notes: ["Crie seu usuário no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Open-source Trello/Notion for project management.",
+      fields: {
+        url_focalboard: { label: "Focalboard Domain", placeholder: "boards.encha.ai", group: "Domains" },
+      },
+      notes: ["Create your user on first access."],
+    },
+    es: {
+      description: "Trello/Notion open-source para gestión de proyectos.",
+      fields: {
+        url_focalboard: { label: "Dominio de Focalboard", placeholder: "boards.encha.ai", group: "Dominios" },
+      },
+      notes: ["Cree su usuario en el primer acceso."],
+    },
+  },
 };

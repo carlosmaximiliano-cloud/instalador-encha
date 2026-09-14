@@ -93,4 +93,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_stirling: string }).url_stirling}`,
     notes: ["Crie sua conta no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Web suite for PDF manipulation (merge, split, OCR).",
+      fields: {
+        url_stirling: { label: "Stirling PDF Domain", placeholder: "stirling.yourcompany.com" },
+        name_stirlingpdf: { label: "App Name", placeholder: "enchaPdf" },
+        desc_stirlingpdf: { label: "App Description", placeholder: "My PDF app" },
+      },
+      notes: ["Create your account on first access."],
+    },
+    es: {
+      description: "Suite web de manipulación de PDFs (fusionar, dividir, OCR).",
+      fields: {
+        url_stirling: { label: "Dominio de Stirling PDF", placeholder: "stirling.suempresa.com" },
+        name_stirlingpdf: { label: "Nombre de la App", placeholder: "enchaPdf" },
+        desc_stirlingpdf: { label: "Descripción de la App", placeholder: "Mi app de PDF" },
+      },
+      notes: ["Cree su cuenta en el primer acceso."],
+    },
+  },
 };

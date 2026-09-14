@@ -105,4 +105,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_traccar: string }).url_traccar}`,
     notes: ["Usuário padrão: admin", "Senha padrão: admin"],
   },
+  i18n: {
+    en: {
+      description: "GPS server for vehicle tracking.",
+      fields: {
+        url_traccar: { label: "Traccar Domain", placeholder: "traccar.yourcompany.com" },
+      },
+      notes: ["Default user: admin", "Default password: admin"],
+    },
+    es: {
+      description: "Servidor GPS para rastreo de vehículos.",
+      fields: {
+        url_traccar: { label: "Dominio de Traccar", placeholder: "traccar.suempresa.com" },
+      },
+      notes: ["Usuario predeterminado: admin", "Contraseña predeterminada: admin"],
+    },
+  },
 };

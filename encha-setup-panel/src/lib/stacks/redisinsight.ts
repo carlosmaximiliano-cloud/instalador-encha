@@ -80,4 +80,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_redisinsight: string }).url_redisinsight}`,
     notes: ["Para conectar ao seu Redis, use o host 'redis' e a porta '6379'."],
   },
+  i18n: {
+    en: {
+      description: "Official UI to inspect and manage Redis instances.",
+      fields: {
+        url_redisinsight: { label: "RedisInsight Domain", placeholder: "redisins.yourcompany.com" },
+      },
+      notes: ["To connect to your Redis, use host 'redis' and port '6379'."],
+    },
+    es: {
+      description: "Interfaz oficial para inspeccionar y gestionar instancias de Redis.",
+      fields: {
+        url_redisinsight: { label: "Dominio de RedisInsight", placeholder: "redisins.suempresa.com" },
+      },
+      notes: ["Para conectarse a su Redis, use el host 'redis' y el puerto '6379'."],
+    },
+  },
 };

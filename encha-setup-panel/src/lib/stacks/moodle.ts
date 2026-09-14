@@ -147,4 +147,38 @@ networks:
     accessUrl: (v) => `https://${(v as { url_moodle: string }).url_moodle}`,
     notes: ["Acesse o domínio para completar a instalação e criar sua conta de administrador."],
   },
+  i18n: {
+    en: {
+      description: "World-leading LMS for distance learning and online courses.",
+      fields: {
+        url_moodle: { label: "Moodle Domain", placeholder: "moodle.yourcompany.com", group: "Domains" },
+        project_name_moodle: { label: "Project name", placeholder: "enchaProject", group: "Admin" },
+        user_moodle: { label: "Admin username", placeholder: "encha", group: "Admin" },
+        pass_moodle: { label: "Admin user password", group: "Admin" },
+        mail_moodle: { label: "Admin user email", group: "Admin" },
+        email_smtp_moodle: { label: "SMTP sender email", group: "SMTP" },
+        usuario_smtp_moodle: { label: "SMTP Username", group: "SMTP" },
+        senha_smtp_moodle: { label: "SMTP Password", group: "SMTP" },
+        host_smtp_moodle: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_moodle: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Go to the domain to complete the installation and create your administrator account."],
+    },
+    es: {
+      description: "LMS líder mundial para educación a distancia y cursos en línea.",
+      fields: {
+        url_moodle: { label: "Dominio de Moodle", placeholder: "moodle.suempresa.com", group: "Dominios" },
+        project_name_moodle: { label: "Nombre del proyecto", placeholder: "enchaProject", group: "Admin" },
+        user_moodle: { label: "Nombre de usuario admin", placeholder: "encha", group: "Admin" },
+        pass_moodle: { label: "Contraseña del usuario admin", group: "Admin" },
+        mail_moodle: { label: "Correo del usuario admin", group: "Admin" },
+        email_smtp_moodle: { label: "Correo de envío SMTP", group: "SMTP" },
+        usuario_smtp_moodle: { label: "Usuario SMTP", group: "SMTP" },
+        senha_smtp_moodle: { label: "Contraseña SMTP", group: "SMTP" },
+        host_smtp_moodle: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_moodle: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su cuenta de administrador."],
+    },
+  },
 };

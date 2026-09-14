@@ -70,4 +70,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_nocodb: string }).url_nocodb}`,
   },
+  i18n: {
+    en: {
+      description: "Open-source Airtable — turn any DB into a spreadsheet.",
+      fields: {
+        url_nocodb: { label: "NocoDB Domain", placeholder: "nocodb.yourcompany.com", group: "Domains" },
+      },
+    },
+    es: {
+      description: "Airtable open-source — convierte cualquier base de datos en una hoja de cálculo.",
+      fields: {
+        url_nocodb: { label: "Dominio de NocoDB", placeholder: "nocodb.suempresa.com", group: "Dominios" },
+      },
+    },
+  },
 };

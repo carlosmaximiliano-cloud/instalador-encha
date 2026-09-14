@@ -62,4 +62,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_botpress: string }).url_botpress}`,
     notes: ["Crie seu usuário no primeiro acesso"],
   },
+  i18n: {
+    en: {
+      description: "AI-powered conversational chatbot platform.",
+      fields: {
+        url_botpress: { label: "Botpress Domain" },
+      },
+      notes: ["Create your user on first access"],
+    },
+    es: {
+      description: "Plataforma de chatbots conversacionales con IA.",
+      fields: {
+        url_botpress: { label: "Dominio de Botpress" },
+      },
+      notes: ["Cree su usuario en el primer acceso"],
+    },
+  },
 };

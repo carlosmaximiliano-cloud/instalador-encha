@@ -76,4 +76,26 @@ networks:
     accessUrl: (v) => `https://${(v as { url_minio: string }).url_minio}`,
     notes: ["O endpoint S3 fica disponível em https://<url_s3>"],
   },
+  i18n: {
+    en: {
+      description: "Open-source S3-compatible storage. Required for Typebot, Directus, and backups.",
+      fields: {
+        url_minio: { label: "Console Domain", placeholder: "minio.yourcompany.com", group: "Domains" },
+        url_s3: { label: "S3 Endpoint Domain", placeholder: "s3.yourcompany.com", group: "Domains" },
+        user_minio: { label: "Admin User", placeholder: "admin", group: "Credentials" },
+        senha_minio: { label: "Admin Password", group: "Credentials" },
+      },
+      notes: ["The S3 endpoint is available at https://<url_s3>"],
+    },
+    es: {
+      description: "Almacenamiento S3-compatible de código abierto. Necesario para Typebot, Directus y copias de seguridad.",
+      fields: {
+        url_minio: { label: "Dominio de la consola", placeholder: "minio.suempresa.com", group: "Dominios" },
+        url_s3: { label: "Dominio del endpoint S3", placeholder: "s3.suempresa.com", group: "Dominios" },
+        user_minio: { label: "Usuario admin", placeholder: "admin", group: "Credenciales" },
+        senha_minio: { label: "Contraseña admin", group: "Credenciales" },
+      },
+      notes: ["El endpoint S3 está disponible en https://<url_s3>"],
+    },
+  },
 };

@@ -86,4 +86,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_easyappointments: string }).url_easyappointments}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário."],
   },
+  i18n: {
+    en: {
+      description: "PHP appointment scheduling system.",
+      fields: {
+        url_easyappointments: { label: "Easy Appointments Domain", placeholder: "agenda.yourcompany.com" },
+      },
+      notes: ["Visit the domain to complete the setup and create your user."],
+    },
+    es: {
+      description: "Sistema PHP de agendamiento de citas.",
+      fields: {
+        url_easyappointments: { label: "Dominio de Easy Appointments", placeholder: "agenda.suempresa.com" },
+      },
+      notes: ["Accede al dominio para completar la instalación y crear tu usuario."],
+    },
+  },
 };

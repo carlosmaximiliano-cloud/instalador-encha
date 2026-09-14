@@ -62,4 +62,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_wppconnect: string }).url_wppconnect}`,
     notes: ["Documentação disponível em https://<seu-dominio>/api-docs"],
   },
+  i18n: {
+    en: {
+      description: "Multi-session API for WhatsApp based on puppeteer.",
+      fields: {
+        url_wppconnect: { label: "WPPConnect Domain", placeholder: "wpp.yourcompany.com" },
+      },
+      notes: ["Documentation available at https://<your-domain>/api-docs"],
+    },
+    es: {
+      description: "API multi-sesión para WhatsApp basada en puppeteer.",
+      fields: {
+        url_wppconnect: { label: "Dominio de WPPConnect", placeholder: "wpp.suempresa.com" },
+      },
+      notes: ["Documentación disponible en https://<su-dominio>/api-docs"],
+    },
+  },
 };

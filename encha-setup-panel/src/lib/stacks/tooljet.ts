@@ -153,4 +153,30 @@ networks:
     accessUrl: (v) => `https://${(v as { url_tooljet: string }).url_tooljet}`,
     notes: ["Crie sua conta no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Build low-code internal apps with drag-and-drop.",
+      fields: {
+        url_tooljet: { label: "ToolJet domain", placeholder: "tooljet.encha.ai", group: "Domains" },
+        email_smtp_tooljet: { label: "SMTP e-mail", group: "SMTP" },
+        host_smtp_tooljet: { label: "SMTP host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_tooljet: { label: "SMTP port", placeholder: "465", group: "SMTP" },
+        usuario_smtp_tooljet: { label: "SMTP user", group: "SMTP" },
+        senha_smtp_tooljet: { label: "SMTP password", group: "SMTP" },
+      },
+      notes: ["Create your account on first access."],
+    },
+    es: {
+      description: "Cree apps internas low-code con drag-and-drop.",
+      fields: {
+        url_tooljet: { label: "Dominio de ToolJet", placeholder: "tooljet.encha.ai", group: "Dominios" },
+        email_smtp_tooljet: { label: "Correo SMTP", group: "SMTP" },
+        host_smtp_tooljet: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_tooljet: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+        usuario_smtp_tooljet: { label: "Usuario SMTP", group: "SMTP" },
+        senha_smtp_tooljet: { label: "Contraseña SMTP", group: "SMTP" },
+      },
+      notes: ["Cree su cuenta en el primer acceso."],
+    },
+  },
 };

@@ -83,4 +83,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_metabase: string }).url_metabase}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário"],
   },
+  i18n: {
+    en: {
+      description: "Open-source BI — charts and dashboards in minutes.",
+      fields: {
+        url_metabase: { label: "Metabase Domain", placeholder: "bi.yourcompany.com" },
+      },
+      notes: ["Go to the domain to finish the installation and create your user"],
+    },
+    es: {
+      description: "BI open-source: gráficos y paneles en minutos.",
+      fields: {
+        url_metabase: { label: "Dominio de Metabase", placeholder: "bi.suempresa.com" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su usuario"],
+    },
+  },
 };

@@ -207,4 +207,32 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_hoppscotch_frontend: string }).url_hoppscotch_frontend}`,
   },
+  i18n: {
+    en: {
+      description: "Lightweight, web-based Postman alternative.",
+      fields: {
+        url_hoppscotch_frontend: { label: "Main Interface Domain", placeholder: "hop.yourcompany.com", group: "Domains" },
+        url_hoppscotch_admin: { label: "Admin Panel Domain", placeholder: "admin-hop.yourcompany.com", group: "Domains" },
+        url_hoppscotch_backend: { label: "Backend/API Domain", placeholder: "api-hop.yourcompany.com", group: "Domains" },
+        hoppscotch_smtp_email: { label: "SMTP Sending Email", group: "SMTP" },
+        hoppscotch_smtp_user: { label: "SMTP User", group: "SMTP" },
+        hoppscotch_smtp_pass: { label: "SMTP Password", group: "SMTP" },
+        hoppscotch_smtp_host: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        hoppscotch_smtp_port: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+    },
+    es: {
+      description: "Alternativa a Postman, ligera y basada en web.",
+      fields: {
+        url_hoppscotch_frontend: { label: "Dominio de la Interfaz Principal", placeholder: "hop.suempresa.com", group: "Dominios" },
+        url_hoppscotch_admin: { label: "Dominio del Panel de Administración", placeholder: "admin-hop.suempresa.com", group: "Dominios" },
+        url_hoppscotch_backend: { label: "Dominio del Backend/API", placeholder: "api-hop.suempresa.com", group: "Dominios" },
+        hoppscotch_smtp_email: { label: "Correo de envío SMTP", group: "SMTP" },
+        hoppscotch_smtp_user: { label: "Usuario SMTP", group: "SMTP" },
+        hoppscotch_smtp_pass: { label: "Contraseña SMTP", group: "SMTP" },
+        hoppscotch_smtp_host: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        hoppscotch_smtp_port: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+    },
+  },
 };

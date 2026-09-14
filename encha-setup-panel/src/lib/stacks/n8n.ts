@@ -109,4 +109,34 @@ networks:
     accessUrl: (v) => `https://${(v as { url_editorn8n: string }).url_editorn8n}`,
     notes: ["Crie sua conta de admin no primeiro acesso"],
   },
+  i18n: {
+    en: {
+      description: "Low-code workflow automation platform with 400+ integrations. Visual workflow editor.",
+      fields: {
+        url_editorn8n: { label: "N8N Editor Domain", placeholder: "n8n.yourcompany.com", group: "Domains" },
+        url_webhookn8n: { label: "Webhooks Domain", placeholder: "webhook.yourcompany.com", group: "Domains" },
+        smtp_enabled: { label: "Set up SMTP now?" },
+        host_smtp_n8n: { label: "SMTP Host", placeholder: "smtp.hostinger.com" },
+        porta_smtp_n8n: { label: "SMTP Port", placeholder: "465" },
+        email_smtp_n8n: { label: "Sender email" },
+        usuario_smtp_n8n: { label: "SMTP username" },
+        senha_smtp_n8n: { label: "SMTP password" },
+      },
+      notes: ["Create your admin account on first access"],
+    },
+    es: {
+      description: "Plataforma de automatización de flujos (low-code) con más de 400 integraciones. Editor visual de flujos de trabajo.",
+      fields: {
+        url_editorn8n: { label: "Dominio del Editor N8N", placeholder: "n8n.suempresa.com", group: "Dominios" },
+        url_webhookn8n: { label: "Dominio de los Webhooks", placeholder: "webhook.suempresa.com", group: "Dominios" },
+        smtp_enabled: { label: "¿Configurar SMTP ahora?" },
+        host_smtp_n8n: { label: "Host SMTP", placeholder: "smtp.hostinger.com" },
+        porta_smtp_n8n: { label: "Puerto SMTP", placeholder: "465" },
+        email_smtp_n8n: { label: "Correo remitente" },
+        usuario_smtp_n8n: { label: "Usuario SMTP" },
+        senha_smtp_n8n: { label: "Contraseña SMTP" },
+      },
+      notes: ["Cree su cuenta de administrador en el primer acceso"],
+    },
+  },
 };

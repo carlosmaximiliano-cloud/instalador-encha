@@ -266,4 +266,22 @@ networks:
     accessUrl: (v) => `https://${(v as { url_frappe: string }).url_frappe}`,
     notes: ["Usuário: Administrator. Pode levar alguns minutos para o site estar totalmente acessível após a configuração."],
   },
+  i18n: {
+    en: {
+      description: "Open-source ERP in Python (sales, inventory, accounting).",
+      fields: {
+        url_frappe: { label: "Frappe ERPNext Domain", placeholder: "erp.yourcompany.com", group: "Domains" },
+        senha_frappe: { label: "Administrator Password", group: "Admin" },
+      },
+      notes: ["User: Administrator. It may take a few minutes for the site to become fully accessible after setup."],
+    },
+    es: {
+      description: "ERP de código abierto en Python (ventas, inventario, contabilidad).",
+      fields: {
+        url_frappe: { label: "Dominio del Frappe ERPNext", placeholder: "erp.suempresa.com", group: "Dominios" },
+        senha_frappe: { label: "Contraseña del Administrator", group: "Admin" },
+      },
+      notes: ["Usuario: Administrator. Puede tardar unos minutos en estar totalmente accesible después de la configuración."],
+    },
+  },
 };

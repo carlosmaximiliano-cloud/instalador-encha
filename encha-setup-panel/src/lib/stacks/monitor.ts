@@ -112,4 +112,26 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_grafana}`,
     notes: ["Grafana: usuário admin, senha admin (alterar no primeiro acesso)"],
   },
+  i18n: {
+    en: {
+      description: "Aggregated server health dashboard (CPU, RAM, disk).",
+      fields: {
+        url_grafana: { label: "Grafana domain", placeholder: "grafana.encha.ai", group: "Domains" },
+        url_prometheus: { label: "Prometheus domain", placeholder: "prometheus.encha.ai", group: "Domains" },
+        url_cadvisor: { label: "cAdvisor domain", placeholder: "cadvisor.encha.ai", group: "Domains" },
+        url_nodeexporter: { label: "NodeExporter domain", placeholder: "node.encha.ai", group: "Domains" },
+      },
+      notes: ["Grafana: user admin, password admin (change on first access)"],
+    },
+    es: {
+      description: "Panel agregado de salud del servidor (CPU, RAM, disco).",
+      fields: {
+        url_grafana: { label: "Dominio de Grafana", placeholder: "grafana.encha.ai", group: "Dominios" },
+        url_prometheus: { label: "Dominio de Prometheus", placeholder: "prometheus.encha.ai", group: "Dominios" },
+        url_cadvisor: { label: "Dominio de cAdvisor", placeholder: "cadvisor.encha.ai", group: "Dominios" },
+        url_nodeexporter: { label: "Dominio de NodeExporter", placeholder: "node.encha.ai", group: "Dominios" },
+      },
+      notes: ["Grafana: usuario admin, contraseña admin (cambiar en el primer acceso)"],
+    },
+  },
 };

@@ -112,4 +112,30 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_affine: string }).url_affine}`,
   },
+  i18n: {
+    en: {
+      description: "Notion + Miro all-in-one with editable blocks.",
+      fields: {
+        url_affine: { label: "AFFiNE Domain", placeholder: "affine.yourcompany.com", group: "Domains" },
+        email_affine: { label: "Admin email", group: "Admin" },
+        senha_affine: { label: "Admin password", group: "Admin" },
+        email_smtp_affine: { label: "SMTP sending email", group: "SMTP" },
+        senha_smtp_affine: { label: "SMTP password", group: "SMTP" },
+        host_smtp_affine: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_affine: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+    },
+    es: {
+      description: "Notion + Miro todo en uno con bloques editables.",
+      fields: {
+        url_affine: { label: "Dominio de AFFiNE", placeholder: "affine.suempresa.com", group: "Dominios" },
+        email_affine: { label: "Correo del administrador", group: "Admin" },
+        senha_affine: { label: "Contraseña del administrador", group: "Admin" },
+        email_smtp_affine: { label: "Correo de envío SMTP", group: "SMTP" },
+        senha_smtp_affine: { label: "Contraseña SMTP", group: "SMTP" },
+        host_smtp_affine: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_affine: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+    },
+  },
 };

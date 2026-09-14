@@ -524,4 +524,76 @@ networks:
       "Ainda é um release candidate (1.0.0-rc2) do upstream — espere instabilidade.",
     ],
   },
+  i18n: {
+    en: {
+      description:
+        "AI-powered support platform from Evolution Foundation — CRM, AI agents, auth, and frontend. Community edition (rc2), without the Segments/campaigns module (EvoFlow).",
+      fields: {
+        url_api: {
+          label: "API Domain (gateway)",
+          placeholder: "api-crm.yourcompany.com",
+          group: "Domains",
+          helpText: "DNS must already point to this VPS before installing.",
+        },
+        url_frontend: {
+          label: "CRM Panel Domain",
+          placeholder: "crm.yourcompany.com",
+          group: "Domains",
+          helpText: "DNS must already point to this VPS before installing.",
+        },
+        smtp_host: {
+          label: "SMTP Host",
+          placeholder: "smtp.hostinger.com",
+          helpText: "Optional — needed for team invites and password resets.",
+          group: "Email (optional)",
+        },
+        smtp_port: { label: "SMTP Port", placeholder: "587", group: "Email (optional)" },
+        smtp_user: { label: "SMTP User", group: "Email (optional)" },
+        smtp_pass: { label: "SMTP Password", group: "Email (optional)" },
+        smtp_from: { label: "Sender Email", placeholder: "no-reply@yourcompany.com", group: "Email (optional)" },
+      },
+      notes: [
+        "Both domains (API and panel) need DNS pointed to this VPS before installing.",
+        "Boot is slow — Rails and the Python processor run migrations at startup. The stack can take several minutes to reach 'Installed'. If it stays stuck on 'Installing...' for more than ~10 minutes, something got stuck: remove the 'evocrm' stack in Portainer (Stacks) and install it again from here — data is preserved.",
+        "First access: create your account from the panel itself (open signup).",
+        "The Segments/campaigns module (EvoFlow) is not included in this edition.",
+        "Still a release candidate (1.0.0-rc2) from upstream — expect instability.",
+      ],
+    },
+    es: {
+      description:
+        "Plataforma de atención con IA de Evolution Foundation — CRM, agentes de IA, auth y frontend. Edición community (rc2), sin el módulo de Segments/campañas (EvoFlow).",
+      fields: {
+        url_api: {
+          label: "Dominio de la API (gateway)",
+          placeholder: "api-crm.suempresa.com",
+          group: "Dominios",
+          helpText: "El DNS ya debe apuntar a esta VPS antes de instalar.",
+        },
+        url_frontend: {
+          label: "Dominio del panel CRM",
+          placeholder: "crm.suempresa.com",
+          group: "Dominios",
+          helpText: "El DNS ya debe apuntar a esta VPS antes de instalar.",
+        },
+        smtp_host: {
+          label: "Host SMTP",
+          placeholder: "smtp.hostinger.com",
+          helpText: "Opcional — necesario para invitaciones de equipo y restablecimiento de contraseña.",
+          group: "Correo (opcional)",
+        },
+        smtp_port: { label: "Puerto SMTP", placeholder: "587", group: "Correo (opcional)" },
+        smtp_user: { label: "Usuario SMTP", group: "Correo (opcional)" },
+        smtp_pass: { label: "Contraseña SMTP", group: "Correo (opcional)" },
+        smtp_from: { label: "Correo remitente", placeholder: "no-responder@suempresa.com", group: "Correo (opcional)" },
+      },
+      notes: [
+        "Los dos dominios (API y panel) necesitan el DNS apuntando a esta VPS antes de instalar.",
+        "El arranque es lento — Rails y el processor en Python ejecutan migraciones al iniciar. La stack puede tardar varios minutos en quedar 'Instalado'. Si pasa de ~10 minutos atascada en 'Instalando...', algo se trabó: elimina la stack 'evocrm' en Portainer (Stacks) e instálala de nuevo desde aquí — los datos se conservan.",
+        "Primer acceso: crea tu cuenta desde el propio panel (registro abierto).",
+        "El módulo de Segments/campañas (EvoFlow) no está incluido en esta edición.",
+        "Todavía es un release candidate (1.0.0-rc2) del upstream — espera inestabilidad.",
+      ],
+    },
+  },
 };

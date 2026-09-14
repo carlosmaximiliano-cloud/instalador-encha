@@ -354,4 +354,43 @@ networks:
       ];
     },
   },
+  // Fase 3 de i18n — postInstall.notes acima é FUNÇÃO (varia por `values`),
+  // então fica de fora do overlay de propósito (ver StackTextOverlay em
+  // types.ts) — continua em pt-BR até uma tradução dedicada.
+  i18n: {
+    en: {
+      description: "Conversational CRM (WhatsApp) — EnchaT Free edition, with Pinfy built in.",
+      fields: {
+        url_enchat: {
+          label: "EnchaT Panel Domain",
+          placeholder: "crm.yourcompany.com",
+          group: "Domains",
+          helpText: "DNS must already point to this VPS before installing.",
+        },
+        chave_licenca: {
+          label: "I already have a license key",
+          group: "License",
+          helpText:
+            "Only fill this in if you already have an issued key — skip it if you're using the pairing above. It isn't saved to disk.",
+        },
+      },
+    },
+    es: {
+      description: "CRM conversacional (WhatsApp) — edición EnchaT Free, con Pinfy integrado.",
+      fields: {
+        url_enchat: {
+          label: "Dominio del panel EnchaT",
+          placeholder: "crm.suempresa.com",
+          group: "Dominios",
+          helpText: "El DNS ya debe apuntar a esta VPS antes de instalar.",
+        },
+        chave_licenca: {
+          label: "Ya tengo una clave de licencia",
+          group: "Licencia",
+          helpText:
+            "Complete esto solo si ya tiene una clave emitida — omítalo si está usando el emparejamiento de arriba. No se guarda en disco.",
+        },
+      },
+    },
+  },
 };

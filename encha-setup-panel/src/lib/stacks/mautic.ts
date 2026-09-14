@@ -70,4 +70,24 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_mautic}`,
   },
+  i18n: {
+    en: {
+      description: "Enterprise open-source marketing automation.",
+      fields: {
+        url_mautic: { label: "Mautic Domain", group: "Domains" },
+        user_mautic: { label: "Admin User", group: "Admin" },
+        email_mautic: { label: "Admin Email", group: "Admin" },
+        senha_mautic: { label: "Admin Password", group: "Admin" },
+      },
+    },
+    es: {
+      description: "Automatización de marketing de código abierto empresarial.",
+      fields: {
+        url_mautic: { label: "Dominio de Mautic", group: "Dominios" },
+        user_mautic: { label: "Usuario admin", group: "Admin" },
+        email_mautic: { label: "Email admin", group: "Admin" },
+        senha_mautic: { label: "Contraseña admin", group: "Admin" },
+      },
+    },
+  },
 };

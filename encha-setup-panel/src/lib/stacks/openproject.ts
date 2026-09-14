@@ -85,4 +85,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_openproject: string }).url_openproject}`,
     notes: ["Usuário padrão: admin | Senha padrão: admin (altere no primeiro login)"],
   },
+  i18n: {
+    en: {
+      description: "Enterprise open-source project management.",
+      fields: {
+        url_openproject: { label: "OpenProject domain", placeholder: "projects.yourcompany.com" },
+      },
+      notes: ["Default user: admin | Default password: admin (change on first login)"],
+    },
+    es: {
+      description: "Gestión de proyectos enterprise open-source.",
+      fields: {
+        url_openproject: { label: "Dominio de OpenProject", placeholder: "proyectos.suempresa.com" },
+      },
+      notes: ["Usuario predeterminado: admin | Contraseña predeterminada: admin (cámbiela en el primer inicio de sesión)"],
+    },
+  },
 };

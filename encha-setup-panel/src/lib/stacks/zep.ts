@@ -97,4 +97,20 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_zep}/admin`,
   },
+  i18n: {
+    en: {
+      description: "Long-term memory and context for AI agents.",
+      fields: {
+        url_zep: { label: "Zep domain" },
+        apikey_openai_zep: { label: "OpenAI API Key" },
+      },
+    },
+    es: {
+      description: "Memoria de largo plazo y contexto para agentes IA.",
+      fields: {
+        url_zep: { label: "Dominio de Zep" },
+        apikey_openai_zep: { label: "API Key de OpenAI" },
+      },
+    },
+  },
 };

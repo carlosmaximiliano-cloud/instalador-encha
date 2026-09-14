@@ -123,4 +123,22 @@ networks:
     accessUrl: (v) => `https://${(v as { url_quepasa: string }).url_quepasa}/setup`,
     notes: ["Acesse a URL de setup para criar seu primeiro usuário admin"],
   },
+  i18n: {
+    en: {
+      description: "Simple, stable WhatsApp API using Baileys.",
+      fields: {
+        url_quepasa: { label: "Quepasa API Domain", placeholder: "quepasa.yourcompany.com", group: "Domains" },
+        email_quepasa: { label: "Contact Email (Basic Auth)", placeholder: "contact@yourcompany.com", group: "Access" },
+      },
+      notes: ["Go to the setup URL to create your first admin user"],
+    },
+    es: {
+      description: "API de WhatsApp simple y estable usando Baileys.",
+      fields: {
+        url_quepasa: { label: "Dominio de la API Quepasa", placeholder: "quepasa.suempresa.com", group: "Dominios" },
+        email_quepasa: { label: "Correo de contacto (Basic Auth)", placeholder: "contacto@suempresa.com", group: "Acceso" },
+      },
+      notes: ["Acceda a la URL de configuración para crear su primer usuario administrador"],
+    },
+  },
 };

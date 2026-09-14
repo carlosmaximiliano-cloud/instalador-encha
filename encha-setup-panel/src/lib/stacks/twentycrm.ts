@@ -108,4 +108,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_twentycrm: string }).url_twentycrm}`,
     notes: ["Crie seu usuário no primeiro acesso"],
   },
+  i18n: {
+    en: {
+      description: "Modern open-source CRM with a Notion-style UI.",
+      fields: {
+        url_twentycrm: { label: "TwentyCRM Domain", placeholder: "20.yourcompany.com", group: "Domains" },
+      },
+      notes: ["Create your user account on first access"],
+    },
+    es: {
+      description: "CRM moderno open-source con interfaz estilo Notion.",
+      fields: {
+        url_twentycrm: { label: "Dominio de TwentyCRM", placeholder: "20.suempresa.com", group: "Dominios" },
+      },
+      notes: ["Cree su usuario en el primer acceso"],
+    },
+  },
 };

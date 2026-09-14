@@ -149,4 +149,48 @@ networks:
       "SMTP é opcional — sem ele, convites e reset de senha ficam limitados.",
     ],
   },
+  i18n: {
+    en: {
+      description: "Open-source secrets vault for applications — API, versioning, and runtime injection.",
+      fields: {
+        url_infisical: { label: "Infisical Domain", placeholder: "secrets.encha.ai", group: "Domains" },
+        smtp_host: {
+          label: "SMTP Host",
+          placeholder: "smtp.hostinger.com",
+          helpText: "Optional — required for invites and password resets.",
+          group: "SMTP (optional)",
+        },
+        smtp_port: { label: "SMTP Port", placeholder: "587", group: "SMTP (optional)" },
+        smtp_user: { label: "SMTP Username", group: "SMTP (optional)" },
+        smtp_pass: { label: "SMTP Password", group: "SMTP (optional)" },
+        smtp_from: { label: "Sending Email (From)", placeholder: "noreply@encha.ai", group: "SMTP (optional)" },
+      },
+      notes: [
+        "Create the administrator account on first access to the domain.",
+        "Database migrations run automatically on boot (the -postgres image).",
+        "SMTP is optional — without it, invites and password resets are limited.",
+      ],
+    },
+    es: {
+      description: "Bóveda de secretos open-source para aplicaciones — API, versionado e inyección en tiempo de ejecución.",
+      fields: {
+        url_infisical: { label: "Dominio de Infisical", placeholder: "secrets.encha.ai", group: "Dominios" },
+        smtp_host: {
+          label: "Host SMTP",
+          placeholder: "smtp.hostinger.com",
+          helpText: "Opcional — necesario para invitaciones y restablecimiento de contraseña.",
+          group: "SMTP (opcional)",
+        },
+        smtp_port: { label: "Puerto SMTP", placeholder: "587", group: "SMTP (opcional)" },
+        smtp_user: { label: "Usuario SMTP", group: "SMTP (opcional)" },
+        smtp_pass: { label: "Contraseña SMTP", group: "SMTP (opcional)" },
+        smtp_from: { label: "Correo de envío (From)", placeholder: "noreply@encha.ai", group: "SMTP (opcional)" },
+      },
+      notes: [
+        "Cree la cuenta de administrador en el primer acceso al dominio.",
+        "Las migraciones de la base de datos se ejecutan automáticamente al iniciar (imagen -postgres).",
+        "El SMTP es opcional — sin él, las invitaciones y el restablecimiento de contraseña quedan limitados.",
+      ],
+    },
+  },
 };

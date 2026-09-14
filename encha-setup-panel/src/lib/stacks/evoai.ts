@@ -145,4 +145,36 @@ networks:
     accessUrl: (v) => `https://${(v as { url_evoai_front: string }).url_evoai_front}`,
     notes: ["Login no painel com o e-mail e senha de admin que você definiu"],
   },
+  i18n: {
+    en: {
+      description: "Conversational AI layer on top of Evolution API.",
+      fields: {
+        url_evoai_front: { label: "EvoAI Panel Domain", placeholder: "evo.yourcompany.com", group: "Domains" },
+        url_evoai_api: { label: "EvoAI API Domain", placeholder: "api-evo.yourcompany.com", group: "Domains" },
+        email_evoai: { label: "Admin email", group: "Admin" },
+        pass_evoai: { label: "Admin password", group: "Admin" },
+        smtp_host_evoai: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        smtp_port_evoai: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+        smtp_email_evoai: { label: "Sender email", placeholder: "noreply@yourcompany.com", group: "SMTP" },
+        smtp_user_evoai: { label: "SMTP User", group: "SMTP" },
+        smtp_pass_evoai: { label: "SMTP Password", group: "SMTP" },
+      },
+      notes: ["Log into the panel with the admin email and password you set"],
+    },
+    es: {
+      description: "Capa de IA conversacional sobre Evolution API.",
+      fields: {
+        url_evoai_front: { label: "Dominio del panel de EvoAI", placeholder: "evo.suempresa.com", group: "Dominios" },
+        url_evoai_api: { label: "Dominio de la API de EvoAI", placeholder: "api-evo.suempresa.com", group: "Dominios" },
+        email_evoai: { label: "Correo del administrador", group: "Admin" },
+        pass_evoai: { label: "Contraseña del administrador", group: "Admin" },
+        smtp_host_evoai: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        smtp_port_evoai: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+        smtp_email_evoai: { label: "Correo remitente", placeholder: "noreply@suempresa.com", group: "SMTP" },
+        smtp_user_evoai: { label: "Usuario SMTP", group: "SMTP" },
+        smtp_pass_evoai: { label: "Contraseña SMTP", group: "SMTP" },
+      },
+      notes: ["Inicie sesión en el panel con el correo y la contraseña de administrador que definió"],
+    },
+  },
 };

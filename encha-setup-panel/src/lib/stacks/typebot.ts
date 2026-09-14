@@ -107,4 +107,30 @@ networks:
 `;
   },
   postInstall: { accessUrl: (v) => `https://${(v as { url_typebot: string }).url_typebot}` },
+  i18n: {
+    en: {
+      description: "Conversational chatbot builder with a visual editor. Depends on MinIO for uploads.",
+      fields: {
+        url_typebot: { label: "Builder Domain", placeholder: "type.yourcompany.com", group: "Domains" },
+        url_viewer: { label: "Viewer Domain", placeholder: "viewer.yourcompany.com", group: "Domains" },
+        smtp_email_typebot: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_typebot: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+        email_typebot: { label: "Sender email", group: "SMTP" },
+        usuario_email_typebot: { label: "SMTP Username", group: "SMTP" },
+        senha_email_typebot: { label: "SMTP Password", group: "SMTP" },
+      },
+    },
+    es: {
+      description: "Constructor de chatbots conversacionales con editor visual. Depende de MinIO para las cargas de archivos.",
+      fields: {
+        url_typebot: { label: "Dominio del Builder", placeholder: "type.suempresa.com", group: "Dominios" },
+        url_viewer: { label: "Dominio del Viewer", placeholder: "viewer.suempresa.com", group: "Dominios" },
+        smtp_email_typebot: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_typebot: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+        email_typebot: { label: "Correo remitente", group: "SMTP" },
+        usuario_email_typebot: { label: "Usuario SMTP", group: "SMTP" },
+        senha_email_typebot: { label: "Contraseña SMTP", group: "SMTP" },
+      },
+    },
+  },
 };

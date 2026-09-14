@@ -69,4 +69,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_browserless: string }).url_browserless}`,
   },
+  i18n: {
+    en: {
+      description: "Headless Chrome as a service for automation.",
+      fields: {
+        url_browserless: { label: "Browserless Domain", placeholder: "browserless.yourcompany.com" },
+      },
+    },
+    es: {
+      description: "Chrome headless como servicio para automatización.",
+      fields: {
+        url_browserless: { label: "Dominio de Browserless", placeholder: "browserless.suempresa.com" },
+      },
+    },
+  },
 };

@@ -78,4 +78,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_flowise: string }).url_flowise}`,
     notes: ["Acesse com o usuário e senha definidos na instalação"],
   },
+  i18n: {
+    en: {
+      description: "Build LLM agents with visual drag-and-drop flows.",
+      fields: {
+        url_flowise: { label: "Flowise domain", placeholder: "flowise.yourcompany.com" },
+        user_flowise: { label: "User", placeholder: "admin" },
+        pass_flowise: { label: "Password" },
+      },
+      notes: ["Sign in with the user and password set during installation"],
+    },
+    es: {
+      description: "Construya agentes LLM con flujos visuales drag-and-drop.",
+      fields: {
+        url_flowise: { label: "Dominio de Flowise", placeholder: "flowise.suempresa.com" },
+        user_flowise: { label: "Usuario", placeholder: "admin" },
+        pass_flowise: { label: "Contraseña" },
+      },
+      notes: ["Acceda con el usuario y la contraseña definidos en la instalación"],
+    },
+  },
 };

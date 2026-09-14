@@ -88,4 +88,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_woofed: string }).url_woofed}`,
     notes: ["Crie seu usuário no primeiro acesso", `Painel Admin (MOTOR): /motor_admin`],
   },
+  i18n: {
+    en: {
+      description: "Brazilian open-source CRM focused on WhatsApp.",
+      fields: {
+        url_woofed: { label: "WoofedCRM Domain", group: "Domains" },
+        user_motor_woofed: { label: "MOTOR Panel User (admin)", group: "Admin" },
+        pass_motor_woofed: { label: "MOTOR Panel Password", group: "Admin" },
+      },
+      notes: ["Create your user on first access", "Admin Panel (MOTOR): /motor_admin"],
+    },
+    es: {
+      description: "CRM de código abierto brasileño enfocado en WhatsApp.",
+      fields: {
+        url_woofed: { label: "Dominio de WoofedCRM", group: "Dominios" },
+        user_motor_woofed: { label: "Usuario del panel MOTOR (admin)", group: "Admin" },
+        pass_motor_woofed: { label: "Contraseña del panel MOTOR", group: "Admin" },
+      },
+      notes: ["Cree su usuario en el primer acceso", "Panel Admin (MOTOR): /motor_admin"],
+    },
+  },
 };

@@ -73,4 +73,22 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_webtop: string }).url_webtop}`,
   },
+  i18n: {
+    en: {
+      description: "Complete Linux desktop via browser (Linuxserver.io).",
+      fields: {
+        url_webtop: { label: "Webtop Domain", placeholder: "linux.yourcompany.com" },
+        user_webtop: { label: "Linux Username", placeholder: "admin" },
+        pass_webtop: { label: "Access Password", placeholder: "Change@123" },
+      },
+    },
+    es: {
+      description: "Escritorio Linux completo vía navegador (Linuxserver.io).",
+      fields: {
+        url_webtop: { label: "Dominio de Webtop", placeholder: "linux.suempresa.com" },
+        user_webtop: { label: "Usuario de Linux", placeholder: "admin" },
+        pass_webtop: { label: "Contraseña de acceso", placeholder: "Cambiar@123" },
+      },
+    },
+  },
 };

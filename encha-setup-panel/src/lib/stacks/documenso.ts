@@ -123,4 +123,36 @@ networks:
     accessUrl: (v) => `https://${(v as { url_documenso: string }).url_documenso}`,
     notes: ["Aguarde alguns minutos para a migração do banco antes do primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Open-source DocuSign — digital signing of PDFs.",
+      fields: {
+        url_documenso: { label: "Documenso Domain", placeholder: "doc.yourcompany.com", group: "Domains" },
+        url_s3: { label: "S3 endpoint domain (MinIO)", placeholder: "s3.yourcompany.com", group: "MinIO" },
+        s3_access_key: { label: "MinIO Access Key", group: "MinIO" },
+        s3_secret_key: { label: "MinIO Secret Key", group: "MinIO" },
+        email_documenso: { label: "SMTP sender email", group: "SMTP" },
+        usuario_email_documenso: { label: "SMTP Username", group: "SMTP" },
+        senha_email_documenso: { label: "SMTP Password", group: "SMTP" },
+        smtp_email_documenso: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_documenso: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Wait a few minutes for the database migration before the first access."],
+    },
+    es: {
+      description: "DocuSign open-source — firma digital de PDFs.",
+      fields: {
+        url_documenso: { label: "Dominio de Documenso", placeholder: "doc.suempresa.com", group: "Dominios" },
+        url_s3: { label: "Dominio del endpoint S3 (MinIO)", placeholder: "s3.suempresa.com", group: "MinIO" },
+        s3_access_key: { label: "Access Key de MinIO", group: "MinIO" },
+        s3_secret_key: { label: "Secret Key de MinIO", group: "MinIO" },
+        email_documenso: { label: "Correo de envío SMTP", group: "SMTP" },
+        usuario_email_documenso: { label: "Usuario SMTP", group: "SMTP" },
+        senha_email_documenso: { label: "Contraseña SMTP", group: "SMTP" },
+        smtp_email_documenso: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_documenso: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Espere algunos minutos para la migración de la base de datos antes del primer acceso."],
+    },
+  },
 };

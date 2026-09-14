@@ -132,6 +132,21 @@ agora — fora do escopo de "nada muda"):**
   repassam esse texto sem traduzir. Fora do escopo desta fase (só as
   mensagens hardcoded nos arquivos `route.ts` foram migradas).
 
+## Fase 3 — catálogo de stacks
+
+- Conteúdo editorial (`description`, `fields[].label/placeholder/helpText/
+  group`, `postInstall.notes` estático, `secretLabels`) resolvido via
+  `i18n?: {en?, es?}` em `StackDefinition` (`StackTextOverlay`,
+  `src/lib/stacks/i18n-resolve.ts`) — sempre no servidor, nas rotas
+  `GET /api/stacks`, `GET /api/stacks/[id]/schema` e `POST /api/stacks`.
+  87/87 stacks traduzidas.
+- `notes` como função (varia por `values`, ex. pareamento self-service vs.
+  chave colada à mão) fica fora do overlay de propósito — o resolver cai
+  no pt-BR automaticamente.
+- **Gap conhecido**: mensagens de validação do Zod (`.refine()` dentro do
+  `schema` de cada stack) continuam só em português — fora do escopo do
+  `StackTextOverlay`.
+
 ## Pendências deste glossário
 
 Nenhuma no momento. Itens anteriores (grafia da marca, `EnchaT Grátis`, `N8N

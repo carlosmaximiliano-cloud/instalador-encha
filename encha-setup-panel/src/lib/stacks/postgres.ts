@@ -77,4 +77,28 @@ networks:
       "Inclui a extensão pgvector (necessária para o Evo CRM Community) — mesma base do postgres:16, dados existentes não são afetados.",
     ],
   },
+  i18n: {
+    en: {
+      description:
+        "Relational database shared by the stacks that need it (Evolution, N8N, Chatwoot, Directus, Evo CRM). Includes the pgvector extension. Password generated automatically.",
+      notes: [
+        "Internal host (inside the Swarm): postgres_postgres:5432",
+        "User: postgres",
+        "Password generated automatically — see the Audit log",
+        "Port 5432 is not exposed externally for security",
+        "Includes the pgvector extension (required by Evo CRM Community) — same base as postgres:16, existing data is not affected.",
+      ],
+    },
+    es: {
+      description:
+        "Base de datos relacional compartida por las stacks que la necesitan (Evolution, N8N, Chatwoot, Directus, Evo CRM). Incluye la extensión pgvector. Contraseña generada automáticamente.",
+      notes: [
+        "Host interno (dentro del Swarm): postgres_postgres:5432",
+        "Usuario: postgres",
+        "Contraseña generada automáticamente — vea el registro de auditoría",
+        "El puerto 5432 no está expuesto externamente por seguridad",
+        "Incluye la extensión pgvector (necesaria para Evo CRM Community) — misma base que postgres:16, los datos existentes no se ven afectados.",
+      ],
+    },
+  },
 };

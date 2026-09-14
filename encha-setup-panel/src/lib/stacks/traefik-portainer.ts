@@ -175,4 +175,56 @@ networks:
       "Anote suas credenciais — elas controlam toda a infraestrutura",
     ],
   },
+  i18n: {
+    en: {
+      description:
+        "Reverse proxy with automatic SSL (Let's Encrypt) + container management UI. Base for all other stacks.",
+      fields: {
+        url_portainer: {
+          label: "Portainer Domain",
+          placeholder: "portainer.yourcompany.com",
+          helpText: "Subdomain where the Portainer UI will be accessible",
+          group: "Domains",
+        },
+        user_portainer: { label: "Admin user", placeholder: "admin", group: "Credentials" },
+        pass_portainer: {
+          label: "Admin password",
+          helpText: "Minimum 12 chars, with uppercase, numbers and symbols",
+          group: "Credentials",
+        },
+        nome_servidor: { label: "Server name", placeholder: "encha", group: "Server" },
+        nome_rede_interna: { label: "Swarm overlay network name", placeholder: "enchaNet", group: "Server" },
+        email_ssl: { label: "Email for Let's Encrypt", placeholder: "admin@yourcompany.com", helpText: "Used for SSL notifications by Let's Encrypt" },
+      },
+      notes: [
+        "Once installed, access the URL and create the admin account",
+        "Write down your credentials — they control the entire infrastructure",
+      ],
+    },
+    es: {
+      description:
+        "Proxy inverso con SSL automático (Let's Encrypt) + interfaz de gestión de contenedores. Base para todas las demás stacks.",
+      fields: {
+        url_portainer: {
+          label: "Dominio de Portainer",
+          placeholder: "portainer.suempresa.com",
+          helpText: "Subdominio donde la interfaz de Portainer estará accesible",
+          group: "Dominios",
+        },
+        user_portainer: { label: "Usuario admin", placeholder: "admin", group: "Credenciales" },
+        pass_portainer: {
+          label: "Contraseña admin",
+          helpText: "Mínimo 12 caracteres, con mayúsculas, números y símbolos",
+          group: "Credenciales",
+        },
+        nome_servidor: { label: "Nombre del servidor", placeholder: "encha", group: "Servidor" },
+        nome_rede_interna: { label: "Nombre de la red overlay de Swarm", placeholder: "enchaNet", group: "Servidor" },
+        email_ssl: { label: "Correo para Let's Encrypt", placeholder: "admin@suempresa.com", helpText: "Usado para notificaciones de SSL por Let's Encrypt" },
+      },
+      notes: [
+        "Una vez instalado, acceda a la URL y cree la cuenta admin",
+        "Anote sus credenciales — ellas controlan toda la infraestructura",
+      ],
+    },
+  },
 };

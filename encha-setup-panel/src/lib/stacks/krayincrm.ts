@@ -180,4 +180,30 @@ networks:
     accessUrl: (v) => `https://${(v as { url_krayincrm: string }).url_krayincrm}`,
     notes: ["Crie seu usuário no primeiro acesso ao Krayin CRM."],
   },
+  i18n: {
+    en: {
+      description: "Full Laravel CRM with sales and lead pipeline.",
+      fields: {
+        url_krayincrm: { label: "Krayin CRM Domain", placeholder: "krayincrm.encha.ai", group: "Domains" },
+        email_krayincrm: { label: "SMTP Email", group: "SMTP" },
+        smtp_email_krayincrm: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_krayincrm: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+        usuario_email_krayincrm: { label: "SMTP Username", group: "SMTP" },
+        senha_email_krayincrm: { label: "SMTP Password", group: "SMTP" },
+      },
+      notes: ["Create your user account on first access to Krayin CRM."],
+    },
+    es: {
+      description: "CRM Laravel completo con pipeline de ventas y leads.",
+      fields: {
+        url_krayincrm: { label: "Dominio de Krayin CRM", placeholder: "krayincrm.encha.ai", group: "Dominios" },
+        email_krayincrm: { label: "Correo SMTP", group: "SMTP" },
+        smtp_email_krayincrm: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_krayincrm: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+        usuario_email_krayincrm: { label: "Usuario SMTP", group: "SMTP" },
+        senha_email_krayincrm: { label: "Contraseña SMTP", group: "SMTP" },
+      },
+      notes: ["Cree su usuario en el primer acceso a Krayin CRM."],
+    },
+  },
 };

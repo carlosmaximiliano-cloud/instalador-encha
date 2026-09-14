@@ -89,4 +89,24 @@ networks:
     accessUrl: (v) => `https://${(v as { url_clickhouse: string }).url_clickhouse}/play`,
     notes: ["Dashboard de queries em https://<dominio>/play", "API HTTP na porta 8123"],
   },
+  i18n: {
+    en: {
+      description: "Analytical columnar database for OLAP queries over billions of rows.",
+      fields: {
+        url_clickhouse: { label: "ClickHouse Domain", placeholder: "clickhouse.yourcompany.com" },
+        user_clickhouse: { label: "Admin user", placeholder: "admin" },
+        pass_clickhouse: { label: "User password" },
+      },
+      notes: ["Query dashboard at https://<domain>/play", "HTTP API on port 8123"],
+    },
+    es: {
+      description: "Base de datos columnar analítica para consultas OLAP sobre miles de millones de filas.",
+      fields: {
+        url_clickhouse: { label: "Dominio de ClickHouse", placeholder: "clickhouse.suempresa.com" },
+        user_clickhouse: { label: "Usuario admin", placeholder: "admin" },
+        pass_clickhouse: { label: "Contraseña del usuario" },
+      },
+      notes: ["Panel de consultas en https://<dominio>/play", "API HTTP en el puerto 8123"],
+    },
+  },
 };

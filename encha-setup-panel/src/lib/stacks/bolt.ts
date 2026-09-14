@@ -82,4 +82,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_bolt}`,
   },
+  i18n: {
+    en: {
+      description: "Open-source web IDE for generating apps with an LLM.",
+      fields: {
+        url_bolt: { label: "Bolt Domain", placeholder: "bolt.encha.ai" },
+      },
+    },
+    es: {
+      description: "IDE web open-source para generar apps con LLM.",
+      fields: {
+        url_bolt: { label: "Dominio de Bolt", placeholder: "bolt.encha.ai" },
+      },
+    },
+  },
 };

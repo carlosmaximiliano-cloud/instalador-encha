@@ -79,4 +79,28 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_vaultwarden}`,
     notes: ["Crie sua conta no primeiro acesso ao domínio."],
   },
+  i18n: {
+    en: {
+      description: "Open-source Bitwarden server in Rust.",
+      fields: {
+        url_vaultwarden: { label: "Vaultwarden Domain", placeholder: "passwords.encha.ai", group: "Domains" },
+        email_vaultwarden: { label: "SMTP sending email", placeholder: "noreply@encha.ai", group: "SMTP" },
+        senha_vaultwarden: { label: "SMTP email password", group: "SMTP" },
+        host_vaultwarden: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_vaultwarden: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Create your account on first access to the domain."],
+    },
+    es: {
+      description: "Servidor Bitwarden de código abierto en Rust.",
+      fields: {
+        url_vaultwarden: { label: "Dominio de Vaultwarden", placeholder: "contraseñas.encha.ai", group: "Dominios" },
+        email_vaultwarden: { label: "Correo de envío SMTP", placeholder: "noreply@encha.ai", group: "SMTP" },
+        senha_vaultwarden: { label: "Contraseña del correo SMTP", group: "SMTP" },
+        host_vaultwarden: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_vaultwarden: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Crea tu cuenta en el primer acceso al dominio."],
+    },
+  },
 };

@@ -75,4 +75,22 @@ networks:
 `;
   },
   postInstall: { accessUrl: (v) => `https://${(v as { url_directus: string }).url_directus}` },
+  i18n: {
+    en: {
+      description: "Instant headless CMS on top of your database. Ready-made admin panel + REST/GraphQL API.",
+      fields: {
+        url_directus: { label: "Domain", placeholder: "directus.yourcompany.com", group: "Domains" },
+        email_admin: { label: "Admin email", group: "Admin" },
+        senha_admin: { label: "Admin password", group: "Admin" },
+      },
+    },
+    es: {
+      description: "CMS headless instantáneo sobre su base de datos. Panel de administración listo + API REST/GraphQL.",
+      fields: {
+        url_directus: { label: "Dominio", placeholder: "directus.suempresa.com", group: "Dominios" },
+        email_admin: { label: "Correo admin", group: "Admin" },
+        senha_admin: { label: "Contraseña admin", group: "Admin" },
+      },
+    },
+  },
 };

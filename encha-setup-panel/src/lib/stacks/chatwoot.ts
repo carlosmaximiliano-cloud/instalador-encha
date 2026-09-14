@@ -124,4 +124,30 @@ networks:
     accessUrl: (v) => `https://${(v as { url_chatwoot: string }).url_chatwoot}`,
     notes: ["Crie sua conta de superadmin no primeiro acesso"],
   },
+  i18n: {
+    en: {
+      description: "Open-source omnichannel support platform (WhatsApp, Telegram, Web, etc.).",
+      fields: {
+        url_chatwoot: { label: "Chatwoot Domain", placeholder: "chatwoot.yourcompany.com", group: "Domains" },
+        email_admin_chatwoot: { label: "Admin email" },
+        smtp_email_chatwoot: { label: "SMTP Host", placeholder: "smtp.hostinger.com" },
+        porta_smtp_chatwoot: { label: "SMTP Port", placeholder: "465" },
+        user_smtp_chatwoot: { label: "SMTP username" },
+        senha_smtp_chatwoot: { label: "SMTP password" },
+      },
+      notes: ["Create your superadmin account on first access"],
+    },
+    es: {
+      description: "Plataforma de atención omnicanal open-source (WhatsApp, Telegram, Web, etc.).",
+      fields: {
+        url_chatwoot: { label: "Dominio de Chatwoot", placeholder: "chatwoot.suempresa.com", group: "Dominios" },
+        email_admin_chatwoot: { label: "Correo del admin" },
+        smtp_email_chatwoot: { label: "Host SMTP", placeholder: "smtp.hostinger.com" },
+        porta_smtp_chatwoot: { label: "Puerto SMTP", placeholder: "465" },
+        user_smtp_chatwoot: { label: "Usuario SMTP" },
+        senha_smtp_chatwoot: { label: "Contraseña SMTP" },
+      },
+      notes: ["Cree su cuenta de superadministrador en el primer acceso"],
+    },
+  },
 };

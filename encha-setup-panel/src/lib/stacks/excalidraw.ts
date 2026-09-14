@@ -72,4 +72,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_excalidraw: string }).url_excalidraw}`,
   },
+  i18n: {
+    en: {
+      description: "Pencil-style virtual whiteboard for quick diagrams.",
+      fields: {
+        url_excalidraw: { label: "Excalidraw Domain", placeholder: "draw.yourcompany.com", group: "Domains" },
+      },
+    },
+    es: {
+      description: "Pizarra virtual estilo lápiz para diagramas rápidos.",
+      fields: {
+        url_excalidraw: { label: "Dominio de Excalidraw", placeholder: "draw.suempresa.com", group: "Dominios" },
+      },
+    },
+  },
 };

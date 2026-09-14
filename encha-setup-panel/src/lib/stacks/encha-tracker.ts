@@ -321,4 +321,54 @@ networks:
       "O fingerprint desta instalação já está vinculado à licença informada — trocar por outra licença exige uma nova instalação.",
     ],
   },
+  i18n: {
+    en: {
+      description: "Server-side campaign tracking (Meta CAPI + GA4) with a ROAS/CPA dashboard.",
+      fields: {
+        dominio_tracker: {
+          label: "Encha Tracker panel domain",
+          placeholder: "tracker.yourcompany.com",
+          helpText: "The DNS must already point to this VPS before installing.",
+          group: "Domains",
+        },
+        email_ativacao: {
+          label: "Purchase e-mail",
+          helpText: "Activates the license with the Console and is also the panel login — no token is requested.",
+          group: "Access",
+        },
+        senha_admin: {
+          label: "Panel access password",
+          helpText: "Minimum 12 characters, with uppercase, lowercase, number and symbol.",
+          group: "Access",
+        },
+      },
+      secretLabels: {
+        tracker_master_key: "Master key",
+      },
+    },
+    es: {
+      description: "Rastreo server-side de campañas (Meta CAPI + GA4) con panel de ROAS/CPA.",
+      fields: {
+        dominio_tracker: {
+          label: "Dominio del panel de Encha Tracker",
+          placeholder: "tracker.suempresa.com",
+          helpText: "El DNS ya debe apuntar a esta VPS antes de instalar.",
+          group: "Dominios",
+        },
+        email_ativacao: {
+          label: "Correo de la compra",
+          helpText: "Activa la licencia junto al Console y también es el login del panel — no se pide ningún token.",
+          group: "Acceso",
+        },
+        senha_admin: {
+          label: "Contraseña de acceso al panel",
+          helpText: "Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo.",
+          group: "Acceso",
+        },
+      },
+      secretLabels: {
+        tracker_master_key: "Clave maestra",
+      },
+    },
+  },
 };

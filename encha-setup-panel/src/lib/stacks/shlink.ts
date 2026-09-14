@@ -125,4 +125,24 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_shlink: string }).url_shlink}`,
   },
+  i18n: {
+    en: {
+      description: "Open-source URL shortener with analytics.",
+      fields: {
+        url_shlink: { label: "Shlink Panel domain", placeholder: "shlink-panel.yourcompany.com", group: "Domains" },
+        url_shlink_api: { label: "Shlink API domain", placeholder: "shlink.yourcompany.com", group: "Domains" },
+        shlink_user: { label: "User", group: "Admin" },
+        shlink_pass: { label: "Password", group: "Admin" },
+      },
+    },
+    es: {
+      description: "Acortador de URLs con analytics open-source.",
+      fields: {
+        url_shlink: { label: "Dominio del Panel Shlink", placeholder: "panel-shlink.suempresa.com", group: "Dominios" },
+        url_shlink_api: { label: "Dominio de la API Shlink", placeholder: "shlink.suempresa.com", group: "Dominios" },
+        shlink_user: { label: "Usuario", group: "Admin" },
+        shlink_pass: { label: "Contraseña", group: "Admin" },
+      },
+    },
+  },
 };

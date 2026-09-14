@@ -180,4 +180,50 @@ networks:
       "A partir da 2.4.x a Evolution pede ativação de licença (gratuita) no primeiro acesso ao /manager. Se você preencheu o e-mail do operador, a ativação acontece sozinha no boot.",
     ],
   },
+  i18n: {
+    en: {
+      description: "Multi-instance WhatsApp API with native integration for N8N, Chatwoot, and Typebot.",
+      fields: {
+        url_evolution: {
+          label: "Evolution API Domain",
+          placeholder: "evolution.yourcompany.com",
+          group: "Domains",
+        },
+        email_operador: {
+          label: "Operator email (automatic activation)",
+          placeholder: "you@yourcompany.com",
+          group: "License",
+          helpText:
+            "Optional. Activates the license automatically on boot, without opening /manager. The email must already be registered on Evolution's license server — if it isn't, the API still starts normally and you can activate it manually via /manager.",
+        },
+      },
+      notes: [
+        "Go to the Manager to create instances",
+        "Your global API key was generated and saved encrypted — retrieve it under Logs > Installation Details",
+        "From version 2.4.x on, Evolution requires a (free) license activation on first access to /manager. If you filled in the operator email, activation happens automatically on boot.",
+      ],
+    },
+    es: {
+      description: "API de WhatsApp multi-instancia con integración nativa para N8N, Chatwoot y Typebot.",
+      fields: {
+        url_evolution: {
+          label: "Dominio de Evolution API",
+          placeholder: "evolution.suempresa.com",
+          group: "Dominios",
+        },
+        email_operador: {
+          label: "Correo del operador (activación automática)",
+          placeholder: "usted@suempresa.com",
+          group: "Licencia",
+          helpText:
+            "Opcional. Activa la licencia automáticamente al iniciar, sin abrir /manager. El correo debe estar previamente registrado en el servidor de licencias de Evolution — si no lo está, la API igual se inicia normalmente y usted puede activarla manualmente desde /manager.",
+        },
+      },
+      notes: [
+        "Acceda al Manager para crear instancias",
+        "Su API key global fue generada y guardada cifrada — recupérela en Logs > Detalles de la instalación",
+        "A partir de la versión 2.4.x, Evolution solicita la activación de licencia (gratuita) en el primer acceso a /manager. Si completó el correo del operador, la activación ocurre automáticamente al iniciar.",
+      ],
+    },
+  },
 };

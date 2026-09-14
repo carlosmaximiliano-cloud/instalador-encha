@@ -77,4 +77,22 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_rabbitmq}`,
     notes: ["URL de conexão AMQP: amqp://<user>:<senha>@rabbitmq:5672"],
   },
+  i18n: {
+    en: {
+      description: "AMQP message broker used by distributed systems.",
+      fields: {
+        url_rabbitmq: { label: "RabbitMQ Domain", placeholder: "rabbit.encha.ai", group: "Domains" },
+        user_rabbitmq: { label: "Username", placeholder: "encha_user", group: "Access" },
+      },
+      notes: ["AMQP connection URL: amqp://<user>:<password>@rabbitmq:5672"],
+    },
+    es: {
+      description: "Message broker AMQP utilizado por sistemas distribuidos.",
+      fields: {
+        url_rabbitmq: { label: "Dominio de RabbitMQ", placeholder: "rabbit.encha.ai", group: "Dominios" },
+        user_rabbitmq: { label: "Usuario", placeholder: "encha_user", group: "Acceso" },
+      },
+      notes: ["URL de conexión AMQP: amqp://<user>:<contraseña>@rabbitmq:5672"],
+    },
+  },
 };

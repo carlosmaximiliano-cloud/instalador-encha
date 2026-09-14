@@ -82,4 +82,22 @@ networks:
     accessUrl: (v) => `https://${(v as { url_wordpress: string }).url_wordpress}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário admin."],
   },
+  i18n: {
+    en: {
+      description: "The world's most popular blogging and website platform.",
+      fields: {
+        url_wordpress: { label: "WordPress Domain", placeholder: "loja.encha.ai", group: "Domains" },
+        nome_site_wordpress: { label: "Site Name (slug)", placeholder: "lojaencha", group: "Configuration" },
+      },
+      notes: ["Go to the domain to complete the installation and create your admin user."],
+    },
+    es: {
+      description: "La plataforma de blogs y sitios web más popular del mundo.",
+      fields: {
+        url_wordpress: { label: "Dominio de WordPress", placeholder: "loja.encha.ai", group: "Dominios" },
+        nome_site_wordpress: { label: "Nombre del Sitio (slug)", placeholder: "lojaencha", group: "Configuración" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su usuario admin."],
+    },
+  },
 };

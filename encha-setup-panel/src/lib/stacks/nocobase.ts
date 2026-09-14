@@ -75,4 +75,24 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_nocobase: string }).url_nocobase}`,
   },
+  i18n: {
+    en: {
+      description: "Low-code platform for internal apps on Postgres.",
+      fields: {
+        url_nocobase: { label: "NocoBase Domain", placeholder: "nocobase.yourcompany.com", group: "Domains" },
+        mail_nocobase: { label: "Admin email", group: "Admin" },
+        user_nocobase: { label: "Username", placeholder: "enchaAdmin", group: "Admin" },
+        pass_nocobase: { label: "User password", group: "Admin" },
+      },
+    },
+    es: {
+      description: "Plataforma low-code para apps internas sobre Postgres.",
+      fields: {
+        url_nocobase: { label: "Dominio de NocoBase", placeholder: "nocobase.suempresa.com", group: "Dominios" },
+        mail_nocobase: { label: "Correo del administrador", group: "Admin" },
+        user_nocobase: { label: "Nombre de usuario", placeholder: "enchaAdmin", group: "Admin" },
+        pass_nocobase: { label: "Contraseña del usuario", group: "Admin" },
+      },
+    },
+  },
 };

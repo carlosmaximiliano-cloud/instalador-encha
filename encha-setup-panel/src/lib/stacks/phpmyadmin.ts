@@ -65,4 +65,30 @@ networks:
     accessUrl: (v) => `https://${(v as { url_phpmyadmin: string }).url_phpmyadmin}`,
     notes: ["Use as credenciais do seu banco MySQL para fazer login."],
   },
+  i18n: {
+    en: {
+      description: "Web interface for administering MySQL/MariaDB databases.",
+      fields: {
+        url_phpmyadmin: { label: "phpMyAdmin Domain", placeholder: "phpmyadmin.yourcompany.com" },
+        host_phpmyadmin: {
+          label: "MySQL Host",
+          placeholder: "mysql or 1.1.1.1:3306",
+          helpText: "Use 'mysql' if MySQL is on the same Swarm network.",
+        },
+      },
+      notes: ["Use your MySQL database credentials to log in."],
+    },
+    es: {
+      description: "Interfaz web para administrar bases de datos MySQL/MariaDB.",
+      fields: {
+        url_phpmyadmin: { label: "Dominio de phpMyAdmin", placeholder: "phpmyadmin.suempresa.com" },
+        host_phpmyadmin: {
+          label: "Host de MySQL",
+          placeholder: "mysql o 1.1.1.1:3306",
+          helpText: "Use 'mysql' si MySQL está en la misma red de Swarm.",
+        },
+      },
+      notes: ["Use las credenciales de su base de datos MySQL para iniciar sesión."],
+    },
+  },
 };

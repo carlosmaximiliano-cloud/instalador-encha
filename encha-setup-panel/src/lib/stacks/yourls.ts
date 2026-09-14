@@ -73,4 +73,22 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_yourls: string }).url_yourls}/admin`,
   },
+  i18n: {
+    en: {
+      description: "Simple, self-hosted PHP URL shortener.",
+      fields: {
+        url_yourls: { label: "YOURLS Domain", placeholder: "link.yourcompany.com", group: "Domains" },
+        user_yourls: { label: "Panel Username", group: "Admin" },
+        pass_yourls: { label: "User Password", group: "Admin" },
+      },
+    },
+    es: {
+      description: "Acortador de URLs PHP simple y autoalojado.",
+      fields: {
+        url_yourls: { label: "Dominio de YOURLS", placeholder: "link.suempresa.com", group: "Dominios" },
+        user_yourls: { label: "Usuario del panel", group: "Admin" },
+        pass_yourls: { label: "Contraseña del usuario", group: "Admin" },
+      },
+    },
+  },
 };

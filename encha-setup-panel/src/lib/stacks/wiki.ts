@@ -96,4 +96,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_wiki: string }).url_wiki}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário."],
   },
+  i18n: {
+    en: {
+      description: "Modern corporate documentation with markdown and Git.",
+      fields: {
+        url_wiki: { label: "Wiki.js Domain", placeholder: "wiki.yourcompany.com", group: "Domains" },
+      },
+      notes: ["Go to the domain to finish the installation and create your user."],
+    },
+    es: {
+      description: "Documentación corporativa moderna con markdown y Git.",
+      fields: {
+        url_wiki: { label: "Dominio de Wiki.js", placeholder: "wiki.suempresa.com", group: "Dominios" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su usuario."],
+    },
+  },
 };

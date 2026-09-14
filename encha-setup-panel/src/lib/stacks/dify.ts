@@ -485,4 +485,40 @@ networks:
       "Aguarde alguns minutos para a migração do banco antes do primeiro acesso",
     ],
   },
+  i18n: {
+    en: {
+      description: "LLMOps platform for AI apps and agents in production.",
+      fields: {
+        url_dify: { label: "Dify Web Domain", placeholder: "dify.yourcompany.com", group: "Domains" },
+        url_dify_api: { label: "Dify API Domain", placeholder: "api-dify.yourcompany.com", group: "Domains" },
+        url_s3: { label: "S3 Domain (MinIO)", placeholder: "s3.yourcompany.com", group: "Domains" },
+        smtp_email_dify: { label: "SMTP Host", placeholder: "smtp.hostinger.com" },
+        porta_smtp_dify: { label: "SMTP Port", placeholder: "465" },
+        email_dify: { label: "Sender email (SMTP)" },
+        user_email_dify: { label: "SMTP username" },
+        senha_email_dify: { label: "SMTP password" },
+      },
+      notes: [
+        "Username and password are created on first access",
+        "Wait a few minutes for the database migration before the first access",
+      ],
+    },
+    es: {
+      description: "Plataforma LLMOps para apps y agentes de IA en producción.",
+      fields: {
+        url_dify: { label: "Dominio Web de Dify", placeholder: "dify.suempresa.com", group: "Dominios" },
+        url_dify_api: { label: "Dominio de la API de Dify", placeholder: "api-dify.suempresa.com", group: "Dominios" },
+        url_s3: { label: "Dominio S3 (MinIO)", placeholder: "s3.suempresa.com", group: "Dominios" },
+        smtp_email_dify: { label: "Host SMTP", placeholder: "smtp.hostinger.com" },
+        porta_smtp_dify: { label: "Puerto SMTP", placeholder: "465" },
+        email_dify: { label: "Correo remitente (SMTP)" },
+        user_email_dify: { label: "Usuario SMTP" },
+        senha_email_dify: { label: "Contraseña SMTP" },
+      },
+      notes: [
+        "El usuario y la contraseña se crean en el primer acceso",
+        "Espere unos minutos para la migración de la base de datos antes del primer acceso",
+      ],
+    },
+  },
 };

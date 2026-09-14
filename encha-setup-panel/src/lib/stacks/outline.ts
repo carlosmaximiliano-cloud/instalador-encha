@@ -77,4 +77,24 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_outline}`,
     notes: ["Adicione a URL de Callback nas credenciais do Google: https://<seu-dominio>/auth/oidc.callback"],
   },
+  i18n: {
+    en: {
+      description: "Beautiful knowledge wiki for modern teams.",
+      fields: {
+        url_outline: { label: "Outline Domain", placeholder: "wiki.encha.ai", group: "Domains" },
+        id_google_outline: { label: "Google Client ID", placeholder: "xxx.apps.googleusercontent.com", group: "Google OAuth" },
+        key_google_outline: { label: "Google Client Secret", group: "Google OAuth" },
+      },
+      notes: ["Add the Callback URL to your Google credentials: https://<your-domain>/auth/oidc.callback"],
+    },
+    es: {
+      description: "Wiki de conocimiento hermosa para equipos modernos.",
+      fields: {
+        url_outline: { label: "Dominio de Outline", placeholder: "wiki.encha.ai", group: "Dominios" },
+        id_google_outline: { label: "ID de Cliente de Google", placeholder: "xxx.apps.googleusercontent.com", group: "Google OAuth" },
+        key_google_outline: { label: "Clave Secreta de Google", group: "Google OAuth" },
+      },
+      notes: ["Agregue la URL de Callback en las credenciales de Google: https://<su-dominio>/auth/oidc.callback"],
+    },
+  },
 };

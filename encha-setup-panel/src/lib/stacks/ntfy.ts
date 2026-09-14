@@ -154,4 +154,24 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_ntfy}`,
     notes: ["Authorization para API: Basic <authentication>"],
   },
+  i18n: {
+    en: {
+      description: "Simple HTTP push notifications for any device.",
+      fields: {
+        url_ntfy: { label: "Ntfy Domain", placeholder: "ntfy.encha.ai", group: "Domains" },
+        user_ntfy: { label: "Access username", placeholder: "encha", group: "Access" },
+        pass_ntfy: { label: "Access password", group: "Access" },
+      },
+      notes: ["Authorization for the API: Basic <authentication>"],
+    },
+    es: {
+      description: "Notificaciones push HTTP simples para cualquier dispositivo.",
+      fields: {
+        url_ntfy: { label: "Dominio de Ntfy", placeholder: "ntfy.encha.ai", group: "Dominios" },
+        user_ntfy: { label: "Usuario de acceso", placeholder: "encha", group: "Acceso" },
+        pass_ntfy: { label: "Contraseña de acceso", group: "Acceso" },
+      },
+      notes: ["Authorization para la API: Basic <authentication>"],
+    },
+  },
 };

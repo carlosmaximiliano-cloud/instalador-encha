@@ -120,4 +120,36 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_planka: string }).url_planka}`,
   },
+  i18n: {
+    en: {
+      description: "Minimalist, fast Trello-like Kanban board.",
+      fields: {
+        url_planka: { label: "Planka Domain", placeholder: "planka.yourcompany.com", group: "Domains" },
+        nome_adm_planka: { label: "Administrator Name", group: "Admin" },
+        email_adm_planka: { label: "Administrator Email", group: "Admin" },
+        user_adm_planka: { label: "Administrator Username", group: "Admin" },
+        senha_adm_planka: { label: "Administrator Password", group: "Admin" },
+        email_planka: { label: "SMTP Sending Email", group: "SMTP" },
+        usuario_email_planka: { label: "SMTP User", group: "SMTP" },
+        senha_email_planka: { label: "SMTP Password", group: "SMTP" },
+        smtp_email_planka: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_planka: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+    },
+    es: {
+      description: "Kanban estilo Trello, minimalista y rápido.",
+      fields: {
+        url_planka: { label: "Dominio de Planka", placeholder: "planka.suempresa.com", group: "Dominios" },
+        nome_adm_planka: { label: "Nombre del administrador", group: "Admin" },
+        email_adm_planka: { label: "Correo del administrador", group: "Admin" },
+        user_adm_planka: { label: "Usuario del administrador", group: "Admin" },
+        senha_adm_planka: { label: "Contraseña del administrador", group: "Admin" },
+        email_planka: { label: "Correo de envío SMTP", group: "SMTP" },
+        usuario_email_planka: { label: "Usuario SMTP", group: "SMTP" },
+        senha_email_planka: { label: "Contraseña SMTP", group: "SMTP" },
+        smtp_email_planka: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_planka: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+    },
+  },
 };

@@ -58,4 +58,28 @@ networks:
       "Credenciais padrão após setup: glpi / glpi",
     ],
   },
+  i18n: {
+    en: {
+      description: "ITSM / asset management and technical support.",
+      fields: {
+        url_glpi: { label: "GLPI domain", placeholder: "helpdesk.yourcompany.com" },
+      },
+      notes: [
+        "Go to the domain to finish the installation via setup",
+        "MySQL host: mysql | User: root | Database: glpi",
+        "Default credentials after setup: glpi / glpi",
+      ],
+    },
+    es: {
+      description: "ITSM / gestión de activos y soporte técnico.",
+      fields: {
+        url_glpi: { label: "Dominio de GLPI", placeholder: "helpdesk.suempresa.com" },
+      },
+      notes: [
+        "Acceda al dominio para completar la instalación vía setup",
+        "Host MySQL: mysql | Usuario: root | Base de datos: glpi",
+        "Credenciales predeterminadas después del setup: glpi / glpi",
+      ],
+    },
+  },
 };

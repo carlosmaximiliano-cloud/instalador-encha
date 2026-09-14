@@ -145,4 +145,20 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_firecrawl}`,
   },
+  i18n: {
+    en: {
+      description: "Crawler that turns websites into LLM-ready markdown.",
+      fields: {
+        url_firecrawl: { label: "Firecrawl API Domain", placeholder: "firecrawl.encha.ai" },
+        api_firecrawl: { label: "OpenAI API Key", placeholder: "sk-..." },
+      },
+    },
+    es: {
+      description: "Crawler que convierte sitios web en markdown listo para LLM.",
+      fields: {
+        url_firecrawl: { label: "Dominio de la API de Firecrawl", placeholder: "firecrawl.encha.ai" },
+        api_firecrawl: { label: "Clave de API de OpenAI", placeholder: "sk-..." },
+      },
+    },
+  },
 };

@@ -95,4 +95,22 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_nextcloud}`,
   },
+  i18n: {
+    en: {
+      description: "Complete private cloud — files, calendar, chat.",
+      fields: {
+        url_nextcloud: { label: "Nextcloud Domain", placeholder: "cloud.encha.ai", group: "Domains" },
+        user_nextcloud: { label: "Administrator Username", placeholder: "admin", group: "Access" },
+        pass_nextcloud: { label: "Administrator Password", group: "Access" },
+      },
+    },
+    es: {
+      description: "Nube privada completa — archivos, calendario, chat.",
+      fields: {
+        url_nextcloud: { label: "Dominio de Nextcloud", placeholder: "cloud.encha.ai", group: "Dominios" },
+        user_nextcloud: { label: "Usuario administrador", placeholder: "admin", group: "Acceso" },
+        pass_nextcloud: { label: "Contraseña del administrador", group: "Acceso" },
+      },
+    },
+  },
 };

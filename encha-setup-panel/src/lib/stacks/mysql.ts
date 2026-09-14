@@ -54,4 +54,12 @@ networks:
     name: ${net}
 `;
   },
+  i18n: {
+    en: {
+      description: "Classic relational database for web applications and CMS.",
+    },
+    es: {
+      description: "Base de datos relacional clásica para aplicaciones web y CMS.",
+    },
+  },
 };

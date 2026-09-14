@@ -101,4 +101,32 @@ networks:
     accessUrl: (v) => `https://${(v as { url_passbolt: string }).url_passbolt}`,
     notes: ["Um e-mail de configuração será enviado ao administrador. Siga o link para definir sua senha."],
   },
+  i18n: {
+    en: {
+      description: "Open-source team password manager.",
+      fields: {
+        url_passbolt: { label: "Passbolt Domain", placeholder: "pass.yourcompany.com", group: "Domains" },
+        email_user_passbolt: { label: "Administrator email", group: "Admin" },
+        smtp_email_passbolt: { label: "SMTP sending email", group: "SMTP" },
+        smtp_user_passbolt: { label: "SMTP User", group: "SMTP" },
+        smtp_pass_passbolt: { label: "SMTP Password", group: "SMTP" },
+        smtp_host_passbolt: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        smtp_port_passbolt: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["A setup email will be sent to the administrator. Follow the link to set your password."],
+    },
+    es: {
+      description: "Gestor de contraseñas en equipo open-source.",
+      fields: {
+        url_passbolt: { label: "Dominio de Passbolt", placeholder: "pass.suempresa.com", group: "Dominios" },
+        email_user_passbolt: { label: "Correo del administrador", group: "Admin" },
+        smtp_email_passbolt: { label: "Correo de envío SMTP", group: "SMTP" },
+        smtp_user_passbolt: { label: "Usuario SMTP", group: "SMTP" },
+        smtp_pass_passbolt: { label: "Contraseña SMTP", group: "SMTP" },
+        smtp_host_passbolt: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        smtp_port_passbolt: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Se enviará un correo de configuración al administrador. Siga el enlace para definir su contraseña."],
+    },
+  },
 };

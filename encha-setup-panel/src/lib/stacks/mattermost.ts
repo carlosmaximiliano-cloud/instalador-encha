@@ -73,4 +73,20 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_mattermost}`,
     notes: ["Crie seu usuário no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Self-hosted Slack for technical, secure teams.",
+      fields: {
+        url_mattermost: { label: "Mattermost domain", placeholder: "chat.encha.ai", group: "Domains" },
+      },
+      notes: ["Create your user on first access."],
+    },
+    es: {
+      description: "Slack autoalojado para equipos técnicos y seguros.",
+      fields: {
+        url_mattermost: { label: "Dominio de Mattermost", placeholder: "chat.encha.ai", group: "Dominios" },
+      },
+      notes: ["Cree su usuario en el primer acceso."],
+    },
+  },
 };

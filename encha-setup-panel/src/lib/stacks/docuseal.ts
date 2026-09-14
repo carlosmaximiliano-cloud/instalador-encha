@@ -90,4 +90,30 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_docuseal}`,
     notes: ["Acesse o domínio para completar a instalação e criar seu usuário."],
   },
+  i18n: {
+    en: {
+      description: "Electronic signature for PDF documents.",
+      fields: {
+        url_docuseal: { label: "DocuSeal Domain", placeholder: "sign.encha.ai", group: "Domains" },
+        email_smtp_docuseal: { label: "SMTP Email", placeholder: "noreply@encha.ai", group: "SMTP" },
+        user_smtp_docuseal: { label: "SMTP User", group: "SMTP" },
+        senha_smtp_docuseal: { label: "SMTP Password", group: "SMTP" },
+        host_smtp_docuseal: { label: "SMTP Host", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_docuseal: { label: "SMTP Port", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Go to the domain to finish the installation and create your user."],
+    },
+    es: {
+      description: "Firma electrónica en documentos PDF.",
+      fields: {
+        url_docuseal: { label: "Dominio de DocuSeal", placeholder: "firma.encha.ai", group: "Dominios" },
+        email_smtp_docuseal: { label: "Correo SMTP", placeholder: "noreply@encha.ai", group: "SMTP" },
+        user_smtp_docuseal: { label: "Usuario SMTP", group: "SMTP" },
+        senha_smtp_docuseal: { label: "Contraseña SMTP", group: "SMTP" },
+        host_smtp_docuseal: { label: "Host SMTP", placeholder: "smtp.hostinger.com", group: "SMTP" },
+        porta_smtp_docuseal: { label: "Puerto SMTP", placeholder: "465", group: "SMTP" },
+      },
+      notes: ["Accede al dominio para completar la instalación y crear tu usuario."],
+    },
+  },
 };

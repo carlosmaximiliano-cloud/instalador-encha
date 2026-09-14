@@ -118,4 +118,30 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_formbricks}`,
     notes: ["Aguarde aproximadamente 5 minutos antes de acessar devido à migração do banco de dados."],
   },
+  i18n: {
+    en: {
+      description: "Data-driven in-product surveys and forms.",
+      fields: {
+        url_formbricks: { label: "Formbricks Domain", group: "Domains" },
+        email_formbricks: { label: "SMTP Email", group: "SMTP" },
+        user_smtp_formbricks: { label: "SMTP User", group: "SMTP" },
+        senha_formbricks: { label: "SMTP Password", group: "SMTP" },
+        host_formbricks: { label: "SMTP Host", group: "SMTP" },
+        porta_formbricks: { label: "SMTP Port", group: "SMTP" },
+      },
+      notes: ["Wait about 5 minutes before accessing due to the database migration."],
+    },
+    es: {
+      description: "Encuestas y formularios in-product basados en datos.",
+      fields: {
+        url_formbricks: { label: "Dominio de Formbricks", group: "Dominios" },
+        email_formbricks: { label: "Email SMTP", group: "SMTP" },
+        user_smtp_formbricks: { label: "Usuario SMTP", group: "SMTP" },
+        senha_formbricks: { label: "Contraseña SMTP", group: "SMTP" },
+        host_formbricks: { label: "Host SMTP", group: "SMTP" },
+        porta_formbricks: { label: "Puerto SMTP", group: "SMTP" },
+      },
+      notes: ["Espere aproximadamente 5 minutos antes de acceder debido a la migración de la base de datos."],
+    },
+  },
 };

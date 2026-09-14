@@ -83,4 +83,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_wuzapi: string }).url_wuzapi}/dashboard`,
     notes: ["A API Key foi gerada automaticamente e está disponível na seção de segredos da stack"],
   },
+  i18n: {
+    en: {
+      description: "REST API and webhooks for WhatsApp via WhatsMeow.",
+      fields: {
+        url_wuzapi: { label: "Wuzapi Domain", placeholder: "wuzapi.yourcompany.com", group: "Domains" },
+      },
+      notes: ["The API Key was generated automatically and is available in the stack's secrets section"],
+    },
+    es: {
+      description: "API REST y webhooks para WhatsApp vía WhatsMeow.",
+      fields: {
+        url_wuzapi: { label: "Dominio de Wuzapi", placeholder: "wuzapi.suempresa.com", group: "Dominios" },
+      },
+      notes: ["La API Key se generó automáticamente y está disponible en la sección de secretos de la stack"],
+    },
+  },
 };

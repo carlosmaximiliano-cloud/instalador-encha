@@ -118,4 +118,22 @@ networks:
     accessUrl: (v) => `https://${(v as { url_hbbs: string }).url_hbbs}`,
     notes: ["Servidor de ID (hbbs) e Relay (hbbr) configurados. Use a API Key gerada no cliente RustDesk."],
   },
+  i18n: {
+    en: {
+      description: "Open-source TeamViewer alternative written in Rust.",
+      fields: {
+        url_hbbs: { label: "ID Server Domain (hbbs)", placeholder: "hbbs-rustdesk.yourcompany.com", group: "Domains" },
+        url_hbbr: { label: "Relay Server Domain (hbbr)", placeholder: "hbbr-rustdesk.yourcompany.com", group: "Domains" },
+      },
+      notes: ["ID server (hbbs) and Relay server (hbbr) configured. Use the generated API Key in the RustDesk client."],
+    },
+    es: {
+      description: "Alternativa open-source a TeamViewer escrita en Rust.",
+      fields: {
+        url_hbbs: { label: "Dominio del servidor de ID (hbbs)", placeholder: "hbbs-rustdesk.suempresa.com", group: "Dominios" },
+        url_hbbr: { label: "Dominio del servidor de Relay (hbbr)", placeholder: "hbbr-rustdesk.suempresa.com", group: "Dominios" },
+      },
+      notes: ["Servidor de ID (hbbs) y Relay (hbbr) configurados. Use la API Key generada en el cliente RustDesk."],
+    },
+  },
 };

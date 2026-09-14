@@ -103,4 +103,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_odoo: string }).url_odoo}`,
     notes: ["Crie seu usuário no primeiro acesso do Odoo"],
   },
+  i18n: {
+    en: {
+      description: "Full ERP (sales, inventory, accounting, HR).",
+      fields: {
+        url_odoo: { label: "Odoo Domain" },
+      },
+      notes: ["Create your user on Odoo's first access"],
+    },
+    es: {
+      description: "ERP completo (ventas, inventario, contabilidad, RR. HH.).",
+      fields: {
+        url_odoo: { label: "Dominio de Odoo" },
+      },
+      notes: ["Cree su usuario en el primer acceso de Odoo"],
+    },
+  },
 };

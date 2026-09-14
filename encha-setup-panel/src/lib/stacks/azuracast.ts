@@ -146,4 +146,20 @@ networks:
     accessUrl: (v) => `https://${(v as { url_azuracast: string }).url_azuracast}`,
     notes: ["Acesse o domínio para completar a instalação e criar sua conta."],
   },
+  i18n: {
+    en: {
+      description: "Self-hosted web radio (streaming + automation).",
+      fields: {
+        url_azuracast: { label: "AzuraCast Domain", group: "Domains" },
+      },
+      notes: ["Go to the domain to complete the installation and create your account."],
+    },
+    es: {
+      description: "Radio web autoalojada (streaming + automatización).",
+      fields: {
+        url_azuracast: { label: "Dominio de AzuraCast", group: "Dominios" },
+      },
+      notes: ["Acceda al dominio para completar la instalación y crear su cuenta."],
+    },
+  },
 };

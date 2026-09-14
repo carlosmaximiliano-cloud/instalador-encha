@@ -69,4 +69,22 @@ networks:
     accessUrl: (v) => `https://${(v as { url_ollama: string }).url_ollama}`,
     notes: ["Baixe modelos rodando `ollama pull llama3.1` no shell do container"],
   },
+  i18n: {
+    en: {
+      description: "Local LLM server (Llama, Mistral, Gemma, etc.). Compatible with the OpenAI API.",
+      fields: {
+        url_ollama: { label: "Domain", placeholder: "ollama.yourcompany.com", group: "Domains" },
+        gpu_enabled: { label: "Enable NVIDIA GPU" },
+      },
+      notes: ["Download models by running `ollama pull llama3.1` in the container shell"],
+    },
+    es: {
+      description: "Servidor local de LLMs (Llama, Mistral, Gemma, etc.). Compatible con la API de OpenAI.",
+      fields: {
+        url_ollama: { label: "Dominio", placeholder: "ollama.suempresa.com", group: "Dominios" },
+        gpu_enabled: { label: "Habilitar GPU NVIDIA" },
+      },
+      notes: ["Descargue modelos ejecutando `ollama pull llama3.1` en la shell del contenedor"],
+    },
+  },
 };

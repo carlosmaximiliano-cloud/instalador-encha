@@ -502,4 +502,36 @@ networks:
       "O bucket 'supabase' precisa existir no MinIO antes da inicialização do Storage.",
     ],
   },
+  i18n: {
+    en: {
+      description: "Complete open-source backend (Postgres + Auth + Storage + Realtime).",
+      fields: {
+        url_supabase: { label: "Supabase Domain", placeholder: "supabase.yourcompany.com", group: "Access" },
+        user_supabase: { label: "Dashboard Username", placeholder: "admin", group: "Access" },
+        pass_supabase: { label: "Dashboard Password", helpText: "No special characters @ ! # $", group: "Access" },
+        url_s3: { label: "S3 URL (MinIO)", placeholder: "s3.yourcompany.com", group: "MinIO/S3" },
+        s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
+        s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },
+      },
+      notes: [
+        "Requires prior setup of files in /root/supabase/docker/volumes (kong.yml, SQL scripts).",
+        "The 'supabase' bucket must exist in MinIO before Storage starts up.",
+      ],
+    },
+    es: {
+      description: "Backend completo open-source (Postgres + Auth + Storage + Realtime).",
+      fields: {
+        url_supabase: { label: "Dominio de Supabase", placeholder: "supabase.suempresa.com", group: "Acceso" },
+        user_supabase: { label: "Usuario del Dashboard", placeholder: "admin", group: "Acceso" },
+        pass_supabase: { label: "Contraseña del Dashboard", helpText: "Sin caracteres especiales @ ! # $", group: "Acceso" },
+        url_s3: { label: "URL del S3 (MinIO)", placeholder: "s3.suempresa.com", group: "MinIO/S3" },
+        s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
+        s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },
+      },
+      notes: [
+        "Requiere configuración previa de archivos en /root/supabase/docker/volumes (kong.yml, scripts SQL).",
+        "El bucket 'supabase' debe existir en MinIO antes de que se inicialice el Storage.",
+      ],
+    },
+  },
 };

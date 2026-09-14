@@ -53,4 +53,20 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_uptimekuma}`,
     notes: ["Crie seu usuário no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Beautiful and simple uptime monitoring.",
+      fields: {
+        url_uptimekuma: { label: "Uptime Kuma Domain", placeholder: "status.encha.ai", group: "Domains" },
+      },
+      notes: ["Create your user account on first access."],
+    },
+    es: {
+      description: "Monitoreo de uptime simple y elegante.",
+      fields: {
+        url_uptimekuma: { label: "Dominio de Uptime Kuma", placeholder: "status.encha.ai", group: "Dominios" },
+      },
+      notes: ["Cree su usuario en el primer acceso."],
+    },
+  },
 };

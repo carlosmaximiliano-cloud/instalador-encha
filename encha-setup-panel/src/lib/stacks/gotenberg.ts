@@ -73,4 +73,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_gotenberg: string }).url_gotenberg}`,
   },
+  i18n: {
+    en: {
+      description: "HTTP API for generating PDFs from HTML.",
+      fields: {
+        url_gotenberg: { label: "Gotenberg Domain", placeholder: "pdf.yourcompany.com" },
+      },
+    },
+    es: {
+      description: "API HTTP para generar PDFs a partir de HTML.",
+      fields: {
+        url_gotenberg: { label: "Dominio de Gotenberg", placeholder: "pdf.suempresa.com" },
+      },
+    },
+  },
 };

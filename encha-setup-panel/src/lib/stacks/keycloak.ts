@@ -91,4 +91,22 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_keycloak: string }).url_keycloak}/admin`,
   },
+  i18n: {
+    en: {
+      description: "Enterprise Identity Provider (SSO, OAuth, SAML).",
+      fields: {
+        url_keycloak: { label: "Keycloak Domain", placeholder: "auth.yourcompany.com" },
+        user_keycloak: { label: "Admin username", placeholder: "admin" },
+        senha_keycloak: { label: "Admin password" },
+      },
+    },
+    es: {
+      description: "Identity Provider (SSO, OAuth, SAML) empresarial.",
+      fields: {
+        url_keycloak: { label: "Dominio de Keycloak", placeholder: "auth.suempresa.com" },
+        user_keycloak: { label: "Usuario admin", placeholder: "admin" },
+        senha_keycloak: { label: "Contraseña admin" },
+      },
+    },
+  },
 };

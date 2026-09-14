@@ -226,4 +226,32 @@ networks:
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).url_langfuse}`,
     notes: ["Crie sua conta no primeiro acesso."],
   },
+  i18n: {
+    en: {
+      description: "Observability and analytics for LLM applications.",
+      fields: {
+        url_langfuse: { label: "Langfuse Domain", group: "Domains" },
+        url_s3: { label: "MinIO Domain (S3)", group: "MinIO" },
+        s3_access_key: { label: "MinIO Access Key", group: "MinIO" },
+        s3_secret_key: { label: "MinIO Secret Key", group: "MinIO" },
+        api_clickhouse: { label: "ClickHouse HTTP URL", group: "ClickHouse" },
+        usuario_clickhouse: { label: "ClickHouse User", group: "ClickHouse" },
+        senha_clickhouse: { label: "ClickHouse Password", placeholder: "password", group: "ClickHouse" },
+      },
+      notes: ["Create your account on first access."],
+    },
+    es: {
+      description: "Observabilidad y analítica para aplicaciones LLM.",
+      fields: {
+        url_langfuse: { label: "Dominio de Langfuse", group: "Dominios" },
+        url_s3: { label: "Dominio de MinIO (S3)", group: "MinIO" },
+        s3_access_key: { label: "Access Key de MinIO", group: "MinIO" },
+        s3_secret_key: { label: "Secret Key de MinIO", group: "MinIO" },
+        api_clickhouse: { label: "URL HTTP de ClickHouse", group: "ClickHouse" },
+        usuario_clickhouse: { label: "Usuario de ClickHouse", group: "ClickHouse" },
+        senha_clickhouse: { label: "Contraseña de ClickHouse", placeholder: "contraseña", group: "ClickHouse" },
+      },
+      notes: ["Cree su cuenta en el primer acceso."],
+    },
+  },
 };

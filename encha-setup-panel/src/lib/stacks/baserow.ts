@@ -63,4 +63,18 @@ networks:
   postInstall: {
     accessUrl: (v) => `https://${(v as { url_baserow: string }).url_baserow}`,
   },
+  i18n: {
+    en: {
+      description: "Collaborative open-source Airtable alternative.",
+      fields: {
+        url_baserow: { label: "Baserow Domain", placeholder: "baserow.yourcompany.com", group: "Domains" },
+      },
+    },
+    es: {
+      description: "Alternativa colaborativa de código abierto a Airtable.",
+      fields: {
+        url_baserow: { label: "Dominio de Baserow", placeholder: "baserow.suempresa.com", group: "Dominios" },
+      },
+    },
+  },
 };

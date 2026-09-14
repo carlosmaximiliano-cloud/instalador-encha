@@ -63,4 +63,22 @@ networks:
 `;
   },
   postInstall: { accessUrl: (v) => `https://${(v as { url_pgadmin: string }).url_pgadmin}` },
+  i18n: {
+    en: {
+      description: "Web UI to manage PostgreSQL — queries, schemas, backups.",
+      fields: {
+        url_pgadmin: { label: "Domain", placeholder: "pgadmin.yourcompany.com", group: "Domains" },
+        email_pgadmin: { label: "Login Email", group: "Credentials" },
+        senha_pgadmin: { label: "Password", group: "Credentials" },
+      },
+    },
+    es: {
+      description: "UI web para administrar PostgreSQL — consultas, esquemas, copias de seguridad.",
+      fields: {
+        url_pgadmin: { label: "Dominio", placeholder: "pgadmin.suempresa.com", group: "Dominios" },
+        email_pgadmin: { label: "Correo de acceso", group: "Credenciales" },
+        senha_pgadmin: { label: "Contraseña", group: "Credenciales" },
+      },
+    },
+  },
 };
