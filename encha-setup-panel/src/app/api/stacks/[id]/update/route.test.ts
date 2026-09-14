@@ -124,8 +124,13 @@ describe("POST /api/stacks/[id]/update — ramo updateViaRelease (Ciclo 29)", ()
     const res = await POST(makeReq(), { params: Promise.resolve({ id: FAKE_ID }) });
     const body = await res.json();
 
+    // `error` é o código estável ("falha_atualizar", contrato da Fase 2 de
+    // i18n — src/lib/api-error.ts); o detalhe cru só existe interpolado em
+    // `message` (msgFalhaAtualizar em route.ts), que é o campo que o painel
+    // exibe (catalog/page.tsx prefere message a error).
     expect(res.status).toBe(500);
-    expect(body.error).toMatch(/falha simulada no update/);
+    expect(body.error).toBe("falha_atualizar");
+    expect(body.message).toMatch(/falha simulada no update/);
   });
 
   // M6 — a mais importante desta suíte: o guard de entrada (rate limit)
