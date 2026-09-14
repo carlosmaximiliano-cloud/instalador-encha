@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { resolveLocale, htmlLang } from "@/lib/locale";
+import type { Locale } from "@/lib/locale-shared";
 import "./globals.css";
 
 const THEME_BOOTSTRAP = `try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}`;
@@ -19,7 +20,7 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-const DESCRIPTIONS = {
+const DESCRIPTIONS: Record<Locale, string> = {
   pt: "Painel visual para instalação de stacks no Portainer Swarm",
   en: "Visual panel for installing stacks on Portainer Swarm",
   es: "Panel visual para instalar stacks en Portainer Swarm",

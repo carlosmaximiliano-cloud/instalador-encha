@@ -13,9 +13,13 @@ export type LogsPageText = {
   colResult: string;
 };
 
+// title fica "Audit log" nos 3 idiomas de propósito: é o mesmo rótulo do
+// link na sidebar (sidebar.i18n.ts, decisão da Fase 2), e era o título que o
+// pt-BR já mostrava antes — traduzir só aqui deixaria link e página com
+// nomes diferentes.
 export const logsPageText: Record<Locale, LogsPageText> = {
   pt: {
-    title: "Log de auditoria",
+    title: "Audit log",
     subtitle: "Toda ação relevante registrada (append-only).",
     loading: "Carregando...",
     empty: "Sem registros ainda.",
@@ -39,7 +43,7 @@ export const logsPageText: Record<Locale, LogsPageText> = {
     colResult: "Result",
   },
   es: {
-    title: "Registro de auditoría",
+    title: "Audit log",
     subtitle: "Toda acción relevante registrada (append-only).",
     loading: "Cargando...",
     empty: "Sin registros todavía.",

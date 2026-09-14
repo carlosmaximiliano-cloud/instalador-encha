@@ -211,6 +211,34 @@ agora — fora do escopo de "nada muda"):**
   virar indexado por locale, senão uma resposta pt em cache esconderia
   en/es até o cache expirar.
 
+## Teste end-to-end (2026-09-14) — 7 bugs reais achados ao vivo
+
+O primeiro teste de ponta a ponta numa VPS real (`31.97.144.25`) achou 7
+gaps que nenhum `bash -n`, scanner por acento ou teste automatizado tinha
+pego — todos consertados na hora (commits `a3da914`, `dcae32c`, `2559821`,
+`bb342e3`, `4f7f27e`). Detalhe de cada um no plano
+(`~/.claude/plans/instalei-o-encha-setup-playful-biscuit.md`, seção
+"Resultado dos passos 0–4"). Resumo dos padrões que causaram os gaps, pra
+não repetir:
+
+- **`declare -A` precisa vir antes de QUALQUER `MSG_PT[chave]=` no
+  arquivo** — bash cria a variável como array indexado na primeira
+  atribuição desse tipo se ainda não foi declarada, e um `declare -A`
+  tardio falha em silêncio, corrompendo o catálogo inteiro. Isso só
+  aparece em runtime, nunca em `bash -n`.
+- **Módulos/componentes que não são nem "UI chrome" nem "overlay de
+  stack"** escapam da varredura de qualquer fase que pense em termos
+  dessas duas categorias (`category-labels.ts`, `theme-toggle.tsx`,
+  `locale-toggle.tsx`, as páginas `logs`/`stacks` inteiras).
+- **Fetch client-side que roda uma vez no mount** não se atualiza sozinho
+  quando o locale muda depois — `setLocale()` só afeta Server Components
+  via `router.refresh()`. Todo componente que busca conteúdo
+  locale-dependente do servidor precisa de `locale` nas deps do efeito.
+- **Funções auxiliares de cabeçalho curtas** (`banner()`,
+  `msg_resumo_informacoes()`), chamadas por dezenas de outras funções, são
+  fáceis de escapar de qualquer atribuição de lote por range de linha —
+  mesmo padrão do gap já achado em `criar_bucket.minio()` na Fase 4.
+
 ## Pendências deste glossário
 
 Nenhuma no momento. Itens anteriores (grafia da marca, `EnchaT Grátis`, `N8N

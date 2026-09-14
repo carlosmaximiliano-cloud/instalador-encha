@@ -26,12 +26,23 @@ export function BannerAd({ variant, className }: Props) {
   // alt_text (Fase 5) é resolvido no servidor a partir do cookie de locale —
   // locale nas deps pra não deixar o alt preso no idioma anterior depois de
   // trocar no toggle (mesmo achado do catalog/page.tsx e update-checker.tsx).
+  // `lang` na URL não é lido pela rota (ela usa o cookie) — existe só pra
+  // mudar a chave do cache HTTP do browser: /api/banner responde com
+  // `private, max-age=120`, e sem isso a mesma URL voltava do cache com o
+  // alt do idioma anterior. `cancelled` descarta resposta atrasada de um
+  // idioma anterior quando o toggle é clicado em sequência.
   useEffect(() => {
+    let cancelled = false;
     const position = variant === "sidebar" ? "sidebar" : "top";
-    fetch(`/api/banner?position=${position}`)
+    fetch(`/api/banner?position=${position}&lang=${locale}`)
       .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
-      .then((d) => (d?.id ? setBanner(d) : null))
+      .then((d) => {
+        if (!cancelled && d?.id) setBanner(d);
+      })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [variant, locale]);
 
   useEffect(() => {

@@ -29,12 +29,12 @@ export const CATEGORY_LABELS: Record<StackCategory, Record<Locale, string>> = {
   storage: { pt: "Armazenamento", en: "Storage", es: "Almacenamiento" },
   monitoring: { pt: "Monitoramento & Infra", en: "Monitoring & Infra", es: "Monitoreo e Infra" },
   erp: { pt: "ERP & Negócios", en: "ERP & Business", es: "ERP y Negocios" },
-  analytics: { pt: "Analytics & BI", en: "Analytics & BI", es: "Analytics y BI" },
+  analytics: { pt: "Analytics & BI", en: "Analytics & BI", es: "Analítica y BI" },
   auth: { pt: "Autenticação", en: "Authentication", es: "Autenticación" },
   chatbot: { pt: "Chatbots", en: "Chatbots", es: "Chatbots" },
   media: { pt: "Mídia & Streaming", en: "Media & Streaming", es: "Medios y Streaming" },
   remote: { pt: "Acesso Remoto", en: "Remote Access", es: "Acceso Remoto" },
-  design: { pt: "Design & Whiteboard", en: "Design & Whiteboard", es: "Diseño y Whiteboard" },
+  design: { pt: "Design & Whiteboard", en: "Design & Whiteboard", es: "Diseño y Pizarra" },
   admin: { pt: "Admin", en: "Admin", es: "Admin" },
 };
 

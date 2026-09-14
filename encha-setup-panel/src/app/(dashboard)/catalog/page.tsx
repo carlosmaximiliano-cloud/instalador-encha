@@ -54,10 +54,16 @@ function CatalogPageInner() {
   const [swarmCtx, setSwarmCtx] = useState({ networkName: "enchanet", serverName: "encha", email: "" });
   const [vpsDefaults, setVpsDefaults] = useState<Record<string, string>>({});
 
+  // Só a resposta da requisição mais recente é aplicada: com o refetch por
+  // troca de locale (abaixo) + polling de deploy, duas chamadas podem voar
+  // juntas, e uma resposta atrasada do idioma anterior sobrescreveria a nova.
+  const stacksReqSeq = useRef(0);
   const refetchStacks = useCallback(() => {
+    const seq = ++stacksReqSeq.current;
     fetch("/api/stacks")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
+        if (seq !== stacksReqSeq.current) return;
         if (d && Array.isArray(d.catalog)) setData(d);
         else console.warn("[stacks] resposta inesperada:", d);
       })
