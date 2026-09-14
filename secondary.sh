@@ -1239,13 +1239,25 @@ centralizar "╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚�
 }
 
 
+MSG_PT[msg_retorno_menu_aviso]="\e[33m⚠️ AVISO: GUARDE TODAS AS INFORMAÇÕES ACIMA NO SEU BLOCO DE NOTAS!\e[0m"
+MSG_EN[msg_retorno_menu_aviso]="\e[33m⚠️ WARNING: SAVE ALL THE INFORMATION ABOVE IN YOUR NOTES!\e[0m"
+MSG_ES[msg_retorno_menu_aviso]="\e[33m⚠️ AVISO: GUARDE TODA LA INFORMACIÓN DE ARRIBA EN SUS NOTAS!\e[0m"
+
+MSG_PT[msg_retorno_menu_instagram]="\e[36m📱 Nos acompanhe no Instagram: \e[1m@encha_ai\e[0m \e[36mpara mais dicas, atualizações e novidades!\e[0m"
+MSG_EN[msg_retorno_menu_instagram]="\e[36m📱 Follow us on Instagram: \e[1m@encha_ai\e[0m \e[36mfor more tips, updates and news!\e[0m"
+MSG_ES[msg_retorno_menu_instagram]="\e[36m📱 Síganos en Instagram: \e[1m@encha_ai\e[0m \e[36mpara más consejos, actualizaciones y novedades!\e[0m"
+
+MSG_PT[msg_retorno_menu_enter]="\e[33m▶️ Aperte ENTER para voltar ao menu de ferramentas\e[0m"
+MSG_EN[msg_retorno_menu_enter]="\e[33m▶️ Press ENTER to return to the tools menu\e[0m"
+MSG_ES[msg_retorno_menu_enter]="\e[33m▶️ Presione ENTER para volver al menú de herramientas\e[0m"
+
 msg_retorno_menu(){
-echo -e "\e[33m⚠️ AVISO: GUARDE TODAS AS INFORMAÇÕES ACIMA NO SEU BLOCO DE NOTAS!\e[0m"
+echo -e "$(t msg_retorno_menu_aviso)"
 echo ""
-echo -e "\e[36m📱 Nos acompanhe no Instagram: \e[1m@encha_ai\e[0m \e[36mpara mais dicas, atualizações e novidades!\e[0m"
+echo -e "$(t msg_retorno_menu_instagram)"
 echo ""
 if [[ -z "$ENCHA_NONINTERACTIVE" ]]; then
-    echo -e "\e[33m▶️ Aperte ENTER para voltar ao menu de ferramentas\e[0m"
+    echo -e "$(t msg_retorno_menu_enter)"
     read
 fi
 sleep 2
@@ -1297,6 +1309,34 @@ sleep 2
 
 #TOOLS GERAIS
 
+MSG_PT[validar_senha_min]="❌ Por segurança, sua senha precisa ter no mínimo %s caracteres."
+MSG_EN[validar_senha_min]="❌ For security, your password needs at least %s characters."
+MSG_ES[validar_senha_min]="❌ Por seguridad, su contraseña necesita al menos %s caracteres."
+
+MSG_PT[validar_senha_maiuscula]="🔠 Falta pelo menos uma letra maiúscula."
+MSG_EN[validar_senha_maiuscula]="🔠 Missing at least one uppercase letter."
+MSG_ES[validar_senha_maiuscula]="🔠 Falta al menos una letra mayúscula."
+
+MSG_PT[validar_senha_minuscula]="🔡 Inclua ao menos uma letra minúscula."
+MSG_EN[validar_senha_minuscula]="🔡 Include at least one lowercase letter."
+MSG_ES[validar_senha_minuscula]="🔡 Incluya al menos una letra minúscula."
+
+MSG_PT[validar_senha_numero]="🔢 Quase lá! Inclua pelo menos um número."
+MSG_EN[validar_senha_numero]="🔢 Almost there! Include at least one number."
+MSG_ES[validar_senha_numero]="🔢 ¡Ya casi! Incluya al menos un número."
+
+MSG_PT[validar_senha_especial]="🔣 Inclua pelo menos um caractere especial: @ ou _."
+MSG_EN[validar_senha_especial]="🔣 Include at least one special character: @ or _."
+MSG_ES[validar_senha_especial]="🔣 Incluya al menos un carácter especial: @ o _."
+
+MSG_PT[validar_senha_invalido]="⚠️ Caracteres inválidos detectados. Use somente letras, números e @ ou _."
+MSG_EN[validar_senha_invalido]="⚠️ Invalid characters detected. Use only letters, numbers and @ or _."
+MSG_ES[validar_senha_invalido]="⚠️ Caracteres inválidos detectados. Use solo letras, números y @ o _."
+
+MSG_PT[validar_senha_resumo]="\e[31mSua senha não atende aos requisitos. Veja o que precisa ajustar:%s\e[0m"
+MSG_EN[validar_senha_resumo]="\e[31mYour password doesn't meet the requirements. Here's what to fix:%s\e[0m"
+MSG_ES[validar_senha_resumo]="\e[31mSu contraseña no cumple los requisitos. Esto es lo que debe ajustar:%s\e[0m"
+
 validar_senha() {
     senha=$1
     tamanho_minimo=$2
@@ -1305,43 +1345,43 @@ validar_senha() {
 
     # Verifica comprimento mínimo
     if [ ${#senha} -lt $tamanho_minimo ]; then
-        mensagem_erro+="\n❌ Por segurança, sua senha precisa ter no mínimo $tamanho_minimo caracteres."
+        mensagem_erro+=$'\n'"$(t validar_senha_min "$tamanho_minimo")"
         tem_erro=1
     fi
 
     # Verifica letra maiúscula
     if ! [[ $senha =~ [A-Z] ]]; then
-        mensagem_erro+="\n🔠 Falta pelo menos uma letra maiúscula."
+        mensagem_erro+=$'\n'"$(t validar_senha_maiuscula)"
         tem_erro=1
     fi
 
     # Verifica letra minúscula
     if ! [[ $senha =~ [a-z] ]]; then
-        mensagem_erro+="\n🔡 Inclua ao menos uma letra minúscula."
+        mensagem_erro+=$'\n'"$(t validar_senha_minuscula)"
         tem_erro=1
     fi
 
     # Verifica número
     if ! [[ $senha =~ [0-9] ]]; then
-        mensagem_erro+="\n🔢 Quase lá! Inclua pelo menos um número."
+        mensagem_erro+=$'\n'"$(t validar_senha_numero)"
         tem_erro=1
     fi
 
     # Verifica caracteres especiais permitidos (@ ou _)
     if ! [[ $senha =~ [@_] ]]; then
-        mensagem_erro+="\n🔣 Inclua pelo menos um caractere especial: @ ou _."
+        mensagem_erro+=$'\n'"$(t validar_senha_especial)"
         tem_erro=1
     fi
 
     # Verifica se há caracteres inválidos
     if [[ $senha =~ [^A-Za-z0-9@_] ]]; then
-        mensagem_erro+="\n⚠️ Caracteres inválidos detectados. Use somente letras, números e @ ou _."
+        mensagem_erro+=$'\n'"$(t validar_senha_invalido)"
         tem_erro=1
     fi
 
     # Exibe erros, se houver
     if [ $tem_erro -eq 1 ]; then
-        echo -e "\e[31mSua senha não atende aos requisitos. Veja o que precisa ajustar:$mensagem_erro\e[0m"
+        echo -e "$(t validar_senha_resumo "$mensagem_erro")"
         return 1
     fi
 
@@ -1351,30 +1391,46 @@ validar_senha() {
 # Valida um nome de usuário (Portainer admin, admin do painel). Evita
 # defaults previsíveis como "admin" — se um atacante já sabe o usuário, só
 # falta adivinhar a senha, o que reduz a segurança pela metade.
+MSG_PT[validar_usuario_tamanho]="❌ O usuário precisa ter entre 4 e 40 caracteres."
+MSG_EN[validar_usuario_tamanho]="❌ The username needs to be between 4 and 40 characters."
+MSG_ES[validar_usuario_tamanho]="❌ El usuario necesita tener entre 4 y 40 caracteres."
+
+MSG_PT[validar_usuario_formato]="🔡 Use apenas letras minúsculas, números, _ ou -, começando com uma letra."
+MSG_EN[validar_usuario_formato]="🔡 Use only lowercase letters, numbers, _ or -, starting with a letter."
+MSG_ES[validar_usuario_formato]="🔡 Use solo letras minúsculas, números, _ o -, comenzando con una letra."
+
+MSG_PT[validar_usuario_previsivel]="⚠️ Esse usuário é previsível demais (\"%s\") — escolha outro."
+MSG_EN[validar_usuario_previsivel]="⚠️ This username is too predictable (\"%s\") — choose another one."
+MSG_ES[validar_usuario_previsivel]="⚠️ Ese usuario es demasiado predecible (\"%s\") — elija otro."
+
+MSG_PT[validar_usuario_resumo]="\e[31mUsuário inválido. Veja o que precisa ajustar:%s\e[0m"
+MSG_EN[validar_usuario_resumo]="\e[31mInvalid username. Here's what to fix:%s\e[0m"
+MSG_ES[validar_usuario_resumo]="\e[31mUsuario inválido. Esto es lo que debe ajustar:%s\e[0m"
+
 validar_usuario() {
     usuario=$1
     tem_erro=0
     mensagem_erro=""
 
     if [ ${#usuario} -lt 4 ] || [ ${#usuario} -gt 40 ]; then
-        mensagem_erro+="\n❌ O usuário precisa ter entre 4 e 40 caracteres."
+        mensagem_erro+=$'\n'"$(t validar_usuario_tamanho)"
         tem_erro=1
     fi
 
     if ! [[ $usuario =~ ^[a-z][a-z0-9_-]*$ ]]; then
-        mensagem_erro+="\n🔡 Use apenas letras minúsculas, números, _ ou -, começando com uma letra."
+        mensagem_erro+=$'\n'"$(t validar_usuario_formato)"
         tem_erro=1
     fi
 
     case "${usuario,,}" in
         admin|administrator|root|portainer|user|test|encha)
-            mensagem_erro+="\n⚠️ Esse usuário é previsível demais (\"$usuario\") — escolha outro."
+            mensagem_erro+=$'\n'"$(t validar_usuario_previsivel "$usuario")"
             tem_erro=1
             ;;
     esac
 
     if [ $tem_erro -eq 1 ]; then
-        echo -e "\e[31mUsuário inválido. Veja o que precisa ajustar:$mensagem_erro\e[0m"
+        echo -e "$(t validar_usuario_resumo "$mensagem_erro")"
         return 1
     fi
 
@@ -1385,6 +1441,10 @@ validar_usuario() {
 # (Host(`$dominio`)). Mesmo regex já usado nos prompts de domínio do main.sh
 # — sem essa checagem, um valor malformado vai direto para o compose e só
 # quebra na hora de emitir o certificado ou rotear a requisição.
+MSG_PT[validar_dominio_invalido]="\e[31m✖ Domínio inválido. Use um domínio/subdomínio válido, ex: crm.suaempresa.com\e[0m"
+MSG_EN[validar_dominio_invalido]="\e[31m✖ Invalid domain. Use a valid domain/subdomain, e.g.: crm.yourcompany.com\e[0m"
+MSG_ES[validar_dominio_invalido]="\e[31m✖ Dominio inválido. Use un dominio/subdominio válido, ej: crm.suempresa.com\e[0m"
+
 validar_dominio() {
     dominio=$1
 
@@ -1392,7 +1452,7 @@ validar_dominio() {
         return 0
     fi
 
-    echo -e "\e[31m✖ Domínio inválido. Use um domínio/subdomínio válido, ex: crm.suaempresa.com\e[0m"
+    echo -e "$(t validar_dominio_invalido)"
     return 1
 }
 
@@ -1406,6 +1466,18 @@ validar_dominio() {
 #
 # Uso: renomear_admin_portainer_se_necessario <rede> <usuario_alvo> <senha> <token_admin>
 # Efeitos: define USER_PORTAINER_FINAL e TOKEN_PORTAINER_FINAL (globais).
+MSG_PT[renomear_admin_portainer_falha]="\e[33m⚠️  Não foi possível renomear o admin do Portainer para \"%s\" (HTTP %s) — mantendo \"admin\".\e[0m"
+MSG_EN[renomear_admin_portainer_falha]="\e[33m⚠️  Could not rename the Portainer admin to \"%s\" (HTTP %s) — keeping \"admin\".\e[0m"
+MSG_ES[renomear_admin_portainer_falha]="\e[33m⚠️  No fue posible renombrar el admin de Portainer a \"%s\" (HTTP %s) — manteniendo \"admin\".\e[0m"
+
+MSG_PT[renomear_admin_portainer_sucesso]="\e[32m✅ Admin do Portainer renomeado para \"%s\".\e[0m"
+MSG_EN[renomear_admin_portainer_sucesso]="\e[32m✅ Portainer admin renamed to \"%s\".\e[0m"
+MSG_ES[renomear_admin_portainer_sucesso]="\e[32m✅ Admin de Portainer renombrado a \"%s\".\e[0m"
+
+MSG_PT[renomear_admin_portainer_reautenticar]="\e[33m⚠️  Renomeado para \"%s\", mas falha ao reautenticar — usando token antigo.\e[0m"
+MSG_EN[renomear_admin_portainer_reautenticar]="\e[33m⚠️  Renamed to \"%s\", but re-authentication failed — using the old token.\e[0m"
+MSG_ES[renomear_admin_portainer_reautenticar]="\e[33m⚠️  Renombrado a \"%s\", pero falló la reautenticación — usando el token anterior.\e[0m"
+
 renomear_admin_portainer_se_necessario() {
     local rede="$1" alvo="$2" senha="$3" token_admin="$4"
     USER_PORTAINER_FINAL="admin"
@@ -1428,7 +1500,7 @@ renomear_admin_portainer_se_necessario() {
     done
 
     if [ "$ok" != true ]; then
-        echo -e "\e[33m⚠️  Não foi possível renomear o admin do Portainer para \"$alvo\" (HTTP $http) — mantendo \"admin\".\e[0m"
+        echo -e "$(t renomear_admin_portainer_falha "$alvo" "$http")"
         return 0
     fi
 
@@ -1441,17 +1513,45 @@ renomear_admin_portainer_se_necessario() {
     if [ -n "$novo_token" ] && [ "$novo_token" != "null" ]; then
         USER_PORTAINER_FINAL="$alvo"
         TOKEN_PORTAINER_FINAL="$novo_token"
-        echo -e "\e[32m✅ Admin do Portainer renomeado para \"$alvo\".\e[0m"
+        echo -e "$(t renomear_admin_portainer_sucesso "$alvo")"
     else
-        echo -e "\e[33m⚠️  Renomeado para \"$alvo\", mas falha ao reautenticar — usando token antigo.\e[0m"
+        echo -e "$(t renomear_admin_portainer_reautenticar "$alvo")"
         USER_PORTAINER_FINAL="$alvo"
     fi
 }
 
 
 
+MSG_PT[wait_stack_aguarde]="\e[33m⏳ Aguarde alguns instantes. Se demorar mais de 5 minutos, cancele e tente novamente.\e[0m"
+MSG_EN[wait_stack_aguarde]="\e[33m⏳ Please wait a moment. If it takes more than 5 minutes, cancel and try again.\e[0m"
+MSG_ES[wait_stack_aguarde]="\e[33m⏳ Espere unos instantes. Si demora más de 5 minutos, cancele y vuelva a intentar.\e[0m"
+
+MSG_PT[wait_stack_servico]="\e[35m🛠️ Serviço:\e[0m \e[36m%s\e[0m — Réplicas detectadas: \e[33m%s\e[0m"
+MSG_EN[wait_stack_servico]="\e[35m🛠️ Service:\e[0m \e[36m%s\e[0m — Replicas detected: \e[33m%s\e[0m"
+MSG_ES[wait_stack_servico]="\e[35m🛠️ Servicio:\e[0m \e[36m%s\e[0m — Réplicas detectadas: \e[33m%s\e[0m"
+
+MSG_PT[wait_stack_status]="\e[36m📊 Status do Serviço:\e[0m em execução = \e[33m%s\e[0m de \e[32m%s\e[0m"
+MSG_EN[wait_stack_status]="\e[36m📊 Service status:\e[0m running = \e[33m%s\e[0m of \e[32m%s\e[0m"
+MSG_ES[wait_stack_status]="\e[36m📊 Estado del servicio:\e[0m en ejecución = \e[33m%s\e[0m de \e[32m%s\e[0m"
+
+MSG_PT[wait_stack_ativo]="\e[32m🟢 Serviço \e[32m%s\e[0m está ativo com todas as réplicas (%s)."
+MSG_EN[wait_stack_ativo]="\e[32m🟢 Service \e[32m%s\e[0m is active with all replicas (%s)."
+MSG_ES[wait_stack_ativo]="\e[32m🟢 Servicio \e[32m%s\e[0m está activo con todas las réplicas (%s)."
+
+MSG_PT[wait_stack_todos_ativos]="\e[32m✅ Todos os serviços estão ativos.\e[0m"
+MSG_EN[wait_stack_todos_ativos]="\e[32m✅ All services are active.\e[0m"
+MSG_ES[wait_stack_todos_ativos]="\e[32m✅ Todos los servicios están activos.\e[0m"
+
+MSG_PT[wait_stack_aguardando]="\e[36m⏳ Aguardando os serviços... (tentativa \e[33m%s/%s\e[36m)\e[0m"
+MSG_EN[wait_stack_aguardando]="\e[36m⏳ Waiting for the services... (attempt \e[33m%s/%s\e[36m)\e[0m"
+MSG_ES[wait_stack_aguardando]="\e[36m⏳ Esperando los servicios... (intento \e[33m%s/%s\e[36m)\e[0m"
+
+MSG_PT[wait_stack_timeout]="\e[31m🛑 Tempo esgotado: serviços não responderam a tempo.\e[0m"
+MSG_EN[wait_stack_timeout]="\e[31m🛑 Timeout: services did not respond in time.\e[0m"
+MSG_ES[wait_stack_timeout]="\e[31m🛑 Tiempo agotado: los servicios no respondieron a tiempo.\e[0m"
+
 wait_stack() {
-    echo -e "\e[33m⏳ Aguarde alguns instantes. Se demorar mais de 5 minutos, cancele e tente novamente.\e[0m"
+    echo -e "$(t wait_stack_aguarde)"
     declare -A services_status=()
 
     # Inicializa todos os serviços como pendentes
@@ -1467,17 +1567,17 @@ wait_stack() {
 
         for service in "${!services_status[@]}"; do
             replicas=$(docker service ls --filter "name=$service" --format "{{.Replicas}}")
-            echo -e "\e[35m🛠️ Serviço:\e[0m \e[36m$service\e[0m — Réplicas detectadas: \e[33m$replicas\e[0m"
+            echo -e "$(t wait_stack_servico "$service" "$replicas")"
 
             if [[ $replicas == */* ]]; then
                 running=${replicas%%/*}
                 total=${replicas##*/}
 
-                echo -e "\e[36m📊 Status do Serviço:\e[0m em execução = \e[33m$running\e[0m de \e[32m$total\e[0m"
+                echo -e "$(t wait_stack_status "$running" "$total")"
 
                 if [ "$running" == "$total" ]; then
                     if [ "${services_status["$service"]}" != "ativo" ]; then
-                        echo -e "\e[32m🟢 Serviço \e[32m$service\e[0m está ativo com todas as réplicas ($replicas)."
+                        echo -e "$(t wait_stack_ativo "$service" "$replicas")"
                         services_status["$service"]="ativo"
                     fi
                 else
@@ -1491,16 +1591,16 @@ wait_stack() {
         done
 
         if $all_active; then
-            echo -e "\e[32m✅ Todos os serviços estão ativos.\e[0m"
+            echo -e "$(t wait_stack_todos_ativos)"
             return 0
         fi
 
-        echo -e "\e[36m⏳ Aguardando os serviços... (tentativa \e[33m$attempt/$max_attempts\e[36m)\e[0m"
+        echo -e "$(t wait_stack_aguardando "$attempt" "$max_attempts")"
         attempt=$((attempt + 1))
         sleep 30
     done
 
-    echo -e "\e[31m🛑 Tempo esgotado: serviços não responderam a tempo.\e[0m"
+    echo -e "$(t wait_stack_timeout)"
     return 1
 }
 
@@ -1512,11 +1612,15 @@ wait_30_sec() {
 }
 
 
+MSG_PT[dados_arquivo_nao_encontrado]="\e[31m[ERRO]\e[0m Arquivo de dados não encontrado em: %s"
+MSG_EN[dados_arquivo_nao_encontrado]="\e[31m[ERROR]\e[0m Data file not found at: %s"
+MSG_ES[dados_arquivo_nao_encontrado]="\e[31m[ERROR]\e[0m Archivo de datos no encontrado en: %s"
+
 dados() {
     local dados_vps="/root/dados_vps/dados_vps"
 
     if [ ! -f "$dados_vps" ]; then
-        echo -e "\e[31m[ERRO]\e[0m Arquivo de dados não encontrado em: $dados_vps"
+        echo -e "$(t dados_arquivo_nao_encontrado "$dados_vps")"
         exit 1
     fi
 
@@ -1530,15 +1634,27 @@ dados() {
 
 
 
+MSG_PT[verificar_stack_ja_instalada]="A stack '\e[33m%s\e[0m' já está instalada."
+MSG_EN[verificar_stack_ja_instalada]="The stack '\e[33m%s\e[0m' is already installed."
+MSG_ES[verificar_stack_ja_instalada]="La stack '\e[33m%s\e[0m' ya está instalada."
+
+MSG_PT[verificar_stack_refazer]="Para refazer a instalação, remova a stack \e[33m%s\e[0m no Portainer e tente novamente."
+MSG_EN[verificar_stack_refazer]="To reinstall, remove the stack \e[33m%s\e[0m in Portainer and try again."
+MSG_ES[verificar_stack_refazer]="Para rehacer la instalación, elimine la stack \e[33m%s\e[0m en Portainer y vuelva a intentar."
+
+MSG_PT[verificar_stack_redirecionado]="Você será redirecionado ao menu principal em 10 segundos..."
+MSG_EN[verificar_stack_redirecionado]="You will be redirected to the main menu in 10 seconds..."
+MSG_ES[verificar_stack_redirecionado]="Será redirigido al menú principal en 10 segundos..."
+
 verificar_stack() {
     clear
     local nome_stack="$1"
 
     if docker stack ls --format "{{.Name}}" | grep -q "^${nome_stack}$"; then
-        echo -e "A stack '\e[33m${nome_stack}\e[0m' já está instalada."
-        echo -e "Para refazer a instalação, remova a stack \e[33m${nome_stack}\e[0m no Portainer e tente novamente."
+        echo -e "$(t verificar_stack_ja_instalada "$nome_stack")"
+        echo -e "$(t verificar_stack_refazer "$nome_stack")"
         echo -e ""
-        echo -e "Você será redirecionado ao menu principal em 10 segundos..."
+        echo -e "$(t verificar_stack_redirecionado)"
         sleep 10
         clear
         return 0
@@ -1548,14 +1664,30 @@ verificar_stack() {
 }
 
 
+MSG_PT[verificar_docker_e_portainer_traefik_atencao]="\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
+MSG_EN[verificar_docker_e_portainer_traefik_atencao]="\e[33m[Attention]\e[0m The \e[32m[1] Traefik and Portainer\e[0m component is not installed yet."
+MSG_ES[verificar_docker_e_portainer_traefik_atencao]="\e[33m[Atención]\e[0m El componente \e[32m[1] Traefik y Portainer\e[0m aún no está instalado."
+
+MSG_PT[verificar_docker_e_portainer_traefik_continuar]="Para continuar, é necessário instalar esse componente primeiro."
+MSG_EN[verificar_docker_e_portainer_traefik_continuar]="To continue, you need to install that component first."
+MSG_ES[verificar_docker_e_portainer_traefik_continuar]="Para continuar, es necesario instalar ese componente primero."
+
+MSG_PT[verificar_docker_e_portainer_traefik_realize]="\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
+MSG_EN[verificar_docker_e_portainer_traefik_realize]="\n\e[31m✖ Please complete the installation before continuing.\e[0m"
+MSG_ES[verificar_docker_e_portainer_traefik_realize]="\n\e[31m✖ Por favor, realice la instalación antes de continuar.\e[0m"
+
+MSG_PT[verificar_docker_e_portainer_traefik_voltando]="\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+MSG_EN[verificar_docker_e_portainer_traefik_voltando]="\nReturning to the main menu in \e[36m5 seconds...\e[0m"
+MSG_ES[verificar_docker_e_portainer_traefik_voltando]="\nVolviendo al menú principal en \e[36m5 segundos...\e[0m"
+
 verificar_docker_e_portainer_traefik() {
     # Verifica se o Docker está instalado
     if ! command -v docker &> /dev/null; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
-        echo -e "Para continuar, é necessário instalar esse componente primeiro."
-        echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
-        echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+        echo -e "$(t verificar_docker_e_portainer_traefik_atencao)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_continuar)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_realize)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_voltando)"
         sleep 5
         return 1
     fi
@@ -1563,10 +1695,10 @@ verificar_docker_e_portainer_traefik() {
     # Verifica se o Portainer está em execução
     if ! docker ps --format "{{.Names}}" | grep -q "portainer"; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
-        echo -e "Para continuar, é necessário instalar esse componente primeiro."
-        echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
-        echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+        echo -e "$(t verificar_docker_e_portainer_traefik_atencao)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_continuar)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_realize)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_voltando)"
         sleep 5
         return 1
     fi
@@ -1574,10 +1706,10 @@ verificar_docker_e_portainer_traefik() {
     # Verifica se o Traefik está em execução
     if ! docker ps --format "{{.Names}}" | grep -q "traefik"; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[1] Traefik e Portainer\e[0m ainda não está instalado."
-        echo -e "Para continuar, é necessário instalar esse componente primeiro."
-        echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
-        echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+        echo -e "$(t verificar_docker_e_portainer_traefik_atencao)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_continuar)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_realize)"
+        echo -e "$(t verificar_docker_e_portainer_traefik_voltando)"
         sleep 5
         return 1
     fi
@@ -1586,13 +1718,29 @@ verificar_docker_e_portainer_traefik() {
 }
 
 
+MSG_PT[verificar_minio_atencao]="\e[33m[Atenção]\e[0m O componente \e[32m[7] MinIO\e[0m ainda não está instalado."
+MSG_EN[verificar_minio_atencao]="\e[33m[Attention]\e[0m The \e[32m[7] MinIO\e[0m component is not installed yet."
+MSG_ES[verificar_minio_atencao]="\e[33m[Atención]\e[0m El componente \e[32m[7] MinIO\e[0m aún no está instalado."
+
+MSG_PT[verificar_minio_continuar]="Para continuar, é necessário instalar essa opção primeiro."
+MSG_EN[verificar_minio_continuar]="To continue, you need to install that option first."
+MSG_ES[verificar_minio_continuar]="Para continuar, es necesario instalar esa opción primero."
+
+MSG_PT[verificar_minio_realize]="\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
+MSG_EN[verificar_minio_realize]="\n\e[31m✖ Please complete the installation before continuing.\e[0m"
+MSG_ES[verificar_minio_realize]="\n\e[31m✖ Por favor, realice la instalación antes de continuar.\e[0m"
+
+MSG_PT[verificar_minio_voltando]="\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+MSG_EN[verificar_minio_voltando]="\nReturning to the main menu in \e[36m5 seconds...\e[0m"
+MSG_ES[verificar_minio_voltando]="\nVolviendo al menú principal en \e[36m5 segundos...\e[0m"
+
 verificar_minio() {
     if ! docker ps --format "{{.Names}}" | grep -q "minio"; then
         clear
-        echo -e "\e[33m[Atenção]\e[0m O componente \e[32m[7] MinIO\e[0m ainda não está instalado."
-        echo -e "Para continuar, é necessário instalar essa opção primeiro."
-        echo -e "\n\e[31m✖ Por favor, realize a instalação antes de prosseguir.\e[0m"
-        echo -e "\nVoltando ao menu principal em \e[36m5 segundos...\e[0m"
+        echo -e "$(t verificar_minio_atencao)"
+        echo -e "$(t verificar_minio_continuar)"
+        echo -e "$(t verificar_minio_realize)"
+        echo -e "$(t verificar_minio_voltando)"
         sleep 5
         return 1
     fi
@@ -1621,6 +1769,66 @@ esconder_senha() {
   fi
 }
 
+MSG_PT[stack_editavel_credenciais_nao_encontradas]="❌ Arquivo de credenciais não encontrado."
+MSG_EN[stack_editavel_credenciais_nao_encontradas]="❌ Credentials file not found."
+MSG_ES[stack_editavel_credenciais_nao_encontradas]="❌ Archivo de credenciales no encontrado."
+
+MSG_PT[stack_editavel_credenciais_invalidas]="❌ Erro: As credenciais não foram salvas corretamente."
+MSG_EN[stack_editavel_credenciais_invalidas]="❌ Error: The credentials were not saved correctly."
+MSG_ES[stack_editavel_credenciais_invalidas]="❌ Error: Las credenciales no se guardaron correctamente."
+
+MSG_PT[stack_editavel_usuario]="4/10 - [ OK ] - Usuário: %s"
+MSG_EN[stack_editavel_usuario]="4/10 - [ OK ] - Username: %s"
+MSG_ES[stack_editavel_usuario]="4/10 - [ OK ] - Usuario: %s"
+
+MSG_PT[stack_editavel_dominio]="5/10 - [ OK ] - Domínio: %s"
+MSG_EN[stack_editavel_dominio]="5/10 - [ OK ] - Domain: %s"
+MSG_ES[stack_editavel_dominio]="5/10 - [ OK ] - Dominio: %s"
+
+MSG_PT[stack_editavel_falha_auth]="7/10 - [ OFF ] - Falha ao autenticar. Verifique se o Portainer está online."
+MSG_EN[stack_editavel_falha_auth]="7/10 - [ OFF ] - Authentication failed. Check whether Portainer is online."
+MSG_ES[stack_editavel_falha_auth]="7/10 - [ OFF ] - Falló la autenticación. Verifique si Portainer está en línea."
+
+MSG_PT[stack_editavel_auth_ok]="7/10 - [ OK ] - Autenticação realizada com sucesso."
+MSG_EN[stack_editavel_auth_ok]="7/10 - [ OK ] - Authentication completed successfully."
+MSG_ES[stack_editavel_auth_ok]="7/10 - [ OK ] - Autenticación realizada con éxito."
+
+MSG_PT[stack_editavel_endpoint_erro]="8/10 - [ OFF ] - Erro ao pegar ID do Endpoint."
+MSG_EN[stack_editavel_endpoint_erro]="8/10 - [ OFF ] - Error getting the Endpoint ID."
+MSG_ES[stack_editavel_endpoint_erro]="8/10 - [ OFF ] - Error al obtener el ID del Endpoint."
+
+MSG_PT[stack_editavel_endpoint_ok]="8/10 - [ OK ] - Endpoint ID: %s"
+MSG_EN[stack_editavel_endpoint_ok]="8/10 - [ OK ] - Endpoint ID: %s"
+MSG_ES[stack_editavel_endpoint_ok]="8/10 - [ OK ] - Endpoint ID: %s"
+
+MSG_PT[stack_editavel_swarm_id]="9/10 - [ OK ] - Swarm ID: %s"
+MSG_EN[stack_editavel_swarm_id]="9/10 - [ OK ] - Swarm ID: %s"
+MSG_ES[stack_editavel_swarm_id]="9/10 - [ OK ] - Swarm ID: %s"
+
+MSG_PT[stack_editavel_stack_nao_definido]="❌ Erro: Nome da stack não definido."
+MSG_EN[stack_editavel_stack_nao_definido]="❌ Error: Stack name not defined."
+MSG_ES[stack_editavel_stack_nao_definido]="❌ Error: Nombre de la stack no definido."
+
+MSG_PT[stack_editavel_iniciando_deploy]="🔄 Iniciando deploy de: %s..."
+MSG_EN[stack_editavel_iniciando_deploy]="🔄 Starting deploy of: %s..."
+MSG_ES[stack_editavel_iniciando_deploy]="🔄 Iniciando el despliegue de: %s..."
+
+MSG_PT[stack_editavel_deploy_ok]="10/10 - [ OK ] - ✅ Deploy realizado com sucesso!"
+MSG_EN[stack_editavel_deploy_ok]="10/10 - [ OK ] - ✅ Deploy completed successfully!"
+MSG_ES[stack_editavel_deploy_ok]="10/10 - [ OK ] - ✅ ¡Despliegue realizado con éxito!"
+
+MSG_PT[stack_editavel_deploy_existe]="10/10 - [ AVISO ] - A stack já existe. (Ignorando erro 409)"
+MSG_EN[stack_editavel_deploy_existe]="10/10 - [ WARNING ] - The stack already exists. (Ignoring error 409)"
+MSG_ES[stack_editavel_deploy_existe]="10/10 - [ AVISO ] - La stack ya existe. (Ignorando error 409)"
+
+MSG_PT[stack_editavel_deploy_erro]="10/10 - [ OFF ] - Erro no Deploy (%s)"
+MSG_EN[stack_editavel_deploy_erro]="10/10 - [ OFF ] - Deploy error (%s)"
+MSG_ES[stack_editavel_deploy_erro]="10/10 - [ OFF ] - Error en el despliegue (%s)"
+
+MSG_PT[stack_editavel_deploy_detalhe]="Detalhe: %s"
+MSG_EN[stack_editavel_deploy_detalhe]="Detail: %s"
+MSG_ES[stack_editavel_deploy_detalhe]="Detalle: %s"
+
 stack_editavel(){
 
     # --- 1. VERIFICAÇÃO DE DEPENDÊNCIAS ---
@@ -1634,7 +1842,7 @@ stack_editavel(){
     arquivo="/root/dados_vps/dados_portainer"
 
     if [ ! -f "$arquivo" ]; then
-        echo "❌ Arquivo de credenciais não encontrado."
+        echo "$(t stack_editavel_credenciais_nao_encontradas)"
         return 1
     fi
 
@@ -1649,69 +1857,69 @@ stack_editavel(){
 
     # Verifica se os dados são válidos
     if [[ "$USUARIO" == *"Precisa criar"* ]]; then
-        echo "❌ Erro: As credenciais não foram salvas corretamente."
+        echo "$(t stack_editavel_credenciais_invalidas)"
         return 1
     fi
 
-    echo -e "4/10 - [ OK ] - Usuário: $USUARIO"
-    echo -e "5/10 - [ OK ] - Domínio: $PORTAINER_URL"
+    echo -e "$(t stack_editavel_usuario "$USUARIO")"
+    echo -e "$(t stack_editavel_dominio "$PORTAINER_URL")"
 
     # --- 3. AUTENTICAÇÃO (TOKEN) ---
     TOKEN=""
     Tentativa_atual=0
     Maximo_de_tentativas=5
-    
+
     # Loop de tentativa de Token
     while [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; do
-        
+
         # [CORREÇÃO] Usa jq para criar o JSON. Isso corrige o erro com a senha contendo "@"
         JSON_PAYLOAD=$(jq -n --arg u "$USUARIO" --arg p "$SENHA" '{username: $u, password: $p}')
-        
+
         TOKEN=$(curl -k -s -X POST -H "Content-Type: application/json" \
         -d "$JSON_PAYLOAD" \
         "https://$PORTAINER_URL/api/auth" | jq -r .jwt)
-    
+
         if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
             break
         fi
 
         Tentativa_atual=$((Tentativa_atual + 1))
         if [ "$Tentativa_atual" -ge "$Maximo_de_tentativas" ]; then
-            echo -e "7/10 - [ OFF ] - Falha ao autenticar. Verifique se o Portainer está online."
+            echo -e "$(t stack_editavel_falha_auth)"
             return 1
         fi
         sleep 3
     done
-    
-    echo -e "7/10 - [ OK ] - Autenticação realizada com sucesso."
+
+    echo -e "$(t stack_editavel_auth_ok)"
 
     # --- 4. OBTENÇÃO DOS IDs ---
     # Pega o Endpoint ID (Geralmente é 1 ou 2)
     ENDPOINT_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
-    
+
     if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" == "null" ]; then
-        echo "8/10 - [ OFF ] - Erro ao pegar ID do Endpoint."
+        echo "$(t stack_editavel_endpoint_erro)"
         return 1
     else
-        echo -e "8/10 - [ OK ] - Endpoint ID: $ENDPOINT_ID"
+        echo -e "$(t stack_editavel_endpoint_ok "$ENDPOINT_ID")"
     fi
 
     # Pega o Swarm ID
     SWARM_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
-    
+
     if [ -z "$SWARM_ID" ] || [ "$SWARM_ID" == "null" ]; then
          # Tenta pegar sem especificar endpoint caso falhe
          SWARM_ID=$(docker info --format '{{.Swarm.Cluster.ID}}')
     fi
-    echo -e "9/10 - [ OK ] - Swarm ID: $SWARM_ID"
+    echo -e "$(t stack_editavel_swarm_id "$SWARM_ID")"
 
     # --- 5. DEPLOY DA STACK ---
     if [ -z "$STACK_NAME" ]; then
-        echo "❌ Erro: Nome da stack não definido."
+        echo "$(t stack_editavel_stack_nao_definido)"
         return 1
     fi
 
-    echo -e "🔄 Iniciando deploy de: $STACK_NAME..."
+    echo -e "$(t stack_editavel_iniciando_deploy "$STACK_NAME")"
 
     # Arquivos temporários para captura de erro
     erro_output=$(mktemp)
@@ -1728,12 +1936,12 @@ stack_editavel(){
     response_body=$(cat "$response_output")
 
     if [ "$http_code" -eq 200 ]; then
-        echo -e "10/10 - [ OK ] - ✅ Deploy realizado com sucesso!"
+        echo -e "$(t stack_editavel_deploy_ok)"
     elif [ "$http_code" -eq 409 ]; then
-        echo -e "10/10 - [ AVISO ] - A stack já existe. (Ignorando erro 409)"
+        echo -e "$(t stack_editavel_deploy_existe)"
     else
-        echo -e "10/10 - [ OFF ] - Erro no Deploy ($http_code)"
-        echo "Detalhe: $response_body"
+        echo -e "$(t stack_editavel_deploy_erro "$http_code")"
+        echo "$(t stack_editavel_deploy_detalhe "$response_body")"
     fi
 
     rm "$erro_output" "$response_output"
@@ -1750,6 +1958,22 @@ stack_editavel(){
 # Espera $GHCR_USER e $GHCR_TOKEN já definidos. Falha aqui é aviso, não
 # fatal: ferramenta_enchat tem um fallback via `docker login` do host +
 # `docker stack deploy --with-registry-auth` direto.
+MSG_PT[registrar_registry_portainer_sem_credenciais]="⚠️  Não foi possível registrar o GHCR no Portainer: credenciais do Portainer não encontradas."
+MSG_EN[registrar_registry_portainer_sem_credenciais]="⚠️  Could not register GHCR in Portainer: Portainer credentials not found."
+MSG_ES[registrar_registry_portainer_sem_credenciais]="⚠️  No fue posible registrar el GHCR en Portainer: credenciales de Portainer no encontradas."
+
+MSG_PT[registrar_registry_portainer_falha_auth]="⚠️  Não foi possível autenticar no Portainer para registrar o GHCR."
+MSG_EN[registrar_registry_portainer_falha_auth]="⚠️  Could not authenticate in Portainer to register GHCR."
+MSG_ES[registrar_registry_portainer_falha_auth]="⚠️  No fue posible autenticarse en Portainer para registrar el GHCR."
+
+MSG_PT[registrar_registry_portainer_sucesso]="✔ GHCR registrado no Portainer."
+MSG_EN[registrar_registry_portainer_sucesso]="✔ GHCR registered in Portainer."
+MSG_ES[registrar_registry_portainer_sucesso]="✔ GHCR registrado en Portainer."
+
+MSG_PT[registrar_registry_portainer_falha]="⚠️  Falha ao registrar o GHCR no Portainer (HTTP %s)."
+MSG_EN[registrar_registry_portainer_falha]="⚠️  Failed to register GHCR in Portainer (HTTP %s)."
+MSG_ES[registrar_registry_portainer_falha]="⚠️  Falló el registro del GHCR en Portainer (HTTP %s)."
+
 registrar_registry_portainer() {
     if ! command -v jq &> /dev/null; then
         sudo apt-get update -y > /dev/null 2>&1
@@ -1758,7 +1982,7 @@ registrar_registry_portainer() {
 
     local arquivo="/root/dados_vps/dados_portainer"
     if [ ! -f "$arquivo" ]; then
-        echo "⚠️  Não foi possível registrar o GHCR no Portainer: credenciais do Portainer não encontradas."
+        echo "$(t registrar_registry_portainer_sem_credenciais)"
         return 1
     fi
 
@@ -1773,7 +1997,7 @@ registrar_registry_portainer() {
     token=$(curl -k -s -X POST -H "Content-Type: application/json" \
         -d "$json_payload" "https://$portainer_url/api/auth" | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" == "null" ]; then
-        echo "⚠️  Não foi possível autenticar no Portainer para registrar o GHCR."
+        echo "$(t registrar_registry_portainer_falha_auth)"
         return 1
     fi
 
@@ -1795,10 +2019,10 @@ registrar_registry_portainer() {
     fi
 
     if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-        echo "✔ GHCR registrado no Portainer."
+        echo "$(t registrar_registry_portainer_sucesso)"
         return 0
     else
-        echo "⚠️  Falha ao registrar o GHCR no Portainer (HTTP $http_code)."
+        echo "$(t registrar_registry_portainer_falha "$http_code")"
         return 1
     fi
 }
@@ -1830,9 +2054,17 @@ pegar_senha_postgres() {
     done
 }
 
+MSG_PT[pegar_senha_postgres_formatada_aguardando]="Aguardando o arquivo /root/postgres.yaml..."
+MSG_EN[pegar_senha_postgres_formatada_aguardando]="Waiting for the /root/postgres.yaml file..."
+MSG_ES[pegar_senha_postgres_formatada_aguardando]="Esperando el archivo /root/postgres.yaml..."
+
+MSG_PT[pegar_senha_postgres_formatada_erro]="ERRO: Não foi possível extrair a senha do postgres de /root/postgres.yaml."
+MSG_EN[pegar_senha_postgres_formatada_erro]="ERROR: Could not extract the postgres password from /root/postgres.yaml."
+MSG_ES[pegar_senha_postgres_formatada_erro]="ERROR: No fue posible extraer la contraseña de postgres de /root/postgres.yaml."
+
 pegar_senha_postgres_formatada() {
     while [[ ! -f /root/postgres.yaml ]]; do
-        echo "Aguardando o arquivo /root/postgres.yaml..."
+        echo "$(t pegar_senha_postgres_formatada_aguardando)"
         sleep 5
     done
 
@@ -1841,19 +2073,27 @@ pegar_senha_postgres_formatada() {
 
     # Validação para garantir que a senha não ficou vazia após a limpeza
     if [ -z "$senha_postgres" ]; then
-        echo "ERRO: Não foi possível extrair a senha do postgres de /root/postgres.yaml."
+        echo "$(t pegar_senha_postgres_formatada_erro)"
         exit 1
     fi
 }
+
+MSG_PT[pegar_senha_postgres_formacao_encha_encontrada]="Senha do postgres (N8N Encha) encontrada."
+MSG_EN[pegar_senha_postgres_formacao_encha_encontrada]="Postgres password (N8N Encha) found."
+MSG_ES[pegar_senha_postgres_formacao_encha_encontrada]="Contraseña de postgres (N8N Encha) encontrada."
+
+MSG_PT[pegar_senha_postgres_formacao_encha_aguardando]="Aguardando o arquivo de senha do postgres (N8N Encha)..."
+MSG_EN[pegar_senha_postgres_formacao_encha_aguardando]="Waiting for the postgres password file (N8N Encha)..."
+MSG_ES[pegar_senha_postgres_formacao_encha_aguardando]="Esperando el archivo de contraseña de postgres (N8N Encha)..."
 
 pegar_senha_postgres_formacao_encha(){
     while :; do
         if [ -f /root/postgres_formacao_encha.yaml ]; then
             senha_postgres=$(grep "POSTGRES_PASSWORD" /root/postgres_formacao_encha.yaml | awk -F '=' '{print $2}')
-            echo -e "to aqui 2"
+            echo -e "$(t pegar_senha_postgres_formacao_encha_encontrada)"
             break
         else
-            echo -e "erro pegar senha do postgres formacao encha"
+            echo -e "$(t pegar_senha_postgres_formacao_encha_aguardando)"
             sleep 5
         fi
     done
@@ -1865,6 +2105,98 @@ pegar_senha_minio(){
     url_minio=$(grep -i "MINIO_BROWSER_REDIRECT_URL" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//' | sed 's|https://||')
     url_s3=$(grep -i "MINIO_SERVER_URL" /root/minio.yaml | head -1 | sed 's/#.*//' | sed 's/.*=//; s/^[[:space:]]*//; s/[[:space:]]*$//' | sed 's|https://||')
 }
+
+MSG_PT[criar_bucket_minio_container_nao_encontrado]="❌ Container do MinIO não encontrado!"
+MSG_EN[criar_bucket_minio_container_nao_encontrado]="❌ MinIO container not found!"
+MSG_ES[criar_bucket_minio_container_nao_encontrado]="❌ Contenedor de MinIO no encontrado!"
+
+MSG_PT[criar_bucket_minio_conectando]="🔗 Conectando ao MinIO como admin..."
+MSG_EN[criar_bucket_minio_conectando]="🔗 Connecting to MinIO as admin..."
+MSG_ES[criar_bucket_minio_conectando]="🔗 Conectando a MinIO como admin..."
+
+MSG_PT[criar_bucket_minio_erro_alias]="❌ Erro ao criar alias 'admin'"
+MSG_EN[criar_bucket_minio_erro_alias]="❌ Error creating 'admin' alias"
+MSG_ES[criar_bucket_minio_erro_alias]="❌ Error al crear el alias 'admin'"
+
+MSG_PT[criar_bucket_minio_verificando]="📦 Verificando se o bucket '%s' existe..."
+MSG_EN[criar_bucket_minio_verificando]="📦 Checking if bucket '%s' exists..."
+MSG_ES[criar_bucket_minio_verificando]="📦 Verificando si el bucket '%s' existe..."
+
+MSG_PT[criar_bucket_minio_ja_existe]="⚠️  Bucket '%s' já existe, continuando..."
+MSG_EN[criar_bucket_minio_ja_existe]="⚠️  Bucket '%s' already exists, continuing..."
+MSG_ES[criar_bucket_minio_ja_existe]="⚠️  El bucket '%s' ya existe, continuando..."
+
+MSG_PT[criar_bucket_minio_criando]="✅ Criando bucket '%s'..."
+MSG_EN[criar_bucket_minio_criando]="✅ Creating bucket '%s'..."
+MSG_ES[criar_bucket_minio_criando]="✅ Creando bucket '%s'..."
+
+MSG_PT[criar_bucket_minio_falha_criar]="⚠️  Falha ao criar bucket, mas prosseguindo..."
+MSG_EN[criar_bucket_minio_falha_criar]="⚠️  Failed to create bucket, but continuing..."
+MSG_ES[criar_bucket_minio_falha_criar]="⚠️  Fallo al crear el bucket, pero continuando..."
+
+MSG_PT[criar_bucket_minio_criando_politica]="📜 Criando política pública para o bucket..."
+MSG_EN[criar_bucket_minio_criando_politica]="📜 Creating public policy for the bucket..."
+MSG_ES[criar_bucket_minio_criando_politica]="📜 Creando política pública para el bucket..."
+
+MSG_PT[criar_bucket_minio_erro_arquivo_politica]="❌ Erro ao criar o arquivo de política no container"
+MSG_EN[criar_bucket_minio_erro_arquivo_politica]="❌ Error creating the policy file in the container"
+MSG_ES[criar_bucket_minio_erro_arquivo_politica]="❌ Error al crear el archivo de política en el contenedor"
+
+MSG_PT[criar_bucket_minio_criando_politica_nome]="🔐 Criando política '%s'..."
+MSG_EN[criar_bucket_minio_criando_politica_nome]="🔐 Creating policy '%s'..."
+MSG_ES[criar_bucket_minio_criando_politica_nome]="🔐 Creando política '%s'..."
+
+MSG_PT[criar_bucket_minio_erro_politica]="❌ Erro ao criar política"
+MSG_EN[criar_bucket_minio_erro_politica]="❌ Error creating policy"
+MSG_ES[criar_bucket_minio_erro_politica]="❌ Error al crear la política"
+
+MSG_PT[criar_bucket_minio_criando_usuario]="👤 Criando usuário de acesso S3..."
+MSG_EN[criar_bucket_minio_criando_usuario]="👤 Creating S3 access user..."
+MSG_ES[criar_bucket_minio_criando_usuario]="👤 Creando usuario de acceso S3..."
+
+MSG_PT[criar_bucket_minio_erro_usuario]="❌ Erro ao criar usuário"
+MSG_EN[criar_bucket_minio_erro_usuario]="❌ Error creating user"
+MSG_ES[criar_bucket_minio_erro_usuario]="❌ Error al crear el usuario"
+
+MSG_PT[criar_bucket_minio_atribuindo_politica]="🔗 Atribuindo política ao usuário..."
+MSG_EN[criar_bucket_minio_atribuindo_politica]="🔗 Assigning policy to the user..."
+MSG_ES[criar_bucket_minio_atribuindo_politica]="🔗 Asignando política al usuario..."
+
+MSG_PT[criar_bucket_minio_erro_associar_politica]="❌ Erro ao associar política ao usuário"
+MSG_EN[criar_bucket_minio_erro_associar_politica]="❌ Error associating policy to the user"
+MSG_ES[criar_bucket_minio_erro_associar_politica]="❌ Error al asociar la política al usuario"
+
+MSG_PT[criar_bucket_minio_aplicando_publica]="🌍 Aplicando política pública ao bucket..."
+MSG_EN[criar_bucket_minio_aplicando_publica]="🌍 Applying public policy to the bucket..."
+MSG_ES[criar_bucket_minio_aplicando_publica]="🌍 Aplicando política pública al bucket..."
+
+MSG_PT[criar_bucket_minio_erro_aplicar_publica]="❌ Erro ao aplicar política pública"
+MSG_EN[criar_bucket_minio_erro_aplicar_publica]="❌ Error applying public policy"
+MSG_ES[criar_bucket_minio_erro_aplicar_publica]="❌ Error al aplicar la política pública"
+
+MSG_PT[criar_bucket_minio_criando_alias_myminio]="✅ Criando alias 'myminio' com chaves de acesso..."
+MSG_EN[criar_bucket_minio_criando_alias_myminio]="✅ Creating 'myminio' alias with access keys..."
+MSG_ES[criar_bucket_minio_criando_alias_myminio]="✅ Creando alias 'myminio' con claves de acceso..."
+
+MSG_PT[criar_bucket_minio_listando]="📂 Listando arquivos do bucket para testar conexão..."
+MSG_EN[criar_bucket_minio_listando]="📂 Listing bucket files to test the connection..."
+MSG_ES[criar_bucket_minio_listando]="📂 Listando archivos del bucket para probar la conexión..."
+
+MSG_PT[criar_bucket_minio_falha_listar]="⚠️  Falha ao listar bucket, mas a configuração pode estar correta."
+MSG_EN[criar_bucket_minio_falha_listar]="⚠️  Failed to list bucket, but the configuration may be correct."
+MSG_ES[criar_bucket_minio_falha_listar]="⚠️  Fallo al listar el bucket, pero la configuración puede estar correcta."
+
+MSG_PT[criar_bucket_minio_sucesso]="✅🪣 Bucket '%s' configurado com sucesso no MinIO!"
+MSG_EN[criar_bucket_minio_sucesso]="✅🪣 Bucket '%s' successfully configured in MinIO!"
+MSG_ES[criar_bucket_minio_sucesso]="✅🪣 Bucket '%s' configurado con éxito en MinIO!"
+
+MSG_PT[criar_bucket_minio_access_key]="🔑 Access Key:"
+MSG_EN[criar_bucket_minio_access_key]="🔑 Access Key:"
+MSG_ES[criar_bucket_minio_access_key]="🔑 Access Key:"
+
+MSG_PT[criar_bucket_minio_secret_key]="🔐 Secret Key:"
+MSG_EN[criar_bucket_minio_secret_key]="🔐 Secret Key:"
+MSG_ES[criar_bucket_minio_secret_key]="🔐 Secret Key:"
 
 criar_bucket.minio(){
 S3_ENDPOINT="http://minio:9000"
@@ -1879,24 +2211,24 @@ S3_SECRET_KEY=$(openssl rand -base64 32 | tr -dc A-Za-z0-9 | head -c32)
 
 MINIO_CONTAINER=$(docker ps --filter "name=minio" -q | head -n1)
 if [ -z "$MINIO_CONTAINER" ]; then
-  echo -e "\e[31m❌ Container do MinIO não encontrado!\e[0m"
+  echo -e "\e[31m$(t criar_bucket_minio_container_nao_encontrado)\e[0m"
   exit 1
 fi
 
 MC_CMD="docker exec -i $MINIO_CONTAINER mc"
 
-echo -e "\e[33m🔗 Conectando ao MinIO como admin...\e[0m"
-$MC_CMD alias set admin "$S3_ENDPOINT" "$ADMIN_USER" "$ADMIN_PASS" || { echo -e "\e[31m❌ Erro ao criar alias 'admin'\e[0m"; exit 1; }
+echo -e "\e[33m$(t criar_bucket_minio_conectando)\e[0m"
+$MC_CMD alias set admin "$S3_ENDPOINT" "$ADMIN_USER" "$ADMIN_PASS" || { echo -e "\e[31m$(t criar_bucket_minio_erro_alias)\e[0m"; exit 1; }
 
-echo -e "\e[36m📦 Verificando se o bucket '\e[97m$BUCKET\e[36m' existe...\e[0m"
+echo -e "\e[36m$(t criar_bucket_minio_verificando "\e[97m$BUCKET\e[36m")\e[0m"
 if $MC_CMD ls admin/"$BUCKET" >/dev/null 2>&1; then
-  echo -e "\e[33m⚠️  Bucket '\e[97m$BUCKET\e[33m' já existe, continuando...\e[0m"
+  echo -e "\e[33m$(t criar_bucket_minio_ja_existe "\e[97m$BUCKET\e[33m")\e[0m"
 else
-  echo -e "\e[32m✅ Criando bucket '\e[97m$BUCKET\e[32m'...\e[0m"
-  $MC_CMD mb admin/"$BUCKET" || echo -e "\e[33m⚠️  Falha ao criar bucket, mas prosseguindo...\e[0m"
+  echo -e "\e[32m$(t criar_bucket_minio_criando "\e[97m$BUCKET\e[32m")\e[0m"
+  $MC_CMD mb admin/"$BUCKET" || echo -e "\e[33m$(t criar_bucket_minio_falha_criar)\e[0m"
 fi
 
-echo -e "\e[34m📜 Criando política pública para o bucket...\e[0m"
+echo -e "\e[34m$(t criar_bucket_minio_criando_politica)\e[0m"
 docker exec -i "$MINIO_CONTAINER" bash -c "cat > /tmp/$POLICY_FILE <<EOF
 {
   \"Version\": \"2012-10-17\",
@@ -1926,33 +2258,65 @@ docker exec -i "$MINIO_CONTAINER" bash -c "cat > /tmp/$POLICY_FILE <<EOF
     }
   ]
 }
-EOF" || { echo -e "\e[31m❌ Erro ao criar o arquivo de política no container\e[0m"; exit 1; }
+EOF" || { echo -e "\e[31m$(t criar_bucket_minio_erro_arquivo_politica)\e[0m"; exit 1; }
 
-echo -e "\e[34m🔐 Criando política '\e[97m$POLICY_NAME\e[34m'...\e[0m"
-$MC_CMD admin policy create admin "$POLICY_NAME" /tmp/"$POLICY_FILE" || { echo -e "\e[31m❌ Erro ao criar política\e[0m"; exit 1; }
+echo -e "\e[34m$(t criar_bucket_minio_criando_politica_nome "\e[97m$POLICY_NAME\e[34m")\e[0m"
+$MC_CMD admin policy create admin "$POLICY_NAME" /tmp/"$POLICY_FILE" || { echo -e "\e[31m$(t criar_bucket_minio_erro_politica)\e[0m"; exit 1; }
 
-echo -e "\e[34m👤 Criando usuário de acesso S3...\e[0m"
-$MC_CMD admin user add admin "$S3_ACCESS_KEY" "$S3_SECRET_KEY" || { echo -e "\e[31m❌ Erro ao criar usuário\e[0m"; exit 1; }
+echo -e "\e[34m$(t criar_bucket_minio_criando_usuario)\e[0m"
+$MC_CMD admin user add admin "$S3_ACCESS_KEY" "$S3_SECRET_KEY" || { echo -e "\e[31m$(t criar_bucket_minio_erro_usuario)\e[0m"; exit 1; }
 
-echo -e "\e[34m🔗 Atribuindo política ao usuário...\e[0m"
-$MC_CMD admin policy attach admin "$POLICY_NAME" --user "$S3_ACCESS_KEY" || { echo -e "\e[31m❌ Erro ao associar política ao usuário\e[0m"; exit 1; }
+echo -e "\e[34m$(t criar_bucket_minio_atribuindo_politica)\e[0m"
+$MC_CMD admin policy attach admin "$POLICY_NAME" --user "$S3_ACCESS_KEY" || { echo -e "\e[31m$(t criar_bucket_minio_erro_associar_politica)\e[0m"; exit 1; }
 
-echo -e "\e[33m🌍 Aplicando política pública ao bucket...\e[0m"
-$MC_CMD anonymous set-json /tmp/"$POLICY_FILE" admin/"$BUCKET" || { echo -e "\e[31m❌ Erro ao aplicar política pública\e[0m"; exit 1; }
+echo -e "\e[33m$(t criar_bucket_minio_aplicando_publica)\e[0m"
+$MC_CMD anonymous set-json /tmp/"$POLICY_FILE" admin/"$BUCKET" || { echo -e "\e[31m$(t criar_bucket_minio_erro_aplicar_publica)\e[0m"; exit 1; }
 
-echo -e "\e[32m✅ Criando alias 'myminio' com chaves de acesso...\e[0m"
+echo -e "\e[32m$(t criar_bucket_minio_criando_alias_myminio)\e[0m"
 $MC_CMD alias set myminio "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
 
-echo -e "\e[36m📂 Listando arquivos do bucket para testar conexão...\e[0m"
-$MC_CMD ls myminio/"$BUCKET" || echo -e "\e[33m⚠️  Falha ao listar bucket, mas a configuração pode estar correta.\e[0m"
+echo -e "\e[36m$(t criar_bucket_minio_listando)\e[0m"
+$MC_CMD ls myminio/"$BUCKET" || echo -e "\e[33m$(t criar_bucket_minio_falha_listar)\e[0m"
 
 echo ""
-echo -e "\e[32m✅🪣 Bucket '$BUCKET' configurado com sucesso no MinIO!\e[0m"
-echo -e "\e[33m🔑 Access Key:\e[97m $S3_ACCESS_KEY\e[0m"
-echo -e "\e[33m🔐 Secret Key:\e[97m $S3_SECRET_KEY\e[0m"
+echo -e "\e[32m$(t criar_bucket_minio_sucesso "$BUCKET")\e[0m"
+echo -e "\e[33m$(t criar_bucket_minio_access_key)\e[97m $S3_ACCESS_KEY\e[0m"
+echo -e "\e[33m$(t criar_bucket_minio_secret_key)\e[97m $S3_SECRET_KEY\e[0m"
 echo ""
 
 }
+
+MSG_PT[criar_banco_postgres_da_stack_confirma]=$'\e[33mO banco de dados \e[97m%s\e[33m já existe.\e[0m Deseja apagar e criar um novo? \e[32m(Y/N)\e[0m: '
+MSG_EN[criar_banco_postgres_da_stack_confirma]=$'\e[33mThe database \e[97m%s\e[33m already exists.\e[0m Do you want to delete it and create a new one? \e[32m(Y/N)\e[0m: '
+MSG_ES[criar_banco_postgres_da_stack_confirma]=$'\e[33mLa base de datos \e[97m%s\e[33m ya existe.\e[0m ¿Desea eliminarla y crear una nueva? \e[32m(Y/N)\e[0m: '
+
+MSG_PT[criar_banco_postgres_da_stack_apagado]="\e[32mBanco de dados %s apagado com sucesso.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_apagado]="\e[32mDatabase %s deleted successfully.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_apagado]="\e[32mBase de datos %s eliminada con éxito.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_erro_apagar]="\e[31mErro ao apagar o banco de dados %s.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_erro_apagar]="\e[31mError deleting the database %s.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_erro_apagar]="\e[31mError al eliminar la base de datos %s.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_criado]="\e[32mBanco de dados %s criado com sucesso.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_criado]="\e[32mDatabase %s created successfully.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_criado]="\e[32mBase de datos %s creada con éxito.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_erro_criar]="\e[31mErro ao criar o banco de dados %s.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_erro_criar]="\e[31mError creating the database %s.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_erro_criar]="\e[31mError al crear la base de datos %s.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_cancelada]="\e[33mOperação cancelada. Mantendo o banco existente.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_cancelada]="\e[33mOperation canceled. Keeping the existing database.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_cancelada]="\e[33mOperación cancelada. Manteniendo la base de datos existente.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_erro_tentando]="\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_erro_tentando]="\e[31mError creating the database. Trying again...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_erro_tentando]="\e[31mError al crear la base de datos. Intentando de nuevo...\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_aguardando]="\e[33mAguardando o container do Postgres iniciar...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_aguardando]="\e[33mWaiting for the Postgres container to start...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_aguardando]="\e[33mEsperando que el contenedor de Postgres inicie...\e[0m"
 
 criar_banco_postgres_da_stack() {
     while :; do
@@ -1963,24 +2327,24 @@ criar_banco_postgres_da_stack() {
             docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
             if [ $? -eq 0 ]; then
                 echo ""
-                read -p $'\e[33mO banco de dados \e[97m'"$1"$'\e[33m já existe.\e[0m Deseja apagar e criar um novo? \e[32m(Y/N)\e[0m: ' resposta
+                read -p "$(t criar_banco_postgres_da_stack_confirma "$1")" resposta
                 if [[ "$resposta" =~ ^[Yy]$ ]]; then
                     # Apaga o banco de dados (sem o force, pois o comando padrão não usa)
                     docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS $1;" > /dev/null 2>&1
                     if [ $? -eq 0 ]; then
-                        echo -e "\e[32mBanco de dados $1 apagado com sucesso.\e[0m"
+                        echo -e "$(t criar_banco_postgres_da_stack_apagado "$1")"
                     else
-                        echo -e "\e[31mErro ao apagar o banco de dados $1.\e[0m"
+                        echo -e "$(t criar_banco_postgres_da_stack_erro_apagar "$1")"
                     fi
                     # Cria o banco novamente
                     docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE $1;" > /dev/null 2>&1
                     if [ $? -eq 0 ]; then
-                        echo -e "\e[32mBanco de dados $1 criado com sucesso.\e[0m"
+                        echo -e "$(t criar_banco_postgres_da_stack_criado "$1")"
                     else
-                        echo -e "\e[31mErro ao criar o banco de dados $1.\e[0m"
+                        echo -e "$(t criar_banco_postgres_da_stack_erro_criar "$1")"
                     fi
                 else
-                    echo -e "\e[33mOperação cancelada. Mantendo o banco existente.\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_cancelada)"
                 fi
                 break
             else
@@ -1990,19 +2354,47 @@ criar_banco_postgres_da_stack() {
                 # Verifica se foi criado com sucesso
                 docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$1"
                 if [ $? -eq 0 ]; then
-                    echo -e "\e[32mBanco de dados $1 criado com sucesso.\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_criado "$1")"
                     break
                 else
-                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_erro_tentando)"
                     echo ""
                 fi
             fi
         else
-            echo -e "\e[33mAguardando o container do Postgres iniciar...\e[0m"
+            echo -e "$(t criar_banco_postgres_da_stack_aguardando)"
             sleep 5
         fi
     done
 }
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_confirma]=$'\e[33mO banco de dados \e[97m%s\e[33m já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: '
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_confirma]=$'\e[33mThe database \e[97m%s\e[33m already exists.\e[0m Do you want to delete it and create a new database? \e[32m(Y/N)\e[0m: '
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_confirma]=$'\e[33mLa base de datos \e[97m%s\e[33m ya existe.\e[0m ¿Desea eliminarla y crear una nueva base de datos? \e[32m(Y/N)\e[0m: '
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_apagando]="\e[33mApagando o banco de dados \e[97m%s\e[33m...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_apagando]="\e[33mDeleting the database \e[97m%s\e[33m...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_apagando]="\e[33mEliminando la base de datos \e[97m%s\e[33m...\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_criando]="\e[33mCriando o banco de dados \e[97m%s\e[33m...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_criando]="\e[33mCreating the database \e[97m%s\e[33m...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_criando]="\e[33mCreando la base de datos \e[97m%s\e[33m...\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_mantendo]="\e[33mMantendo o banco de dados existente.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_mantendo]="\e[33mKeeping the existing database.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_mantendo]="\e[33mManteniendo la base de datos existente.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_criado]="\e[32mBanco de dados \e[97m%s\e[32m criado com sucesso.\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_criado]="\e[32mDatabase \e[97m%s\e[32m created successfully.\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_criado]="\e[32mBase de datos \e[97m%s\e[32m creada con éxito.\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_erro_tentando]="\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_erro_tentando]="\e[31mError creating the database. Trying again...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_erro_tentando]="\e[31mError al crear la base de datos. Intentando de nuevo...\e[0m"
+
+MSG_PT[criar_banco_postgres_da_stack_formacao_encha_aguardando]="\e[33mAguardando container do Postgres iniciar...\e[0m"
+MSG_EN[criar_banco_postgres_da_stack_formacao_encha_aguardando]="\e[33mWaiting for the Postgres container to start...\e[0m"
+MSG_ES[criar_banco_postgres_da_stack_formacao_encha_aguardando]="\e[33mEsperando que el contenedor de Postgres inicie...\e[0m"
 
 criar_banco_postgres_da_stack_formacao_encha() {
     local dbname="$1"
@@ -2013,31 +2405,31 @@ criar_banco_postgres_da_stack_formacao_encha() {
 
             # Verifica se o banco já existe
             if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                read -p $'\e[33mO banco de dados \e[97m'"$dbname"$'\e[33m já existe.\e[0m Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                read -p "$(t criar_banco_postgres_da_stack_formacao_encha_confirma "$dbname")" resposta
                 if [[ "$resposta" =~ ^[Yy]$ ]]; then
-                    echo -e "\e[33mApagando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_apagando "$dbname")"
                     docker exec "$CONTAINER_ID" psql -U postgres -c "DROP DATABASE IF EXISTS \"$dbname\";" > /dev/null 2>&1
-                    echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_criando "$dbname")"
                     docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
                 else
-                    echo -e "\e[33mMantendo o banco de dados existente.\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_mantendo)"
                 fi
                 break
             else
-                echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_criando "$dbname")"
                 docker exec "$CONTAINER_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
 
                 # Verifica se o banco foi criado com sucesso
                 if docker exec "$CONTAINER_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                    echo -e "\e[32mBanco de dados \e[97m$dbname\e[32m criado com sucesso.\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_criado "$dbname")"
                     break
                 else
-                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_erro_tentando)"
                     sleep 2
                 fi
             fi
         else
-            echo -e "\e[33mAguardando container do Postgres iniciar...\e[0m"
+            echo -e "$(t criar_banco_postgres_da_stack_formacao_encha_aguardando)"
             sleep 5
         fi
     done
@@ -2046,6 +2438,18 @@ criar_banco_postgres_da_stack_formacao_encha() {
 
 
 
+MSG_PT[pull_falha_baixar]="⚠️  \e[31mFalha ao baixar \e[33m%s\e[31m. Tentando novamente...\e[0m"
+MSG_EN[pull_falha_baixar]="⚠️  \e[31mFailed to pull \e[33m%s\e[31m. Trying again...\e[0m"
+MSG_ES[pull_falha_baixar]="⚠️  \e[31mFalló la descarga de \e[33m%s\e[31m. Intentando de nuevo...\e[0m"
+
+MSG_PT[pull_limite_taxa]="\e[31m🚫 Limite de taxa do Docker Hub atingido!\e[0m \nPor favor, faça login para continuar."
+MSG_EN[pull_limite_taxa]="\e[31m🚫 Docker Hub rate limit reached!\e[0m \nPlease log in to continue."
+MSG_ES[pull_limite_taxa]="\e[31m🚫 ¡Límite de tasa de Docker Hub alcanzado!\e[0m \nPor favor, inicie sesión para continuar."
+
+MSG_PT[pull_erro_inesperado]="⚠️ \e[31mErro inesperado ocorreu. Repetindo tentativa em 5 segundos...\e[0m"
+MSG_EN[pull_erro_inesperado]="⚠️ \e[31mAn unexpected error occurred. Retrying in 5 seconds...\e[0m"
+MSG_ES[pull_erro_inesperado]="⚠️ \e[31mOcurrió un error inesperado. Reintentando en 5 segundos...\e[0m"
+
 pull() {
     for image in "$@"; do
         while true; do
@@ -2053,14 +2457,14 @@ pull() {
                 sleep 1
                 break
             else
-                echo -e "⚠️  \e[31mFalha ao baixar \e[33m$image\e[31m. Tentando novamente...\e[0m"
-                
+                echo -e "$(t pull_falha_baixar "$image")"
+
                 # Verifica se o erro é relacionado a limite de taxa
                 if docker pull "$image" 2>&1 | grep -q "toomanyrequests"; then
-                    echo -e "\e[31m🚫 Limite de taxa do Docker Hub atingido!\e[0m \nPor favor, faça login para continuar."
+                    echo -e "$(t pull_limite_taxa)"
                     docker login
                 else
-                    echo -e "⚠️ \e[31mErro inesperado ocorreu. Repetindo tentativa em 5 segundos...\e[0m"
+                    echo -e "$(t pull_erro_inesperado)"
                     sleep 5
                 fi
             fi
@@ -2076,6 +2480,34 @@ verificar_container_pgvector() {
     fi
 }
 
+MSG_PT[criar_banco_pgvector_da_stack_confirma]=$'\e[33m⚠️  O banco de dados \e[97m%s\e[33m já existe.\e[0m\n\e[33m❓ Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: '
+MSG_EN[criar_banco_pgvector_da_stack_confirma]=$'\e[33m⚠️  The database \e[97m%s\e[33m already exists.\e[0m\n\e[33m❓ Do you want to delete it and create a new database? \e[32m(Y/N)\e[0m: '
+MSG_ES[criar_banco_pgvector_da_stack_confirma]=$'\e[33m⚠️  La base de datos \e[97m%s\e[33m ya existe.\e[0m\n\e[33m❓ ¿Desea eliminarla y crear una nueva base de datos? \e[32m(Y/N)\e[0m: '
+
+MSG_PT[criar_banco_pgvector_da_stack_apagando]="\e[33mApagando o banco de dados \e[97m%s\e[33m...\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_apagando]="\e[33mDeleting the database \e[97m%s\e[33m...\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_apagando]="\e[33mEliminando la base de datos \e[97m%s\e[33m...\e[0m"
+
+MSG_PT[criar_banco_pgvector_da_stack_criando]="\e[33mCriando o banco de dados \e[97m%s\e[33m...\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_criando]="\e[33mCreating the database \e[97m%s\e[33m...\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_criando]="\e[33mCreando la base de datos \e[97m%s\e[33m...\e[0m"
+
+MSG_PT[criar_banco_pgvector_da_stack_mantendo]="\e[33mMantendo o banco de dados existente.\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_mantendo]="\e[33mKeeping the existing database.\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_mantendo]="\e[33mManteniendo la base de datos existente.\e[0m"
+
+MSG_PT[criar_banco_pgvector_da_stack_criado]="\e[32m✅ Banco de dados \e[97m%s\e[32m criado com sucesso.\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_criado]="\e[32m✅ Database \e[97m%s\e[32m created successfully.\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_criado]="\e[32m✅ Base de datos \e[97m%s\e[32m creada con éxito.\e[0m"
+
+MSG_PT[criar_banco_pgvector_da_stack_erro_tentando]="\e[31m❌ Erro ao criar o banco de dados. Tentando novamente...\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_erro_tentando]="\e[31m❌ Error creating the database. Trying again...\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_erro_tentando]="\e[31m❌ Error al crear la base de datos. Intentando de nuevo...\e[0m"
+
+MSG_PT[criar_banco_pgvector_da_stack_aguardando]="\e[33mAguardando container do PGVector iniciar...\e[0m"
+MSG_EN[criar_banco_pgvector_da_stack_aguardando]="\e[33mWaiting for the PGVector container to start...\e[0m"
+MSG_ES[criar_banco_pgvector_da_stack_aguardando]="\e[33mEsperando que el contenedor de PGVector inicie...\e[0m"
+
 criar_banco_pgvector_da_stack() {
     local dbname="$1"
     while :; do
@@ -2085,31 +2517,31 @@ criar_banco_pgvector_da_stack() {
 
             # Verifica se o banco já existe
             if docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                read -p $'\e[33m⚠️  O banco de dados \e[97m'"$dbname"$'\e[33m já existe.\e[0m\n\e[33m❓ Deseja apagar e criar um novo banco de dados? \e[32m(Y/N)\e[0m: ' resposta
+                read -p "$(t criar_banco_pgvector_da_stack_confirma "$dbname")" resposta
                 if [[ "$resposta" =~ ^[Yy]$ ]]; then
-                    echo -e "\e[33mApagando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    echo -e "$(t criar_banco_pgvector_da_stack_apagando "$dbname")"
                     docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "DROP DATABASE IF EXISTS \"$dbname\";" > /dev/null 2>&1
-                    echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                    echo -e "$(t criar_banco_pgvector_da_stack_criando "$dbname")"
                     docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
                 else
-                    echo -e "\e[33mMantendo o banco de dados existente.\e[0m"
+                    echo -e "$(t criar_banco_pgvector_da_stack_mantendo)"
                 fi
                 break
             else
-                echo -e "\e[33mCriando o banco de dados \e[97m$dbname\e[33m...\e[0m"
+                echo -e "$(t criar_banco_pgvector_da_stack_criando "$dbname")"
                 docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -c "CREATE DATABASE \"$dbname\";" > /dev/null 2>&1
 
                 # Verifica se o banco foi criado com sucesso
                 if docker exec "$CONTAINER_PGVECTOR_ID" psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$dbname"; then
-                    echo -e "\e[32m✅ Banco de dados \e[97m$dbname\e[32m criado com sucesso.\e[0m"
+                    echo -e "$(t criar_banco_pgvector_da_stack_criado "$dbname")"
                     break
                 else
-                    echo -e "\e[31m❌ Erro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    echo -e "$(t criar_banco_pgvector_da_stack_erro_tentando)"
                     sleep 2
                 fi
             fi
         else
-            echo -e "\e[33mAguardando container do PGVector iniciar...\e[0m"
+            echo -e "$(t criar_banco_pgvector_da_stack_aguardando)"
             sleep 5
         fi
     done
@@ -2143,19 +2575,91 @@ wait_for_pgvector() {
     done
 }
 
+MSG_PT[liberar_chatwoot_nao_instalada]="\e[1;31m❌ Erro: A stack do Chatwoot não está instalada.\e[0m"
+MSG_EN[liberar_chatwoot_nao_instalada]="\e[1;31m❌ Error: The Chatwoot stack is not installed.\e[0m"
+MSG_ES[liberar_chatwoot_nao_instalada]="\e[1;31m❌ Error: La stack de Chatwoot no está instalada.\e[0m"
+
+MSG_PT[liberar_chatwoot_instale_antes]="\e[1;33m⚠️  Por favor, instale a stack do Chatwoot antes de continuar.\e[0m"
+MSG_EN[liberar_chatwoot_instale_antes]="\e[1;33m⚠️  Please install the Chatwoot stack before continuing.\e[0m"
+MSG_ES[liberar_chatwoot_instale_antes]="\e[1;33m⚠️  Por favor, instale la stack de Chatwoot antes de continuar.\e[0m"
+
+MSG_PT[liberar_chatwoot_verificando]="\e[1;36m🔓 Verificando liberação do Chatwoot...\e[0m"
+MSG_EN[liberar_chatwoot_verificando]="\e[1;36m🔓 Checking Chatwoot's release status...\e[0m"
+MSG_ES[liberar_chatwoot_verificando]="\e[1;36m🔓 Verificando la liberación de Chatwoot...\e[0m"
+
+MSG_PT[liberar_chatwoot_container_nao_encontrado]="\e[1;31m❌ Erro: container do Postgres (pgvector) não encontrado.\e[0m"
+MSG_EN[liberar_chatwoot_container_nao_encontrado]="\e[1;31m❌ Error: Postgres container (pgvector) not found.\e[0m"
+MSG_ES[liberar_chatwoot_container_nao_encontrado]="\e[1;31m❌ Error: contenedor de Postgres (pgvector) no encontrado.\e[0m"
+
+MSG_PT[liberar_chatwoot_arquivo_nao_encontrado]="\e[31m[ERRO]\e[0m Arquivo de dados não encontrado em: %s"
+MSG_EN[liberar_chatwoot_arquivo_nao_encontrado]="\e[31m[ERROR]\e[0m Data file not found at: %s"
+MSG_ES[liberar_chatwoot_arquivo_nao_encontrado]="\e[31m[ERROR]\e[0m Archivo de datos no encontrado en: %s"
+
+MSG_PT[liberar_chatwoot_entrada_nao_encontrada]="\e[1;33m⚠️  A entrada ainda não foi encontrada. Siga os passos abaixo:\e[0m"
+MSG_EN[liberar_chatwoot_entrada_nao_encontrada]="\e[1;33m⚠️  The entry has not been found yet. Follow the steps below:\e[0m"
+MSG_ES[liberar_chatwoot_entrada_nao_encontrada]="\e[1;33m⚠️  La entrada aún no fue encontrada. Siga los pasos a continuación:\e[0m"
+
+MSG_PT[liberar_chatwoot_acesse_painel]="\n\e[1;34m🌐 Acesse o painel do Chatwoot:\e[0m %s"
+MSG_EN[liberar_chatwoot_acesse_painel]="\n\e[1;34m🌐 Access the Chatwoot panel:\e[0m %s"
+MSG_ES[liberar_chatwoot_acesse_painel]="\n\e[1;34m🌐 Acceda al panel de Chatwoot:\e[0m %s"
+
+MSG_PT[liberar_chatwoot_etapa1]="\n\e[1;33mEtapa 1:\e[0m Crie uma conta no Chatwoot com e-mail e senha."
+MSG_EN[liberar_chatwoot_etapa1]="\n\e[1;33mStep 1:\e[0m Create a Chatwoot account with an email and password."
+MSG_ES[liberar_chatwoot_etapa1]="\n\e[1;33mPaso 1:\e[0m Cree una cuenta en Chatwoot con correo electrónico y contraseña."
+
+MSG_PT[liberar_chatwoot_enter_conta]=$'\e[32m✅ Pressione ENTER depois de criar a conta...\e[0m'
+MSG_EN[liberar_chatwoot_enter_conta]=$'\e[32m✅ Press ENTER after creating the account...\e[0m'
+MSG_ES[liberar_chatwoot_enter_conta]=$'\e[32m✅ Presione ENTER después de crear la cuenta...\e[0m'
+
+MSG_PT[liberar_chatwoot_etapa2]="\n\e[1;33mEtapa 2:\e[0m Faça login com a conta criada."
+MSG_EN[liberar_chatwoot_etapa2]="\n\e[1;33mStep 2:\e[0m Log in with the account you created."
+MSG_ES[liberar_chatwoot_etapa2]="\n\e[1;33mPaso 2:\e[0m Inicie sesión con la cuenta creada."
+
+MSG_PT[liberar_chatwoot_enter_login]=$'\e[32m✅ Pressione ENTER depois de fazer login...\e[0m'
+MSG_EN[liberar_chatwoot_enter_login]=$'\e[32m✅ Press ENTER after logging in...\e[0m'
+MSG_ES[liberar_chatwoot_enter_login]=$'\e[32m✅ Presione ENTER después de iniciar sesión...\e[0m'
+
+MSG_PT[liberar_chatwoot_etapa3]="\n\e[1;33mEtapa 3:\e[0m Acesse o superadmin:"
+MSG_EN[liberar_chatwoot_etapa3]="\n\e[1;33mStep 3:\e[0m Access the superadmin:"
+MSG_ES[liberar_chatwoot_etapa3]="\n\e[1;33mPaso 3:\e[0m Acceda al superadmin:"
+
+MSG_PT[liberar_chatwoot_super_admin_link]="\e[1;34m   ➤ %s/super_admin\e[0m"
+MSG_EN[liberar_chatwoot_super_admin_link]="\e[1;34m   ➤ %s/super_admin\e[0m"
+MSG_ES[liberar_chatwoot_super_admin_link]="\e[1;34m   ➤ %s/super_admin\e[0m"
+
+MSG_PT[liberar_chatwoot_enter_superadmin]=$'\e[32m✅ Pressione ENTER depois de acessar o painel de superadmin...\e[0m'
+MSG_EN[liberar_chatwoot_enter_superadmin]=$'\e[32m✅ Press ENTER after accessing the superadmin panel...\e[0m'
+MSG_ES[liberar_chatwoot_enter_superadmin]=$'\e[32m✅ Presione ENTER después de acceder al panel de superadmin...\e[0m'
+
+MSG_PT[liberar_chatwoot_verificando_novamente]="\e[1;36m🔄 Verificando novamente...\e[0m"
+MSG_EN[liberar_chatwoot_verificando_novamente]="\e[1;36m🔄 Checking again...\e[0m"
+MSG_ES[liberar_chatwoot_verificando_novamente]="\e[1;36m🔄 Verificando de nuevo...\e[0m"
+
+MSG_PT[liberar_chatwoot_entrada_encontrada]="\e[1;32m✅ Entrada encontrada. Aplicando atualizações...\e[0m"
+MSG_EN[liberar_chatwoot_entrada_encontrada]="\e[1;32m✅ Entry found. Applying updates...\e[0m"
+MSG_ES[liberar_chatwoot_entrada_encontrada]="\e[1;32m✅ Entrada encontrada. Aplicando actualizaciones...\e[0m"
+
+MSG_PT[liberar_chatwoot_sucesso]="\e[1;32m✅ Chatwoot liberado com sucesso!\e[0m"
+MSG_EN[liberar_chatwoot_sucesso]="\e[1;32m✅ Chatwoot released successfully!\e[0m"
+MSG_ES[liberar_chatwoot_sucesso]="\e[1;32m✅ ¡Chatwoot liberado con éxito!\e[0m"
+
+MSG_PT[liberar_chatwoot_continuar]=$'\e[1;33mPressione ENTER para continuar...\e[0m'
+MSG_EN[liberar_chatwoot_continuar]=$'\e[1;33mPress ENTER to continue...\e[0m'
+MSG_ES[liberar_chatwoot_continuar]=$'\e[1;33mPresione ENTER para continuar...\e[0m'
+
 liberar_chatwoot() {
     clear
     stack_name="chatwoot"
-    
+
     if ! docker stack ls --format "{{.Name}}" | grep -q "^${stack_name}$"; then
-        echo -e "\e[1;31m❌ Erro: A stack do Chatwoot não está instalada.\e[0m"
-        echo -e "\e[1;33m⚠️  Por favor, instale a stack do Chatwoot antes de continuar.\e[0m"
+        echo -e "$(t liberar_chatwoot_nao_instalada)"
+        echo -e "$(t liberar_chatwoot_instale_antes)"
         sleep 5
         return 1
-    fi       
+    fi
 
 
-    echo -e "\e[1;36m🔓 Verificando liberação do Chatwoot...\e[0m"
+    echo -e "$(t liberar_chatwoot_verificando)"
     sleep 2
 
     local dados_vps="/root/dados_vps/dados_chatwoot"
@@ -2163,12 +2667,12 @@ liberar_chatwoot() {
     container_id=$(docker ps -q --filter "name=pgvector")
 
     if [[ -z "$container_id" ]]; then
-        echo -e "\e[1;31m❌ Erro: container do Postgres (pgvector) não encontrado.\e[0m"
+        echo -e "$(t liberar_chatwoot_container_nao_encontrado)"
         return 1
     fi
 
     if [ ! -f "$dados_vps" ]; then
-        echo -e "\e[31m[ERRO]\e[0m Arquivo de dados não encontrado em: $dados_vps"
+        echo -e "$(t liberar_chatwoot_arquivo_nao_encontrado "$dados_vps")"
         return 1
     fi
 
@@ -2182,22 +2686,22 @@ liberar_chatwoot() {
             "SELECT 1 FROM public.installation_configs WHERE name = 'INSTALLATION_IDENTIFIER' LIMIT 1;" | grep -c 1)
 
         if [[ $row_count -eq 0 ]]; then
-            echo -e "\e[1;33m⚠️  A entrada ainda não foi encontrada. Siga os passos abaixo:\e[0m"
+            echo -e "$(t liberar_chatwoot_entrada_nao_encontrada)"
 
-            echo -e "\n\e[1;34m🌐 Acesse o painel do Chatwoot:\e[0m $url_chatwoot"
+            echo -e "$(t liberar_chatwoot_acesse_painel "$url_chatwoot")"
 
-            echo -e "\n\e[1;33mEtapa 1:\e[0m Crie uma conta no Chatwoot com e-mail e senha."
-            read -p $'\e[32m✅ Pressione ENTER depois de criar a conta...\e[0m'
+            echo -e "$(t liberar_chatwoot_etapa1)"
+            read -p "$(t liberar_chatwoot_enter_conta)"
 
-            echo -e "\n\e[1;33mEtapa 2:\e[0m Faça login com a conta criada."
-            read -p $'\e[32m✅ Pressione ENTER depois de fazer login...\e[0m'
+            echo -e "$(t liberar_chatwoot_etapa2)"
+            read -p "$(t liberar_chatwoot_enter_login)"
 
-            echo -e "\n\e[1;33mEtapa 3:\e[0m Acesse o superadmin:"
-            echo -e "\e[1;34m   ➤ $url_chatwoot/super_admin\e[0m"
-            read -p $'\e[32m✅ Pressione ENTER depois de acessar o painel de superadmin...\e[0m'
+            echo -e "$(t liberar_chatwoot_etapa3)"
+            echo -e "$(t liberar_chatwoot_super_admin_link "$url_chatwoot")"
+            read -p "$(t liberar_chatwoot_enter_superadmin)"
 
 
-            echo -e "\e[1;36m🔄 Verificando novamente...\e[0m"
+            echo -e "$(t liberar_chatwoot_verificando_novamente)"
             sleep 2
             clear
         else
@@ -2209,23 +2713,23 @@ liberar_chatwoot() {
     local uuid
     uuid=$(uuidgen)
 
-    echo -e "\e[1;32m✅ Entrada encontrada. Aplicando atualizações...\e[0m"
+    echo -e "$(t liberar_chatwoot_entrada_encontrada)"
     docker exec -i "$container_id" psql -U postgres -d chatwoot -c "
-        UPDATE public.installation_configs 
-        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: enterprise\n\"' 
+        UPDATE public.installation_configs
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: enterprise\n\"'
         WHERE name = 'INSTALLATION_PRICING_PLAN';
 
-        UPDATE public.installation_configs 
-        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: 10000\n\"' 
+        UPDATE public.installation_configs
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: 10000\n\"'
         WHERE name = 'INSTALLATION_PRICING_PLAN_QUANTITY';
 
-        UPDATE public.installation_configs 
-        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: $uuid\n\"' 
+        UPDATE public.installation_configs
+        SET serialized_value = '\"--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\nvalue: $uuid\n\"'
         WHERE name = 'INSTALLATION_IDENTIFIER';"
 
     clear
-    echo -e "\e[1;32m✅ Chatwoot liberado com sucesso!\e[0m"
-    read -p $'\e[1;33mPressione ENTER para continuar...\e[0m'
+    echo -e "$(t liberar_chatwoot_sucesso)"
+    read -p "$(t liberar_chatwoot_continuar)"
 }
 
 
@@ -2244,50 +2748,238 @@ verificar_container_redis_formacao_encha() {
     fi
 }
 
+MSG_PT[pegar_user_senha_rabbitmq_nao_encontrado]="Arquivo de dados do RabbitMQ não encontrado. É necessário instalar o RabbitMQ primeiro."
+MSG_EN[pegar_user_senha_rabbitmq_nao_encontrado]="RabbitMQ data file not found. You need to install RabbitMQ first."
+MSG_ES[pegar_user_senha_rabbitmq_nao_encontrado]="Archivo de datos de RabbitMQ no encontrado. Es necesario instalar RabbitMQ primero."
+
 pegar_user_senha_rabbitmq() {
     if [ -f "/root/dados_vps/dados_rabbitmq" ]; then
         # Chave nova (inglês) ou antiga (português) — ver i18n/GLOSSARY.md.
         user_rabbit_mqs=$(grep -E "^(Username|Usuario):" "/root/dados_vps/dados_rabbitmq" | head -1 | cut -d' ' -f2)
         senha_rabbit_mqs=$(grep -E "^(Password|Senha):" "/root/dados_vps/dados_rabbitmq" | head -1 | cut -d' ' -f2)
     else
-        echo "Arquivo de dados do RabbitMQ não encontrado. É necessário instalar o RabbitMQ primeiro."
+        echo "$(t pegar_user_senha_rabbitmq_nao_encontrado)"
         ferramenta_rabbitmq
     fi
 }
+
+MSG_PT[ferramenta_traefik_e_portainer_fallback_titulo]="--- TRAEFIK & PORTAINER (UNIVERSAL) ---"
+MSG_EN[ferramenta_traefik_e_portainer_fallback_titulo]="--- TRAEFIK & PORTAINER (UNIVERSAL) ---"
+MSG_ES[ferramenta_traefik_e_portainer_fallback_titulo]="--- TRAEFIK & PORTAINER (UNIVERSAL) ---"
+
+MSG_PT[ferramenta_traefik_e_portainer_noninterativo]="\e[33m🤖 Modo não-interativo ativo — usando variáveis exportadas.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_noninterativo]="\e[33m🤖 Non-interactive mode active — using exported variables.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_noninterativo]="\e[33m🤖 Modo no interactivo activo — usando variables exportadas.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_resumo_link]="Link: \e[97m%s\e[0m | User: \e[97m%s\e[0m | Server: \e[97m%s\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_resumo_link]="Link: \e[97m%s\e[0m | User: \e[97m%s\e[0m | Server: \e[97m%s\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_resumo_link]="Link: \e[97m%s\e[0m | User: \e[97m%s\e[0m | Server: \e[97m%s\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo1]="Passo \e[33m1/6\e[0m 📡"
+MSG_EN[ferramenta_traefik_e_portainer_passo1]="Step \e[33m1/6\e[0m 📡"
+MSG_ES[ferramenta_traefik_e_portainer_passo1]="Paso \e[33m1/6\e[0m 📡"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_dominio]="\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_dominio]="\e[36mEnter the domain for Portainer (e.g.: portainer.encha.ai): \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_dominio]="\e[36mIngrese el dominio para Portainer (ej: portainer.encha.ai): \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo2]="\e[97mPasso\e[33m 2/6\e[0m 👤"
+MSG_EN[ferramenta_traefik_e_portainer_passo2]="\e[97mStep\e[33m 2/6\e[0m 👤"
+MSG_ES[ferramenta_traefik_e_portainer_passo2]="\e[97mPaso\e[33m 2/6\e[0m 👤"
+
+MSG_PT[ferramenta_traefik_e_portainer_dica_admin]="\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_dica_admin]="\e[33m--> Avoid \"admin\": it leaves half the credential public.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_dica_admin]="\e[33m--> Evite \"admin\": deja la mitad de la credencial pública.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_usuario]="\e[36mUsuário do Portainer: \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_usuario]="\e[36mPortainer username: \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_usuario]="\e[36mUsuario de Portainer: \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_usuario_invalido]="\e[31m✖ Usuário inválido.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_usuario_invalido]="\e[31m✖ Invalid username.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_usuario_invalido]="\e[31m✖ Usuario inválido.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo3]="Passo \e[33m3/6\e[0m 🔐"
+MSG_EN[ferramenta_traefik_e_portainer_passo3]="Step \e[33m3/6\e[0m 🔐"
+MSG_ES[ferramenta_traefik_e_portainer_passo3]="Paso \e[33m3/6\e[0m 🔐"
+
+MSG_PT[ferramenta_traefik_e_portainer_dica_senha]="\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_dica_senha]="\e[33m--> Minimum 12 characters. Use UPPERCASE and lowercase letters, numbers and a special character @ or _\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_dica_senha]="\e[33m--> Mínimo 12 caracteres. Use letras MAYÚSCULAS y minúsculas, números y un carácter especial @ o _\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_senha]="\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_senha]="\e[36mEnter a password for Portainer (e.g.: Porta@12345_): \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_senha]="\e[36mIngrese una contraseña para Portainer (ej: Porta@12345_): \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo4]="Passo \e[33m4/6\e[0m 🖥️"
+MSG_EN[ferramenta_traefik_e_portainer_passo4]="Step \e[33m4/6\e[0m 🖥️"
+MSG_ES[ferramenta_traefik_e_portainer_passo4]="Paso \e[33m4/6\e[0m 🖥️"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_servidor]="\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_servidor]="\e[36mChoose a name for your server (e.g.: encha): \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_servidor]="\e[36mElija un nombre para su servidor (ej: encha): \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo5]="Passo \e[33m5/6\e[0m 🌐"
+MSG_EN[ferramenta_traefik_e_portainer_passo5]="Step \e[33m5/6\e[0m 🌐"
+MSG_ES[ferramenta_traefik_e_portainer_passo5]="Paso \e[33m5/6\e[0m 🌐"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_rede]="\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_rede]="\e[36mEnter a name for your internal network (e.g.: enchaNet): \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_rede]="\e[36mIngrese un nombre para su red interna (ej: enchaNet): \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_passo6]="Passo \e[33m6/6\e[0m 📧"
+MSG_EN[ferramenta_traefik_e_portainer_passo6]="Step \e[33m6/6\e[0m 📧"
+MSG_ES[ferramenta_traefik_e_portainer_passo6]="Paso \e[33m6/6\e[0m 📧"
+
+MSG_PT[ferramenta_traefik_e_portainer_prompt_email]="\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_prompt_email]="\e[36mEnter a valid email address (e.g.: instalador@encha.ai): \e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_prompt_email]="\e[36mIngrese una dirección de correo válida (ej: instalador@encha.ai): \e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_confira]="\e[33m🔍 CONFIRA OS DADOS:\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_confira]="\e[33m🔍 CHECK THE DATA:\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_confira]="\e[33m🔍 REVISE LOS DATOS:\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_confirma]=$'\e[32m✅ Confirma? (Y/N)\e[0m: '
+MSG_EN[ferramenta_traefik_e_portainer_confirma]=$'\e[32m✅ Confirm? (Y/N)\e[0m: '
+MSG_ES[ferramenta_traefik_e_portainer_confirma]=$'\e[32m✅ ¿Confirma? (Y/N)\e[0m: '
+
+MSG_PT[ferramenta_traefik_e_portainer_dados_preservados]="\e[33m⚠️  'portainer_data' já existe — o admin do Portainer de uma instalação anterior será preservado.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_dados_preservados]="\e[33m⚠️  'portainer_data' already exists — the Portainer admin from a previous installation will be preserved.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_dados_preservados]="\e[33m⚠️  'portainer_data' ya existe — el admin de Portainer de una instalación anterior será preservado.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_credenciais_bater]="\e[33m   As credenciais digitadas agora só serão aplicadas se baterem com as já existentes.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_credenciais_bater]="\e[33m   The credentials entered now will only be applied if they match the existing ones.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_credenciais_bater]="\e[33m   Las credenciales ingresadas ahora solo se aplicarán si coinciden con las ya existentes.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_preparando]="\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_preparando]="\e[97m• PREPARING ENVIRONMENT \e[33m[1/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_preparando]="\e[97m• PREPARANDO ENTORNO \e[33m[1/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_configurando]="\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_configurando]="\e[97m• CONFIGURING SYSTEM \e[33m[2/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_configurando]="\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_instalando_docker]="\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_instalando_docker]="\e[97m• INSTALLING DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_instalando_docker]="\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_docker_ja_instalado]="✅ Docker já instalado: \e[33m%s\e[0m. Pulando instalação."
+MSG_EN[ferramenta_traefik_e_portainer_docker_ja_instalado]="✅ Docker already installed: \e[33m%s\e[0m. Skipping installation."
+MSG_ES[ferramenta_traefik_e_portainer_docker_ja_instalado]="✅ Docker ya instalado: \e[33m%s\e[0m. Omitiendo instalación."
+
+MSG_PT[ferramenta_traefik_e_portainer_sistema_detectado]="ℹ️  Sistema detectado: \e[33m%s\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_sistema_detectado]="ℹ️  System detected: \e[33m%s\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_sistema_detectado]="ℹ️  Sistema detectado: \e[33m%s\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detectado. Aplicando correção de repositório..."
+MSG_EN[ferramenta_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detected. Applying repository fix..."
+MSG_ES[ferramenta_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detectado. Aplicando corrección de repositorio..."
+
+MSG_PT[ferramenta_traefik_e_portainer_sistema_estavel]="✅ Sistema estável detectado. Usando instalação nativa..."
+MSG_EN[ferramenta_traefik_e_portainer_sistema_estavel]="✅ Stable system detected. Using native installation..."
+MSG_ES[ferramenta_traefik_e_portainer_sistema_estavel]="✅ Sistema estable detectado. Usando instalación nativa..."
+
+MSG_PT[ferramenta_traefik_e_portainer_fallback_apt]="⚠️ Fallback para apt repository..."
+MSG_EN[ferramenta_traefik_e_portainer_fallback_apt]="⚠️ Falling back to apt repository..."
+MSG_ES[ferramenta_traefik_e_portainer_fallback_apt]="⚠️ Alternativa: repositorio apt..."
+
+MSG_PT[ferramenta_traefik_e_portainer_erro_fatal_docker]="\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_erro_fatal_docker]="\n\e[41m❌ FATAL ERROR: Docker not installed.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_erro_fatal_docker]="\n\e[41m❌ ERROR FATAL: Docker no instalado.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_iniciando_swarm]="⚙️  Iniciando Swarm..."
+MSG_EN[ferramenta_traefik_e_portainer_iniciando_swarm]="⚙️  Starting Swarm..."
+MSG_ES[ferramenta_traefik_e_portainer_iniciando_swarm]="⚙️  Iniciando Swarm..."
+
+MSG_PT[ferramenta_traefik_e_portainer_criando_rede]="\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_criando_rede]="\e[97m• CREATING INTERNAL NETWORK \e[33m[4/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_criando_rede]="\e[97m• CREANDO RED INTERNA \e[33m[4/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALLING TRAEFIK \e[33m[5/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_aguardando_traefik]="\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_aguardando_traefik]="\e[97m• WAITING FOR TRAEFIK \e[33m[7/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_aguardando_traefik]="\e[97m• ESPERANDO TRAEFIK \e[33m[7/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALLING PORTAINER \e[33m[8/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_aguardando_agent]="⏳ Aguardando o agent do Portainer ficar pronto..."
+MSG_EN[ferramenta_traefik_e_portainer_aguardando_agent]="⏳ Waiting for the Portainer agent to be ready..."
+MSG_ES[ferramenta_traefik_e_portainer_aguardando_agent]="⏳ Esperando que el agent de Portainer esté listo..."
+
+MSG_PT[ferramenta_traefik_e_portainer_aguardando_portainer]="\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_aguardando_portainer]="\e[97m• WAITING FOR PORTAINER \e[33m[9/9]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_aguardando_portainer]="\e[97m• ESPERANDO PORTAINER \e[33m[9/9]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_verificando_conta]="\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_verificando_conta]="\e[97m• CHECKING ACCOUNT \e[33m[FINISHING]\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_verificando_conta]="\e[97m• VERIFICANDO CUENTA \e[33m[FINALIZANDO]\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_confirmando_admin]="⏳ Confirmando admin do Portainer na rede interna..."
+MSG_EN[ferramenta_traefik_e_portainer_confirmando_admin]="⏳ Confirming the Portainer admin on the internal network..."
+MSG_ES[ferramenta_traefik_e_portainer_confirmando_admin]="⏳ Confirmando el admin de Portainer en la red interna..."
+
+MSG_PT[ferramenta_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+MSG_EN[ferramenta_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin not confirmed yet — restarting Portainer and trying again..."
+MSG_ES[ferramenta_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin aún no confirmado — reiniciando Portainer e intentando de nuevo..."
+
+MSG_PT[ferramenta_traefik_e_portainer_admin_pronto]="\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_admin_pronto]="\e[32m✅ Portainer admin ready (username: admin)!\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_admin_pronto]="\e[32m✅ ¡Admin de Portainer listo (usuario: admin)!\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_credenciais_nao_bateram]="\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_credenciais_nao_bateram]="\e[31m❌ An admin already exists in Portainer, but the entered credentials did not match.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_credenciais_nao_bateram]="\e[31m❌ Ya existe un admin en Portainer, pero las credenciales ingresadas no coincidieron.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_use_credenciais_anteriores]="\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+MSG_EN[ferramenta_traefik_e_portainer_use_credenciais_anteriores]="\e[31m   Use the credentials from the previous installation, or remove the 'portainer_data' volume to start from scratch.\e[0m"
+MSG_ES[ferramenta_traefik_e_portainer_use_credenciais_anteriores]="\e[31m   Use las credenciales de la instalación anterior, o elimine el volumen 'portainer_data' para comenzar de cero.\e[0m"
+
+MSG_PT[ferramenta_traefik_e_portainer_fim]="Fim."
+MSG_EN[ferramenta_traefik_e_portainer_fim]="Done."
+MSG_ES[ferramenta_traefik_e_portainer_fim]="Fin."
+
+MSG_PT[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://%s"
+MSG_EN[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 UNIVERSAL SUCCESS!\e[0m Access: https://%s"
+MSG_ES[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 ÉXITO UNIVERSAL!\e[0m Acceda: https://%s"
 
 ferramenta_traefik_e_portainer() {
 
   # Verifica recursos e limpa tela
   if type recursos &> /dev/null; then recursos 1 1 && continue || return; fi
   clear
-  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "--- TRAEFIK & PORTAINER (UNIVERSAL) ---"; fi
+  if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; else echo -e "$(t ferramenta_traefik_e_portainer_fallback_titulo)"; fi
 
   # --- COLETA DE DADOS ---
   # Modo não-interativo: variáveis pré-populadas via export (ex: main.sh refatorado)
   if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then
-    echo -e "\e[33m🤖 Modo não-interativo ativo — usando variáveis exportadas.\e[0m"
-    echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
+    echo -e "$(t ferramenta_traefik_e_portainer_noninterativo)"
+    echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
   else
     while true; do
-      echo -e "Passo \e[33m1/6\e[0m 📡"
-      echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
+      echo -e "$(t ferramenta_traefik_e_portainer_passo1)"
+      echo -ne "$(t ferramenta_traefik_e_portainer_prompt_dominio)" && read -r url_portainer
       echo ""
-      echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-      echo -e "\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+      echo -e "$(t ferramenta_traefik_e_portainer_passo2)"
+      echo -e "$(t ferramenta_traefik_e_portainer_dica_admin)"
       while true; do
-        echo -ne "\e[36mUsuário do Portainer: \e[0m" && read -r user_portainer
+        echo -ne "$(t ferramenta_traefik_e_portainer_prompt_usuario)" && read -r user_portainer
         if type validar_usuario &> /dev/null; then
           validar_usuario "$user_portainer" && break
         else
           [[ "$user_portainer" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_portainer,,}" != "admin" ]] && break
-          echo -e "\e[31m✖ Usuário inválido.\e[0m"
+          echo -e "$(t ferramenta_traefik_e_portainer_usuario_invalido)"
         fi
       done
       echo ""
       while true; do
-        echo -e "Passo \e[33m3/6\e[0m 🔐"
-        echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-        echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -rs pass_portainer && echo ""
+        echo -e "$(t ferramenta_traefik_e_portainer_passo3)"
+        echo -e "$(t ferramenta_traefik_e_portainer_dica_senha)"
+        echo -ne "$(t ferramenta_traefik_e_portainer_prompt_senha)" && read -rs pass_portainer && echo ""
         echo ""
         if type validar_senha &> /dev/null; then
           if validar_senha "$pass_portainer" 12; then break; fi
@@ -2296,21 +2988,21 @@ ferramenta_traefik_e_portainer() {
         fi
         echo ""
       done
-      echo -e "Passo \e[33m4/6\e[0m 🖥️"
-      echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
+      echo -e "$(t ferramenta_traefik_e_portainer_passo4)"
+      echo -ne "$(t ferramenta_traefik_e_portainer_prompt_servidor)" && read -r nome_servidor
       echo ""
-      echo -e "Passo \e[33m5/6\e[0m 🌐"
-      echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
+      echo -e "$(t ferramenta_traefik_e_portainer_passo5)"
+      echo -ne "$(t ferramenta_traefik_e_portainer_prompt_rede)" && read -r nome_rede_interna
       echo ""
-      echo -e "Passo \e[33m6/6\e[0m 📧"
-      echo -ne "\e[36mDigite um endereço de email válido (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
+      echo -e "$(t ferramenta_traefik_e_portainer_passo6)"
+      echo -ne "$(t ferramenta_traefik_e_portainer_prompt_email)" && read -r email_ssl
       echo ""
 
       clear
       if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
-      echo -e "\e[33m🔍 CONFIRA OS DADOS:\e[0m"
-      echo -e "Link: \e[97m$url_portainer\e[0m | User: \e[97m$user_portainer\e[0m | Server: \e[97m$nome_servidor\e[0m"
-      read -p $'\e[32m✅ Confirma? (Y/N)\e[0m: ' confirmacao
+      echo -e "$(t ferramenta_traefik_e_portainer_confira)"
+      echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
+      read -p "$(t ferramenta_traefik_e_portainer_confirma)" confirmacao
       if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
     done
   fi
@@ -2332,11 +3024,11 @@ ferramenta_traefik_e_portainer() {
   PORTAINER_JA_INICIALIZADO=false
   if sudo docker volume inspect portainer_data >/dev/null 2>&1; then
     PORTAINER_JA_INICIALIZADO=true
-    echo -e "\e[33m⚠️  'portainer_data' já existe — o admin do Portainer de uma instalação anterior será preservado.\e[0m"
-    echo -e "\e[33m   As credenciais digitadas agora só serão aplicadas se baterem com as já existentes.\e[0m"
+    echo -e "$(t ferramenta_traefik_e_portainer_dados_preservados)"
+    echo -e "$(t ferramenta_traefik_e_portainer_credenciais_bater)"
   fi
 
-  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_preparando)"
   # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
   # NÃO faz purge do Docker nem 'rm -rf /var/lib/docker': volumes externos
   # (portainer_data, certificados e dados de stacks) são preservados — reinstalar
@@ -2355,25 +3047,25 @@ Portainer Link: $url_portainer
 EOL
   cd ~
 
-  echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_configurando)"
   sudo apt-get update -y > /dev/null 2>&1
   sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release > /dev/null 2>&1
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_instalando_docker)"
 
   if command -v docker &> /dev/null; then
-  echo -e "✅ Docker já instalado: \e[33m$(docker --version 2>/dev/null)\e[0m. Pulando instalação."
+  echo -e "$(t ferramenta_traefik_e_portainer_docker_ja_instalado "$(docker --version 2>/dev/null)")"
   else
   # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
   OS_CODENAME=$(lsb_release -cs)
-  echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_sistema_detectado "$OS_CODENAME")"
 
   if [[ "$OS_CODENAME" == "trixie" ]] || [[ "$OS_CODENAME" == "sid" ]] || [[ "$OS_CODENAME" == "n/a" ]]; then
       # --- CASO PROBLEMÁTICO (DEBIAN 13/TESTING) ---
-      echo -e "⚠️  Debian Testing detectado. Aplicando correção de repositório..."
-      
+      echo -e "$(t ferramenta_traefik_e_portainer_debian_testing)"
+
       sudo install -m 0755 -d /etc/apt/keyrings
       curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
       sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -2381,7 +3073,7 @@ EOL
       # Força repositório do Bookworm (Estável)
       echo \
         "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-      
+
       sudo apt-get update -y > /dev/null 2>&1
       # Instala versão específica compatível do Bookworm
       VERSION_STRING="5:27.3.1-1~debian.12~bookworm"
@@ -2390,15 +3082,15 @@ EOL
 
   else
       # --- CASO PADRÃO (DEBIAN 11/12, UBUNTU 20/22/24) ---
-      echo -e "✅ Sistema estável detectado. Usando instalação nativa..."
-      
+      echo -e "$(t ferramenta_traefik_e_portainer_sistema_estavel)"
+
       # Tenta instalar via script oficial travando na versão 27 (compatível com todos)
       curl -fsSL https://get.docker.com -o install_docker.sh
       sudo sh install_docker.sh --version 27.3.1 > /dev/null 2>&1
-      
+
       # Se falhar (alguns sistemas não suportam o script), tenta apt padrão
       if ! command -v docker &> /dev/null; then
-         echo "⚠️ Fallback para apt repository..."
+         echo "$(t ferramenta_traefik_e_portainer_fallback_apt)"
          sudo apt-get update -y > /dev/null 2>&1
          sudo apt-get install -y docker.io > /dev/null 2>&1
       fi
@@ -2407,21 +3099,21 @@ EOL
 
   # Verificação Final
   if ! command -v docker &> /dev/null; then
-     echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
+     echo -e "$(t ferramenta_traefik_e_portainer_erro_fatal_docker)"
      return 1
   fi
-  
+
   sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
 
-  echo -e "⚙️  Iniciando Swarm..."
+  echo -e "$(t ferramenta_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
-  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_criando_rede)"
   sudo docker network create --driver=overlay --attachable "$nome_rede_interna" > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_instalando_traefik)"
   
   cat > traefik.yaml << EOL
 version: "3.7"
@@ -2488,10 +3180,10 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
   
-  echo -e "\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_aguardando_traefik)"
   if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
 
-  echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_instalando_portainer)"
 
   # O Portainer cria o admin no próprio boot via --admin-password-file (lendo de
   # um Docker Secret). Isso evita a corrida com a janela de segurança / o
@@ -2532,7 +3224,7 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer-agent.yaml portainer > /dev/null 2>&1
 
-  echo -e "⏳ Aguardando o agent do Portainer ficar pronto..."
+  echo -e "$(t ferramenta_traefik_e_portainer_aguardando_agent)"
   for i in $(seq 1 30); do
     rep=$(sudo docker service ls --filter "name=portainer_agent" --format "{{.Replicas}}")
     running=${rep%%/*}; total=${rep##*/}
@@ -2597,14 +3289,14 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
 
-  echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_aguardando_portainer)"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
-  echo -e "\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  echo -e "$(t ferramenta_traefik_e_portainer_verificando_conta)"
   # O admin já foi criado pelo Portainer no boot (--admin-password-file).
   # Aqui só confirmamos (admin/check=204) e pegamos o token. Sem POST de init,
   # não há corrida com a janela de segurança nem com o crash-loop do agent.
-  echo -e "⏳ Confirmando admin do Portainer na rede interna..."
+  echo -e "$(t ferramenta_traefik_e_portainer_confirmando_admin)"
   CONTA_CRIADA=false
   for i in $(seq 1 40); do
     chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
@@ -2615,7 +3307,7 @@ EOL
 
   # Fallback defensivo: se não confirmou em ~2min, força um restart e re-checa.
   if [ "$CONTA_CRIADA" != true ]; then
-    echo -e "⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+    echo -e "$(t ferramenta_traefik_e_portainer_admin_nao_confirmado)"
     sudo docker service update --force portainer_portainer >/dev/null 2>&1
     for i in $(seq 1 20); do
       chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
@@ -2636,7 +3328,7 @@ EOL
       -d "$(jq -nc --arg p "$pass_portainer" '{username:"admin",password:$p}')" 2>/dev/null | jq -r .jwt)
 
     if [ -n "$token" ] && [ "$token" != "null" ]; then
-      echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+      echo -e "$(t ferramenta_traefik_e_portainer_admin_pronto)"
       CREDENCIAIS_APLICADAS=true
       if [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
         # Reinstalação: o admin "admin"/$pass_portainer já existia (senha
@@ -2651,8 +3343,8 @@ EOL
       # Reinstalação sobre admin pré-existente com credenciais diferentes
       # das digitadas agora: as credenciais NÃO foram aplicadas. Não
       # sobrescrever dados_portainer com informação enganosa.
-      echo -e "\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
-      echo -e "\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+      echo -e "$(t ferramenta_traefik_e_portainer_credenciais_nao_bateram)"
+      echo -e "$(t ferramenta_traefik_e_portainer_use_credenciais_anteriores)"
     fi
   fi
 
@@ -2682,10 +3374,22 @@ EOL
   user_portainer="$USER_PORTAINER_FINAL"
   cd; cd
 
-  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "Fim."; fi
-  echo -e "\n\e[32m🚀 SUCESSO UNIVERSAL!\e[0m Acesse: https://$url_portainer"
+  if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; else echo "$(t ferramenta_traefik_e_portainer_fim)"; fi
+  echo -e "$(t ferramenta_traefik_e_portainer_sucesso_universal "$url_portainer")"
   if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; fi
 }
+
+MSG_PT[ferramenta_postgres_stack_criada]="Passo \e[33m1/10\e[0m ✅ - Stack do Postgres criada com sucesso"
+MSG_EN[ferramenta_postgres_stack_criada]="Step \e[33m1/10\e[0m ✅ - Postgres stack created successfully"
+MSG_ES[ferramenta_postgres_stack_criada]="Paso \e[33m1/10\e[0m ✅ - Stack de Postgres creada con éxito"
+
+MSG_PT[ferramenta_postgres_stack_falhou]="Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
+MSG_EN[ferramenta_postgres_stack_falhou]="Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Postgres stack"
+MSG_ES[ferramenta_postgres_stack_falhou]="Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Falló la creación de la stack de Postgres"
+
+MSG_PT[ferramenta_postgres_nao_foi_possivel]="⚠️ \e[33mNão foi possível criar a stack do Postgres.\e[0m"
+MSG_EN[ferramenta_postgres_nao_foi_possivel]="⚠️ \e[33mCould not create the Postgres stack.\e[0m"
+MSG_ES[ferramenta_postgres_nao_foi_possivel]="⚠️ \e[33mNo fue posible crear la stack de Postgres.\e[0m"
 
 ferramenta_postgres() {
 
@@ -2755,10 +3459,10 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres criada com sucesso"
+    echo -e "$(t ferramenta_postgres_stack_criada)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres.\e[0m"
+    echo -e "$(t ferramenta_postgres_stack_falhou)"
+    echo -e "$(t ferramenta_postgres_nao_foi_possivel)"
 fi
 STACK_NAME="postgres"
 stack_editavel #> /dev/null 2>&1
@@ -2868,6 +3572,22 @@ pegar_senha_mysql_da_stack() {
   done
 }
 
+MSG_PT[criar_banco_mysql_da_stack_ja_existe]="\e[33mO banco de dados '%s' já existe. Mantendo o banco existente.\e[0m"
+MSG_EN[criar_banco_mysql_da_stack_ja_existe]="\e[33mThe database '%s' already exists. Keeping the existing database.\e[0m"
+MSG_ES[criar_banco_mysql_da_stack_ja_existe]="\e[33mLa base de datos '%s' ya existe. Manteniendo la base de datos existente.\e[0m"
+
+MSG_PT[criar_banco_mysql_da_stack_criado]="\e[32mBanco de dados '%s' criado com sucesso.\e[0m"
+MSG_EN[criar_banco_mysql_da_stack_criado]="\e[32mDatabase '%s' created successfully.\e[0m"
+MSG_ES[criar_banco_mysql_da_stack_criado]="\e[32mBase de datos '%s' creada con éxito.\e[0m"
+
+MSG_PT[criar_banco_mysql_da_stack_erro_tentando]="\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+MSG_EN[criar_banco_mysql_da_stack_erro_tentando]="\e[31mError creating the database. Trying again...\e[0m"
+MSG_ES[criar_banco_mysql_da_stack_erro_tentando]="\e[31mError al crear la base de datos. Intentando de nuevo...\e[0m"
+
+MSG_PT[criar_banco_mysql_da_stack_container_nao_encontrado]="Container MySQL não encontrado. Aguardando..."
+MSG_EN[criar_banco_mysql_da_stack_container_nao_encontrado]="MySQL container not found. Waiting..."
+MSG_ES[criar_banco_mysql_da_stack_container_nao_encontrado]="Contenedor MySQL no encontrado. Esperando..."
+
 criar_banco_mysql_da_stack() {
     local dbname="$1"
     while :; do
@@ -2876,28 +3596,40 @@ criar_banco_mysql_da_stack() {
 
             # Verifica se o banco de dados já existe
             if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
-                echo -e "\e[33mO banco de dados '$dbname' já existe. Mantendo o banco existente.\e[0m"
+                echo -e "$(t criar_banco_mysql_da_stack_ja_existe "$dbname")"
                 break
             else
                 # Cria o banco de dados
                 docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "CREATE DATABASE $dbname;" > /dev/null 2>&1
-                
+
                 # Verifica se foi criado com sucesso
                 if docker exec -e MYSQL_PWD="$senha_mysql" "$CONTAINER_ID" mysql -u root -e "SHOW DATABASES LIKE '$dbname';" | grep -q "$dbname"; then
-                    echo -e "\e[32mBanco de dados '$dbname' criado com sucesso.\e[0m"
+                    echo -e "$(t criar_banco_mysql_da_stack_criado "$dbname")"
                     break
                 else
-                    echo -e "\e[31mErro ao criar o banco de dados. Tentando novamente...\e[0m"
+                    echo -e "$(t criar_banco_mysql_da_stack_erro_tentando)"
                     sleep 2
                 fi
             fi
         else
-            echo "Container MySQL não encontrado. Aguardando..."
+            echo "$(t criar_banco_mysql_da_stack_container_nao_encontrado)"
             sleep 5
         fi
     done
 }
 
+
+MSG_PT[ferramenta_postgres_formacao_encha_stack_criada]="Passo \e[33m1/10\e[0m ✅ - Stack do Postgres Formação Encha criada com sucesso"
+MSG_EN[ferramenta_postgres_formacao_encha_stack_criada]="Step \e[33m1/10\e[0m ✅ - Postgres Formação Encha stack created successfully"
+MSG_ES[ferramenta_postgres_formacao_encha_stack_criada]="Paso \e[33m1/10\e[0m ✅ - Stack de Postgres Formação Encha creada con éxito"
+
+MSG_PT[ferramenta_postgres_formacao_encha_stack_falhou]="Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres Formação Encha"
+MSG_EN[ferramenta_postgres_formacao_encha_stack_falhou]="Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Postgres Formação Encha stack"
+MSG_ES[ferramenta_postgres_formacao_encha_stack_falhou]="Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Falló la creación de la stack de Postgres Formação Encha"
+
+MSG_PT[ferramenta_postgres_formacao_encha_nao_foi_possivel]="⚠️ \e[33mNão foi possível criar a stack do Postgres Formação Encha.\e[0m"
+MSG_EN[ferramenta_postgres_formacao_encha_nao_foi_possivel]="⚠️ \e[33mCould not create the Postgres Formação Encha stack.\e[0m"
+MSG_ES[ferramenta_postgres_formacao_encha_nao_foi_possivel]="⚠️ \e[33mNo fue posible crear la stack de Postgres Formação Encha.\e[0m"
 
 ferramenta_postgres_formacao_encha() {
 
@@ -2967,10 +3699,10 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Postgres Formação Encha criada com sucesso"
+    echo -e "$(t ferramenta_postgres_formacao_encha_stack_criada)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Postgres Formação Encha"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Postgres Formação Encha.\e[0m"
+    echo -e "$(t ferramenta_postgres_formacao_encha_stack_falhou)"
+    echo -e "$(t ferramenta_postgres_formacao_encha_nao_foi_possivel)"
 fi
 STACK_NAME="postgres_formacao_encha"
 stack_editavel #> /dev/null 2>&1
@@ -2996,6 +3728,82 @@ wait_stack "postgres_formacao_encha"
 echo ""
 }
 
+MSG_PT[ferramenta_evolution_passo1]="Passo \e[33m1/1\e[0m 🌐"
+MSG_EN[ferramenta_evolution_passo1]="Step \e[33m1/1\e[0m 🌐"
+MSG_ES[ferramenta_evolution_passo1]="Paso \e[33m1/1\e[0m 🌐"
+
+MSG_PT[ferramenta_evolution_prompt_dominio]="\e[36mDigite o domínio para a Evolution API (ex: evolution.encha.ai): \e[0m"
+MSG_EN[ferramenta_evolution_prompt_dominio]="\e[36mEnter the domain for the Evolution API (e.g.: evolution.encha.ai): \e[0m"
+MSG_ES[ferramenta_evolution_prompt_dominio]="\e[36mIngrese el dominio para la Evolution API (ej: evolution.encha.ai): \e[0m"
+
+MSG_PT[ferramenta_evolution_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m"
+MSG_EN[ferramenta_evolution_revise]="\e[33m🔍 Please review the information below:\e[0m"
+MSG_ES[ferramenta_evolution_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m"
+
+MSG_PT[ferramenta_evolution_dominio_evolution]="\e[33m🌐 Domínio da Evolution API:\e[97m %s\e[0m"
+MSG_EN[ferramenta_evolution_dominio_evolution]="\e[33m🌐 Evolution API domain:\e[97m %s\e[0m"
+MSG_ES[ferramenta_evolution_dominio_evolution]="\e[33m🌐 Dominio de la Evolution API:\e[97m %s\e[0m"
+
+MSG_PT[ferramenta_evolution_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+MSG_EN[ferramenta_evolution_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+MSG_ES[ferramenta_evolution_confirma]=$'\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+MSG_PT[ferramenta_evolution_iniciando_instalacao]="🚀 \e[97mIniciando a instalação da Evolution API \e[33m[1/4]\e[0m"
+MSG_EN[ferramenta_evolution_iniciando_instalacao]="🚀 \e[97mStarting the Evolution API installation \e[33m[1/4]\e[0m"
+MSG_ES[ferramenta_evolution_iniciando_instalacao]="🚀 \e[97mIniciando la instalación de la Evolution API \e[33m[1/4]\e[0m"
+
+MSG_PT[ferramenta_evolution_verificando_postgres]="🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+MSG_EN[ferramenta_evolution_verificando_postgres]="🔍 \e[97mChecking/Installing Postgres \e[33m[2/4]\e[0m"
+MSG_ES[ferramenta_evolution_verificando_postgres]="🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+
+MSG_PT[ferramenta_evolution_etapa1_postgres]="🔍 Etapa 1/3: Verificando instalação do Postgres... [OK]"
+MSG_EN[ferramenta_evolution_etapa1_postgres]="🔍 Step 1/3: Checking Postgres installation... [OK]"
+MSG_ES[ferramenta_evolution_etapa1_postgres]="🔍 Paso 1/3: Verificando instalación de Postgres... [OK]"
+
+MSG_PT[ferramenta_evolution_etapa2_senha]="🔐 Etapa 2/3: Copiando a senha do Postgres... [OK]"
+MSG_EN[ferramenta_evolution_etapa2_senha]="🔐 Step 2/3: Copying the Postgres password... [OK]"
+MSG_ES[ferramenta_evolution_etapa2_senha]="🔐 Paso 2/3: Copiando la contraseña de Postgres... [OK]"
+
+MSG_PT[ferramenta_evolution_etapa3_banco]="🛠️ Etapa 3/3: Criando o banco de dados '%s'... [OK]"
+MSG_EN[ferramenta_evolution_etapa3_banco]="🛠️ Step 3/3: Creating the database '%s'... [OK]"
+MSG_ES[ferramenta_evolution_etapa3_banco]="🛠️ Paso 3/3: Creando la base de datos '%s'... [OK]"
+
+MSG_PT[ferramenta_evolution_instalando]="\e[97m🔧 Instalando a Evolution API...\e[33m [Etapa 3 de 4]\e[0m"
+MSG_EN[ferramenta_evolution_instalando]="\e[97m🔧 Installing the Evolution API...\e[33m [Step 3 of 4]\e[0m"
+MSG_ES[ferramenta_evolution_instalando]="\e[97m🔧 Instalando la Evolution API...\e[33m [Paso 3 de 4]\e[0m"
+
+MSG_PT[ferramenta_evolution_stack_criada]="Passo \e[33m1/10\e[0m ✅ - Stack criada com sucesso"
+MSG_EN[ferramenta_evolution_stack_criada]="Step \e[33m1/10\e[0m ✅ - Stack created successfully"
+MSG_ES[ferramenta_evolution_stack_criada]="Paso \e[33m1/10\e[0m ✅ - Stack creada con éxito"
+
+MSG_PT[ferramenta_evolution_stack_falhou]="Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API"
+MSG_EN[ferramenta_evolution_stack_falhou]="Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Evolution API stack"
+MSG_ES[ferramenta_evolution_stack_falhou]="Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Falló la creación de la stack de la Evolution API"
+
+MSG_PT[ferramenta_evolution_nao_foi_possivel]="⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
+MSG_EN[ferramenta_evolution_nao_foi_possivel]="⚠️ \e[33mCould not create the Evolution API stack.\e[0m"
+MSG_ES[ferramenta_evolution_nao_foi_possivel]="⚠️ \e[33mNo fue posible crear la stack de la Evolution API.\e[0m"
+
+MSG_PT[ferramenta_evolution_verificando_servico]="\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 4]\e[0m"
+MSG_EN[ferramenta_evolution_verificando_servico]="\e[97m🔍 Checking the service...\e[33m [Step 4 of 4]\e[0m"
+MSG_ES[ferramenta_evolution_verificando_servico]="\e[97m🔍 Verificando el servicio...\e[33m [Paso 4 de 4]\e[0m"
+
+MSG_PT[ferramenta_evolution_instalada_sucesso]="\e[32m🚀 [ EVOLUTION API INSTALADA COM SUCESSO ]\e[0m"
+MSG_EN[ferramenta_evolution_instalada_sucesso]="\e[32m🚀 [ EVOLUTION API INSTALLED SUCCESSFULLY ]\e[0m"
+MSG_ES[ferramenta_evolution_instalada_sucesso]="\e[32m🚀 [ EVOLUTION API INSTALADA CON ÉXITO ]\e[0m"
+
+MSG_PT[ferramenta_evolution_link_manager]="\e[97m🔗 Link do Manager:\e[33m https://%s/manager\e[0m"
+MSG_EN[ferramenta_evolution_link_manager]="\e[97m🔗 Manager link:\e[33m https://%s/manager\e[0m"
+MSG_ES[ferramenta_evolution_link_manager]="\e[97m🔗 Enlace del Manager:\e[33m https://%s/manager\e[0m"
+
+MSG_PT[ferramenta_evolution_url_api]="\e[97m🌐 URL da API:\e[33m https://%s\e[0m"
+MSG_EN[ferramenta_evolution_url_api]="\e[97m🌐 API URL:\e[33m https://%s\e[0m"
+MSG_ES[ferramenta_evolution_url_api]="\e[97m🌐 URL de la API:\e[33m https://%s\e[0m"
+
+MSG_PT[ferramenta_evolution_chave_api]="\e[97m🔑 Chave de API Global:\e[33m %s\e[0m"
+MSG_EN[ferramenta_evolution_chave_api]="\e[97m🔑 Global API Key:\e[33m %s\e[0m"
+MSG_ES[ferramenta_evolution_chave_api]="\e[97m🔑 Clave de API Global:\e[33m %s\e[0m"
+
 ferramenta_evolution() {
 
 
@@ -3011,27 +3819,27 @@ dados
 while true; do
 
     ##Pergunta o Dominio para aplicação
-    echo -e "Passo \e[33m1/1\e[0m 🌐"
-    echo -ne "\e[36mDigite o domínio para a Evolution API (ex: evolution.encha.ai): \e[0m" && read -r url_evolution
+    echo -e "$(t ferramenta_evolution_passo1)"
+    echo -ne "$(t ferramenta_evolution_prompt_dominio)" && read -r url_evolution
     echo ""
 
     ## Limpa o terminal
     clear
-    
+
 
 
     ## Informação sobre URL
     msg_evolution_api
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_evolution_revise)\n"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m🌐 Domínio da Evolution API:\e[97m $url_evolution\e[0m"
+    echo -e "$(t ferramenta_evolution_dominio_evolution "$url_evolution")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Pergunta se as respostas estão corretas
-  
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+
+    read -p "$(t ferramenta_evolution_confirma)" confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
 
         clear
@@ -3050,7 +3858,7 @@ while true; do
 done
 
 ## Mensagem de Passo
-echo -e "🚀 \e[97mIniciando a instalação da Evolution API \e[33m[1/4]\e[0m"
+echo -e "$(t ferramenta_evolution_iniciando_instalacao)"
 echo ""
 sleep 1
 
@@ -3060,7 +3868,7 @@ sleep 1
 ## E claro, para aparecer a mensagem do passo..
 
 ## Mensagem de Passo
-echo -e "🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+echo -e "$(t ferramenta_evolution_verificando_postgres)"
 echo ""
 sleep 1
 
@@ -3071,11 +3879,11 @@ sleep 1
 
 verificar_container_postgres
 if [ $? -eq 0 ]; then
-    echo "🔍 Etapa 1/3: Verificando instalação do Postgres... [OK]"
+    echo "$(t ferramenta_evolution_etapa1_postgres)"
     pegar_senha_postgres > /dev/null 2>&1
-    echo "🔐 Etapa 2/3: Copiando a senha do Postgres... [OK]"
+    echo "$(t ferramenta_evolution_etapa2_senha)"
     criar_banco_postgres_da_stack "evolution${1:+_$1}"
-    echo "🛠️ Etapa 3/3: Criando o banco de dados 'evolution${1:+_$1}'... [OK]"
+    echo "$(t ferramenta_evolution_etapa3_banco "evolution${1:+_$1}")"
     echo ""
 else
     ferramenta_postgres
@@ -3086,7 +3894,7 @@ fi
 pegar_senha_postgres > /dev/null 2>&1
 
 ## Mensagem de Passo
-echo -e "\e[97m🔧 Instalando a Evolution API...\e[33m [Etapa 3 de 4]\e[0m"
+echo -e "$(t ferramenta_evolution_instalando)"
 echo ""
 sleep 1
 
@@ -3356,13 +4164,13 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack criada com sucesso"
+    echo -e "$(t ferramenta_evolution_stack_criada)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
+    echo -e "$(t ferramenta_evolution_stack_falhou)"
+    echo -e "$(t ferramenta_evolution_nao_foi_possivel)"
 fi
 STACK_NAME="evolution${1:+_$1}"
-stack_editavel 
+stack_editavel
 
 
 
@@ -3370,7 +4178,7 @@ stack_editavel
 sleep 10
 
 ## Mensagem de Passo
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 4]\e[0m"
+echo -e "$(t ferramenta_evolution_verificando_servico)"
 echo ""
 sleep 1
 
@@ -3402,16 +4210,16 @@ wait_30_sec
 
 msg_resumo_informacoes
 ## Dados da Aplicação:
-echo -e "\e[32m🚀 [ EVOLUTION API INSTALADA COM SUCESSO ]\e[0m"
+echo -e "$(t ferramenta_evolution_instalada_sucesso)"
 echo ""
 
-echo -e "\e[97m🔗 Link do Manager:\e[33m https://$url_evolution/manager\e[0m"
+echo -e "$(t ferramenta_evolution_link_manager "$url_evolution")"
 echo ""
 
-echo -e "\e[97m🌐 URL da API:\e[33m https://$url_evolution\e[0m"
+echo -e "$(t ferramenta_evolution_url_api "$url_evolution")"
 echo ""
 
-echo -e "\e[97m🔑 Chave de API Global:\e[33m $apikeyglobal\e[0m"
+echo -e "$(t ferramenta_evolution_chave_api "$apikeyglobal")"
 echo ""
 
 msg_retorno_menu
@@ -3485,11 +4293,20 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
+MSG_PT[ferramenta_pgvector_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do PgVector criada com sucesso'
+MSG_EN[ferramenta_pgvector_sucesso]=$'Step \e[33m1/10\e[0m ✅ - PgVector stack created successfully'
+MSG_ES[ferramenta_pgvector_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de PgVector creado con éxito'
+MSG_PT[ferramenta_pgvector_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do PgVector'
+MSG_EN[ferramenta_pgvector_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the PgVector stack'
+MSG_ES[ferramenta_pgvector_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de PgVector'
+MSG_PT[ferramenta_pgvector_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do PgVector.\e[0m'
+MSG_EN[ferramenta_pgvector_falha_aviso]=$'⚠️ \e[33mCould not create the PgVector stack.\e[0m'
+MSG_ES[ferramenta_pgvector_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de PgVector.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do PgVector criada com sucesso"
+    echo -e "$(t ferramenta_pgvector_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do PgVector"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do PgVector.\e[0m"
+    echo -e "$(t ferramenta_pgvector_falha)"
+    echo -e "$(t ferramenta_pgvector_falha_aviso)"
 fi
 
 STACK_NAME="pgvector"
@@ -3532,41 +4349,83 @@ msg_chatwoot
 while true; do
 
     ## Passo 1 - Domínio da aplicação
-    echo -e "\e[97mPasso$amarelo 1/6\e[0m"
-    echo -en "\e[33mDigite o Dominio para o Chatwoot (ex: chatwoot.encha.ai): \e[0m" && read -r url_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo1]="\e[97mPasso${amarelo} 1/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo1]="\e[97mStep${amarelo} 1/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo1]="\e[97mPaso${amarelo} 1/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo1)"
+    MSG_PT[ferramenta_chatwoot_pergunta_dominio]=$'\e[33mDigite o Dominio para o Chatwoot (ex: chatwoot.encha.ai): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_dominio]=$'\e[33mEnter the Domain for Chatwoot (e.g.: chatwoot.encha.ai): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_dominio]=$'\e[33mIngrese el Dominio para Chatwoot (ej.: chatwoot.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_dominio)" && read -r url_chatwoot
     echo ""
-    
+
     ## Pega o nome do dominio para ser o nome da empresa
     nome_empresa_chatwoot="$nome_servidor"
-    
+
     ## Passo 2 - Email SMTP
-    echo -e "\e[97mPasso$amarelo 2/6\e[0m"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_admin_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo2]="\e[97mPasso${amarelo} 2/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo2]="\e[97mStep${amarelo} 2/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo2]="\e[97mPaso${amarelo} 2/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo2)"
+    MSG_PT[ferramenta_chatwoot_pergunta_email_smtp]=$'\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_email_smtp]=$'\e[33mEnter the Email for SMTP (e.g.: contato@encha.ai): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_email_smtp]=$'\e[33mIngrese el Email para SMTP (ej.: contato@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_email_smtp)" && read -r email_admin_chatwoot
     echo ""
 
     ## Define o dominio SMTP com o dominio do email
     dominio_smtp_chatwoot=$(echo "$email_admin_chatwoot" | cut -d "@" -f 2)
 
     ## Passo 3 - Usuário SMTP
-    echo -e "\e[97mPasso$amarelo 3/6\e[0m"
-    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r user_smtp_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo3]="\e[97mPasso${amarelo} 3/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo3]="\e[97mStep${amarelo} 3/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo3]="\e[97mPaso${amarelo} 3/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo3)"
+    MSG_PT[ferramenta_chatwoot_aviso_user_smtp]="${amarelo}--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    MSG_EN[ferramenta_chatwoot_aviso_user_smtp]="${amarelo}--> If you don't have an email username, use the email itself below"
+    MSG_ES[ferramenta_chatwoot_aviso_user_smtp]="${amarelo}--> Si no tiene un usuario del email, use el propio email abajo"
+    echo -e "$(t ferramenta_chatwoot_aviso_user_smtp)"
+    MSG_PT[ferramenta_chatwoot_pergunta_user_smtp]=$'\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_user_smtp]=$'\e[33mEnter the SMTP Username (e.g.: encha or contato@encha.ai): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_user_smtp]=$'\e[33mIngrese el Usuario para SMTP (ej.: encha o contato@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_user_smtp)" && read -r user_smtp_chatwoot
     echo ""
-    
+
     ## Passo 4 - Senha do SMTP
-    echo -e "\e[97mPasso$amarelo 4/6\e[0m"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo4]="\e[97mPasso${amarelo} 4/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo4]="\e[97mStep${amarelo} 4/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo4]="\e[97mPaso${amarelo} 4/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo4)"
+    MSG_PT[ferramenta_chatwoot_aviso_senha_smtp]="${amarelo}--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    MSG_EN[ferramenta_chatwoot_aviso_senha_smtp]="${amarelo}--> No special characters: \!#$ | If using Gmail, use an app password"
+    MSG_ES[ferramenta_chatwoot_aviso_senha_smtp]="${amarelo}--> Sin caracteres especiales: \!#$ | Si usa Gmail, use la contraseña de aplicación"
+    echo -e "$(t ferramenta_chatwoot_aviso_senha_smtp)"
+    MSG_PT[ferramenta_chatwoot_pergunta_senha_smtp]=$'\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_senha_smtp]=$'\e[33mEnter the SMTP Password for the Email (e.g.: @Password123_): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_senha_smtp]=$'\e[33mIngrese la Contraseña SMTP del Email (ej.: @Clave123_): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_senha_smtp)" && read -r senha_email_chatwoot
     echo ""
-    
+
     ## Passo 5 - Host SMTP
-    echo -e "\e[97mPasso$amarelo 5/6\e[0m"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo5]="\e[97mPasso${amarelo} 5/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo5]="\e[97mStep${amarelo} 5/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo5]="\e[97mPaso${amarelo} 5/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo5)"
+    MSG_PT[ferramenta_chatwoot_pergunta_host_smtp]=$'\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_host_smtp]=$'\e[33mEnter the SMTP Host for the Email (e.g.: smtp.hostinger.com): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_host_smtp]=$'\e[33mIngrese el Host SMTP del Email (ej.: smtp.hostinger.com): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_host_smtp)" && read -r smtp_email_chatwoot
     echo ""
-    
+
     ## Passo 6 - Porta SMTP
-    echo -e "\e[97mPasso$amarelo 6/6\e[0m"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_chatwoot
+    MSG_PT[ferramenta_chatwoot_passo6]="\e[97mPasso${amarelo} 6/6\e[0m"
+    MSG_EN[ferramenta_chatwoot_passo6]="\e[97mStep${amarelo} 6/6\e[0m"
+    MSG_ES[ferramenta_chatwoot_passo6]="\e[97mPaso${amarelo} 6/6\e[0m"
+    echo -e "$(t ferramenta_chatwoot_passo6)"
+    MSG_PT[ferramenta_chatwoot_pergunta_porta_smtp]=$'\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m'
+    MSG_EN[ferramenta_chatwoot_pergunta_porta_smtp]=$'\e[33mEnter the SMTP port for the Email (e.g.: 465): \e[0m'
+    MSG_ES[ferramenta_chatwoot_pergunta_porta_smtp]=$'\e[33mIngrese el puerto SMTP del Email (ej.: 465): \e[0m'
+    echo -en "$(t ferramenta_chatwoot_pergunta_porta_smtp)" && read -r porta_smtp_chatwoot
     
     ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
     if [ "$porta_smtp_chatwoot" -eq 465 ]; then
@@ -3582,18 +4441,45 @@ while true; do
     msg_chatwoot
     
     ## Mostra mensagem para verificar as informações
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "\e[33mDominio do Chatwoot:\e[97m $url_chatwoot\e[0m"
-    echo -e "\e[33mNome da Empresa:\e[97m $nome_empresa_chatwoot\e[0m"
-    echo -e "\e[33mEmail do SMTP:\e[97m $email_admin_chatwoot\e[0m"
-    echo -e "\e[33mUser do SMTP:\e[97m $user_smtp_chatwoot\e[0m"
-    echo -e "\e[33mSenha do SMTP:\e[97m $senha_email_chatwoot\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $smtp_email_chatwoot\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_chatwoot\e[0m"
+    MSG_PT[ferramenta_chatwoot_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+    MSG_EN[ferramenta_chatwoot_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+    MSG_ES[ferramenta_chatwoot_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+    echo -e "$(t ferramenta_chatwoot_revise)"
+    MSG_PT[ferramenta_chatwoot_revisa_dominio]="\e[33mDominio do Chatwoot:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_dominio]="\e[33mChatwoot Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_dominio]="\e[33mDominio de Chatwoot:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_dominio "$url_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_empresa]="\e[33mNome da Empresa:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_empresa]="\e[33mCompany Name:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_empresa]="\e[33mNombre de la Empresa:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_empresa "$nome_empresa_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_email]="\e[33mEmail do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_email]="\e[33mEmail del SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_email "$email_admin_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_user]="\e[33mUser do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_user]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_user]="\e[33mUsuario del SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_user "$user_smtp_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_senha]="\e[33mSenha do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_senha]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_senha]="\e[33mContraseña del SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_senha "$senha_email_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_host "$smtp_email_chatwoot")"
+    MSG_PT[ferramenta_chatwoot_revisa_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_chatwoot_revisa_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_chatwoot_revisa_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_chatwoot_revisa_porta "$porta_smtp_chatwoot")"
     echo ""
 
     ## Pergunta se as respostas estão corretas
-    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    MSG_PT[ferramenta_chatwoot_confirma]=$'As respostas estão corretas? (Y/N): '
+    MSG_EN[ferramenta_chatwoot_confirma]=$'Are the answers correct? (Y/N): '
+    MSG_ES[ferramenta_chatwoot_confirma]=$'¿Las respuestas están correctas? (Y/N): '
+    read -p "$(t ferramenta_chatwoot_confirma)" confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
         clear
         break
@@ -3604,7 +4490,10 @@ while true; do
 done
 
 ## Mensagem de Passo
-echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO CHATWOOT \e[33m[1/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_iniciando]=$'\e[97m• INICIANDO A INSTALAÇÃO DO CHATWOOT \e[33m[1/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_iniciando]=$'\e[97m• STARTING CHATWOOT INSTALLATION \e[33m[1/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_iniciando]=$'\e[97m• INICIANDO LA INSTALACIÓN DE CHATWOOT \e[33m[1/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_iniciando)"
 echo ""
 sleep 1
 
@@ -3612,18 +4501,30 @@ sleep 1
 dados
 
 ## Mensagem de Passo
-echo -e "\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_verificando_pgvector]=$'\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_verificando_pgvector]=$'\e[97m• CHECKING/INSTALLING PGVECTOR \e[33m[2/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_verificando_pgvector]=$'\e[97m• VERIFICANDO/INSTALANDO PGVECTOR \e[33m[2/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_verificando_pgvector)"
 echo ""
 sleep 1
 
 ## Verifica container postgres e cria banco no postgres (Lógica Orion)
 verificar_container_pgvector
 if [ $? -eq 0 ]; then
-    echo "1/3 - [ OK ] - PgVector já instalado"
+    MSG_PT[ferramenta_chatwoot_pgvector_ja_instalado]="1/3 - [ OK ] - PgVector já instalado"
+    MSG_EN[ferramenta_chatwoot_pgvector_ja_instalado]="1/3 - [ OK ] - PgVector already installed"
+    MSG_ES[ferramenta_chatwoot_pgvector_ja_instalado]="1/3 - [ OK ] - PgVector ya instalado"
+    echo "$(t ferramenta_chatwoot_pgvector_ja_instalado)"
     pegar_senha_pgvector > /dev/null 2>&1
-    echo "2/3 - [ OK ] - Copiando senha do PgVector"
+    MSG_PT[ferramenta_chatwoot_copiando_senha]="2/3 - [ OK ] - Copiando senha do PgVector"
+    MSG_EN[ferramenta_chatwoot_copiando_senha]="2/3 - [ OK ] - Copying PgVector password"
+    MSG_ES[ferramenta_chatwoot_copiando_senha]="2/3 - [ OK ] - Copiando contraseña de PgVector"
+    echo "$(t ferramenta_chatwoot_copiando_senha)"
     criar_banco_pgvector_da_stack "chatwoot${1:+_$1}"
-    echo "3/3 - [ OK ] - Criando banco de dados"
+    MSG_PT[ferramenta_chatwoot_criando_banco]="3/3 - [ OK ] - Criando banco de dados"
+    MSG_EN[ferramenta_chatwoot_criando_banco]="3/3 - [ OK ] - Creating database"
+    MSG_ES[ferramenta_chatwoot_criando_banco]="3/3 - [ OK ] - Creando base de datos"
+    echo "$(t ferramenta_chatwoot_criando_banco)"
     echo ""
 else
     ferramenta_pgvector
@@ -3632,7 +4533,10 @@ else
 fi
 
 ## Mensagem de Passo
-echo -e "\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_instalando]=$'\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_instalando]=$'\e[97m• INSTALLING CHATWOOT \e[33m[3/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_instalando]=$'\e[97m• INSTALANDO CHATWOOT \e[33m[3/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_instalando)"
 echo ""
 sleep 1
 
@@ -3813,16 +4717,28 @@ networks:
 EOL
 
 if [ $? -eq 0 ]; then
-    echo "1/10 - [ OK ] - Criando Stack"
+    MSG_PT[ferramenta_chatwoot_stack_ok]="1/10 - [ OK ] - Criando Stack"
+    MSG_EN[ferramenta_chatwoot_stack_ok]="1/10 - [ OK ] - Creating Stack"
+    MSG_ES[ferramenta_chatwoot_stack_ok]="1/10 - [ OK ] - Creando Stack"
+    echo "$(t ferramenta_chatwoot_stack_ok)"
 else
-    echo "1/10 - [ OFF ] - Criando Stack"
-    echo "Não foi possivel criar a stack do Chatwoot"
+    MSG_PT[ferramenta_chatwoot_stack_off]="1/10 - [ OFF ] - Criando Stack"
+    MSG_EN[ferramenta_chatwoot_stack_off]="1/10 - [ OFF ] - Creating Stack"
+    MSG_ES[ferramenta_chatwoot_stack_off]="1/10 - [ OFF ] - Creando Stack"
+    echo "$(t ferramenta_chatwoot_stack_off)"
+    MSG_PT[ferramenta_chatwoot_stack_falha]="Não foi possivel criar a stack do Chatwoot"
+    MSG_EN[ferramenta_chatwoot_stack_falha]="Could not create the Chatwoot stack"
+    MSG_ES[ferramenta_chatwoot_stack_falha]="No fue posible crear el stack de Chatwoot"
+    echo "$(t ferramenta_chatwoot_stack_falha)"
 fi
 STACK_NAME="chatwoot${1:+_$1}"
 stack_editavel
 
 ## Mensagem de Passo
-echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_verificando_servico]=$'\e[97m• VERIFICANDO SERVIÇO \e[33m[4/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_verificando_servico]=$'\e[97m• CHECKING SERVICE \e[33m[4/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_verificando_servico]=$'\e[97m• VERIFICANDO SERVICIO \e[33m[4/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_verificando_servico)"
 echo ""
 sleep 1
 
@@ -3836,7 +4752,10 @@ sleep 30
 echo ""
 
 ## Mensagem de Passo
-echo -e "\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_migrando]=$'\e[97m• MIGRANDO BANCO DE DADOS \e[33m[5/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_migrando]=$'\e[97m• MIGRATING DATABASE \e[33m[5/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_migrando]=$'\e[97m• MIGRANDO BASE DE DATOS \e[33m[5/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_migrando)"
 echo ""
 sleep 7
 
@@ -3856,15 +4775,24 @@ while [ $elapsed_time -lt $max_wait_time ]; do
 done
 
 if [ -z "$CONTAINER_ID" ]; then
-  echo "O contêiner não foi encontrado."
+  MSG_PT[ferramenta_chatwoot_container_nao_encontrado]="O contêiner não foi encontrado."
+  MSG_EN[ferramenta_chatwoot_container_nao_encontrado]="The container was not found."
+  MSG_ES[ferramenta_chatwoot_container_nao_encontrado]="No se encontró el contenedor."
+  echo "$(t ferramenta_chatwoot_container_nao_encontrado)"
   exit 1
 fi
 
 docker exec -i "$CONTAINER_ID" bundle exec rails db:chatwoot_prepare > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "1/2 - [ OK ] - Migração Concluída"
+    MSG_PT[ferramenta_chatwoot_migracao_ok]="1/2 - [ OK ] - Migração Concluída"
+    MSG_EN[ferramenta_chatwoot_migracao_ok]="1/2 - [ OK ] - Migration Completed"
+    MSG_ES[ferramenta_chatwoot_migracao_ok]="1/2 - [ OK ] - Migración Completada"
+    echo "$(t ferramenta_chatwoot_migracao_ok)"
 else
-    echo "1/2 - [ OFF ] - Falha na Migração"
+    MSG_PT[ferramenta_chatwoot_migracao_falha]="1/2 - [ OFF ] - Falha na Migração"
+    MSG_EN[ferramenta_chatwoot_migracao_falha]="1/2 - [ OFF ] - Migration Failed"
+    MSG_ES[ferramenta_chatwoot_migracao_falha]="1/2 - [ OFF ] - Error en la Migración"
+    echo "$(t ferramenta_chatwoot_migracao_falha)"
 fi
 
 # Ajuste de Timezone no Postgres (Lógica Orion)
@@ -3877,12 +4805,18 @@ ALTER SYSTEM SET timezone = 'UTC';
 SET timezone = 'UTC';
 ALTER DATABASE chatwoot${1:+_$1} SET timezone TO 'UTC';
 SQL
-    echo "2/2 - [ OK ] - Timezone configurado"
+    MSG_PT[ferramenta_chatwoot_timezone_ok]="2/2 - [ OK ] - Timezone configurado"
+    MSG_EN[ferramenta_chatwoot_timezone_ok]="2/2 - [ OK ] - Timezone configured"
+    MSG_ES[ferramenta_chatwoot_timezone_ok]="2/2 - [ OK ] - Timezone configurado"
+    echo "$(t ferramenta_chatwoot_timezone_ok)"
 fi
 
 echo ""
 ## Mensagem de Passo
-echo -e "\e[97m• ATIVANDO FUNÇÕES DO SUPER ADMIN \e[33m[6/6]\e[0m"
+MSG_PT[ferramenta_chatwoot_ativando_super_admin]=$'\e[97m• ATIVANDO FUNÇÕES DO SUPER ADMIN \e[33m[6/6]\e[0m'
+MSG_EN[ferramenta_chatwoot_ativando_super_admin]=$'\e[97m• ACTIVATING SUPER ADMIN FUNCTIONS \e[33m[6/6]\e[0m'
+MSG_ES[ferramenta_chatwoot_ativando_super_admin]=$'\e[97m• ACTIVANDO FUNCIONES DE SUPER ADMIN \e[33m[6/6]\e[0m'
+echo -e "$(t ferramenta_chatwoot_ativando_super_admin)"
 echo ""
 sleep 1
 
@@ -3895,9 +4829,15 @@ update installation_configs set locked = false;
 EOF
 
 if [ $? -eq 0 ]; then
-    echo "1/1 - [ OK ] - Super Admin Ativado"
+    MSG_PT[ferramenta_chatwoot_super_admin_ok]="1/1 - [ OK ] - Super Admin Ativado"
+    MSG_EN[ferramenta_chatwoot_super_admin_ok]="1/1 - [ OK ] - Super Admin Activated"
+    MSG_ES[ferramenta_chatwoot_super_admin_ok]="1/1 - [ OK ] - Super Admin Activado"
+    echo "$(t ferramenta_chatwoot_super_admin_ok)"
 else
-    echo "1/1 - [ OFF ] - Falha ao ativar Super Admin"
+    MSG_PT[ferramenta_chatwoot_super_admin_falha]="1/1 - [ OFF ] - Falha ao ativar Super Admin"
+    MSG_EN[ferramenta_chatwoot_super_admin_falha]="1/1 - [ OFF ] - Failed to activate Super Admin"
+    MSG_ES[ferramenta_chatwoot_super_admin_falha]="1/1 - [ OFF ] - Error al activar Super Admin"
+    echo "$(t ferramenta_chatwoot_super_admin_falha)"
 fi
 
 echo ""
@@ -3915,8 +4855,14 @@ wait_30_sec
 instalado_msg
 guarde_os_dados_msg
 
-echo -e "\e[32m[ CHATWOOT INSTALADO ]\e[0m"
-echo -e "\e[97mDominio:\e[33m https://$url_chatwoot\e[0m"
+MSG_PT[ferramenta_chatwoot_instalado_titulo]=$'\e[32m[ CHATWOOT INSTALADO ]\e[0m'
+MSG_EN[ferramenta_chatwoot_instalado_titulo]=$'\e[32m[ CHATWOOT INSTALLED ]\e[0m'
+MSG_ES[ferramenta_chatwoot_instalado_titulo]=$'\e[32m[ CHATWOOT INSTALADO ]\e[0m'
+echo -e "$(t ferramenta_chatwoot_instalado_titulo)"
+MSG_PT[ferramenta_chatwoot_instalado_dominio]="\e[97mDominio:\e[33m https://%s\e[0m"
+MSG_EN[ferramenta_chatwoot_instalado_dominio]="\e[97mDomain:\e[33m https://%s\e[0m"
+MSG_ES[ferramenta_chatwoot_instalado_dominio]="\e[97mDominio:\e[33m https://%s\e[0m"
+echo -e "$(t ferramenta_chatwoot_instalado_dominio "$url_chatwoot")"
 
 creditos_msg
 requisitar_outra_instalacao
@@ -3981,11 +4927,20 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
+MSG_PT[ferramenta_redis_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do Redis criada com sucesso'
+MSG_EN[ferramenta_redis_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Redis stack created successfully'
+MSG_ES[ferramenta_redis_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de Redis creado con éxito'
+MSG_PT[ferramenta_redis_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis'
+MSG_EN[ferramenta_redis_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Redis stack'
+MSG_ES[ferramenta_redis_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de Redis'
+MSG_PT[ferramenta_redis_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do Redis.\e[0m'
+MSG_EN[ferramenta_redis_falha_aviso]=$'⚠️ \e[33mCould not create the Redis stack.\e[0m'
+MSG_ES[ferramenta_redis_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de Redis.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Redis criada com sucesso"
+    echo -e "$(t ferramenta_redis_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Redis.\e[0m"
+    echo -e "$(t ferramenta_redis_falha)"
+    echo -e "$(t ferramenta_redis_falha_aviso)"
 fi
 
 STACK_NAME="redis"
@@ -4072,11 +5027,20 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
+MSG_PT[ferramenta_redis_formacao_encha_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do Redis Formação Encha criada com sucesso'
+MSG_EN[ferramenta_redis_formacao_encha_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Redis Formação Encha stack created successfully'
+MSG_ES[ferramenta_redis_formacao_encha_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de Redis Formação Encha creado con éxito'
+MSG_PT[ferramenta_redis_formacao_encha_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis Formação Encha'
+MSG_EN[ferramenta_redis_formacao_encha_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Redis Formação Encha stack'
+MSG_ES[ferramenta_redis_formacao_encha_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de Redis Formação Encha'
+MSG_PT[ferramenta_redis_formacao_encha_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do Redis Formação Encha.\e[0m'
+MSG_EN[ferramenta_redis_formacao_encha_falha_aviso]=$'⚠️ \e[33mCould not create the Redis Formação Encha stack.\e[0m'
+MSG_ES[ferramenta_redis_formacao_encha_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de Redis Formação Encha.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Redis Formação Encha criada com sucesso"
+    echo -e "$(t ferramenta_redis_formacao_encha_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Redis Formação Encha"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Redis Formação Encha.\e[0m"
+    echo -e "$(t ferramenta_redis_formacao_encha_falha)"
+    echo -e "$(t ferramenta_redis_formacao_encha_falha_aviso)"
 fi
 
 STACK_NAME="redis_formacao_encha"
@@ -4113,39 +5077,84 @@ ferramenta_n8n() {
     while true; do
 
         ## Pergunta o domínio do N8N
-        echo -e "\e[97mPasso$amarelo 1/7\e[0m"
-        echo -en "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
+        MSG_PT[ferramenta_n8n_passo1]="\e[97mPasso${amarelo} 1/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo1]="\e[97mStep${amarelo} 1/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo1]="\e[97mPaso${amarelo} 1/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo1)"
+        MSG_PT[ferramenta_n8n_pergunta_dominio]=$'\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_dominio]=$'\e[33m🌐 Enter the domain for N8N (e.g.: n8n.encha.ai): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_dominio]=$'\e[33m🌐 Ingrese el dominio para N8N (ej.: n8n.encha.ai): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_dominio)" && read -r url_editorn8n
         echo ""
 
         ## Pergunta o domínio do Webhook
-        echo -e "\e[97mPasso$amarelo 2/7\e[0m"
-        echo -en "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
+        MSG_PT[ferramenta_n8n_passo2]="\e[97mPasso${amarelo} 2/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo2]="\e[97mStep${amarelo} 2/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo2]="\e[97mPaso${amarelo} 2/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo2)"
+        MSG_PT[ferramenta_n8n_pergunta_webhook]=$'\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_webhook]=$'\e[33m🔗 Enter the domain for the N8N Webhook (e.g.: webhook.encha.ai): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_webhook]=$'\e[33m🔗 Ingrese el dominio para el Webhook de N8N (ej.: webhook.encha.ai): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_webhook)" && read -r url_webhookn8n
         echo ""
 
         ## Pergunta o Email SMTP
-        echo -e "\e[97mPasso$amarelo 3/7\e[0m"
-        echo -en "\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_n8n
+        MSG_PT[ferramenta_n8n_passo3]="\e[97mPasso${amarelo} 3/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo3]="\e[97mStep${amarelo} 3/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo3]="\e[97mPaso${amarelo} 3/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo3)"
+        MSG_PT[ferramenta_n8n_pergunta_email_smtp]=$'\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_email_smtp]=$'\e[33m📧 Enter the Email for SMTP (e.g.: instalador@encha.ai): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_email_smtp]=$'\e[33m📧 Ingrese el Email para SMTP (ej.: instalador@encha.ai): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_email_smtp)" && read -r email_smtp_n8n
         echo ""
 
         ## Pergunta o usuário do Email SMTP
-        echo -e "\e[97mPasso$amarelo 4/7\e[0m"
-        echo -e "$amarelo➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
-        echo -en "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_smtp_n8n
+        MSG_PT[ferramenta_n8n_passo4]="\e[97mPasso${amarelo} 4/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo4]="\e[97mStep${amarelo} 4/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo4]="\e[97mPaso${amarelo} 4/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo4)"
+        MSG_PT[ferramenta_n8n_aviso_user_smtp]="${amarelo}➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
+        MSG_EN[ferramenta_n8n_aviso_user_smtp]="${amarelo}➡️ If you don't have a separate username, use the email itself below"
+        MSG_ES[ferramenta_n8n_aviso_user_smtp]="${amarelo}➡️ Si no tiene un usuario separado, use el propio email abajo"
+        echo -e "$(t ferramenta_n8n_aviso_user_smtp)"
+        MSG_PT[ferramenta_n8n_pergunta_user_smtp]=$'\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_user_smtp]=$'\e[33m👤 Enter the SMTP Username (e.g.: encha or instalador@encha.ai): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_user_smtp]=$'\e[33m👤 Ingrese el Usuario para SMTP (ej.: encha o instalador@encha.ai): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_user_smtp)" && read -r usuario_smtp_n8n
         echo ""
 
         ## Pergunta a senha do SMTP
-        echo -e "\e[97mPasso$amarelo 5/7\e[0m"
-        echo -en "\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m" && read -r senha_smtp_n8n
+        MSG_PT[ferramenta_n8n_passo5]="\e[97mPasso${amarelo} 5/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo5]="\e[97mStep${amarelo} 5/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo5]="\e[97mPaso${amarelo} 5/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo5)"
+        MSG_PT[ferramenta_n8n_pergunta_senha_smtp]=$'\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_senha_smtp]=$'\e[33m🔑 Enter the SMTP Password for the Email (e.g.: @Example888_): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_senha_smtp]=$'\e[33m🔑 Ingrese la Contraseña SMTP del Email (ej.: @Ejemplo888_): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_senha_smtp)" && read -r senha_smtp_n8n
         echo ""
 
         ## Pergunta o Host SMTP do email
-        echo -e "\e[97mPasso$amarelo 6/7\e[0m"
-        echo -en "\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_n8n
+        MSG_PT[ferramenta_n8n_passo6]="\e[97mPasso${amarelo} 6/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo6]="\e[97mStep${amarelo} 6/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo6]="\e[97mPaso${amarelo} 6/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo6)"
+        MSG_PT[ferramenta_n8n_pergunta_host_smtp]=$'\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_host_smtp]=$'\e[33m🏠 Enter the SMTP Host for the Email (e.g.: smtp.hostinger.com): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_host_smtp]=$'\e[33m🏠 Ingrese el Host SMTP del Email (ej.: smtp.hostinger.com): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_host_smtp)" && read -r host_smtp_n8n
         echo ""
 
         ## Pergunta a porta SMTP do email
-        echo -e "\e[97mPasso$amarelo 7/7\e[0m"
-        echo -en "\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_n8n
+        MSG_PT[ferramenta_n8n_passo7]="\e[97mPasso${amarelo} 7/7\e[0m"
+        MSG_EN[ferramenta_n8n_passo7]="\e[97mStep${amarelo} 7/7\e[0m"
+        MSG_ES[ferramenta_n8n_passo7]="\e[97mPaso${amarelo} 7/7\e[0m"
+        echo -e "$(t ferramenta_n8n_passo7)"
+        MSG_PT[ferramenta_n8n_pergunta_porta_smtp]=$'\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m'
+        MSG_EN[ferramenta_n8n_pergunta_porta_smtp]=$'\e[33m🔌 Enter the SMTP port for the Email (e.g.: 465): \e[0m'
+        MSG_ES[ferramenta_n8n_pergunta_porta_smtp]=$'\e[33m🔌 Ingrese el puerto SMTP del Email (ej.: 465): \e[0m'
+        echo -en "$(t ferramenta_n8n_pergunta_porta_smtp)" && read -r porta_smtp_n8n
         echo ""
 
         ## Verifica se a porta é 465
@@ -4160,19 +5169,46 @@ ferramenta_n8n() {
         
         msg_n8n
         echo ""
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_n8n_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+        MSG_EN[ferramenta_n8n_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+        MSG_ES[ferramenta_n8n_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+        echo -e "$(t ferramenta_n8n_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
-        echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
-        echo -e "\e[33m📧 Email SMTP:               \e[97m$email_smtp_n8n\e[0m"
-        echo -e "\e[33m👤 Usuário SMTP:             \e[97m$usuario_smtp_n8n\e[0m"
-        echo -e "\e[33m🔑 Senha SMTP:               \e[97m$senha_smtp_n8n\e[0m"
-        echo -e "\e[33m🖥️  Host SMTP:               \e[97m$host_smtp_n8n\e[0m"
-        echo -e "\e[33m🔌 Porta SMTP:               \e[97m$porta_smtp_n8n\e[0m"
+        MSG_PT[ferramenta_n8n_revisa_dominio]="\e[33m🌐 Domínio do N8N:           \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_dominio]="\e[33m🌐 N8N Domain:               \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_dominio]="\e[33m🌐 Dominio de N8N:           \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_dominio "$url_editorn8n")"
+        MSG_PT[ferramenta_n8n_revisa_webhook]="\e[33m🔗 Domínio do Webhook:       \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_webhook]="\e[33m🔗 Webhook Domain:           \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_webhook]="\e[33m🔗 Dominio del Webhook:      \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_webhook "$url_webhookn8n")"
+        MSG_PT[ferramenta_n8n_revisa_email]="\e[33m📧 Email SMTP:               \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_email]="\e[33m📧 SMTP Email:               \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_email]="\e[33m📧 Email SMTP:               \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_email "$email_smtp_n8n")"
+        MSG_PT[ferramenta_n8n_revisa_user]="\e[33m👤 Usuário SMTP:             \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_user]="\e[33m👤 SMTP User:                \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_user]="\e[33m👤 Usuario SMTP:             \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_user "$usuario_smtp_n8n")"
+        MSG_PT[ferramenta_n8n_revisa_senha]="\e[33m🔑 Senha SMTP:               \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_senha]="\e[33m🔑 SMTP Password:            \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_senha]="\e[33m🔑 Contraseña SMTP:          \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_senha "$senha_smtp_n8n")"
+        MSG_PT[ferramenta_n8n_revisa_host]="\e[33m🖥️  Host SMTP:               \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_host]="\e[33m🖥️  SMTP Host:               \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_host]="\e[33m🖥️  Host SMTP:               \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_host "$host_smtp_n8n")"
+        MSG_PT[ferramenta_n8n_revisa_porta]="\e[33m🔌 Porta SMTP:               \e[97m%s\e[0m"
+        MSG_EN[ferramenta_n8n_revisa_porta]="\e[33m🔌 SMTP Port:                \e[97m%s\e[0m"
+        MSG_ES[ferramenta_n8n_revisa_porta]="\e[33m🔌 Puerto SMTP:              \e[97m%s\e[0m"
+        echo -e "$(t ferramenta_n8n_revisa_porta "$porta_smtp_n8n")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        
-        read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+
+        MSG_PT[ferramenta_n8n_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_n8n_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_n8n_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_n8n_confirma)" confirmacao
         if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
             clear
             break
@@ -4182,23 +5218,38 @@ ferramenta_n8n() {
     done
 
     ## Mensagem de Passo
-    echo -e "\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m"
+    MSG_PT[ferramenta_n8n_iniciando]=$'\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m'
+    MSG_EN[ferramenta_n8n_iniciando]=$'\e[97m🚀 Starting N8N installation...\e[33m [Step 1 of 5]\e[0m'
+    MSG_ES[ferramenta_n8n_iniciando]=$'\e[97m🚀 Iniciando la instalación de N8N...\e[33m [Etapa 1 de 5]\e[0m'
+    echo -e "$(t ferramenta_n8n_iniciando)"
     echo ""
     sleep 1
 
     ## Mensagem de Passo
-    echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+    MSG_PT[ferramenta_n8n_verificando_postgres]=$'\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m'
+    MSG_EN[ferramenta_n8n_verificando_postgres]=$'\e[97m📦 Checking or installing Postgres...\e[33m [Step 2 of 5]\e[0m'
+    MSG_ES[ferramenta_n8n_verificando_postgres]=$'\e[97m📦 Verificando o instalando Postgres...\e[33m [Etapa 2 de 5]\e[0m'
+    echo -e "$(t ferramenta_n8n_verificando_postgres)"
     echo ""
     sleep 1
 
     ## Verifica se tem postgres
     verificar_container_postgres
     if [ $? -eq 0 ]; then
-        echo "✅ 1/3 - Postgres já está instalado."
+        MSG_PT[ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres já está instalado."
+        MSG_EN[ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres is already installed."
+        MSG_ES[ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres ya está instalado."
+        echo "$(t ferramenta_n8n_postgres_ja_instalado)"
         pegar_senha_postgres > /dev/null 2>&1
-        echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+        MSG_PT[ferramenta_n8n_senha_postgres_copiada]="🔐 2/3 - Senha do Postgres copiada com sucesso."
+        MSG_EN[ferramenta_n8n_senha_postgres_copiada]="🔐 2/3 - Postgres password copied successfully."
+        MSG_ES[ferramenta_n8n_senha_postgres_copiada]="🔐 2/3 - Contraseña de Postgres copiada con éxito."
+        echo "$(t ferramenta_n8n_senha_postgres_copiada)"
         criar_banco_postgres_da_stack "n8n_queue${1:+_$1}"
-        echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+        MSG_PT[ferramenta_n8n_banco_criado]="🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+        MSG_EN[ferramenta_n8n_banco_criado]="🛠️  3/3 - Database 'n8n_queue${1:+_$1}' created successfully."
+        MSG_ES[ferramenta_n8n_banco_criado]="🛠️  3/3 - Base de datos 'n8n_queue${1:+_$1}' creada con éxito."
+        echo "$(t ferramenta_n8n_banco_criado)"
         echo ""
     else
         ferramenta_postgres
@@ -4207,21 +5258,30 @@ ferramenta_n8n() {
     fi
 
     ## Mensagem de Passo
-    echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
+    MSG_PT[ferramenta_n8n_verificando_redis]=$'\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m'
+    MSG_EN[ferramenta_n8n_verificando_redis]=$'\e[97m📦 Checking or installing Redis...\e[33m [Step 3 of 5]\e[0m'
+    MSG_ES[ferramenta_n8n_verificando_redis]=$'\e[97m📦 Verificando o instalando Redis...\e[33m [Etapa 3 de 5]\e[0m'
+    echo -e "$(t ferramenta_n8n_verificando_redis)"
     echo ""
     sleep 1
 
     ## Verifica/instala o Redis
     verificar_container_redis
     if [ $? -eq 0 ]; then
-        echo "✅ 1/1 - Redis já está instalado."
+        MSG_PT[ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis já está instalado."
+        MSG_EN[ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis is already installed."
+        MSG_ES[ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis ya está instalado."
+        echo "$(t ferramenta_n8n_redis_ja_instalado)"
         echo ""
     else
         ferramenta_redis
     fi
 
     ## Mensagem de Passo
-    echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
+    MSG_PT[ferramenta_n8n_instalando]=$'\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m'
+    MSG_EN[ferramenta_n8n_instalando]=$'\e[97m⚙️ Installing N8N...\e[33m [Step 4 of 5]\e[0m'
+    MSG_ES[ferramenta_n8n_instalando]=$'\e[97m⚙️ Instalando N8N...\e[33m [Etapa 4 de 5]\e[0m'
+    echo -e "$(t ferramenta_n8n_instalando)"
     echo ""
     sleep 1
 
@@ -4436,18 +5496,30 @@ EOL
     ## Cria o volume externo antes de subir a stack para garantir que não dê erro
     docker volume create n8n_data${1:+_$1} > /dev/null 2>&1
 
+    MSG_PT[ferramenta_n8n_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso'
+    MSG_EN[ferramenta_n8n_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N stack created successfully'
+    MSG_ES[ferramenta_n8n_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N creado con éxito'
+    MSG_PT[ferramenta_n8n_stack_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N'
+    MSG_EN[ferramenta_n8n_stack_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N stack'
+    MSG_ES[ferramenta_n8n_stack_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de N8N'
+    MSG_PT[ferramenta_n8n_stack_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m'
+    MSG_EN[ferramenta_n8n_stack_falha_aviso]=$'⚠️ \e[33mCould not create the N8N stack.\e[0m'
+    MSG_ES[ferramenta_n8n_stack_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de N8N.\e[0m'
     if [ $? -eq 0 ]; then
-        echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
+        echo -e "$(t ferramenta_n8n_stack_sucesso)"
     else
-        echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
-        echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
+        echo -e "$(t ferramenta_n8n_stack_falha)"
+        echo -e "$(t ferramenta_n8n_stack_falha_aviso)"
     fi
 
     STACK_NAME="n8n${1:+_$1}"
-    stack_editavel 
+    stack_editavel
 
     ## Mensagem de Passo
-    echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+    MSG_PT[ferramenta_n8n_verificando_servico]=$'\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m'
+    MSG_EN[ferramenta_n8n_verificando_servico]=$'\e[97m🔍 Checking the service...\e[33m [Step 5 of 5]\e[0m'
+    MSG_ES[ferramenta_n8n_verificando_servico]=$'\e[97m🔍 Verificando el servicio...\e[33m [Etapa 5 de 5]\e[0m'
+    echo -e "$(t ferramenta_n8n_verificando_servico)"
     echo ""
     sleep 1
 
@@ -4481,13 +5553,28 @@ EOL
     msg_resumo_informacoes
 
     ## Dados da Aplicação:
-    echo -e "\e[32m🚀 [ N8N INSTALADO COM SUCESSO ]\e[0m"
+    MSG_PT[ferramenta_n8n_instalado_sucesso]=$'\e[32m🚀 [ N8N INSTALADO COM SUCESSO ]\e[0m'
+    MSG_EN[ferramenta_n8n_instalado_sucesso]=$'\e[32m🚀 [ N8N SUCCESSFULLY INSTALLED ]\e[0m'
+    MSG_ES[ferramenta_n8n_instalado_sucesso]=$'\e[32m🚀 [ N8N INSTALADO CON ÉXITO ]\e[0m'
+    echo -e "$(t ferramenta_n8n_instalado_sucesso)"
     echo ""
 
-    echo -e "\e[33m🌐 Domínio do Editor:     \e[97mhttps://$url_editorn8n\e[0m"
-    echo -e "\e[33m🔗 Domínio do Webhook:    \e[97mhttps://$url_webhookn8n\e[0m"
-    echo -e "\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m"
-    echo -e "\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m"
+    MSG_PT[ferramenta_n8n_resumo_editor]="\e[33m🌐 Domínio do Editor:     \e[97mhttps://%s\e[0m"
+    MSG_EN[ferramenta_n8n_resumo_editor]="\e[33m🌐 Editor Domain:         \e[97mhttps://%s\e[0m"
+    MSG_ES[ferramenta_n8n_resumo_editor]="\e[33m🌐 Dominio del Editor:    \e[97mhttps://%s\e[0m"
+    echo -e "$(t ferramenta_n8n_resumo_editor "$url_editorn8n")"
+    MSG_PT[ferramenta_n8n_resumo_webhook]="\e[33m🔗 Domínio do Webhook:    \e[97mhttps://%s\e[0m"
+    MSG_EN[ferramenta_n8n_resumo_webhook]="\e[33m🔗 Webhook Domain:        \e[97mhttps://%s\e[0m"
+    MSG_ES[ferramenta_n8n_resumo_webhook]="\e[33m🔗 Dominio del Webhook:   \e[97mhttps://%s\e[0m"
+    echo -e "$(t ferramenta_n8n_resumo_webhook "$url_webhookn8n")"
+    MSG_PT[ferramenta_n8n_resumo_email]=$'\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m'
+    MSG_EN[ferramenta_n8n_resumo_email]=$'\e[33m👤 Access Email:          \e[97mWill be created on N8N\'s first login\e[0m'
+    MSG_ES[ferramenta_n8n_resumo_email]=$'\e[33m👤 Email de Acceso:       \e[97mSe creará en el primer inicio de sesión de N8N\e[0m'
+    echo -e "$(t ferramenta_n8n_resumo_email)"
+    MSG_PT[ferramenta_n8n_resumo_senha]=$'\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m'
+    MSG_EN[ferramenta_n8n_resumo_senha]=$'\e[33m🔑 Access Password:       \e[97mWill be set on N8N\'s first login\e[0m'
+    MSG_ES[ferramenta_n8n_resumo_senha]=$'\e[33m🔑 Contraseña de Acceso:  \e[97mSe definirá en el primer inicio de sesión de N8N\e[0m'
+    echo -e "$(t ferramenta_n8n_resumo_senha)"
     echo ""
 
     msg_retorno_menu
@@ -4502,29 +5589,53 @@ dados
 while true; do
 
     ## Pergunta o domínio do N8N
-    echo -e "\e[97mPasso$amarelo 1/4\e[0m"
-    echo -en "\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m" && read -r url_editorn8n
+    MSG_PT[ferramenta_n8n_formacao_encha_passo1]="\e[97mPasso${amarelo} 1/4\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_passo1]="\e[97mStep${amarelo} 1/4\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_passo1]="\e[97mPaso${amarelo} 1/4\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_passo1)"
+    MSG_PT[ferramenta_n8n_formacao_encha_pergunta_dominio]=$'\e[33m🌐 Informe o domínio para o N8N (ex: n8n.encha.ai): \e[0m'
+    MSG_EN[ferramenta_n8n_formacao_encha_pergunta_dominio]=$'\e[33m🌐 Enter the domain for N8N (e.g.: n8n.encha.ai): \e[0m'
+    MSG_ES[ferramenta_n8n_formacao_encha_pergunta_dominio]=$'\e[33m🌐 Ingrese el dominio para N8N (ej.: n8n.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_n8n_formacao_encha_pergunta_dominio)" && read -r url_editorn8n
     echo ""
 
     ## Pergunta o domínio do Webhook
-    echo -e "\e[97mPasso$amarelo 2/4\e[0m"
-    echo -en "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
+    MSG_PT[ferramenta_n8n_formacao_encha_passo2]="\e[97mPasso${amarelo} 2/4\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_passo2]="\e[97mStep${amarelo} 2/4\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_passo2]="\e[97mPaso${amarelo} 2/4\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_passo2)"
+    MSG_PT[ferramenta_n8n_formacao_encha_pergunta_webhook]=$'\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m'
+    MSG_EN[ferramenta_n8n_formacao_encha_pergunta_webhook]=$'\e[33m🔗 Enter the domain for the N8N Webhook (e.g.: webhook.encha.ai): \e[0m'
+    MSG_ES[ferramenta_n8n_formacao_encha_pergunta_webhook]=$'\e[33m🔗 Ingrese el dominio para el Webhook de N8N (ej.: webhook.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_n8n_formacao_encha_pergunta_webhook)" && read -r url_webhookn8n
     echo ""
 
     while true; do
       ## Pergunta a quantidade de Webhooks
-      echo -e "\e[97mPasso$amarelo 3/4\e[0m"
-      echo -en "\e[33m🔧 Insira a quantidade de Webhooks (máximo 5): \e[0m" && read -r webhooksQuantity
+      MSG_PT[ferramenta_n8n_formacao_encha_passo3]="\e[97mPasso${amarelo} 3/4\e[0m"
+      MSG_EN[ferramenta_n8n_formacao_encha_passo3]="\e[97mStep${amarelo} 3/4\e[0m"
+      MSG_ES[ferramenta_n8n_formacao_encha_passo3]="\e[97mPaso${amarelo} 3/4\e[0m"
+      echo -e "$(t ferramenta_n8n_formacao_encha_passo3)"
+      MSG_PT[ferramenta_n8n_formacao_encha_pergunta_webhooks_qtd]=$'\e[33m🔧 Insira a quantidade de Webhooks (máximo 5): \e[0m'
+      MSG_EN[ferramenta_n8n_formacao_encha_pergunta_webhooks_qtd]=$'\e[33m🔧 Enter the number of Webhooks (maximum 5): \e[0m'
+      MSG_ES[ferramenta_n8n_formacao_encha_pergunta_webhooks_qtd]=$'\e[33m🔧 Ingrese la cantidad de Webhooks (máximo 5): \e[0m'
+      echo -en "$(t ferramenta_n8n_formacao_encha_pergunta_webhooks_qtd)" && read -r webhooksQuantity
       echo ""
 
-      echo -e "\e[97mPasso$amarelo 3/4\e[0m"
-      echo -en "\e[33m🔧 Insira a quantidade de Concorrências (mínimo: 10 - máximo 100): \e[0m" && read -r concurrencyQuantity
+      echo -e "$(t ferramenta_n8n_formacao_encha_passo3)"
+      MSG_PT[ferramenta_n8n_formacao_encha_pergunta_concorrencia]=$'\e[33m🔧 Insira a quantidade de Concorrências (mínimo: 10 - máximo 100): \e[0m'
+      MSG_EN[ferramenta_n8n_formacao_encha_pergunta_concorrencia]=$'\e[33m🔧 Enter the Concurrency amount (minimum: 10 - maximum 100): \e[0m'
+      MSG_ES[ferramenta_n8n_formacao_encha_pergunta_concorrencia]=$'\e[33m🔧 Ingrese la cantidad de Concurrencia (mínimo: 10 - máximo 100): \e[0m'
+      echo -en "$(t ferramenta_n8n_formacao_encha_pergunta_concorrencia)" && read -r concurrencyQuantity
       echo ""
 
       if [[ "$webhooksQuantity" =~ ^[1-5]$ ]] && [[ "$concurrencyQuantity" =~ ^([1-9][0-9]|100)$ ]]; then
           break
       else
-          echo -e "\e[31m⚠️  Quantidade inválida. Por favor, informe Webhooks entre 1-5 e Concorrência entre 10-100.\e[0m"
+          MSG_PT[ferramenta_n8n_formacao_encha_qtd_invalida]=$'\e[31m⚠️  Quantidade inválida. Por favor, informe Webhooks entre 1-5 e Concorrência entre 10-100.\e[0m'
+          MSG_EN[ferramenta_n8n_formacao_encha_qtd_invalida]=$'\e[31m⚠️  Invalid amount. Please enter Webhooks between 1-5 and Concurrency between 10-100.\e[0m'
+          MSG_ES[ferramenta_n8n_formacao_encha_qtd_invalida]=$'\e[31m⚠️  Cantidad inválida. Por favor, informe Webhooks entre 1-5 y Concurrencia entre 10-100.\e[0m'
+          echo -e "$(t ferramenta_n8n_formacao_encha_qtd_invalida)"
       fi
     done
 
@@ -4532,16 +5643,34 @@ while true; do
     clear
     msg_n8n_formacao_encha
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_n8n_formacao_encha_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+    MSG_EN[ferramenta_n8n_formacao_encha_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+    MSG_ES[ferramenta_n8n_formacao_encha_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+    echo -e "$(t ferramenta_n8n_formacao_encha_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m🌐 Domínio do N8N:           \e[97m$url_editorn8n\e[0m"
-    echo -e "\e[33m🔗 Domínio do Webhook:       \e[97m$url_webhookn8n\e[0m"
-    echo -e "\e[33m🔧 Quantidade de Webhooks:   \e[97m$webhooksQuantity\e[0m"
-    echo -e "\e[33m🔧 Quantidade de Concorrências: \e[97m$concurrencyQuantity\e[0m"
+    MSG_PT[ferramenta_n8n_formacao_encha_revisa_dominio]="\e[33m🌐 Domínio do N8N:           \e[97m%s\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_revisa_dominio]="\e[33m🌐 N8N Domain:               \e[97m%s\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_revisa_dominio]="\e[33m🌐 Dominio de N8N:           \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_revisa_dominio "$url_editorn8n")"
+    MSG_PT[ferramenta_n8n_formacao_encha_revisa_webhook]="\e[33m🔗 Domínio do Webhook:       \e[97m%s\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_revisa_webhook]="\e[33m🔗 Webhook Domain:           \e[97m%s\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_revisa_webhook]="\e[33m🔗 Dominio del Webhook:      \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_revisa_webhook "$url_webhookn8n")"
+    MSG_PT[ferramenta_n8n_formacao_encha_revisa_webhooks_qtd]="\e[33m🔧 Quantidade de Webhooks:   \e[97m%s\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_revisa_webhooks_qtd]="\e[33m🔧 Webhooks Amount:          \e[97m%s\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_revisa_webhooks_qtd]="\e[33m🔧 Cantidad de Webhooks:     \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_revisa_webhooks_qtd "$webhooksQuantity")"
+    MSG_PT[ferramenta_n8n_formacao_encha_revisa_concorrencia]="\e[33m🔧 Quantidade de Concorrências: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_n8n_formacao_encha_revisa_concorrencia]="\e[33m🔧 Concurrency Amount:          \e[97m%s\e[0m"
+    MSG_ES[ferramenta_n8n_formacao_encha_revisa_concorrencia]="\e[33m🔧 Cantidad de Concurrencia:    \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_n8n_formacao_encha_revisa_concorrencia "$concurrencyQuantity")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_n8n_formacao_encha_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_n8n_formacao_encha_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_n8n_formacao_encha_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_n8n_formacao_encha_confirma)" confirmacao
     if [ "$confirmacao" = "Y" ] || [ "$confirmacao" = "y" ]; then
         clear
         break
@@ -4550,23 +5679,38 @@ while true; do
     fi
 done
 
-echo -e "\e[97m🚀 Iniciando a instalação do N8N da Formação Encha...\e[33m [Etapa 1 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_iniciando]=$'\e[97m🚀 Iniciando a instalação do N8N da Formação Encha...\e[33m [Etapa 1 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_iniciando]=$'\e[97m🚀 Starting installation of N8N Formação Encha...\e[33m [Step 1 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_iniciando]=$'\e[97m🚀 Iniciando la instalación de N8N Formação Encha...\e[33m [Etapa 1 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_iniciando)"
 echo ""
 sleep 1
 
 
-echo -e "\e[97m📦 Verificando ou instalando o Postgres Formação Encha\e[33m [Etapa 2 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_verificando_postgres]=$'\e[97m📦 Verificando ou instalando o Postgres Formação Encha\e[33m [Etapa 2 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_verificando_postgres]=$'\e[97m📦 Checking or installing Postgres Formação Encha\e[33m [Step 2 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_verificando_postgres]=$'\e[97m📦 Verificando o instalando Postgres Formação Encha\e[33m [Etapa 2 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_verificando_postgres)"
 echo ""
 sleep 1
 
 
 verificar_container_postgres_formacao_encha
 if [ $? -eq 0 ]; then
-    echo "✅ 1/3 - Postgres da Formação Encha já está instalado."
+    MSG_PT[ferramenta_n8n_formacao_encha_postgres_ja_instalado]="✅ 1/3 - Postgres da Formação Encha já está instalado."
+    MSG_EN[ferramenta_n8n_formacao_encha_postgres_ja_instalado]="✅ 1/3 - Postgres Formação Encha is already installed."
+    MSG_ES[ferramenta_n8n_formacao_encha_postgres_ja_instalado]="✅ 1/3 - Postgres Formação Encha ya está instalado."
+    echo "$(t ferramenta_n8n_formacao_encha_postgres_ja_instalado)"
     pegar_senha_postgres_formacao_encha > /dev/null 2>&1
-    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+    MSG_PT[ferramenta_n8n_formacao_encha_senha_copiada]="🔐 2/3 - Senha do Postgres copiada com sucesso."
+    MSG_EN[ferramenta_n8n_formacao_encha_senha_copiada]="🔐 2/3 - Postgres password copied successfully."
+    MSG_ES[ferramenta_n8n_formacao_encha_senha_copiada]="🔐 2/3 - Contraseña de Postgres copiada con éxito."
+    echo "$(t ferramenta_n8n_formacao_encha_senha_copiada)"
     criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
-    echo "🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+    MSG_PT[ferramenta_n8n_formacao_encha_banco_criado]="🛠️  3/3 - Banco de dados 'n8n_queue${1:+_$1}' criado com sucesso."
+    MSG_EN[ferramenta_n8n_formacao_encha_banco_criado]="🛠️  3/3 - Database 'n8n_queue${1:+_$1}' created successfully."
+    MSG_ES[ferramenta_n8n_formacao_encha_banco_criado]="🛠️  3/3 - Base de datos 'n8n_queue${1:+_$1}' creada con éxito."
+    echo "$(t ferramenta_n8n_formacao_encha_banco_criado)"
     echo ""
 else
     ferramenta_postgres_formacao_encha
@@ -4574,18 +5718,27 @@ else
     criar_banco_postgres_da_stack_formacao_encha "n8n_queue${1:+_$1}"
 fi
 
-echo -e "\e[97m📦 Verificando ou instalando o Redis Formação Encha...\e[33m [Etapa 3 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_verificando_redis]=$'\e[97m📦 Verificando ou instalando o Redis Formação Encha...\e[33m [Etapa 3 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_verificando_redis]=$'\e[97m📦 Checking or installing Redis Formação Encha...\e[33m [Step 3 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_verificando_redis]=$'\e[97m📦 Verificando o instalando Redis Formação Encha...\e[33m [Etapa 3 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_verificando_redis)"
 echo ""
 sleep 1
 verificar_container_redis_formacao_encha
 if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - Redis Formação Encha já está instalado."
+    MSG_PT[ferramenta_n8n_formacao_encha_redis_ja_instalado]="✅ 1/1 - Redis Formação Encha já está instalado."
+    MSG_EN[ferramenta_n8n_formacao_encha_redis_ja_instalado]="✅ 1/1 - Redis Formação Encha is already installed."
+    MSG_ES[ferramenta_n8n_formacao_encha_redis_ja_instalado]="✅ 1/1 - Redis Formação Encha ya está instalado."
+    echo "$(t ferramenta_n8n_formacao_encha_redis_ja_instalado)"
     echo ""
 else
     ferramenta_redis_formacao_encha
 fi
 
-echo -e "\e[97m⚙️ Instalando o N8N Formação Encha...\e[33m [Etapa 4 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_instalando]=$'\e[97m⚙️ Instalando o N8N Formação Encha...\e[33m [Etapa 4 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_instalando]=$'\e[97m⚙️ Installing N8N Formação Encha...\e[33m [Step 4 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_instalando]=$'\e[97m⚙️ Instalando N8N Formação Encha...\e[33m [Etapa 4 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_instalando)"
 echo ""
 sleep 1
 
@@ -4686,10 +5839,16 @@ networks:
     external: true
 EOL
 
+MSG_PT[ferramenta_n8n_formacao_encha_editor_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N Editor criada com sucesso'
+MSG_EN[ferramenta_n8n_formacao_encha_editor_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N Editor stack created successfully'
+MSG_ES[ferramenta_n8n_formacao_encha_editor_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N Editor creado con éxito'
+MSG_PT[ferramenta_n8n_formacao_encha_editor_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Editor'
+MSG_EN[ferramenta_n8n_formacao_encha_editor_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N Editor stack'
+MSG_ES[ferramenta_n8n_formacao_encha_editor_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de N8N Editor'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Editor criada com sucesso"
+    echo -e "$(t ferramenta_n8n_formacao_encha_editor_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Editor"
+    echo -e "$(t ferramenta_n8n_formacao_encha_editor_falha)"
 fi
 
 STACK_NAME="n8n_editor_formacao_encha"
@@ -4771,10 +5930,16 @@ networks:
     name: $nome_rede_interna
     external: true
 EOL
+MSG_PT[ferramenta_n8n_formacao_encha_worker_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N Worker criada com sucesso'
+MSG_EN[ferramenta_n8n_formacao_encha_worker_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N Worker stack created successfully'
+MSG_ES[ferramenta_n8n_formacao_encha_worker_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N Worker creado con éxito'
+MSG_PT[ferramenta_n8n_formacao_encha_worker_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Worker'
+MSG_EN[ferramenta_n8n_formacao_encha_worker_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N Worker stack'
+MSG_ES[ferramenta_n8n_formacao_encha_worker_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de N8N Worker'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Worker criada com sucesso"
+    echo -e "$(t ferramenta_n8n_formacao_encha_worker_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Worker"
+    echo -e "$(t ferramenta_n8n_formacao_encha_worker_falha)"
 fi
 
 STACK_NAME="n8n_worker_formacao_encha"
@@ -4863,10 +6028,16 @@ networks:
     external: true
 EOL
 
+MSG_PT[ferramenta_n8n_formacao_encha_webhook_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N Webhook criada com sucesso'
+MSG_EN[ferramenta_n8n_formacao_encha_webhook_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N Webhook stack created successfully'
+MSG_ES[ferramenta_n8n_formacao_encha_webhook_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N Webhook creado con éxito'
+MSG_PT[ferramenta_n8n_formacao_encha_webhook_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Webhook'
+MSG_EN[ferramenta_n8n_formacao_encha_webhook_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N Webhook stack'
+MSG_ES[ferramenta_n8n_formacao_encha_webhook_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de N8N Webhook'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Webhook criada com sucesso"
+    echo -e "$(t ferramenta_n8n_formacao_encha_webhook_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Webhook"
+    echo -e "$(t ferramenta_n8n_formacao_encha_webhook_falha)"
 fi
 
 STACK_NAME="n8n_webhook_formacao_encha"
@@ -4878,7 +6049,10 @@ wait_stack $wait_services
 # ==============================================================================================
 # NOVO: TASK RUNNERS SERVICE (SIDECAR) - CORRIGIDO
 # ==============================================================================================
-echo -e "\e[97m⚙️ Instalando o N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_instalando_runners]=$'\e[97m⚙️ Instalando o N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_instalando_runners]=$'\e[97m⚙️ Installing N8N Task Runners...\e[33m [Step 5 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_instalando_runners]=$'\e[97m⚙️ Instalando N8N Task Runners...\e[33m [Etapa 5 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_instalando_runners)"
 cat > n8n_task_runners_formacao_encha.yaml <<EOL
 version: "3.7"
 services:
@@ -4920,10 +6094,16 @@ networks:
     external: true
 EOL
 
+MSG_PT[ferramenta_n8n_formacao_encha_runners_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N Task Runners criada com sucesso'
+MSG_EN[ferramenta_n8n_formacao_encha_runners_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N Task Runners stack created successfully'
+MSG_ES[ferramenta_n8n_formacao_encha_runners_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N Task Runners creado con éxito'
+MSG_PT[ferramenta_n8n_formacao_encha_runners_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Task Runners'
+MSG_EN[ferramenta_n8n_formacao_encha_runners_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N Task Runners stack'
+MSG_ES[ferramenta_n8n_formacao_encha_runners_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de N8N Task Runners'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N Task Runners criada com sucesso"
+    echo -e "$(t ferramenta_n8n_formacao_encha_runners_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N Task Runners"
+    echo -e "$(t ferramenta_n8n_formacao_encha_runners_falha)"
 fi
 
 STACK_NAME="n8n_task_runners_formacao_encha"
@@ -4937,7 +6117,10 @@ wait_stack $wait_services
 pull n8nio/n8n:latest
 pull n8nio/runners:latest
 
-echo -e "\e[97m🎯 Tudo pronto! \e[33m[Etapa 6 de 6]\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_tudo_pronto]=$'\e[97m🎯 Tudo pronto! \e[33m[Etapa 6 de 6]\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_tudo_pronto]=$'\e[97m🎯 All set! \e[33m[Step 6 of 6]\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_tudo_pronto]=$'\e[97m🎯 ¡Todo listo! \e[33m[Etapa 6 de 6]\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_tudo_pronto)"
 
 cd dados_vps
 
@@ -4963,10 +6146,22 @@ wait_30_sec
 
 msg_resumo_informacoes
 
-echo -e "\e[33m🌐 Domínio do Editor:     \e[97mhttps://$url_editorn8n\e[0m"
-echo -e "\e[33m🔗 Domínio do Webhook:    \e[97mhttps://$url_webhookn8n\e[0m"
-echo -e "\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m"
-echo -e "\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m"
+MSG_PT[ferramenta_n8n_formacao_encha_resumo_editor]="\e[33m🌐 Domínio do Editor:     \e[97mhttps://%s\e[0m"
+MSG_EN[ferramenta_n8n_formacao_encha_resumo_editor]="\e[33m🌐 Editor Domain:         \e[97mhttps://%s\e[0m"
+MSG_ES[ferramenta_n8n_formacao_encha_resumo_editor]="\e[33m🌐 Dominio del Editor:    \e[97mhttps://%s\e[0m"
+echo -e "$(t ferramenta_n8n_formacao_encha_resumo_editor "$url_editorn8n")"
+MSG_PT[ferramenta_n8n_formacao_encha_resumo_webhook]="\e[33m🔗 Domínio do Webhook:    \e[97mhttps://%s\e[0m"
+MSG_EN[ferramenta_n8n_formacao_encha_resumo_webhook]="\e[33m🔗 Webhook Domain:        \e[97mhttps://%s\e[0m"
+MSG_ES[ferramenta_n8n_formacao_encha_resumo_webhook]="\e[33m🔗 Dominio del Webhook:   \e[97mhttps://%s\e[0m"
+echo -e "$(t ferramenta_n8n_formacao_encha_resumo_webhook "$url_webhookn8n")"
+MSG_PT[ferramenta_n8n_formacao_encha_resumo_email]=$'\e[33m👤 Email de Acesso:       \e[97mSerá criado no primeiro login do N8N\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_resumo_email]=$'\e[33m👤 Access Email:          \e[97mWill be created on N8N\'s first login\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_resumo_email]=$'\e[33m👤 Email de Acceso:       \e[97mSe creará en el primer inicio de sesión de N8N\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_resumo_email)"
+MSG_PT[ferramenta_n8n_formacao_encha_resumo_senha]=$'\e[33m🔑 Senha de Acesso:       \e[97mSerá definida no primeiro login do N8N\e[0m'
+MSG_EN[ferramenta_n8n_formacao_encha_resumo_senha]=$'\e[33m🔑 Access Password:       \e[97mWill be set on N8N\'s first login\e[0m'
+MSG_ES[ferramenta_n8n_formacao_encha_resumo_senha]=$'\e[33m🔑 Contraseña de Acceso:  \e[97mSe definirá en el primer inicio de sesión de N8N\e[0m'
+echo -e "$(t ferramenta_n8n_formacao_encha_resumo_senha)"
 echo ""
 
 msg_retorno_menu
@@ -4984,27 +6179,60 @@ ferramenta_minio(){
 while true; do
 
     ## Passo 1 - Domínio do MinIO
-    echo -e "\e[97mPasso$amarelo 1/4\e[0m"
-    echo -en "\e[33m🌐 Informe o domínio para o MinIO (ex: minio.encha.ai): \e[0m" && read -r url_minio
+    MSG_PT[ferramenta_minio_passo1]="\e[97mPasso${amarelo} 1/4\e[0m"
+    MSG_EN[ferramenta_minio_passo1]="\e[97mStep${amarelo} 1/4\e[0m"
+    MSG_ES[ferramenta_minio_passo1]="\e[97mPaso${amarelo} 1/4\e[0m"
+    echo -e "$(t ferramenta_minio_passo1)"
+    MSG_PT[ferramenta_minio_pergunta_dominio]=$'\e[33m🌐 Informe o domínio para o MinIO (ex: minio.encha.ai): \e[0m'
+    MSG_EN[ferramenta_minio_pergunta_dominio]=$'\e[33m🌐 Enter the domain for MinIO (e.g.: minio.encha.ai): \e[0m'
+    MSG_ES[ferramenta_minio_pergunta_dominio]=$'\e[33m🌐 Ingrese el dominio para MinIO (ej.: minio.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_minio_pergunta_dominio)" && read -r url_minio
     echo ""
 
     ## Passo 2 - Domínio do S3 do MinIO
-    echo -e "\e[97mPasso$amarelo 2/4\e[0m"
-    echo -en "\e[33m🔗 Informe o domínio para o S3 (ex: minioS3.encha.ai): \e[0m" && read -r url_s3
+    MSG_PT[ferramenta_minio_passo2]="\e[97mPasso${amarelo} 2/4\e[0m"
+    MSG_EN[ferramenta_minio_passo2]="\e[97mStep${amarelo} 2/4\e[0m"
+    MSG_ES[ferramenta_minio_passo2]="\e[97mPaso${amarelo} 2/4\e[0m"
+    echo -e "$(t ferramenta_minio_passo2)"
+    MSG_PT[ferramenta_minio_pergunta_s3]=$'\e[33m🔗 Informe o domínio para o S3 (ex: minioS3.encha.ai): \e[0m'
+    MSG_EN[ferramenta_minio_pergunta_s3]=$'\e[33m🔗 Enter the domain for S3 (e.g.: minioS3.encha.ai): \e[0m'
+    MSG_ES[ferramenta_minio_pergunta_s3]=$'\e[33m🔗 Ingrese el dominio para S3 (ej.: minioS3.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_minio_pergunta_s3)" && read -r url_s3
     echo ""
 
     ## Passo 3 - Usuário do MinIO
-    echo -e "\e[97mPasso$amarelo 3/4\e[0m"
-    echo -e "$amarelo➡️  Evite os caracteres especiais: \! # \$ e espaços"
-    echo -en "\e[33m👤 Informe um nome de usuário para o MinIO (ex: encha || admin): \e[0m" && read -r user_minio
+    MSG_PT[ferramenta_minio_passo3]="\e[97mPasso${amarelo} 3/4\e[0m"
+    MSG_EN[ferramenta_minio_passo3]="\e[97mStep${amarelo} 3/4\e[0m"
+    MSG_ES[ferramenta_minio_passo3]="\e[97mPaso${amarelo} 3/4\e[0m"
+    echo -e "$(t ferramenta_minio_passo3)"
+    MSG_PT[ferramenta_minio_aviso_user]="${amarelo}➡️  Evite os caracteres especiais: \! # \$ e espaços"
+    MSG_EN[ferramenta_minio_aviso_user]="${amarelo}➡️  Avoid special characters: \! # \$ and spaces"
+    MSG_ES[ferramenta_minio_aviso_user]="${amarelo}➡️  Evite los caracteres especiales: \! # \$ y espacios"
+    echo -e "$(t ferramenta_minio_aviso_user)"
+    MSG_PT[ferramenta_minio_pergunta_user]=$'\e[33m👤 Informe um nome de usuário para o MinIO (ex: encha || admin): \e[0m'
+    MSG_EN[ferramenta_minio_pergunta_user]=$'\e[33m👤 Enter a username for MinIO (e.g.: encha || admin): \e[0m'
+    MSG_ES[ferramenta_minio_pergunta_user]=$'\e[33m👤 Ingrese un nombre de usuario para MinIO (ej.: encha || admin): \e[0m'
+    echo -en "$(t ferramenta_minio_pergunta_user)" && read -r user_minio
     echo ""
 
 
-    
-    echo -e "Passo \e[33m4/4\e[0m 🔐"
-    echo -e "\e[33m--> Mínimo 8 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-    echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
-    echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -r senha_minio
+
+    MSG_PT[ferramenta_minio_passo4]=$'Passo \e[33m4/4\e[0m 🔐'
+    MSG_EN[ferramenta_minio_passo4]=$'Step \e[33m4/4\e[0m 🔐'
+    MSG_ES[ferramenta_minio_passo4]=$'Paso \e[33m4/4\e[0m 🔐'
+    echo -e "$(t ferramenta_minio_passo4)"
+    MSG_PT[ferramenta_minio_aviso_senha1]=$'\e[33m--> Mínimo 8 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m'
+    MSG_EN[ferramenta_minio_aviso_senha1]=$'\e[33m--> Minimum 8 characters. Use UPPERCASE and lowercase letters, numbers and a special character @ or _\e[0m'
+    MSG_ES[ferramenta_minio_aviso_senha1]=$'\e[33m--> Mínimo 8 caracteres. Use letras MAYÚSCULAS y minúsculas, números y un carácter especial @ o _\e[0m'
+    echo -e "$(t ferramenta_minio_aviso_senha1)"
+    MSG_PT[ferramenta_minio_aviso_senha2]=$'\e[33m--> Evite caracteres especiais como: \\!#$\e[0m'
+    MSG_EN[ferramenta_minio_aviso_senha2]=$'\e[33m--> Avoid special characters such as: \\!#$\e[0m'
+    MSG_ES[ferramenta_minio_aviso_senha2]=$'\e[33m--> Evite caracteres especiales como: \\!#$\e[0m'
+    echo -e "$(t ferramenta_minio_aviso_senha2)"
+    MSG_PT[ferramenta_minio_pergunta_senha]=$'\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m'
+    MSG_EN[ferramenta_minio_pergunta_senha]=$'\e[36mEnter a password for Portainer (e.g.: Porta@12345_): \e[0m'
+    MSG_ES[ferramenta_minio_pergunta_senha]=$'\e[36mIngrese una contraseña para Portainer (ej.: Porta@12345_): \e[0m'
+    echo -ne "$(t ferramenta_minio_pergunta_senha)" && read -r senha_minio
     echo ""
 
 
@@ -5016,17 +6244,35 @@ while true; do
 
     msg_minio
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_minio_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+    MSG_EN[ferramenta_minio_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+    MSG_ES[ferramenta_minio_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+    echo -e "$(t ferramenta_minio_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m🌐 Domínio do MinIO:         \e[97m$url_minio\e[0m"
-    echo -e "\e[33m🔗 Domínio do S3:            \e[97m$url_s3\e[0m"
-    echo -e "\e[33m👤 Usuário MinIO:            \e[97m$user_minio\e[0m"
-    echo -e "\e[33m🔑 Senha MinIO:              \e[97m$senha_minio\e[0m"
+    MSG_PT[ferramenta_minio_revisa_dominio]="\e[33m🌐 Domínio do MinIO:         \e[97m%s\e[0m"
+    MSG_EN[ferramenta_minio_revisa_dominio]="\e[33m🌐 MinIO Domain:             \e[97m%s\e[0m"
+    MSG_ES[ferramenta_minio_revisa_dominio]="\e[33m🌐 Dominio de MinIO:         \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_minio_revisa_dominio "$url_minio")"
+    MSG_PT[ferramenta_minio_revisa_s3]="\e[33m🔗 Domínio do S3:            \e[97m%s\e[0m"
+    MSG_EN[ferramenta_minio_revisa_s3]="\e[33m🔗 S3 Domain:                \e[97m%s\e[0m"
+    MSG_ES[ferramenta_minio_revisa_s3]="\e[33m🔗 Dominio del S3:           \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_minio_revisa_s3 "$url_s3")"
+    MSG_PT[ferramenta_minio_revisa_user]="\e[33m👤 Usuário MinIO:            \e[97m%s\e[0m"
+    MSG_EN[ferramenta_minio_revisa_user]="\e[33m👤 MinIO User:               \e[97m%s\e[0m"
+    MSG_ES[ferramenta_minio_revisa_user]="\e[33m👤 Usuario MinIO:            \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_minio_revisa_user "$user_minio")"
+    MSG_PT[ferramenta_minio_revisa_senha]="\e[33m🔑 Senha MinIO:              \e[97m%s\e[0m"
+    MSG_EN[ferramenta_minio_revisa_senha]="\e[33m🔑 MinIO Password:           \e[97m%s\e[0m"
+    MSG_ES[ferramenta_minio_revisa_senha]="\e[33m🔑 Contraseña MinIO:         \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_minio_revisa_senha "$senha_minio")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Pergunta confirmação
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_minio_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_minio_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_minio_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_minio_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
         clear
         break
@@ -5034,9 +6280,12 @@ while true; do
         msg_minio
     fi
   done
-  echo -e "\e[97m🎯 Iniciando a instalação do MinIO... \e[33m[Etapa 1 de 5]\e[0m"
+  MSG_PT[ferramenta_minio_iniciando]=$'\e[97m🎯 Iniciando a instalação do MinIO... \e[33m[Etapa 1 de 5]\e[0m'
+  MSG_EN[ferramenta_minio_iniciando]=$'\e[97m🎯 Starting MinIO installation... \e[33m[Step 1 of 5]\e[0m'
+  MSG_ES[ferramenta_minio_iniciando]=$'\e[97m🎯 Iniciando la instalación de MinIO... \e[33m[Etapa 1 de 5]\e[0m'
+  echo -e "$(t ferramenta_minio_iniciando)"
   echo ""
-  sleep 3 
+  sleep 3
 
 cat > minio${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -5103,17 +6352,29 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
+MSG_PT[ferramenta_minio_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do Minio criada com sucesso'
+MSG_EN[ferramenta_minio_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Minio stack created successfully'
+MSG_ES[ferramenta_minio_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de Minio creado con éxito'
+MSG_PT[ferramenta_minio_stack_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Minio'
+MSG_EN[ferramenta_minio_stack_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Minio stack'
+MSG_ES[ferramenta_minio_stack_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de Minio'
+MSG_PT[ferramenta_minio_stack_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do Minio.\e[0m'
+MSG_EN[ferramenta_minio_stack_falha_aviso]=$'⚠️ \e[33mCould not create the Minio stack.\e[0m'
+MSG_ES[ferramenta_minio_stack_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de Minio.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Minio criada com sucesso"
+    echo -e "$(t ferramenta_minio_stack_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Minio"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Minio.\e[0m"
+    echo -e "$(t ferramenta_minio_stack_falha)"
+    echo -e "$(t ferramenta_minio_stack_falha_aviso)"
 fi
 
 STACK_NAME="minio${1:+_$1}"
-stack_editavel 
+stack_editavel
 
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+MSG_PT[ferramenta_minio_verificando_servico]=$'\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m'
+MSG_EN[ferramenta_minio_verificando_servico]=$'\e[97m🔍 Checking the service...\e[33m [Step 5 of 5]\e[0m'
+MSG_ES[ferramenta_minio_verificando_servico]=$'\e[97m🔍 Verificando el servicio...\e[33m [Etapa 5 de 5]\e[0m'
+echo -e "$(t ferramenta_minio_verificando_servico)"
 
 pull quay.io/minio/minio:latest
 wait_stack minio${1:+_$1}_minio${1:+_$1}
@@ -5140,13 +6401,28 @@ wait_30_sec
 
 msg_resumo_informacoes
 
-echo -e "\e[32m🪣 [ MINIO INSTALADO COM SUCESSO ]\e[0m"
+MSG_PT[ferramenta_minio_instalado_sucesso]=$'\e[32m🪣 [ MINIO INSTALADO COM SUCESSO ]\e[0m'
+MSG_EN[ferramenta_minio_instalado_sucesso]=$'\e[32m🪣 [ MINIO SUCCESSFULLY INSTALLED ]\e[0m'
+MSG_ES[ferramenta_minio_instalado_sucesso]=$'\e[32m🪣 [ MINIO INSTALADO CON ÉXITO ]\e[0m'
+echo -e "$(t ferramenta_minio_instalado_sucesso)"
 echo ""
 
-echo -e "\e[33m🌐 Domínio do MinIO:       \e[97mhttps://$url_minio\e[0m"
-echo -e "\e[33m🔗 Domínio do S3:          \e[97mhttps://$url_s3\e[0m"
-echo -e "\e[33m👤 Usuário de Acesso:      \e[97m$user_minio\e[0m"
-echo -e "\e[33m🔑 Senha de Acesso:        \e[97m$senha_minio\e[0m"
+MSG_PT[ferramenta_minio_resumo_dominio]="\e[33m🌐 Domínio do MinIO:       \e[97mhttps://%s\e[0m"
+MSG_EN[ferramenta_minio_resumo_dominio]="\e[33m🌐 MinIO Domain:           \e[97mhttps://%s\e[0m"
+MSG_ES[ferramenta_minio_resumo_dominio]="\e[33m🌐 Dominio de MinIO:       \e[97mhttps://%s\e[0m"
+echo -e "$(t ferramenta_minio_resumo_dominio "$url_minio")"
+MSG_PT[ferramenta_minio_resumo_s3]="\e[33m🔗 Domínio do S3:          \e[97mhttps://%s\e[0m"
+MSG_EN[ferramenta_minio_resumo_s3]="\e[33m🔗 S3 Domain:              \e[97mhttps://%s\e[0m"
+MSG_ES[ferramenta_minio_resumo_s3]="\e[33m🔗 Dominio del S3:         \e[97mhttps://%s\e[0m"
+echo -e "$(t ferramenta_minio_resumo_s3 "$url_s3")"
+MSG_PT[ferramenta_minio_resumo_user]="\e[33m👤 Usuário de Acesso:      \e[97m%s\e[0m"
+MSG_EN[ferramenta_minio_resumo_user]="\e[33m👤 Access User:            \e[97m%s\e[0m"
+MSG_ES[ferramenta_minio_resumo_user]="\e[33m👤 Usuario de Acceso:      \e[97m%s\e[0m"
+echo -e "$(t ferramenta_minio_resumo_user "$user_minio")"
+MSG_PT[ferramenta_minio_resumo_senha]="\e[33m🔑 Senha de Acesso:        \e[97m%s\e[0m"
+MSG_EN[ferramenta_minio_resumo_senha]="\e[33m🔑 Access Password:        \e[97m%s\e[0m"
+MSG_ES[ferramenta_minio_resumo_senha]="\e[33m🔑 Contraseña de Acceso:   \e[97m%s\e[0m"
+echo -e "$(t ferramenta_minio_resumo_senha "$senha_minio")"
 echo ""
 
 
@@ -5163,40 +6439,88 @@ ferramenta_typebot(){
 while true; do
 
     ## Passo 1 - Domínio Builder
-    echo -e "\e[97mPasso$amarelo 1/7\e[0m"
-    echo -en "\e[33m🌐 Digite o domínio para o Typebot Builder (ex: type.encha.ai): \e[0m" && read -r url_typebot
+    MSG_PT[ferramenta_typebot_passo1]="\e[97mPasso${amarelo} 1/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo1]="\e[97mStep${amarelo} 1/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo1]="\e[97mPaso${amarelo} 1/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo1)"
+    MSG_PT[ferramenta_typebot_pergunta_builder]=$'\e[33m🌐 Digite o domínio para o Typebot Builder (ex: type.encha.ai): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_builder]=$'\e[33m🌐 Enter the domain for the Typebot Builder (e.g.: type.encha.ai): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_builder]=$'\e[33m🌐 Ingrese el dominio para el Typebot Builder (ej.: type.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_builder)" && read -r url_typebot
     echo ""
 
     ## Passo 2 - Domínio Viewer
-    echo -e "\e[97mPasso$amarelo 2/7\e[0m"
-    echo -en "\e[33m🔎 Digite o domínio para o Typebot Viewer (ex: viewer.encha.ai): \e[0m" && read -r url_viewer
+    MSG_PT[ferramenta_typebot_passo2]="\e[97mPasso${amarelo} 2/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo2]="\e[97mStep${amarelo} 2/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo2]="\e[97mPaso${amarelo} 2/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo2)"
+    MSG_PT[ferramenta_typebot_pergunta_viewer]=$'\e[33m🔎 Digite o domínio para o Typebot Viewer (ex: viewer.encha.ai): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_viewer]=$'\e[33m🔎 Enter the domain for the Typebot Viewer (e.g.: viewer.encha.ai): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_viewer]=$'\e[33m🔎 Ingrese el dominio para el Typebot Viewer (ej.: viewer.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_viewer)" && read -r url_viewer
     echo ""
 
     ## Passo 3 - Email SMTP
-    echo -e "\e[97mPasso$amarelo 3/7\e[0m"
-    echo -en "\e[33m📧 Digite o email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_typebot
+    MSG_PT[ferramenta_typebot_passo3]="\e[97mPasso${amarelo} 3/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo3]="\e[97mStep${amarelo} 3/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo3]="\e[97mPaso${amarelo} 3/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo3)"
+    MSG_PT[ferramenta_typebot_pergunta_email]=$'\e[33m📧 Digite o email para SMTP (ex: instalador@encha.ai): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_email]=$'\e[33m📧 Enter the email for SMTP (e.g.: instalador@encha.ai): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_email]=$'\e[33m📧 Ingrese el email para SMTP (ej.: instalador@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_email)" && read -r email_typebot
     echo ""
 
     ## Passo 4 - Usuário SMTP
-    echo -e "\e[97mPasso$amarelo 4/7\e[0m"
-    echo -e "$amarelo➡️  Caso não tenha um usuário separado, use o próprio email abaixo"
-    echo -en "\e[33m👤 Digite o usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_email_typebot
+    MSG_PT[ferramenta_typebot_passo4]="\e[97mPasso${amarelo} 4/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo4]="\e[97mStep${amarelo} 4/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo4]="\e[97mPaso${amarelo} 4/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo4)"
+    MSG_PT[ferramenta_typebot_aviso_user]="${amarelo}➡️  Caso não tenha um usuário separado, use o próprio email abaixo"
+    MSG_EN[ferramenta_typebot_aviso_user]="${amarelo}➡️  If you don't have a separate username, use the email itself below"
+    MSG_ES[ferramenta_typebot_aviso_user]="${amarelo}➡️  Si no tiene un usuario separado, use el propio email abajo"
+    echo -e "$(t ferramenta_typebot_aviso_user)"
+    MSG_PT[ferramenta_typebot_pergunta_user]=$'\e[33m👤 Digite o usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_user]=$'\e[33m👤 Enter the SMTP username (e.g.: encha or instalador@encha.ai): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_user]=$'\e[33m👤 Ingrese el usuario para SMTP (ej.: encha o instalador@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_user)" && read -r usuario_email_typebot
     echo ""
 
     ## Passo 5 - Senha SMTP
-    echo -e "\e[97mPasso$amarelo 5/7\e[0m"
-    echo -e "$amarelo➡️  Sem caracteres especiais: \! # \$ | Se estiver usando Gmail, utilize senha de app"
-    echo -en "\e[33m🔑 Digite a senha SMTP do email (ex: @Senha123_): \e[0m" && read -r senha_email_typebot
+    MSG_PT[ferramenta_typebot_passo5]="\e[97mPasso${amarelo} 5/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo5]="\e[97mStep${amarelo} 5/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo5]="\e[97mPaso${amarelo} 5/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo5)"
+    MSG_PT[ferramenta_typebot_aviso_senha]="${amarelo}➡️  Sem caracteres especiais: \! # \$ | Se estiver usando Gmail, utilize senha de app"
+    MSG_EN[ferramenta_typebot_aviso_senha]="${amarelo}➡️  No special characters: \! # \$ | If using Gmail, use an app password"
+    MSG_ES[ferramenta_typebot_aviso_senha]="${amarelo}➡️  Sin caracteres especiales: \! # \$ | Si usa Gmail, use la contraseña de aplicación"
+    echo -e "$(t ferramenta_typebot_aviso_senha)"
+    MSG_PT[ferramenta_typebot_pergunta_senha]=$'\e[33m🔑 Digite a senha SMTP do email (ex: @Senha123_): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_senha]=$'\e[33m🔑 Enter the SMTP password for the email (e.g.: @Password123_): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_senha]=$'\e[33m🔑 Ingrese la contraseña SMTP del email (ej.: @Clave123_): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_senha)" && read -r senha_email_typebot
     echo ""
 
     ## Passo 6 - Host SMTP
-    echo -e "\e[97mPasso$amarelo 6/7\e[0m"
-    echo -en "\e[33m🏠 Digite o host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_typebot
+    MSG_PT[ferramenta_typebot_passo6]="\e[97mPasso${amarelo} 6/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo6]="\e[97mStep${amarelo} 6/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo6]="\e[97mPaso${amarelo} 6/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo6)"
+    MSG_PT[ferramenta_typebot_pergunta_host]=$'\e[33m🏠 Digite o host SMTP do email (ex: smtp.hostinger.com): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_host]=$'\e[33m🏠 Enter the SMTP host for the email (e.g.: smtp.hostinger.com): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_host]=$'\e[33m🏠 Ingrese el host SMTP del email (ej.: smtp.hostinger.com): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_host)" && read -r smtp_email_typebot
     echo ""
 
     ## Passo 7 - Porta SMTP
-    echo -e "\e[97mPasso$amarelo 7/7\e[0m"
-    echo -en "\e[33m🔌 Digite a porta SMTP do email (ex: 465): \e[0m" && read -r porta_smtp_typebot
+    MSG_PT[ferramenta_typebot_passo7]="\e[97mPasso${amarelo} 7/7\e[0m"
+    MSG_EN[ferramenta_typebot_passo7]="\e[97mStep${amarelo} 7/7\e[0m"
+    MSG_ES[ferramenta_typebot_passo7]="\e[97mPaso${amarelo} 7/7\e[0m"
+    echo -e "$(t ferramenta_typebot_passo7)"
+    MSG_PT[ferramenta_typebot_pergunta_porta]=$'\e[33m🔌 Digite a porta SMTP do email (ex: 465): \e[0m'
+    MSG_EN[ferramenta_typebot_pergunta_porta]=$'\e[33m🔌 Enter the SMTP port for the email (e.g.: 465): \e[0m'
+    MSG_ES[ferramenta_typebot_pergunta_porta]=$'\e[33m🔌 Ingrese el puerto SMTP del email (ej.: 465): \e[0m'
+    echo -en "$(t ferramenta_typebot_pergunta_porta)" && read -r porta_smtp_typebot
     echo ""
 
     ## Define secure SMTP com base na porta
@@ -5218,21 +6542,51 @@ while true; do
     ## Exibe resumo
     msg_typebot
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_typebot_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+    MSG_EN[ferramenta_typebot_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+    MSG_ES[ferramenta_typebot_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+    echo -e "$(t ferramenta_typebot_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m🌐 Domínio do Builder:         \e[97mhttps://$url_typebot\e[0m"
-    echo -e "\e[33m🔎 Domínio do Viewer:          \e[97mhttps://$url_viewer\e[0m"
-    echo -e "\e[33m📧 Email SMTP:                 \e[97m$email_typebot\e[0m"
-    echo -e "\e[33m👤 Usuário SMTP:               \e[97m$usuario_email_typebot\e[0m"
-    echo -e "\e[33m🔑 Senha SMTP:                 \e[97m$senha_email_typebot\e[0m"
-    echo -e "\e[33m🏠 Host SMTP:                  \e[97m$smtp_email_typebot\e[0m"
-    echo -e "\e[33m🔌 Porta SMTP:                 \e[97m$porta_smtp_typebot\e[0m"
-    echo -e "\e[33m🔐 Secure SMTP:                \e[97m$smtp_secure_typebot\e[0m"
+    MSG_PT[ferramenta_typebot_revisa_builder]="\e[33m🌐 Domínio do Builder:         \e[97mhttps://%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_builder]="\e[33m🌐 Builder Domain:             \e[97mhttps://%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_builder]="\e[33m🌐 Dominio del Builder:        \e[97mhttps://%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_builder "$url_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_viewer]="\e[33m🔎 Domínio do Viewer:          \e[97mhttps://%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_viewer]="\e[33m🔎 Viewer Domain:              \e[97mhttps://%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_viewer]="\e[33m🔎 Dominio del Viewer:         \e[97mhttps://%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_viewer "$url_viewer")"
+    MSG_PT[ferramenta_typebot_revisa_email]="\e[33m📧 Email SMTP:                 \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_email]="\e[33m📧 SMTP Email:                 \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_email]="\e[33m📧 Email SMTP:                 \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_email "$email_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_user]="\e[33m👤 Usuário SMTP:               \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_user]="\e[33m👤 SMTP User:                  \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_user]="\e[33m👤 Usuario SMTP:               \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_user "$usuario_email_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_senha]="\e[33m🔑 Senha SMTP:                 \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_senha]="\e[33m🔑 SMTP Password:              \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_senha]="\e[33m🔑 Contraseña SMTP:            \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_senha "$senha_email_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_host]="\e[33m🏠 Host SMTP:                  \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_host]="\e[33m🏠 SMTP Host:                  \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_host]="\e[33m🏠 Host SMTP:                  \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_host "$smtp_email_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_porta]="\e[33m🔌 Porta SMTP:                 \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_porta]="\e[33m🔌 SMTP Port:                  \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_porta]="\e[33m🔌 Puerto SMTP:                \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_porta "$porta_smtp_typebot")"
+    MSG_PT[ferramenta_typebot_revisa_secure]="\e[33m🔐 Secure SMTP:                \e[97m%s\e[0m"
+    MSG_EN[ferramenta_typebot_revisa_secure]="\e[33m🔐 Secure SMTP:                \e[97m%s\e[0m"
+    MSG_ES[ferramenta_typebot_revisa_secure]="\e[33m🔐 Secure SMTP:                \e[97m%s\e[0m"
+    echo -e "$(t ferramenta_typebot_revisa_secure "$smtp_secure_typebot")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Confirmação
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_typebot_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_typebot_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_typebot_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_typebot_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
         clear
         break
@@ -5241,22 +6595,37 @@ while true; do
     fi
 done
 
-echo -e "\e[97m🎯 Iniciando a instalação do Typebot... \e[33m[Etapa 1 de 5]\e[0m"
+MSG_PT[ferramenta_typebot_iniciando]=$'\e[97m🎯 Iniciando a instalação do Typebot... \e[33m[Etapa 1 de 5]\e[0m'
+MSG_EN[ferramenta_typebot_iniciando]=$'\e[97m🎯 Starting Typebot installation... \e[33m[Step 1 of 5]\e[0m'
+MSG_ES[ferramenta_typebot_iniciando]=$'\e[97m🎯 Iniciando la instalación de Typebot... \e[33m[Etapa 1 de 5]\e[0m'
+echo -e "$(t ferramenta_typebot_iniciando)"
 echo ""
 sleep 3
 
-echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+MSG_PT[ferramenta_typebot_verificando_postgres]=$'\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m'
+MSG_EN[ferramenta_typebot_verificando_postgres]=$'\e[97m📦 Checking or installing Postgres...\e[33m [Step 2 of 5]\e[0m'
+MSG_ES[ferramenta_typebot_verificando_postgres]=$'\e[97m📦 Verificando o instalando Postgres...\e[33m [Etapa 2 de 5]\e[0m'
+echo -e "$(t ferramenta_typebot_verificando_postgres)"
 echo ""
 sleep 1
 
 ## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
 verificar_container_postgres
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[32m1/3\e[0m ✅ - Postgres já está instalado."
+    MSG_PT[ferramenta_typebot_postgres_ja_instalado]=$'Passo \e[32m1/3\e[0m ✅ - Postgres já está instalado.'
+    MSG_EN[ferramenta_typebot_postgres_ja_instalado]=$'Step \e[32m1/3\e[0m ✅ - Postgres is already installed.'
+    MSG_ES[ferramenta_typebot_postgres_ja_instalado]=$'Paso \e[32m1/3\e[0m ✅ - Postgres ya está instalado.'
+    echo -e "$(t ferramenta_typebot_postgres_ja_instalado)"
     pegar_senha_postgres > /dev/null 2>&1
-    echo -e "Passo \e[32m2/3\e[0m 🔐 - Senha do Postgres copiada com sucesso."
+    MSG_PT[ferramenta_typebot_senha_copiada]=$'Passo \e[32m2/3\e[0m 🔐 - Senha do Postgres copiada com sucesso.'
+    MSG_EN[ferramenta_typebot_senha_copiada]=$'Step \e[32m2/3\e[0m 🔐 - Postgres password copied successfully.'
+    MSG_ES[ferramenta_typebot_senha_copiada]=$'Paso \e[32m2/3\e[0m 🔐 - Contraseña de Postgres copiada con éxito.'
+    echo -e "$(t ferramenta_typebot_senha_copiada)"
     criar_banco_postgres_da_stack "typebot${1:+_$1}"
-    echo -e "Passo \e[32m3/3\e[0m 🛠️ - Banco de dados 'typebot${1:+_$1}' criado com sucesso."
+    MSG_PT[ferramenta_typebot_banco_criado]="Passo \e[32m3/3\e[0m 🛠️ - Banco de dados 'typebot${1:+_$1}' criado com sucesso."
+    MSG_EN[ferramenta_typebot_banco_criado]="Step \e[32m3/3\e[0m 🛠️ - Database 'typebot${1:+_$1}' created successfully."
+    MSG_ES[ferramenta_typebot_banco_criado]="Paso \e[32m3/3\e[0m 🛠️ - Base de datos 'typebot${1:+_$1}' creada con éxito."
+    echo -e "$(t ferramenta_typebot_banco_criado)"
     echo ""
 else
     ferramenta_postgres
@@ -5265,19 +6634,31 @@ else
 fi
 
 
-echo -e "\e[97m📦 • Criando bucket no MinIO \e[33m[3/5]\e[0m"
+MSG_PT[ferramenta_typebot_criando_bucket]=$'\e[97m📦 • Criando bucket no MinIO \e[33m[3/5]\e[0m'
+MSG_EN[ferramenta_typebot_criando_bucket]=$'\e[97m📦 • Creating bucket on MinIO \e[33m[3/5]\e[0m'
+MSG_ES[ferramenta_typebot_criando_bucket]=$'\e[97m📦 • Creando bucket en MinIO \e[33m[3/5]\e[0m'
+echo -e "$(t ferramenta_typebot_criando_bucket)"
 echo ""
 sleep 1
 
 pegar_senha_minio
 criar_bucket.minio typebot${1:+-$1} > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[32m1/1\e[0m ✅ - Bucket 'typebot${1:+-$1}' criado com sucesso no MinIO."
+    MSG_PT[ferramenta_typebot_bucket_sucesso]="Passo \e[32m1/1\e[0m ✅ - Bucket 'typebot${1:+-$1}' criado com sucesso no MinIO."
+    MSG_EN[ferramenta_typebot_bucket_sucesso]="Step \e[32m1/1\e[0m ✅ - Bucket 'typebot${1:+-$1}' successfully created on MinIO."
+    MSG_ES[ferramenta_typebot_bucket_sucesso]="Paso \e[32m1/1\e[0m ✅ - Bucket 'typebot${1:+-$1}' creado con éxito en MinIO."
+    echo -e "$(t ferramenta_typebot_bucket_sucesso)"
 else
-    echo -e "Passo \e[31m1/1\e[0m ❌ - Erro ao criar o bucket 'typebot${1:+-$1}' no MinIO."
+    MSG_PT[ferramenta_typebot_bucket_falha]="Passo \e[31m1/1\e[0m ❌ - Erro ao criar o bucket 'typebot${1:+-$1}' no MinIO."
+    MSG_EN[ferramenta_typebot_bucket_falha]="Step \e[31m1/1\e[0m ❌ - Error creating bucket 'typebot${1:+-$1}' on MinIO."
+    MSG_ES[ferramenta_typebot_bucket_falha]="Paso \e[31m1/1\e[0m ❌ - Error al crear el bucket 'typebot${1:+-$1}' en MinIO."
+    echo -e "$(t ferramenta_typebot_bucket_falha)"
 fi
 
-echo -e "\e[32m🤖 [ INSTALANDO TYPEBOT ] \e[33m[4/5]\e[0m\n"
+MSG_PT[ferramenta_typebot_instalando]=$'\e[32m🤖 [ INSTALANDO TYPEBOT ] \e[33m[4/5]\e[0m\n'
+MSG_EN[ferramenta_typebot_instalando]=$'\e[32m🤖 [ INSTALLING TYPEBOT ] \e[33m[4/5]\e[0m\n'
+MSG_ES[ferramenta_typebot_instalando]=$'\e[32m🤖 [ INSTALANDO TYPEBOT ] \e[33m[4/5]\e[0m\n'
+echo -e "$(t ferramenta_typebot_instalando)"
 sleep 1
 
 
@@ -5443,17 +6824,29 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 
+MSG_PT[ferramenta_typebot_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do Typebot criada com sucesso'
+MSG_EN[ferramenta_typebot_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Typebot stack created successfully'
+MSG_ES[ferramenta_typebot_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de Typebot creado con éxito'
+MSG_PT[ferramenta_typebot_stack_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Typebot'
+MSG_EN[ferramenta_typebot_stack_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Typebot stack'
+MSG_ES[ferramenta_typebot_stack_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de Typebot'
+MSG_PT[ferramenta_typebot_stack_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do Typebot.\e[0m'
+MSG_EN[ferramenta_typebot_stack_falha_aviso]=$'⚠️ \e[33mCould not create the Typebot stack.\e[0m'
+MSG_ES[ferramenta_typebot_stack_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de Typebot.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Typebot criada com sucesso"
+    echo -e "$(t ferramenta_typebot_stack_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Typebot"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Typebot.\e[0m"
+    echo -e "$(t ferramenta_typebot_stack_falha)"
+    echo -e "$(t ferramenta_typebot_stack_falha_aviso)"
 fi
 
 STACK_NAME="typebot${1:+_$1}"
-stack_editavel 
+stack_editavel
 
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+MSG_PT[ferramenta_typebot_verificando_servico]=$'\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m'
+MSG_EN[ferramenta_typebot_verificando_servico]=$'\e[97m🔍 Checking the service...\e[33m [Step 5 of 5]\e[0m'
+MSG_ES[ferramenta_typebot_verificando_servico]=$'\e[97m🔍 Verificando el servicio...\e[33m [Etapa 5 de 5]\e[0m'
+echo -e "$(t ferramenta_typebot_verificando_servico)"
 echo ""
 sleep 1
 
@@ -5477,16 +6870,28 @@ cd
 wait_30_sec
 
 msg_resumo_informacoes
-echo -e "\e[32m🔹 [ TYPEBOT ]\e[0m"
+MSG_PT[ferramenta_typebot_resumo_titulo]=$'\e[32m🔹 [ TYPEBOT ]\e[0m'
+MSG_EN[ferramenta_typebot_resumo_titulo]=$'\e[32m🔹 [ TYPEBOT ]\e[0m'
+MSG_ES[ferramenta_typebot_resumo_titulo]=$'\e[32m🔹 [ TYPEBOT ]\e[0m'
+echo -e "$(t ferramenta_typebot_resumo_titulo)"
 echo ""
 
-echo -e "\e[33m🌐 Domínio:\e[97m https://$url_typebot\e[0m"
+MSG_PT[ferramenta_typebot_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+MSG_EN[ferramenta_typebot_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+MSG_ES[ferramenta_typebot_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+echo -e "$(t ferramenta_typebot_resumo_dominio "$url_typebot")"
 echo ""
 
-echo -e "\e[33m📧 E-mail:\e[97m Qualquer um (não precisa ser o mesmo da instalação)\e[0m"
+MSG_PT[ferramenta_typebot_resumo_email]=$'\e[33m📧 E-mail:\e[97m Qualquer um (não precisa ser o mesmo da instalação)\e[0m'
+MSG_EN[ferramenta_typebot_resumo_email]=$'\e[33m📧 Email:\e[97m Any address (doesn\'t need to match the one used during installation)\e[0m'
+MSG_ES[ferramenta_typebot_resumo_email]=$'\e[33m📧 Email:\e[97m Cualquiera (no necesita ser el mismo de la instalación)\e[0m'
+echo -e "$(t ferramenta_typebot_resumo_email)"
 echo ""
 
-echo -e "\e[33m🔑 Acesso:\e[97m Sem senha — um link mágico será enviado pro seu e-mail.\e[0m"
+MSG_PT[ferramenta_typebot_resumo_acesso]=$'\e[33m🔑 Acesso:\e[97m Sem senha — um link mágico será enviado pro seu e-mail.\e[0m'
+MSG_EN[ferramenta_typebot_resumo_acesso]=$'\e[33m🔑 Access:\e[97m No password — a magic link will be sent to your email.\e[0m'
+MSG_ES[ferramenta_typebot_resumo_acesso]=$'\e[33m🔑 Acceso:\e[97m Sin contraseña — se enviará un enlace mágico a su email.\e[0m'
+echo -e "$(t ferramenta_typebot_resumo_acesso)"
 
 msg_retorno_menu
 
@@ -5500,34 +6905,82 @@ dados
 
 while true; do
     ## Passo 1
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/7\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Directus (ex: direto.encha.ai): \e[0m" && read -r url_directus
+    MSG_PT[ferramenta_directus_passo1]="\n📍 \e[97mPasso ${amarelo}1/7\e[0m"
+    MSG_EN[ferramenta_directus_passo1]="\n📍 \e[97mStep ${amarelo}1/7\e[0m"
+    MSG_ES[ferramenta_directus_passo1]="\n📍 \e[97mPaso ${amarelo}1/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo1)"
+    MSG_PT[ferramenta_directus_pergunta_dominio]=$'🔗 \e[33mDigite o domínio para o Directus (ex: direto.encha.ai): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_dominio]=$'🔗 \e[33mEnter the domain for Directus (e.g.: direto.encha.ai): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_dominio]=$'🔗 \e[33mIngrese el dominio para Directus (ej.: direto.encha.ai): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_dominio)" && read -r url_directus
 
     ## Passo 2
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/7\e[0m"
-    echo -en "📧 \e[33mDigite o Email de Admin (ex: instalador@encha.ai): \e[0m" && read -r email_directus
+    MSG_PT[ferramenta_directus_passo2]="\n📍 \e[97mPasso ${amarelo}2/7\e[0m"
+    MSG_EN[ferramenta_directus_passo2]="\n📍 \e[97mStep ${amarelo}2/7\e[0m"
+    MSG_ES[ferramenta_directus_passo2]="\n📍 \e[97mPaso ${amarelo}2/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo2)"
+    MSG_PT[ferramenta_directus_pergunta_email_admin]=$'📧 \e[33mDigite o Email de Admin (ex: instalador@encha.ai): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_email_admin]=$'📧 \e[33mEnter the Admin Email (e.g.: instalador@encha.ai): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_email_admin]=$'📧 \e[33mIngrese el Email de Admin (ej.: instalador@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_email_admin)" && read -r email_directus
 
     ## Passo 3
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/7\e[0m"
-    echo -e "🔒 \e[33m--> Sem caracteres especiais: \!#$"
-    echo -en "🔑 Digite a Senha para o Admin (ex: @Senha123_): \e[0m" && read -r senha_directus
+    MSG_PT[ferramenta_directus_passo3]="\n📍 \e[97mPasso ${amarelo}3/7\e[0m"
+    MSG_EN[ferramenta_directus_passo3]="\n📍 \e[97mStep ${amarelo}3/7\e[0m"
+    MSG_ES[ferramenta_directus_passo3]="\n📍 \e[97mPaso ${amarelo}3/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo3)"
+    MSG_PT[ferramenta_directus_aviso_senha_admin]="🔒 \e[33m--> Sem caracteres especiais: \!#\$"
+    MSG_EN[ferramenta_directus_aviso_senha_admin]="🔒 \e[33m--> No special characters: \!#\$"
+    MSG_ES[ferramenta_directus_aviso_senha_admin]="🔒 \e[33m--> Sin caracteres especiales: \!#\$"
+    echo -e "$(t ferramenta_directus_aviso_senha_admin)"
+    MSG_PT[ferramenta_directus_pergunta_senha_admin]=$'🔑 Digite a Senha para o Admin (ex: @Senha123_): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_senha_admin]=$'🔑 Enter the Admin Password (e.g.: @Password123_): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_senha_admin]=$'🔑 Ingrese la Contraseña para el Admin (ej.: @Clave123_): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_senha_admin)" && read -r senha_directus
 
     ## Passo 4
-    echo -e "\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
-    echo -en "📨 \e[33mDigite o Email SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_directus
+    MSG_PT[ferramenta_directus_passo4]="\n📍 \e[97mPasso ${amarelo}4/7\e[0m"
+    MSG_EN[ferramenta_directus_passo4]="\n📍 \e[97mStep ${amarelo}4/7\e[0m"
+    MSG_ES[ferramenta_directus_passo4]="\n📍 \e[97mPaso ${amarelo}4/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo4)"
+    MSG_PT[ferramenta_directus_pergunta_email_smtp]=$'📨 \e[33mDigite o Email SMTP (ex: instalador@encha.ai): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_email_smtp]=$'📨 \e[33mEnter the SMTP Email (e.g.: instalador@encha.ai): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_email_smtp]=$'📨 \e[33mIngrese el Email SMTP (ej.: instalador@encha.ai): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_email_smtp)" && read -r email_smtp_directus
 
     ## Passo 5
-    echo -e "\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
-    echo -e "🔑 \e[33m--> Sem caracteres especiais: \!#$ | Se usar Gmail, utilize a senha de app"
-    echo -en "📬 Digite a Senha SMTP (ex: @Senha123_): \e[0m" && read -r senha_smtp_directus
+    MSG_PT[ferramenta_directus_passo5]="\n📍 \e[97mPasso ${amarelo}5/7\e[0m"
+    MSG_EN[ferramenta_directus_passo5]="\n📍 \e[97mStep ${amarelo}5/7\e[0m"
+    MSG_ES[ferramenta_directus_passo5]="\n📍 \e[97mPaso ${amarelo}5/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo5)"
+    MSG_PT[ferramenta_directus_aviso_senha_smtp]="🔑 \e[33m--> Sem caracteres especiais: \!#\$ | Se usar Gmail, utilize a senha de app"
+    MSG_EN[ferramenta_directus_aviso_senha_smtp]="🔑 \e[33m--> No special characters: \!#\$ | If using Gmail, use an app password"
+    MSG_ES[ferramenta_directus_aviso_senha_smtp]="🔑 \e[33m--> Sin caracteres especiales: \!#\$ | Si usa Gmail, use la contraseña de aplicación"
+    echo -e "$(t ferramenta_directus_aviso_senha_smtp)"
+    MSG_PT[ferramenta_directus_pergunta_senha_smtp]=$'📬 Digite a Senha SMTP (ex: @Senha123_): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_senha_smtp]=$'📬 Enter the SMTP Password (e.g.: @Password123_): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_senha_smtp]=$'📬 Ingrese la Contraseña SMTP (ej.: @Clave123_): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_senha_smtp)" && read -r senha_smtp_directus
 
     ## Passo 6
-    echo -e "\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
-    echo -en "🌐 \e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_directus
+    MSG_PT[ferramenta_directus_passo6]="\n📍 \e[97mPasso ${amarelo}6/7\e[0m"
+    MSG_EN[ferramenta_directus_passo6]="\n📍 \e[97mStep ${amarelo}6/7\e[0m"
+    MSG_ES[ferramenta_directus_passo6]="\n📍 \e[97mPaso ${amarelo}6/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo6)"
+    MSG_PT[ferramenta_directus_pergunta_host_smtp]=$'🌐 \e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_host_smtp]=$'🌐 \e[33mEnter the SMTP Host (e.g.: smtp.hostinger.com): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_host_smtp]=$'🌐 \e[33mIngrese el Host SMTP (ej.: smtp.hostinger.com): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_host_smtp)" && read -r host_smtp_directus
 
     ## Passo 7
-    echo -e "\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
-    echo -en "🔌 \e[33mDigite a Porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_directus
+    MSG_PT[ferramenta_directus_passo7]="\n📍 \e[97mPasso ${amarelo}7/7\e[0m"
+    MSG_EN[ferramenta_directus_passo7]="\n📍 \e[97mStep ${amarelo}7/7\e[0m"
+    MSG_ES[ferramenta_directus_passo7]="\n📍 \e[97mPaso ${amarelo}7/7\e[0m"
+    echo -e "$(t ferramenta_directus_passo7)"
+    MSG_PT[ferramenta_directus_pergunta_porta_smtp]=$'🔌 \e[33mDigite a Porta SMTP (ex: 465): \e[0m'
+    MSG_EN[ferramenta_directus_pergunta_porta_smtp]=$'🔌 \e[33mEnter the SMTP Port (e.g.: 465): \e[0m'
+    MSG_ES[ferramenta_directus_pergunta_porta_smtp]=$'🔌 \e[33mIngrese el Puerto SMTP (ej.: 465): \e[0m'
+    echo -en "$(t ferramenta_directus_pergunta_porta_smtp)" && read -r porta_smtp_directus
 
     ## Ajusta SSL
     if [ "$porta_smtp_directus" -eq 465 ]; then
@@ -5541,21 +6994,51 @@ while true; do
     
     msg_directus
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_directus_revise]=$'\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n'
+    MSG_EN[ferramenta_directus_revise]=$'\e[33m🔍 Please review the information below:\e[0m\n'
+    MSG_ES[ferramenta_directus_revise]=$'\e[33m🔍 Por favor, revise la información abajo:\e[0m\n'
+    echo -e "$(t ferramenta_directus_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio do Directus:\e[97m $url_directus\e[0m"
-    echo -e "👤 \e[33mEmail de Admin:\e[97m $email_directus\e[0m"
-    echo -e "🔑 \e[33mSenha de Admin:\e[97m $senha_directus\e[0m"
-    echo -e "📨 \e[33mEmail SMTP:\e[97m $email_smtp_directus\e[0m"
-    echo -e "🔒 \e[33mSenha SMTP:\e[97m $senha_smtp_directus\e[0m"
-    echo -e "🌐 \e[33mHost SMTP:\e[97m $host_smtp_directus\e[0m"
-    echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_directus\e[0m"
-    echo -e "🔐 \e[33mSSL Ativado:\e[97m $ssl_smtp_directus\e[0m"
+    MSG_PT[ferramenta_directus_revisa_dominio]="🌐 \e[33mDomínio do Directus:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_dominio]="🌐 \e[33mDirectus Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_dominio]="🌐 \e[33mDominio de Directus:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_dominio "$url_directus")"
+    MSG_PT[ferramenta_directus_revisa_email_admin]="👤 \e[33mEmail de Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_email_admin]="👤 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_email_admin]="👤 \e[33mEmail de Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_email_admin "$email_directus")"
+    MSG_PT[ferramenta_directus_revisa_senha_admin]="🔑 \e[33mSenha de Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_senha_admin]="🔑 \e[33mAdmin Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_senha_admin]="🔑 \e[33mContraseña de Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_senha_admin "$senha_directus")"
+    MSG_PT[ferramenta_directus_revisa_email_smtp]="📨 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_email_smtp]="📨 \e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_email_smtp]="📨 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_email_smtp "$email_smtp_directus")"
+    MSG_PT[ferramenta_directus_revisa_senha_smtp]="🔒 \e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_senha_smtp]="🔒 \e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_senha_smtp]="🔒 \e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_senha_smtp "$senha_smtp_directus")"
+    MSG_PT[ferramenta_directus_revisa_host_smtp]="🌐 \e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_host_smtp]="🌐 \e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_host_smtp]="🌐 \e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_host_smtp "$host_smtp_directus")"
+    MSG_PT[ferramenta_directus_revisa_porta_smtp]="🔌 \e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_porta_smtp]="🔌 \e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_porta_smtp]="🔌 \e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_porta_smtp "$porta_smtp_directus")"
+    MSG_PT[ferramenta_directus_revisa_ssl]="🔐 \e[33mSSL Ativado:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_directus_revisa_ssl]="🔐 \e[33mSSL Enabled:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_directus_revisa_ssl]="🔐 \e[33mSSL Activado:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_directus_revisa_ssl "$ssl_smtp_directus")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Confirmação
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_directus_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_directus_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_directus_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_directus_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then
         clear
         break
@@ -5565,20 +7048,35 @@ while true; do
 done
 
 
-echo -e "\e[97m🎯 Iniciando a instalação do Directus... \e[33m[Etapa 1 de 6]\e[0m"
+MSG_PT[ferramenta_directus_iniciando]=$'\e[97m🎯 Iniciando a instalação do Directus... \e[33m[Etapa 1 de 6]\e[0m'
+MSG_EN[ferramenta_directus_iniciando]=$'\e[97m🎯 Starting Directus installation... \e[33m[Step 1 of 6]\e[0m'
+MSG_ES[ferramenta_directus_iniciando]=$'\e[97m🎯 Iniciando la instalación de Directus... \e[33m[Etapa 1 de 6]\e[0m'
+echo -e "$(t ferramenta_directus_iniciando)"
 
-echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 6]\e[0m"
+MSG_PT[ferramenta_directus_verificando_postgres]=$'\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 6]\e[0m'
+MSG_EN[ferramenta_directus_verificando_postgres]=$'\e[97m📦 Checking or installing Postgres...\e[33m [Step 2 of 6]\e[0m'
+MSG_ES[ferramenta_directus_verificando_postgres]=$'\e[97m📦 Verificando o instalando Postgres...\e[33m [Etapa 2 de 6]\e[0m'
+echo -e "$(t ferramenta_directus_verificando_postgres)"
 echo ""
 sleep 1
 
 
 verificar_container_postgres
 if [ $? -eq 0 ]; then
-    echo "✅ 1/3 - Postgres já está instalado."
+    MSG_PT[ferramenta_directus_postgres_ja_instalado]="✅ 1/3 - Postgres já está instalado."
+    MSG_EN[ferramenta_directus_postgres_ja_instalado]="✅ 1/3 - Postgres is already installed."
+    MSG_ES[ferramenta_directus_postgres_ja_instalado]="✅ 1/3 - Postgres ya está instalado."
+    echo "$(t ferramenta_directus_postgres_ja_instalado)"
     pegar_senha_postgres > /dev/null 2>&1
-    echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+    MSG_PT[ferramenta_directus_senha_copiada]="🔐 2/3 - Senha do Postgres copiada com sucesso."
+    MSG_EN[ferramenta_directus_senha_copiada]="🔐 2/3 - Postgres password copied successfully."
+    MSG_ES[ferramenta_directus_senha_copiada]="🔐 2/3 - Contraseña de Postgres copiada con éxito."
+    echo "$(t ferramenta_directus_senha_copiada)"
     criar_banco_postgres_da_stack "directus${1:+_$1}"
-    echo "🛠️  3/3 - Banco de dados 'directus${1:+_$1}' criado com sucesso."
+    MSG_PT[ferramenta_directus_banco_criado]="🛠️  3/3 - Banco de dados 'directus${1:+_$1}' criado com sucesso."
+    MSG_EN[ferramenta_directus_banco_criado]="🛠️  3/3 - Database 'directus${1:+_$1}' created successfully."
+    MSG_ES[ferramenta_directus_banco_criado]="🛠️  3/3 - Base de datos 'directus${1:+_$1}' creada con éxito."
+    echo "$(t ferramenta_directus_banco_criado)"
     echo ""
 else
     ferramenta_postgres
@@ -5586,28 +7084,40 @@ else
     criar_banco_postgres_da_stack "directus${1:+_$1}"
 fi
 
-echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 6]\e[0m"
+MSG_PT[ferramenta_directus_verificando_redis]=$'\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 6]\e[0m'
+MSG_EN[ferramenta_directus_verificando_redis]=$'\e[97m📦 Checking or installing Redis...\e[33m [Step 3 of 6]\e[0m'
+MSG_ES[ferramenta_directus_verificando_redis]=$'\e[97m📦 Verificando o instalando Redis...\e[33m [Etapa 3 de 6]\e[0m'
+echo -e "$(t ferramenta_directus_verificando_redis)"
 echo ""
 sleep 1
 
 ## Verifica/instala o Redis
 verificar_container_redis
 if [ $? -eq 0 ]; then
-    echo "✅ 1/1 - Redis já está instalado."
+    MSG_PT[ferramenta_directus_redis_ja_instalado]="✅ 1/1 - Redis já está instalado."
+    MSG_EN[ferramenta_directus_redis_ja_instalado]="✅ 1/1 - Redis is already installed."
+    MSG_ES[ferramenta_directus_redis_ja_instalado]="✅ 1/1 - Redis ya está instalado."
+    echo "$(t ferramenta_directus_redis_ja_instalado)"
     echo ""
 else
     ferramenta_redis
 fi
 
 
-echo -e "\e[97m📂 Criando bucket no MinIO \e[33m[4/6]\e[0m"
+MSG_PT[ferramenta_directus_criando_bucket]=$'\e[97m📂 Criando bucket no MinIO \e[33m[4/6]\e[0m'
+MSG_EN[ferramenta_directus_criando_bucket]=$'\e[97m📂 Creating bucket on MinIO \e[33m[4/6]\e[0m'
+MSG_ES[ferramenta_directus_criando_bucket]=$'\e[97m📂 Creando bucket en MinIO \e[33m[4/6]\e[0m'
+echo -e "$(t ferramenta_directus_criando_bucket)"
 echo ""
 sleep 1
 
 pegar_senha_minio
 criar_bucket.minio directus${1:+-$1} > /dev/null 2
 
-echo -e "\e[97m🚀 INSTALANDO DIRECTUS \e[33m[5/6]\e[0m"
+MSG_PT[ferramenta_directus_instalando]=$'\e[97m🚀 INSTALANDO DIRECTUS \e[33m[5/6]\e[0m'
+MSG_EN[ferramenta_directus_instalando]=$'\e[97m🚀 INSTALLING DIRECTUS \e[33m[5/6]\e[0m'
+MSG_ES[ferramenta_directus_instalando]=$'\e[97m🚀 INSTALANDO DIRECTUS \e[33m[5/6]\e[0m'
+echo -e "$(t ferramenta_directus_instalando)"
 echo ""
 sleep 1
 
@@ -5703,17 +7213,29 @@ networks:
     attachable: true
     name: $nome_rede_interna
 EOL
+MSG_PT[ferramenta_directus_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do Directus criada com sucesso'
+MSG_EN[ferramenta_directus_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Directus stack created successfully'
+MSG_ES[ferramenta_directus_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de Directus creado con éxito'
+MSG_PT[ferramenta_directus_stack_falha]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Directus'
+MSG_EN[ferramenta_directus_stack_falha]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Directus stack'
+MSG_ES[ferramenta_directus_stack_falha]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Error al crear el stack de Directus'
+MSG_PT[ferramenta_directus_stack_falha_aviso]=$'⚠️ \e[33mNão foi possível criar a stack do Directus.\e[0m'
+MSG_EN[ferramenta_directus_stack_falha_aviso]=$'⚠️ \e[33mCould not create the Directus stack.\e[0m'
+MSG_ES[ferramenta_directus_stack_falha_aviso]=$'⚠️ \e[33mNo fue posible crear el stack de Directus.\e[0m'
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do Directus criada com sucesso"
+    echo -e "$(t ferramenta_directus_stack_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do Directus"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack do Directus.\e[0m"
+    echo -e "$(t ferramenta_directus_stack_falha)"
+    echo -e "$(t ferramenta_directus_stack_falha_aviso)"
 fi
 
 STACK_NAME="directus${1:+_$1}"
 stack_editavel
 
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 6 de 6]\e[0m"
+MSG_PT[ferramenta_directus_verificando_servico]=$'\e[97m🔍 Verificando o serviço...\e[33m [Etapa 6 de 6]\e[0m'
+MSG_EN[ferramenta_directus_verificando_servico]=$'\e[97m🔍 Checking the service...\e[33m [Step 6 of 6]\e[0m'
+MSG_ES[ferramenta_directus_verificando_servico]=$'\e[97m🔍 Verificando el servicio...\e[33m [Etapa 6 de 6]\e[0m'
+echo -e "$(t ferramenta_directus_verificando_servico)"
 echo ""
 sleep 1
 
@@ -5738,16 +7260,28 @@ cd
 wait_30_sec
 
 msg_resumo_informacoes
-echo -e "\e[32m🚀 [ DIRECTUS ]\e[0m"
+MSG_PT[ferramenta_directus_resumo_titulo]=$'\e[32m🚀 [ DIRECTUS ]\e[0m'
+MSG_EN[ferramenta_directus_resumo_titulo]=$'\e[32m🚀 [ DIRECTUS ]\e[0m'
+MSG_ES[ferramenta_directus_resumo_titulo]=$'\e[32m🚀 [ DIRECTUS ]\e[0m'
+echo -e "$(t ferramenta_directus_resumo_titulo)"
 echo ""
 
-echo -e "\e[33m🌐 Domínio:\e[97m https://$url_directus\e[0m"
+MSG_PT[ferramenta_directus_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+MSG_EN[ferramenta_directus_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+MSG_ES[ferramenta_directus_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+echo -e "$(t ferramenta_directus_resumo_dominio "$url_directus")"
 echo ""
 
-echo -e "\e[33m👤 Usuário:\e[97m $email_directus\e[0m"
+MSG_PT[ferramenta_directus_resumo_user]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+MSG_EN[ferramenta_directus_resumo_user]="\e[33m👤 User:\e[97m %s\e[0m"
+MSG_ES[ferramenta_directus_resumo_user]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+echo -e "$(t ferramenta_directus_resumo_user "$email_directus")"
 echo ""
 
-echo -e "\e[33m🔑 Senha:\e[97m $senha_directus\e[0m"
+MSG_PT[ferramenta_directus_resumo_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m"
+MSG_EN[ferramenta_directus_resumo_senha]="\e[33m🔑 Password:\e[97m %s\e[0m"
+MSG_ES[ferramenta_directus_resumo_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m"
+echo -e "$(t ferramenta_directus_resumo_senha "$senha_directus")"
 echo ""
 
 msg_retorno_menu
@@ -5761,21 +7295,33 @@ ferramenta_odoo(){
 while true; do
 
 
-    echo -en "\e[33m🌐 Digite o domínio para o Odoo (ex: doo.encha.ai): \e[0m" && read -r url_odoo
+    MSG_PT[ferramenta_odoo_pede_dominio]="\e[33m🌐 Digite o domínio para o Odoo (ex: doo.encha.ai): \e[0m"
+    MSG_EN[ferramenta_odoo_pede_dominio]="\e[33m🌐 Enter the domain for Odoo (e.g. doo.encha.ai): \e[0m"
+    MSG_ES[ferramenta_odoo_pede_dominio]="\e[33m🌐 Ingrese el dominio para Odoo (ej: doo.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_odoo_pede_dominio)" && read -r url_odoo
     echo ""
 
 
     ## Informação do domínio
     msg_odoo
     echo ""
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_odoo_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_odoo_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_odoo_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_odoo_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "\e[33m📍 Domínio para o Odoo:\e[97m $url_odoo\e[0m"
+    MSG_PT[ferramenta_odoo_dominio_odoo]="\e[33m📍 Domínio para o Odoo:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_odoo_dominio_odoo]="\e[33m📍 Domain for Odoo:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_odoo_dominio_odoo]="\e[33m📍 Dominio para Odoo:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_odoo_dominio_odoo "$url_odoo")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
     ## Pergunta se as respostas estão corretas
-    read -p $'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_odoo_confirma]=$'\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_odoo_confirma]=$'\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_odoo_confirma]=$'\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_odoo_confirma)" confirmacao
     if [[ "$confirmacao" == [Yy] ]]; then
 
         ## Confirmou que está correto
@@ -5788,10 +7334,16 @@ while true; do
     fi
 done
 
-echo -e "\e[97m🎯 Iniciando a instalação do Odoo... \e[33m[Etapa 1 de 3]\e[0m"
+MSG_PT[ferramenta_odoo_iniciando]="\e[97m🎯 Iniciando a instalação do Odoo... \e[33m[Etapa 1 de 3]\e[0m"
+MSG_EN[ferramenta_odoo_iniciando]="\e[97m🎯 Starting Odoo installation... \e[33m[Step 1 of 3]\e[0m"
+MSG_ES[ferramenta_odoo_iniciando]="\e[97m🎯 Iniciando la instalación de Odoo... \e[33m[Paso 1 de 3]\e[0m"
+echo -e "$(t ferramenta_odoo_iniciando)"
 
 ## Mensagem de Passo
-echo -e "\e[97m• INSTALANDO ODOO \e[33m[2/3]\e[0m"
+MSG_PT[ferramenta_odoo_instalando]="\e[97m• INSTALANDO ODOO \e[33m[2/3]\e[0m"
+MSG_EN[ferramenta_odoo_instalando]="\e[97m• INSTALLING ODOO \e[33m[2/3]\e[0m"
+MSG_ES[ferramenta_odoo_instalando]="\e[97m• INSTALANDO ODOO \e[33m[2/3]\e[0m"
+echo -e "$(t ferramenta_odoo_instalando)"
 echo ""
 sleep 1
 
@@ -5888,16 +7440,28 @@ networks:
     name: $nome_rede_interna
 EOL
 if [ $? -eq 0 ]; then
-    echo -e "\e[32m1/10 - ✅ [OK] - Criando Stack\e[0m"
+    MSG_PT[ferramenta_odoo_stack_ok]="\e[32m1/10 - ✅ [OK] - Criando Stack\e[0m"
+    MSG_EN[ferramenta_odoo_stack_ok]="\e[32m1/10 - ✅ [OK] - Creating Stack\e[0m"
+    MSG_ES[ferramenta_odoo_stack_ok]="\e[32m1/10 - ✅ [OK] - Creando Stack\e[0m"
+    echo -e "$(t ferramenta_odoo_stack_ok)"
 else
-    echo -e "\e[31m1/10 - ❌ [OFF] - Criando Stack\e[0m"
-    echo -e "\e[31m⚠️ Não foi possível criar a stack do Odoo\e[0m"
+    MSG_PT[ferramenta_odoo_stack_off]="\e[31m1/10 - ❌ [OFF] - Criando Stack\e[0m"
+    MSG_EN[ferramenta_odoo_stack_off]="\e[31m1/10 - ❌ [OFF] - Creating Stack\e[0m"
+    MSG_ES[ferramenta_odoo_stack_off]="\e[31m1/10 - ❌ [OFF] - Creando Stack\e[0m"
+    echo -e "$(t ferramenta_odoo_stack_off)"
+    MSG_PT[ferramenta_odoo_stack_falhou]="\e[31m⚠️ Não foi possível criar a stack do Odoo\e[0m"
+    MSG_EN[ferramenta_odoo_stack_falhou]="\e[31m⚠️ Could not create the Odoo stack\e[0m"
+    MSG_ES[ferramenta_odoo_stack_falhou]="\e[31m⚠️ No fue posible crear el stack de Odoo\e[0m"
+    echo -e "$(t ferramenta_odoo_stack_falhou)"
 fi
 STACK_NAME="odoo${1:+_$1}"
 stack_editavel
 
 
-echo -e "Passo \e[33m3/3\e[0m 🔍 • VERIFICANDO SERVIÇO"
+MSG_PT[ferramenta_odoo_verificando]="Passo \e[33m3/3\e[0m 🔍 • VERIFICANDO SERVIÇO"
+MSG_EN[ferramenta_odoo_verificando]="Step \e[33m3/3\e[0m 🔍 • CHECKING SERVICE"
+MSG_ES[ferramenta_odoo_verificando]="Paso \e[33m3/3\e[0m 🔍 • VERIFICANDO SERVICIO"
+echo -e "$(t ferramenta_odoo_verificando)"
 echo ""
 sleep 1
 
@@ -5924,19 +7488,34 @@ msg_resumo_informacoes
 echo -e "\e[32m🟢 [ ODOO ]\e[0m"
 echo ""
 
-echo -e "\e[33m🌐 Dominio:\e[97m https://$url_odoo\e[0m"
+MSG_PT[ferramenta_odoo_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+MSG_EN[ferramenta_odoo_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+MSG_ES[ferramenta_odoo_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+echo -e "$(t ferramenta_odoo_resumo_dominio "$url_odoo")"
 echo ""
 
-echo -e "\e[33m👤 Usuario:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+MSG_PT[ferramenta_odoo_resumo_usuario]="\e[33m👤 Usuario:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+MSG_EN[ferramenta_odoo_resumo_usuario]="\e[33m👤 Username:\e[97m Needs to be created on Odoo's first access\e[0m"
+MSG_ES[ferramenta_odoo_resumo_usuario]="\e[33m👤 Usuario:\e[97m Debe crearse en el primer acceso a Odoo\e[0m"
+echo -e "$(t ferramenta_odoo_resumo_usuario)"
 echo ""
 
-echo -e "\e[33m🔑 Senha:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+MSG_PT[ferramenta_odoo_resumo_senha]="\e[33m🔑 Senha:\e[97m Precisa criar no primeiro acesso do Odoo\e[0m"
+MSG_EN[ferramenta_odoo_resumo_senha]="\e[33m🔑 Password:\e[97m Needs to be created on Odoo's first access\e[0m"
+MSG_ES[ferramenta_odoo_resumo_senha]="\e[33m🔑 Contraseña:\e[97m Debe crearse en el primer acceso a Odoo\e[0m"
+echo -e "$(t ferramenta_odoo_resumo_senha)"
 echo ""
 
-echo -e "\e[33m🗄️ Database Name:\e[97m odoo\e[0m"
+MSG_PT[ferramenta_odoo_resumo_db_nome]="\e[33m🗄️ Database Name:\e[97m odoo\e[0m"
+MSG_EN[ferramenta_odoo_resumo_db_nome]="\e[33m🗄️ Database Name:\e[97m odoo\e[0m"
+MSG_ES[ferramenta_odoo_resumo_db_nome]="\e[33m🗄️ Nombre de la Base de Datos:\e[97m odoo\e[0m"
+echo -e "$(t ferramenta_odoo_resumo_db_nome)"
 echo ""
 
-echo -e "\e[33m🔒 Database Password:\e[97m $senha_postgres_odoo\e[0m"
+MSG_PT[ferramenta_odoo_resumo_db_senha]="\e[33m🔒 Database Password:\e[97m %s\e[0m"
+MSG_EN[ferramenta_odoo_resumo_db_senha]="\e[33m🔒 Database Password:\e[97m %s\e[0m"
+MSG_ES[ferramenta_odoo_resumo_db_senha]="\e[33m🔒 Contraseña de la Base de Datos:\e[97m %s\e[0m"
+echo -e "$(t ferramenta_odoo_resumo_db_senha "$senha_postgres_odoo")"
 
 echo ""
 msg_retorno_menu
@@ -5944,24 +7523,42 @@ msg_retorno_menu
 
 ferramenta_pgadmin() {
   msg_pgAdmin
-  read -p "Iniciando instalação do PgAdmin 4... Pressione enter para continuar"
+  MSG_PT[ferramenta_pgadmin_iniciando]="Iniciando instalação do PgAdmin 4... Pressione enter para continuar"
+  MSG_EN[ferramenta_pgadmin_iniciando]="Starting PgAdmin 4 installation... Press enter to continue"
+  MSG_ES[ferramenta_pgadmin_iniciando]="Iniciando la instalación de PgAdmin 4... Presione enter para continuar"
+  read -p "$(t ferramenta_pgadmin_iniciando)"
   dados
 
   while true; do
-    read -p "Digite o domínio para o PgAdmin 4 (ex: pgadmin.encha.ai): " url_pgadmin
-    read -p "Digite um email para o PgAdmin 4: " user_pgadmin
-    read -s -p "Digite uma senha para o usuário: " pass_pgadmin
+    MSG_PT[ferramenta_pgadmin_pede_dominio]="Digite o domínio para o PgAdmin 4 (ex: pgadmin.encha.ai): "
+    MSG_EN[ferramenta_pgadmin_pede_dominio]="Enter the domain for PgAdmin 4 (e.g. pgadmin.encha.ai): "
+    MSG_ES[ferramenta_pgadmin_pede_dominio]="Ingrese el dominio para PgAdmin 4 (ej: pgadmin.encha.ai): "
+    read -p "$(t ferramenta_pgadmin_pede_dominio)" url_pgadmin
+    MSG_PT[ferramenta_pgadmin_pede_email]="Digite um email para o PgAdmin 4: "
+    MSG_EN[ferramenta_pgadmin_pede_email]="Enter an email for PgAdmin 4: "
+    MSG_ES[ferramenta_pgadmin_pede_email]="Ingrese un email para PgAdmin 4: "
+    read -p "$(t ferramenta_pgadmin_pede_email)" user_pgadmin
+    MSG_PT[ferramenta_pgadmin_pede_senha]="Digite uma senha para o usuário: "
+    MSG_EN[ferramenta_pgadmin_pede_senha]="Enter a password for the user: "
+    MSG_ES[ferramenta_pgadmin_pede_senha]="Ingrese una contraseña para el usuario: "
+    read -s -p "$(t ferramenta_pgadmin_pede_senha)" pass_pgadmin
     echo ""
 
     # Validação
     if [[ -n "$url_pgadmin" && -n "$user_pgadmin" && -n "$pass_pgadmin" ]]; then
       break
     else
-      echo "Todos os campos são obrigatórios. Tente novamente"
+      MSG_PT[ferramenta_pgadmin_campos_obrigatorios]="Todos os campos são obrigatórios. Tente novamente"
+      MSG_EN[ferramenta_pgadmin_campos_obrigatorios]="All fields are required. Try again"
+      MSG_ES[ferramenta_pgadmin_campos_obrigatorios]="Todos los campos son obligatorios. Inténtelo de nuevo"
+      echo "$(t ferramenta_pgadmin_campos_obrigatorios)"
     fi
   done
 
-  echo -e "🔧 \e[97mInstalando o PgAdmin 4... \e[33m[1/2]\e[0m"
+  MSG_PT[ferramenta_pgadmin_instalando]="🔧 \e[97mInstalando o PgAdmin 4... \e[33m[1/2]\e[0m"
+  MSG_EN[ferramenta_pgadmin_instalando]="🔧 \e[97mInstalling PgAdmin 4... \e[33m[1/2]\e[0m"
+  MSG_ES[ferramenta_pgadmin_instalando]="🔧 \e[97mInstalando PgAdmin 4... \e[33m[1/2]\e[0m"
+  echo -e "$(t ferramenta_pgadmin_instalando)"
   cat > pgadmin.yaml << EOL
 version: "3.7"
 services:
@@ -5996,7 +7593,10 @@ EOL
   STACK_NAME="pgadmin"
   stack_editavel
 
-  echo -e "⏳ \e[97mVerificando serviço... \e[33m[2/2]\e[0m"
+  MSG_PT[ferramenta_pgadmin_verificando]="⏳ \e[97mVerificando serviço... \e[33m[2/2]\e[0m"
+  MSG_EN[ferramenta_pgadmin_verificando]="⏳ \e[97mChecking service... \e[33m[2/2]\e[0m"
+  MSG_ES[ferramenta_pgadmin_verificando]="⏳ \e[97mVerificando servicio... \e[33m[2/2]\e[0m"
+  echo -e "$(t ferramenta_pgadmin_verificando)"
   pull dpage/pgadmin4:latest
   wait_stack pgadmin_pgadmin
 
@@ -6013,10 +7613,22 @@ EOL
 
   # Salvar informações e resumo
   msg_resumo_informacoes
-  echo "✅ PgAdmin 4 instalado com sucesso!"
-  echo "Acesse em: https://${url_pgadmin}"
-  echo "Usuário: ${user_pgadmin}"
-  echo "Senha: [sua_senha_digitada]"
+  MSG_PT[ferramenta_pgadmin_sucesso]="✅ PgAdmin 4 instalado com sucesso!"
+  MSG_EN[ferramenta_pgadmin_sucesso]="✅ PgAdmin 4 installed successfully!"
+  MSG_ES[ferramenta_pgadmin_sucesso]="✅ ¡PgAdmin 4 instalado con éxito!"
+  echo "$(t ferramenta_pgadmin_sucesso)"
+  MSG_PT[ferramenta_pgadmin_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_pgadmin_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_pgadmin_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_pgadmin_acesse "$url_pgadmin")"
+  MSG_PT[ferramenta_pgadmin_usuario]="Usuário: %s"
+  MSG_EN[ferramenta_pgadmin_usuario]="Username: %s"
+  MSG_ES[ferramenta_pgadmin_usuario]="Usuario: %s"
+  echo "$(t ferramenta_pgadmin_usuario "$user_pgadmin")"
+  MSG_PT[ferramenta_pgadmin_senha]="Senha: [sua_senha_digitada]"
+  MSG_EN[ferramenta_pgadmin_senha]="Password: [the password you typed]"
+  MSG_ES[ferramenta_pgadmin_senha]="Contraseña: [la contraseña que ingresó]"
+  echo "$(t ferramenta_pgadmin_senha)"
 
   msg_retorno_menu
 }
@@ -6026,28 +7638,70 @@ ferramenta_nocobase() {
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o NocoBase (ex: nocobase.encha.ai): \e[0m" && read -r url_nocobase
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
-    echo -en "📧 \e[33mDigite um email para o NocoBase (ex: admin@encha.ai): \e[0m" && read -r mail_nocobase
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
-    echo -en "👤 \e[33mDigite um nome de usuário (ex: enchaAdmin): \e[0m" && read -r user_nocobase
-    echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_nocobase
+    MSG_PT[ferramenta_nocobase_passo1]="\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
+    MSG_EN[ferramenta_nocobase_passo1]="\n📍 \e[97mStep ${amarelo}1/4\e[0m"
+    MSG_ES[ferramenta_nocobase_passo1]="\n📍 \e[97mPaso ${amarelo}1/4\e[0m"
+    echo -e "$(t ferramenta_nocobase_passo1)"
+    MSG_PT[ferramenta_nocobase_pede_dominio]="🔗 \e[33mDigite o domínio para o NocoBase (ex: nocobase.encha.ai): \e[0m"
+    MSG_EN[ferramenta_nocobase_pede_dominio]="🔗 \e[33mEnter the domain for NocoBase (e.g. nocobase.encha.ai): \e[0m"
+    MSG_ES[ferramenta_nocobase_pede_dominio]="🔗 \e[33mIngrese el dominio para NocoBase (ej: nocobase.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_nocobase_pede_dominio)" && read -r url_nocobase
+    MSG_PT[ferramenta_nocobase_passo2]="\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
+    MSG_EN[ferramenta_nocobase_passo2]="\n📍 \e[97mStep ${amarelo}2/4\e[0m"
+    MSG_ES[ferramenta_nocobase_passo2]="\n📍 \e[97mPaso ${amarelo}2/4\e[0m"
+    echo -e "$(t ferramenta_nocobase_passo2)"
+    MSG_PT[ferramenta_nocobase_pede_email]="📧 \e[33mDigite um email para o NocoBase (ex: admin@encha.ai): \e[0m"
+    MSG_EN[ferramenta_nocobase_pede_email]="📧 \e[33mEnter an email for NocoBase (e.g. admin@encha.ai): \e[0m"
+    MSG_ES[ferramenta_nocobase_pede_email]="📧 \e[33mIngrese un email para NocoBase (ej: admin@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_nocobase_pede_email)" && read -r mail_nocobase
+    MSG_PT[ferramenta_nocobase_passo3]="\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
+    MSG_EN[ferramenta_nocobase_passo3]="\n📍 \e[97mStep ${amarelo}3/4\e[0m"
+    MSG_ES[ferramenta_nocobase_passo3]="\n📍 \e[97mPaso ${amarelo}3/4\e[0m"
+    echo -e "$(t ferramenta_nocobase_passo3)"
+    MSG_PT[ferramenta_nocobase_pede_usuario]="👤 \e[33mDigite um nome de usuário (ex: enchaAdmin): \e[0m"
+    MSG_EN[ferramenta_nocobase_pede_usuario]="👤 \e[33mEnter a username (e.g. enchaAdmin): \e[0m"
+    MSG_ES[ferramenta_nocobase_pede_usuario]="👤 \e[33mIngrese un nombre de usuario (ej: enchaAdmin): \e[0m"
+    echo -en "$(t ferramenta_nocobase_pede_usuario)" && read -r user_nocobase
+    MSG_PT[ferramenta_nocobase_passo4]="\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
+    MSG_EN[ferramenta_nocobase_passo4]="\n📍 \e[97mStep ${amarelo}4/4\e[0m"
+    MSG_ES[ferramenta_nocobase_passo4]="\n📍 \e[97mPaso ${amarelo}4/4\e[0m"
+    echo -e "$(t ferramenta_nocobase_passo4)"
+    MSG_PT[ferramenta_nocobase_pede_senha]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_nocobase_pede_senha]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_nocobase_pede_senha]="🔑 \e[33mIngrese una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_nocobase_pede_senha)" && read -s -r pass_nocobase
     echo ""
 
     clear
     msg_resumo_informacoes
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_nocobase\e[0m"
-    echo -e "📧 \e[33mEmail:\e[97m $mail_nocobase\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_nocobase\e[0m"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_nocobase_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_nocobase_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_nocobase_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_nocobase_revise)"
+    MSG_PT[ferramenta_nocobase_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nocobase_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nocobase_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_nocobase_resumo_dominio "$url_nocobase")"
+    MSG_PT[ferramenta_nocobase_resumo_email]="📧 \e[33mEmail:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nocobase_resumo_email]="📧 \e[33mEmail:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nocobase_resumo_email]="📧 \e[33mEmail:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_nocobase_resumo_email "$mail_nocobase")"
+    MSG_PT[ferramenta_nocobase_resumo_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nocobase_resumo_usuario]="👤 \e[33mUsername:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nocobase_resumo_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_nocobase_resumo_usuario "$user_nocobase")"
+    MSG_PT[ferramenta_nocobase_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_nocobase_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_nocobase_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_nocobase_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nocobase; fi
   done
 
   msg_status
-  echo -e "\e[97m🚀 Iniciando a instalação do NocoBase...\e[0m"
+  MSG_PT[ferramenta_nocobase_iniciando]="\e[97m🚀 Iniciando a instalação do NocoBase...\e[0m"
+  MSG_EN[ferramenta_nocobase_iniciando]="\e[97m🚀 Starting NocoBase installation...\e[0m"
+  MSG_ES[ferramenta_nocobase_iniciando]="\e[97m🚀 Iniciando la instalación de NocoBase...\e[0m"
+  echo -e "$(t ferramenta_nocobase_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "nocobase"
@@ -6106,9 +7760,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ NocoBase instalado com sucesso!"
-  echo "Acesse em: https://${url_nocobase}"
-  echo "Email: ${mail_nocobase}"
+  MSG_PT[ferramenta_nocobase_sucesso]="✅ NocoBase instalado com sucesso!"
+  MSG_EN[ferramenta_nocobase_sucesso]="✅ NocoBase installed successfully!"
+  MSG_ES[ferramenta_nocobase_sucesso]="✅ ¡NocoBase instalado con éxito!"
+  echo "$(t ferramenta_nocobase_sucesso)"
+  MSG_PT[ferramenta_nocobase_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_nocobase_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_nocobase_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_nocobase_acesse "$url_nocobase")"
+  MSG_PT[ferramenta_nocobase_email]="Email: %s"
+  MSG_EN[ferramenta_nocobase_email]="Email: %s"
+  MSG_ES[ferramenta_nocobase_email]="Email: %s"
+  echo "$(t ferramenta_nocobase_email "$mail_nocobase")"
   msg_retorno_menu
 
 }
@@ -6117,8 +7780,14 @@ ferramenta_botpress(){
   msg_botpress
   dados
 
-  read -p $'\e[33mDigite o domínio para o Botpress (ex: botpress.encha.ai): \e[0m' url_botpress
-  echo -e "\e[97m🚀 Iniciando a instalação do Botpress...\e[0m"
+  MSG_PT[ferramenta_botpress_pede_dominio]=$'\e[33mDigite o domínio para o Botpress (ex: botpress.encha.ai): \e[0m'
+  MSG_EN[ferramenta_botpress_pede_dominio]=$'\e[33mEnter the domain for Botpress (e.g. botpress.encha.ai): \e[0m'
+  MSG_ES[ferramenta_botpress_pede_dominio]=$'\e[33mIngrese el dominio para Botpress (ej: botpress.encha.ai): \e[0m'
+  read -p "$(t ferramenta_botpress_pede_dominio)" url_botpress
+  MSG_PT[ferramenta_botpress_iniciando]="\e[97m🚀 Iniciando a instalação do Botpress...\e[0m"
+  MSG_EN[ferramenta_botpress_iniciando]="\e[97m🚀 Starting Botpress installation...\e[0m"
+  MSG_ES[ferramenta_botpress_iniciando]="\e[97m🚀 Iniciando la instalación de Botpress...\e[0m"
+  echo -e "$(t ferramenta_botpress_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "botpress"
@@ -6174,9 +7843,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Botpress instalado com sucesso!"
-  echo "Acesse em: https://${url_botpress}"
-  echo "Crie seu usuário no primeiro acesso."
+  MSG_PT[ferramenta_botpress_sucesso]="✅ Botpress instalado com sucesso!"
+  MSG_EN[ferramenta_botpress_sucesso]="✅ Botpress installed successfully!"
+  MSG_ES[ferramenta_botpress_sucesso]="✅ ¡Botpress instalado con éxito!"
+  echo "$(t ferramenta_botpress_sucesso)"
+  MSG_PT[ferramenta_botpress_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_botpress_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_botpress_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_botpress_acesse "$url_botpress")"
+  MSG_PT[ferramenta_botpress_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_botpress_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_botpress_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_botpress_crie_usuario)"
   msg_retorno_menu
 
 }
@@ -6185,9 +7863,15 @@ ferramenta_baserow(){
   msg_baserow
   dados
 
-  read -p $'\e[33mDigite o domínio para o Baserow (ex: baserow.encha.ai): \e[0m' url_baserow
+  MSG_PT[ferramenta_baserow_pede_dominio]=$'\e[33mDigite o domínio para o Baserow (ex: baserow.encha.ai): \e[0m'
+  MSG_EN[ferramenta_baserow_pede_dominio]=$'\e[33mEnter the domain for Baserow (e.g. baserow.encha.ai): \e[0m'
+  MSG_ES[ferramenta_baserow_pede_dominio]=$'\e[33mIngrese el dominio para Baserow (ej: baserow.encha.ai): \e[0m'
+  read -p "$(t ferramenta_baserow_pede_dominio)" url_baserow
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Baserow...\e[0m"
+  MSG_PT[ferramenta_baserow_iniciando]="\e[97m🚀 Iniciando a instalação do Baserow...\e[0m"
+  MSG_EN[ferramenta_baserow_iniciando]="\e[97m🚀 Starting Baserow installation...\e[0m"
+  MSG_ES[ferramenta_baserow_iniciando]="\e[97m🚀 Iniciando la instalación de Baserow...\e[0m"
+  echo -e "$(t ferramenta_baserow_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "baserow"
@@ -6239,9 +7923,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Baserow instalado com sucesso!"
-  echo "Acesse em: https://${url_baserow}"
-  echo "Crie seu usuário no primeiro acesso."
+  MSG_PT[ferramenta_baserow_sucesso]="✅ Baserow instalado com sucesso!"
+  MSG_EN[ferramenta_baserow_sucesso]="✅ Baserow installed successfully!"
+  MSG_ES[ferramenta_baserow_sucesso]="✅ ¡Baserow instalado con éxito!"
+  echo "$(t ferramenta_baserow_sucesso)"
+  MSG_PT[ferramenta_baserow_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_baserow_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_baserow_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_baserow_acesse "$url_baserow")"
+  MSG_PT[ferramenta_baserow_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_baserow_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_baserow_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_baserow_crie_usuario)"
   msg_retorno_menu
 }
 
@@ -6250,22 +7943,43 @@ ferramenta_mongodb(){
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-    echo -en "👤 \e[33mDigite o nome de usuário para o MongoDB (ex: encha_user): \e[0m" && read -r user_mongo
+    MSG_PT[ferramenta_mongodb_passo1]="\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+    MSG_EN[ferramenta_mongodb_passo1]="\n📍 \e[97mStep ${amarelo}1/1\e[0m"
+    MSG_ES[ferramenta_mongodb_passo1]="\n📍 \e[97mPaso ${amarelo}1/1\e[0m"
+    echo -e "$(t ferramenta_mongodb_passo1)"
+    MSG_PT[ferramenta_mongodb_pede_usuario]="👤 \e[33mDigite o nome de usuário para o MongoDB (ex: encha_user): \e[0m"
+    MSG_EN[ferramenta_mongodb_pede_usuario]="👤 \e[33mEnter the username for MongoDB (e.g. encha_user): \e[0m"
+    MSG_ES[ferramenta_mongodb_pede_usuario]="👤 \e[33mIngrese el nombre de usuario para MongoDB (ej: encha_user): \e[0m"
+    echo -en "$(t ferramenta_mongodb_pede_usuario)" && read -r user_mongo
 
     # Gera a senha aleatória
     pass_mongo=$(openssl rand -hex 16)
 
     clear
     msg_mongodb
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_mongo\e[0m"
-    echo -e "🔑 \e[33mSenha Gerada:\e[97m $pass_mongo (esta senha será usada na instalação)\e[0m"
-    read -p $'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_mongodb_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_mongodb_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_mongodb_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_mongodb_revise)"
+    MSG_PT[ferramenta_mongodb_resumo_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_mongodb_resumo_usuario]="👤 \e[33mUsername:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_mongodb_resumo_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_mongodb_resumo_usuario "$user_mongo")"
+    MSG_PT[ferramenta_mongodb_resumo_senha]="🔑 \e[33mSenha Gerada:\e[97m %s (esta senha será usada na instalação)\e[0m"
+    MSG_EN[ferramenta_mongodb_resumo_senha]="🔑 \e[33mGenerated Password:\e[97m %s (this password will be used in the installation)\e[0m"
+    MSG_ES[ferramenta_mongodb_resumo_senha]="🔑 \e[33mContraseña Generada:\e[97m %s (esta contraseña se usará en la instalación)\e[0m"
+    echo -e "$(t ferramenta_mongodb_resumo_senha "$pass_mongo")"
+    MSG_PT[ferramenta_mongodb_confirma]=$'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_mongodb_confirma]=$'\n\e[32m✅ Is the information correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_mongodb_confirma]=$'\n\e[32m✅ ¿La información está correcta?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_mongodb_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_mongodb; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do MongoDB...\e[0m"
+  MSG_PT[ferramenta_mongodb_iniciando]="\e[97m🚀 Iniciando a instalação do MongoDB...\e[0m"
+  MSG_EN[ferramenta_mongodb_iniciando]="\e[97m🚀 Starting MongoDB installation...\e[0m"
+  MSG_ES[ferramenta_mongodb_iniciando]="\e[97m🚀 Iniciando la instalación de MongoDB...\e[0m"
+  echo -e "$(t ferramenta_mongodb_iniciando)"
 
   cat > mongodb.yaml <<EOL
 version: "3.7"
@@ -6318,11 +8032,26 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ MongoDB instalado com sucesso!"
-  echo "Host: O IP do seu servidor (ex: $ip)"
-  echo "Porta: 27017"
-  echo "Usuário: ${user_mongo}"
-  echo "Senha: ${pass_mongo}"
+  MSG_PT[ferramenta_mongodb_sucesso]="✅ MongoDB instalado com sucesso!"
+  MSG_EN[ferramenta_mongodb_sucesso]="✅ MongoDB installed successfully!"
+  MSG_ES[ferramenta_mongodb_sucesso]="✅ ¡MongoDB instalado con éxito!"
+  echo "$(t ferramenta_mongodb_sucesso)"
+  MSG_PT[ferramenta_mongodb_host]="Host: O IP do seu servidor (ex: %s)"
+  MSG_EN[ferramenta_mongodb_host]="Host: Your server's IP (e.g. %s)"
+  MSG_ES[ferramenta_mongodb_host]="Host: La IP de su servidor (ej: %s)"
+  echo "$(t ferramenta_mongodb_host "$ip")"
+  MSG_PT[ferramenta_mongodb_porta]="Porta: 27017"
+  MSG_EN[ferramenta_mongodb_porta]="Port: 27017"
+  MSG_ES[ferramenta_mongodb_porta]="Puerto: 27017"
+  echo "$(t ferramenta_mongodb_porta)"
+  MSG_PT[ferramenta_mongodb_usuario]="Usuário: %s"
+  MSG_EN[ferramenta_mongodb_usuario]="Username: %s"
+  MSG_ES[ferramenta_mongodb_usuario]="Usuario: %s"
+  echo "$(t ferramenta_mongodb_usuario "$user_mongo")"
+  MSG_PT[ferramenta_mongodb_senha]="Senha: %s"
+  MSG_EN[ferramenta_mongodb_senha]="Password: %s"
+  MSG_ES[ferramenta_mongodb_senha]="Contraseña: %s"
+  echo "$(t ferramenta_mongodb_senha "$pass_mongo")"
   msg_retorno_menu
 }
 
@@ -6331,24 +8060,54 @@ ferramenta_rabbitmq(){
   dados
   
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o painel do RabbitMQ (ex: rabbit.encha.ai): \e[0m" && read -r url_rabbitmq
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-    echo -en "👤 \e[33mDigite um nome de usuário (ex: encha_user): \e[0m" && read -r user_rabbitmq
+    MSG_PT[ferramenta_rabbitmq_passo1]="\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    MSG_EN[ferramenta_rabbitmq_passo1]="\n📍 \e[97mStep ${amarelo}1/2\e[0m"
+    MSG_ES[ferramenta_rabbitmq_passo1]="\n📍 \e[97mPaso ${amarelo}1/2\e[0m"
+    echo -e "$(t ferramenta_rabbitmq_passo1)"
+    MSG_PT[ferramenta_rabbitmq_pede_dominio]="🔗 \e[33mDigite o domínio para o painel do RabbitMQ (ex: rabbit.encha.ai): \e[0m"
+    MSG_EN[ferramenta_rabbitmq_pede_dominio]="🔗 \e[33mEnter the domain for the RabbitMQ panel (e.g. rabbit.encha.ai): \e[0m"
+    MSG_ES[ferramenta_rabbitmq_pede_dominio]="🔗 \e[33mIngrese el dominio para el panel de RabbitMQ (ej: rabbit.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_rabbitmq_pede_dominio)" && read -r url_rabbitmq
+    MSG_PT[ferramenta_rabbitmq_passo2]="\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    MSG_EN[ferramenta_rabbitmq_passo2]="\n📍 \e[97mStep ${amarelo}2/2\e[0m"
+    MSG_ES[ferramenta_rabbitmq_passo2]="\n📍 \e[97mPaso ${amarelo}2/2\e[0m"
+    echo -e "$(t ferramenta_rabbitmq_passo2)"
+    MSG_PT[ferramenta_rabbitmq_pede_usuario]="👤 \e[33mDigite um nome de usuário (ex: encha_user): \e[0m"
+    MSG_EN[ferramenta_rabbitmq_pede_usuario]="👤 \e[33mEnter a username (e.g. encha_user): \e[0m"
+    MSG_ES[ferramenta_rabbitmq_pede_usuario]="👤 \e[33mIngrese un nombre de usuario (ej: encha_user): \e[0m"
+    echo -en "$(t ferramenta_rabbitmq_pede_usuario)" && read -r user_rabbitmq
 
     pass_rabbitmq=$(openssl rand -hex 16)
 
     clear
     msg_rabbitmq
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_rabbitmq\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_rabbitmq\e[0m"
-    echo -e "🔑 \e[33mSenha Gerada:\e[97m $pass_rabbitmq\e[0m"
-    read -p $'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_rabbitmq_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_rabbitmq_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_rabbitmq_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_rabbitmq_revise)"
+    MSG_PT[ferramenta_rabbitmq_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_rabbitmq_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_rabbitmq_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_rabbitmq_resumo_dominio "$url_rabbitmq")"
+    MSG_PT[ferramenta_rabbitmq_resumo_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_rabbitmq_resumo_usuario]="👤 \e[33mUsername:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_rabbitmq_resumo_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_rabbitmq_resumo_usuario "$user_rabbitmq")"
+    MSG_PT[ferramenta_rabbitmq_resumo_senha]="🔑 \e[33mSenha Gerada:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_rabbitmq_resumo_senha]="🔑 \e[33mGenerated Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_rabbitmq_resumo_senha]="🔑 \e[33mContraseña Generada:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_rabbitmq_resumo_senha "$pass_rabbitmq")"
+    MSG_PT[ferramenta_rabbitmq_confirma]=$'\n\e[32m✅ As informações estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_rabbitmq_confirma]=$'\n\e[32m✅ Is the information correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_rabbitmq_confirma]=$'\n\e[32m✅ ¿La información está correcta?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_rabbitmq_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_rabbitmq; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do RabbitMQ...\e[0m"
+  MSG_PT[ferramenta_rabbitmq_iniciando]="\e[97m🚀 Iniciando a instalação do RabbitMQ...\e[0m"
+  MSG_EN[ferramenta_rabbitmq_iniciando]="\e[97m🚀 Starting RabbitMQ installation...\e[0m"
+  MSG_ES[ferramenta_rabbitmq_iniciando]="\e[97m🚀 Iniciando la instalación de RabbitMQ...\e[0m"
+  echo -e "$(t ferramenta_rabbitmq_iniciando)"
   key_cookie=$(openssl rand -hex 16)
 
   cat > rabbitmq${1:+_$1}.yaml <<EOL
@@ -6415,7 +8174,10 @@ EOL
   STACK_NAME="rabbitmq${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_rabbitmq_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_rabbitmq_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_rabbitmq_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_rabbitmq_verificando)"
   echo ""
 
   pull rabbitmq:management
@@ -6438,11 +8200,26 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ RabbitMQ instalado com sucesso!"
-  echo "Acesse o painel em: https://${url_rabbitmq}"
-  echo "Usuário: ${user_rabbitmq}"
-  echo "Senha: ${pass_rabbitmq}"
-  echo "URL de conexão: amqp://${user_rabbitmq}:${pass_rabbitmq}@rabbitmq:5672"
+  MSG_PT[ferramenta_rabbitmq_sucesso]="✅ RabbitMQ instalado com sucesso!"
+  MSG_EN[ferramenta_rabbitmq_sucesso]="✅ RabbitMQ installed successfully!"
+  MSG_ES[ferramenta_rabbitmq_sucesso]="✅ ¡RabbitMQ instalado con éxito!"
+  echo "$(t ferramenta_rabbitmq_sucesso)"
+  MSG_PT[ferramenta_rabbitmq_acesse]="Acesse o painel em: https://%s"
+  MSG_EN[ferramenta_rabbitmq_acesse]="Access the panel at: https://%s"
+  MSG_ES[ferramenta_rabbitmq_acesse]="Acceda al panel en: https://%s"
+  echo "$(t ferramenta_rabbitmq_acesse "$url_rabbitmq")"
+  MSG_PT[ferramenta_rabbitmq_usuario]="Usuário: %s"
+  MSG_EN[ferramenta_rabbitmq_usuario]="Username: %s"
+  MSG_ES[ferramenta_rabbitmq_usuario]="Usuario: %s"
+  echo "$(t ferramenta_rabbitmq_usuario "$user_rabbitmq")"
+  MSG_PT[ferramenta_rabbitmq_senha]="Senha: %s"
+  MSG_EN[ferramenta_rabbitmq_senha]="Password: %s"
+  MSG_ES[ferramenta_rabbitmq_senha]="Contraseña: %s"
+  echo "$(t ferramenta_rabbitmq_senha "$pass_rabbitmq")"
+  MSG_PT[ferramenta_rabbitmq_url_conexao]="URL de conexão: amqp://%s:%s@rabbitmq:5672"
+  MSG_EN[ferramenta_rabbitmq_url_conexao]="Connection URL: amqp://%s:%s@rabbitmq:5672"
+  MSG_ES[ferramenta_rabbitmq_url_conexao]="URL de conexión: amqp://%s:%s@rabbitmq:5672"
+  echo "$(t ferramenta_rabbitmq_url_conexao "$user_rabbitmq" "$pass_rabbitmq")"
   msg_retorno_menu
 
 }
@@ -6451,9 +8228,15 @@ ferramenta_uptimekuma(){
   msg_uptimekuma
   dados
 
-  read -p $'\e[33mDigite o domínio para o Uptime Kuma (ex: status.encha.ai): \e[0m' url_uptimekuma
-  
-  echo -e "\e[97m🚀 Iniciando a instalação do Uptime Kuma...\e[0m"
+  MSG_PT[ferramenta_uptimekuma_pede_dominio]=$'\e[33mDigite o domínio para o Uptime Kuma (ex: status.encha.ai): \e[0m'
+  MSG_EN[ferramenta_uptimekuma_pede_dominio]=$'\e[33mEnter the domain for Uptime Kuma (e.g. status.encha.ai): \e[0m'
+  MSG_ES[ferramenta_uptimekuma_pede_dominio]=$'\e[33mIngrese el dominio para Uptime Kuma (ej: status.encha.ai): \e[0m'
+  read -p "$(t ferramenta_uptimekuma_pede_dominio)" url_uptimekuma
+
+  MSG_PT[ferramenta_uptimekuma_iniciando]="\e[97m🚀 Iniciando a instalação do Uptime Kuma...\e[0m"
+  MSG_EN[ferramenta_uptimekuma_iniciando]="\e[97m🚀 Starting Uptime Kuma installation...\e[0m"
+  MSG_ES[ferramenta_uptimekuma_iniciando]="\e[97m🚀 Iniciando la instalación de Uptime Kuma...\e[0m"
+  echo -e "$(t ferramenta_uptimekuma_iniciando)"
 
   cat > uptimekuma.yaml <<EOL
 version: "3.7"
@@ -6499,9 +8282,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Uptime Kuma instalado com sucesso!"
-  echo "Acesse em: https://${url_uptimekuma}"
-  echo "Crie seu usuário no primeiro acesso."
+  MSG_PT[ferramenta_uptimekuma_sucesso]="✅ Uptime Kuma instalado com sucesso!"
+  MSG_EN[ferramenta_uptimekuma_sucesso]="✅ Uptime Kuma installed successfully!"
+  MSG_ES[ferramenta_uptimekuma_sucesso]="✅ ¡Uptime Kuma instalado con éxito!"
+  echo "$(t ferramenta_uptimekuma_sucesso)"
+  MSG_PT[ferramenta_uptimekuma_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_uptimekuma_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_uptimekuma_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_uptimekuma_acesse "$url_uptimekuma")"
+  MSG_PT[ferramenta_uptimekuma_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_uptimekuma_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_uptimekuma_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_uptimekuma_crie_usuario)"
   msg_retorno_menu
 
 }
@@ -6511,33 +8303,93 @@ ferramenta_calcom() {
     dados
 
     while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o Cal.com (ex: cal.encha.ai): \e[0m" && read -r url_calcom
-        echo -e "\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
-        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_calcom
-        echo -e "\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
-        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_calcom
-        echo -e "\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
-        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_email_calcom
+        MSG_PT[ferramenta_calcom_passo1]="\n📍 \e[97mPasso ${amarelo}1/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo1]="\n📍 \e[97mStep ${amarelo}1/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo1]="\n📍 \e[97mPaso ${amarelo}1/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo1)"
+        MSG_PT[ferramenta_calcom_pede_dominio]="🔗 \e[33mDigite o domínio para o Cal.com (ex: cal.encha.ai): \e[0m"
+        MSG_EN[ferramenta_calcom_pede_dominio]="🔗 \e[33mEnter the domain for Cal.com (e.g. cal.encha.ai): \e[0m"
+        MSG_ES[ferramenta_calcom_pede_dominio]="🔗 \e[33mIngrese el dominio para Cal.com (ej: cal.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_dominio)" && read -r url_calcom
+        MSG_PT[ferramenta_calcom_passo2]="\n📍 \e[97mPasso ${amarelo}2/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo2]="\n📍 \e[97mStep ${amarelo}2/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo2]="\n📍 \e[97mPaso ${amarelo}2/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo2)"
+        MSG_PT[ferramenta_calcom_pede_email]="📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m"
+        MSG_EN[ferramenta_calcom_pede_email]="📧 \e[33mEnter the SMTP Email (e.g. noreply@encha.ai): \e[0m"
+        MSG_ES[ferramenta_calcom_pede_email]="📧 \e[33mIngrese el Email para SMTP (ej: noreply@encha.ai): \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_email)" && read -r email_calcom
+        MSG_PT[ferramenta_calcom_passo3]="\n📍 \e[97mPasso ${amarelo}3/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo3]="\n📍 \e[97mStep ${amarelo}3/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo3]="\n📍 \e[97mPaso ${amarelo}3/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo3)"
+        MSG_PT[ferramenta_calcom_pede_usuario]="👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m"
+        MSG_EN[ferramenta_calcom_pede_usuario]="👤 \e[33mEnter the SMTP User (can be the same email): \e[0m"
+        MSG_ES[ferramenta_calcom_pede_usuario]="👤 \e[33mIngrese el Usuario para SMTP (puede ser el mismo email): \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_usuario)" && read -r user_calcom
+        MSG_PT[ferramenta_calcom_passo4]="\n📍 \e[97mPasso ${amarelo}4/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo4]="\n📍 \e[97mStep ${amarelo}4/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo4]="\n📍 \e[97mPaso ${amarelo}4/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo4)"
+        MSG_PT[ferramenta_calcom_pede_senha_smtp]="🔑 \e[33mDigite a Senha SMTP do email: \e[0m"
+        MSG_EN[ferramenta_calcom_pede_senha_smtp]="🔑 \e[33mEnter the email's SMTP Password: \e[0m"
+        MSG_ES[ferramenta_calcom_pede_senha_smtp]="🔑 \e[33mIngrese la Contraseña SMTP del email: \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_senha_smtp)" && read -s -r senha_email_calcom
         echo ""
-        echo -e "\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
-        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_calcom
-        echo -e "\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
-        echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_smtp_calcom
+        MSG_PT[ferramenta_calcom_passo5]="\n📍 \e[97mPasso ${amarelo}5/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo5]="\n📍 \e[97mStep ${amarelo}5/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo5]="\n📍 \e[97mPaso ${amarelo}5/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo5)"
+        MSG_PT[ferramenta_calcom_pede_host_smtp]="🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m"
+        MSG_EN[ferramenta_calcom_pede_host_smtp]="🏠 \e[33mEnter the email's SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+        MSG_ES[ferramenta_calcom_pede_host_smtp]="🏠 \e[33mIngrese el Host SMTP del email (ej: smtp.hostinger.com): \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_host_smtp)" && read -r smtp_email_calcom
+        MSG_PT[ferramenta_calcom_passo6]="\n📍 \e[97mPasso ${amarelo}6/6\e[0m"
+        MSG_EN[ferramenta_calcom_passo6]="\n📍 \e[97mStep ${amarelo}6/6\e[0m"
+        MSG_ES[ferramenta_calcom_passo6]="\n📍 \e[97mPaso ${amarelo}6/6\e[0m"
+        echo -e "$(t ferramenta_calcom_passo6)"
+        MSG_PT[ferramenta_calcom_pede_porta_smtp]="🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m"
+        MSG_EN[ferramenta_calcom_pede_porta_smtp]="🔌 \e[33mEnter the email's SMTP port (e.g. 465 or 587): \e[0m"
+        MSG_ES[ferramenta_calcom_pede_porta_smtp]="🔌 \e[33mIngrese el puerto SMTP del email (ej: 465 o 587): \e[0m"
+        echo -en "$(t ferramenta_calcom_pede_porta_smtp)" && read -r porta_smtp_calcom
 
         clear
         msg_calcom
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
-        echo -e "🌐 \e[33mDomínio:\e[97m $url_calcom\e[0m"
-        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_calcom\e[0m"
-        echo -e "👤 \e[33mUsuário SMTP:\e[97m $user_calcom\e[0m"
-        echo -e "🌐 \e[33mHost SMTP:\e[97m $smtp_email_calcom\e[0m"
-        echo -e "🔌 \e[33mPorta SMTP:\e[97m $porta_smtp_calcom\e[0m"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_calcom_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_calcom_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_calcom_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_calcom_revise)"
+        MSG_PT[ferramenta_calcom_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_calcom_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_calcom_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_calcom_resumo_dominio "$url_calcom")"
+        MSG_PT[ferramenta_calcom_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_calcom_resumo_email]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_calcom_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_calcom_resumo_email "$email_calcom")"
+        MSG_PT[ferramenta_calcom_resumo_usuario]="👤 \e[33mUsuário SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_calcom_resumo_usuario]="👤 \e[33mSMTP User:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_calcom_resumo_usuario]="👤 \e[33mUsuario SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_calcom_resumo_usuario "$user_calcom")"
+        MSG_PT[ferramenta_calcom_resumo_host]="🌐 \e[33mHost SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_calcom_resumo_host]="🌐 \e[33mSMTP Host:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_calcom_resumo_host]="🌐 \e[33mHost SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_calcom_resumo_host "$smtp_email_calcom")"
+        MSG_PT[ferramenta_calcom_resumo_porta]="🔌 \e[33mPorta SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_calcom_resumo_porta]="🔌 \e[33mSMTP Port:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_calcom_resumo_porta]="🔌 \e[33mPuerto SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_calcom_resumo_porta "$porta_smtp_calcom")"
+        MSG_PT[ferramenta_calcom_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_calcom_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_calcom_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_calcom_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_calcom; fi
     done
 
-    echo -e "\e[97m🚀 Iniciando a instalação do Cal.com...\e[0m"
+    MSG_PT[ferramenta_calcom_iniciando]="\e[97m🚀 Iniciando a instalação do Cal.com...\e[0m"
+    MSG_EN[ferramenta_calcom_iniciando]="\e[97m🚀 Starting Cal.com installation...\e[0m"
+    MSG_ES[ferramenta_calcom_iniciando]="\e[97m🚀 Iniciando la instalación de Cal.com...\e[0m"
+    echo -e "$(t ferramenta_calcom_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "calcom"
@@ -6597,9 +8449,18 @@ EOL
     cd
 
     msg_resumo_informacoes
-    echo "✅ Cal.com instalado com sucesso!"
-    echo "Acesse em: https://${url_calcom}"
-    echo "Crie seu usuário no primeiro acesso."
+    MSG_PT[ferramenta_calcom_sucesso]="✅ Cal.com instalado com sucesso!"
+    MSG_EN[ferramenta_calcom_sucesso]="✅ Cal.com installed successfully!"
+    MSG_ES[ferramenta_calcom_sucesso]="✅ ¡Cal.com instalado con éxito!"
+    echo "$(t ferramenta_calcom_sucesso)"
+    MSG_PT[ferramenta_calcom_acesse]="Acesse em: https://%s"
+    MSG_EN[ferramenta_calcom_acesse]="Access it at: https://%s"
+    MSG_ES[ferramenta_calcom_acesse]="Acceda en: https://%s"
+    echo "$(t ferramenta_calcom_acesse "$url_calcom")"
+    MSG_PT[ferramenta_calcom_crie_usuario]="Crie seu usuário no primeiro acesso."
+    MSG_EN[ferramenta_calcom_crie_usuario]="Create your user on first access."
+    MSG_ES[ferramenta_calcom_crie_usuario]="Cree su usuario en el primer acceso."
+    echo "$(t ferramenta_calcom_crie_usuario)"
     msg_retorno_menu
 }
 
@@ -6608,29 +8469,71 @@ ferramenta_mautic(){
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Mautic (ex: mautic.encha.ai): \e[0m" && read -r url_mautic
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
-    echo -en "👤 \e[33mDigite um usuário admin (ex: enchaAdmin): \e[0m" && read -r user_mautic
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
-    echo -en "📧 \e[33mDigite o email do admin (ex: admin@encha.ai): \e[0m" && read -r email_mautic
-    echo -e "\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
-    echo -en "🔑 \e[33mDigite a senha do admin: \e[0m" && read -s -r senha_mautic
+    MSG_PT[ferramenta_mautic_passo1]="\n📍 \e[97mPasso ${amarelo}1/4\e[0m"
+    MSG_EN[ferramenta_mautic_passo1]="\n📍 \e[97mStep ${amarelo}1/4\e[0m"
+    MSG_ES[ferramenta_mautic_passo1]="\n📍 \e[97mPaso ${amarelo}1/4\e[0m"
+    echo -e "$(t ferramenta_mautic_passo1)"
+    MSG_PT[ferramenta_mautic_pede_dominio]="🔗 \e[33mDigite o domínio para o Mautic (ex: mautic.encha.ai): \e[0m"
+    MSG_EN[ferramenta_mautic_pede_dominio]="🔗 \e[33mEnter the domain for Mautic (e.g. mautic.encha.ai): \e[0m"
+    MSG_ES[ferramenta_mautic_pede_dominio]="🔗 \e[33mIngrese el dominio para Mautic (ej: mautic.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_mautic_pede_dominio)" && read -r url_mautic
+    MSG_PT[ferramenta_mautic_passo2]="\n📍 \e[97mPasso ${amarelo}2/4\e[0m"
+    MSG_EN[ferramenta_mautic_passo2]="\n📍 \e[97mStep ${amarelo}2/4\e[0m"
+    MSG_ES[ferramenta_mautic_passo2]="\n📍 \e[97mPaso ${amarelo}2/4\e[0m"
+    echo -e "$(t ferramenta_mautic_passo2)"
+    MSG_PT[ferramenta_mautic_pede_usuario]="👤 \e[33mDigite um usuário admin (ex: enchaAdmin): \e[0m"
+    MSG_EN[ferramenta_mautic_pede_usuario]="👤 \e[33mEnter an admin user (e.g. enchaAdmin): \e[0m"
+    MSG_ES[ferramenta_mautic_pede_usuario]="👤 \e[33mIngrese un usuario admin (ej: enchaAdmin): \e[0m"
+    echo -en "$(t ferramenta_mautic_pede_usuario)" && read -r user_mautic
+    MSG_PT[ferramenta_mautic_passo3]="\n📍 \e[97mPasso ${amarelo}3/4\e[0m"
+    MSG_EN[ferramenta_mautic_passo3]="\n📍 \e[97mStep ${amarelo}3/4\e[0m"
+    MSG_ES[ferramenta_mautic_passo3]="\n📍 \e[97mPaso ${amarelo}3/4\e[0m"
+    echo -e "$(t ferramenta_mautic_passo3)"
+    MSG_PT[ferramenta_mautic_pede_email]="📧 \e[33mDigite o email do admin (ex: admin@encha.ai): \e[0m"
+    MSG_EN[ferramenta_mautic_pede_email]="📧 \e[33mEnter the admin email (e.g. admin@encha.ai): \e[0m"
+    MSG_ES[ferramenta_mautic_pede_email]="📧 \e[33mIngrese el email del admin (ej: admin@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_mautic_pede_email)" && read -r email_mautic
+    MSG_PT[ferramenta_mautic_passo4]="\n📍 \e[97mPasso ${amarelo}4/4\e[0m"
+    MSG_EN[ferramenta_mautic_passo4]="\n📍 \e[97mStep ${amarelo}4/4\e[0m"
+    MSG_ES[ferramenta_mautic_passo4]="\n📍 \e[97mPaso ${amarelo}4/4\e[0m"
+    echo -e "$(t ferramenta_mautic_passo4)"
+    MSG_PT[ferramenta_mautic_pede_senha]="🔑 \e[33mDigite a senha do admin: \e[0m"
+    MSG_EN[ferramenta_mautic_pede_senha]="🔑 \e[33mEnter the admin password: \e[0m"
+    MSG_ES[ferramenta_mautic_pede_senha]="🔑 \e[33mIngrese la contraseña del admin: \e[0m"
+    echo -en "$(t ferramenta_mautic_pede_senha)" && read -s -r senha_mautic
     echo ""
 
     clear
     msg_mautic
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_mautic_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_mautic_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_mautic_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_mautic_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_mautic\e[0m"
-    echo -e "👤 \e[33mUsuário Admin:\e[97m $user_mautic\e[0m"
-    echo -e "📧 \e[33mEmail Admin:\e[97m $email_mautic\e[0m"
+    MSG_PT[ferramenta_mautic_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_mautic_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_mautic_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_mautic_resumo_dominio "$url_mautic")"
+    MSG_PT[ferramenta_mautic_resumo_usuario]="👤 \e[33mUsuário Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_mautic_resumo_usuario]="👤 \e[33mAdmin Username:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_mautic_resumo_usuario]="👤 \e[33mUsuario Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_mautic_resumo_usuario "$user_mautic")"
+    MSG_PT[ferramenta_mautic_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_mautic_resumo_email]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_mautic_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_mautic_resumo_email "$email_mautic")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_mautic_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_mautic_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_mautic_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_mautic_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_mautic; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Mautic...\e[0m"
+  MSG_PT[ferramenta_mautic_iniciando]="\e[97m🚀 Iniciando a instalação do Mautic...\e[0m"
+  MSG_EN[ferramenta_mautic_iniciando]="\e[97m🚀 Starting Mautic installation...\e[0m"
+  MSG_ES[ferramenta_mautic_iniciando]="\e[97m🚀 Iniciando la instalación de Mautic...\e[0m"
+  echo -e "$(t ferramenta_mautic_iniciando)"
   verificar_container_mysql || ferramenta_mysql
   pegar_senha_mysql_da_stack 
   criar_banco_mysql_da_stack "mautic"
@@ -6690,9 +8593,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Mautic instalado com sucesso!"
-  echo "Acesse em: https://${url_mautic}"
-  echo "Usuário: ${user_mautic}"
+  MSG_PT[ferramenta_mautic_sucesso]="✅ Mautic instalado com sucesso!"
+  MSG_EN[ferramenta_mautic_sucesso]="✅ Mautic installed successfully!"
+  MSG_ES[ferramenta_mautic_sucesso]="✅ ¡Mautic instalado con éxito!"
+  echo "$(t ferramenta_mautic_sucesso)"
+  MSG_PT[ferramenta_mautic_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_mautic_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_mautic_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_mautic_acesse "$url_mautic")"
+  MSG_PT[ferramenta_mautic_usuario]="Usuário: %s"
+  MSG_EN[ferramenta_mautic_usuario]="Username: %s"
+  MSG_ES[ferramenta_mautic_usuario]="Usuario: %s"
+  echo "$(t ferramenta_mautic_usuario "$user_mautic")"
   msg_retorno_menu
 
 }
@@ -6701,9 +8613,15 @@ ferramenta_appsmith(){
   msg_appsmith
   dados
 
-  read -p $'\e[33mDigite o domínio para o Appsmith (ex: apps.encha.ai): \e[0m' url_appsmith
+  MSG_PT[ferramenta_appsmith_pede_dominio]=$'\e[33mDigite o domínio para o Appsmith (ex: apps.encha.ai): \e[0m'
+  MSG_EN[ferramenta_appsmith_pede_dominio]=$'\e[33mEnter the domain for Appsmith (e.g. apps.encha.ai): \e[0m'
+  MSG_ES[ferramenta_appsmith_pede_dominio]=$'\e[33mIngrese el dominio para Appsmith (ej: apps.encha.ai): \e[0m'
+  read -p "$(t ferramenta_appsmith_pede_dominio)" url_appsmith
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Appsmith...\e[0m"
+  MSG_PT[ferramenta_appsmith_iniciando]="\e[97m🚀 Iniciando a instalação do Appsmith...\e[0m"
+  MSG_EN[ferramenta_appsmith_iniciando]="\e[97m🚀 Starting Appsmith installation...\e[0m"
+  MSG_ES[ferramenta_appsmith_iniciando]="\e[97m🚀 Iniciando la instalación de Appsmith...\e[0m"
+  echo -e "$(t ferramenta_appsmith_iniciando)"
 
   cat > appsmith.yaml <<EOL
 version: "3.7"
@@ -6757,9 +8675,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Appsmith instalado com sucesso!"
-  echo "Acesse em: https://${url_appsmith}"
-  echo "Crie seu usuário no primeiro acesso."
+  MSG_PT[ferramenta_appsmith_sucesso]="✅ Appsmith instalado com sucesso!"
+  MSG_EN[ferramenta_appsmith_sucesso]="✅ Appsmith installed successfully!"
+  MSG_ES[ferramenta_appsmith_sucesso]="✅ ¡Appsmith instalado con éxito!"
+  echo "$(t ferramenta_appsmith_sucesso)"
+  MSG_PT[ferramenta_appsmith_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_appsmith_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_appsmith_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_appsmith_acesse "$url_appsmith")"
+  MSG_PT[ferramenta_appsmith_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_appsmith_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_appsmith_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_appsmith_crie_usuario)"
   msg_retorno_menu
 
 }
@@ -6770,25 +8697,49 @@ ferramenta_qdrant(){
 
   while true; do
     read -r ip _ <<<$(hostname -I)
-    echo -e "\e[97mPasso$amarelo 1/2\e[0m"
-    echo -en "\e[33mDigite o ip da vps (seu ip: $ip) ou dominio para Qdrant (ex: qdrant.encha.ai): \e[0m" && read -r ip_vps
+    MSG_PT[ferramenta_qdrant_passo1]="\e[97mPasso$amarelo 1/2\e[0m"
+    MSG_EN[ferramenta_qdrant_passo1]="\e[97mStep$amarelo 1/2\e[0m"
+    MSG_ES[ferramenta_qdrant_passo1]="\e[97mPaso$amarelo 1/2\e[0m"
+    echo -e "$(t ferramenta_qdrant_passo1)"
+    MSG_PT[ferramenta_qdrant_pede_ip]="\e[33mDigite o ip da vps (seu ip: %s) ou dominio para Qdrant (ex: qdrant.encha.ai): \e[0m"
+    MSG_EN[ferramenta_qdrant_pede_ip]="\e[33mEnter the VPS ip (your ip: %s) or domain for Qdrant (e.g. qdrant.encha.ai): \e[0m"
+    MSG_ES[ferramenta_qdrant_pede_ip]="\e[33mIngrese el ip de la vps (su ip: %s) o dominio para Qdrant (ej: qdrant.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_qdrant_pede_ip "$ip")" && read -r ip_vps
     echo ""
-    echo -e "\e[97mPasso$amarelo 2/2\e[0m"
-    echo -en "\e[33mDigite quantos Nodes você deseja (recomendado: 5): \e[0m" && read -r nodes_qdrant
+    MSG_PT[ferramenta_qdrant_passo2]="\e[97mPasso$amarelo 2/2\e[0m"
+    MSG_EN[ferramenta_qdrant_passo2]="\e[97mStep$amarelo 2/2\e[0m"
+    MSG_ES[ferramenta_qdrant_passo2]="\e[97mPaso$amarelo 2/2\e[0m"
+    echo -e "$(t ferramenta_qdrant_passo2)"
+    MSG_PT[ferramenta_qdrant_pede_nodes]="\e[33mDigite quantos Nodes você deseja (recomendado: 5): \e[0m"
+    MSG_EN[ferramenta_qdrant_pede_nodes]="\e[33mEnter how many Nodes you want (recommended: 5): \e[0m"
+    MSG_ES[ferramenta_qdrant_pede_nodes]="\e[33mIngrese cuántos Nodes desea (recomendado: 5): \e[0m"
+    echo -en "$(t ferramenta_qdrant_pede_nodes)" && read -r nodes_qdrant
 
     clear
     msg_qdrant
 
-    echo -e "\e[33mIp da VPS ou Dominio:\e[97m $ip_vps\e[0m"
+    MSG_PT[ferramenta_qdrant_resumo_ip]="\e[33mIp da VPS ou Dominio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_qdrant_resumo_ip]="\e[33mVPS IP or Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_qdrant_resumo_ip]="\e[33mIp de la VPS o Dominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_qdrant_resumo_ip "$ip_vps")"
     echo ""
-    echo -e "\e[33mQuantidade de Nodes:\e[97m $nodes_qdrant\e[0m"
+    MSG_PT[ferramenta_qdrant_resumo_nodes]="\e[33mQuantidade de Nodes:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_qdrant_resumo_nodes]="\e[33mNumber of Nodes:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_qdrant_resumo_nodes]="\e[33mCantidad de Nodes:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_qdrant_resumo_nodes "$nodes_qdrant")"
     echo ""
-    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    MSG_PT[ferramenta_qdrant_confirma]="As respostas estão corretas? (Y/N): "
+    MSG_EN[ferramenta_qdrant_confirma]="Are the answers correct? (Y/N): "
+    MSG_ES[ferramenta_qdrant_confirma]="¿Las respuestas están correctas? (Y/N): "
+    read -p "$(t ferramenta_qdrant_confirma)" confirmacao
 
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_qdrant; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Qdrant...\e[0m"
+  MSG_PT[ferramenta_qdrant_iniciando]="\e[97m🚀 Iniciando a instalação do Qdrant...\e[0m"
+  MSG_EN[ferramenta_qdrant_iniciando]="\e[97m🚀 Starting Qdrant installation...\e[0m"
+  MSG_ES[ferramenta_qdrant_iniciando]="\e[97m🚀 Iniciando la instalación de Qdrant...\e[0m"
+  echo -e "$(t ferramenta_qdrant_iniciando)"
 
   cat <<EOL > qdrant.yaml
 version: "3.7"
@@ -6875,9 +8826,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Qdrant instalado com sucesso!"
-  echo -e "\e[33mDashboard:\e[97m http://$ip_vps:6333/dashboard\e[0m"
-  echo "Porta REST API: 6333"
+  MSG_PT[ferramenta_qdrant_sucesso]="✅ Qdrant instalado com sucesso!"
+  MSG_EN[ferramenta_qdrant_sucesso]="✅ Qdrant installed successfully!"
+  MSG_ES[ferramenta_qdrant_sucesso]="✅ ¡Qdrant instalado con éxito!"
+  echo "$(t ferramenta_qdrant_sucesso)"
+  MSG_PT[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
+  MSG_EN[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
+  MSG_ES[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
+  echo -e "$(t ferramenta_qdrant_dashboard "$ip_vps")"
+  MSG_PT[ferramenta_qdrant_porta]="Porta REST API: 6333"
+  MSG_EN[ferramenta_qdrant_porta]="REST API Port: 6333"
+  MSG_ES[ferramenta_qdrant_porta]="Puerto REST API: 6333"
+  echo "$(t ferramenta_qdrant_porta)"
   msg_retorno_menu
 
 }
@@ -6887,26 +8847,59 @@ ferramenta_woofedcrm() {
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o WoofedCRM (ex: crm.encha.ai): \e[0m" && read -r url_woofed
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -en "👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m" && read -r user_motor_woofed
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m" && read -s -r pass_motor_woofed
+    MSG_PT[ferramenta_woofedcrm_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    MSG_EN[ferramenta_woofedcrm_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+    MSG_ES[ferramenta_woofedcrm_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+    echo -e "$(t ferramenta_woofedcrm_passo1)"
+    MSG_PT[ferramenta_woofedcrm_pede_dominio]="🔗 \e[33mDigite o domínio para o WoofedCRM (ex: crm.encha.ai): \e[0m"
+    MSG_EN[ferramenta_woofedcrm_pede_dominio]="🔗 \e[33mEnter the domain for WoofedCRM (e.g. crm.encha.ai): \e[0m"
+    MSG_ES[ferramenta_woofedcrm_pede_dominio]="🔗 \e[33mIngrese el dominio para WoofedCRM (ej: crm.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_woofedcrm_pede_dominio)" && read -r url_woofed
+    MSG_PT[ferramenta_woofedcrm_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    MSG_EN[ferramenta_woofedcrm_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+    MSG_ES[ferramenta_woofedcrm_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+    echo -e "$(t ferramenta_woofedcrm_passo2)"
+    MSG_PT[ferramenta_woofedcrm_pede_usuario]="👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m"
+    MSG_EN[ferramenta_woofedcrm_pede_usuario]="👤 \e[33mEnter the username for the MOTOR panel (admin) (e.g. encha_admin): \e[0m"
+    MSG_ES[ferramenta_woofedcrm_pede_usuario]="👤 \e[33mIngrese el usuario para el panel MOTOR (admin) (ej: encha_admin): \e[0m"
+    echo -en "$(t ferramenta_woofedcrm_pede_usuario)" && read -r user_motor_woofed
+    MSG_PT[ferramenta_woofedcrm_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    MSG_EN[ferramenta_woofedcrm_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+    MSG_ES[ferramenta_woofedcrm_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+    echo -e "$(t ferramenta_woofedcrm_passo3)"
+    MSG_PT[ferramenta_woofedcrm_pede_senha]="🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m"
+    MSG_EN[ferramenta_woofedcrm_pede_senha]="🔑 \e[33mEnter the password for the MOTOR panel: \e[0m"
+    MSG_ES[ferramenta_woofedcrm_pede_senha]="🔑 \e[33mIngrese la contraseña para el panel MOTOR: \e[0m"
+    echo -en "$(t ferramenta_woofedcrm_pede_senha)" && read -s -r pass_motor_woofed
     echo ""
 
     clear
     msg_woofedcrm
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_woofedcrm_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_woofedcrm_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_woofedcrm_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_woofedcrm_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio WoofedCRM:\e[97m $url_woofed\e[0m"
-    echo -e "👤 \e[33mUsuário MOTOR:\e[97m $user_motor_woofed\e[0m"
+    MSG_PT[ferramenta_woofedcrm_resumo_dominio]="🌐 \e[33mDomínio WoofedCRM:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_woofedcrm_resumo_dominio]="🌐 \e[33mWoofedCRM Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_woofedcrm_resumo_dominio]="🌐 \e[33mDominio WoofedCRM:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_woofedcrm_resumo_dominio "$url_woofed")"
+    MSG_PT[ferramenta_woofedcrm_resumo_usuario]="👤 \e[33mUsuário MOTOR:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_woofedcrm_resumo_usuario]="👤 \e[33mMOTOR Username:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_woofedcrm_resumo_usuario]="👤 \e[33mUsuario MOTOR:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_woofedcrm_resumo_usuario "$user_motor_woofed")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_woofedcrm_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_woofedcrm_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_woofedcrm_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_woofedcrm_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_woofedcrm; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Woofed CRM...\e[0m"
+  MSG_PT[ferramenta_woofedcrm_iniciando]="\e[97m🚀 Iniciando a instalação do Woofed CRM...\e[0m"
+  MSG_EN[ferramenta_woofedcrm_iniciando]="\e[97m🚀 Starting Woofed CRM installation...\e[0m"
+  MSG_ES[ferramenta_woofedcrm_iniciando]="\e[97m🚀 Iniciando la instalación de Woofed CRM...\e[0m"
+  echo -e "$(t ferramenta_woofedcrm_iniciando)"
   verificar_container_pgvector || ferramenta_pgvector
   pegar_senha_pgvector
   criar_banco_pgvector_da_stack "woofedcrm"
@@ -6981,16 +8974,25 @@ EOL
   stack_editavel
   wait_stack woofedcrm_woofedcrm_web woofedcrm_woofedcrm_sidekiq
 
-  echo "Aguardando o serviço estabilizar para migrar o banco de dados..."
+  MSG_PT[ferramenta_woofedcrm_aguardando]="Aguardando o serviço estabilizar para migrar o banco de dados..."
+  MSG_EN[ferramenta_woofedcrm_aguardando]="Waiting for the service to stabilize to migrate the database..."
+  MSG_ES[ferramenta_woofedcrm_aguardando]="Esperando que el servicio se estabilice para migrar la base de datos..."
+  echo "$(t ferramenta_woofedcrm_aguardando)"
   sleep 20
 
   CONTAINER_ID=$(docker ps -q --filter "name=woofedcrm_woofedcrm_web" | head -n1)
   if [ -n "$CONTAINER_ID" ]; then
     docker exec -it "$CONTAINER_ID" bundle exec rails db:create > /dev/null 2>&1
     docker exec -it "$CONTAINER_ID" bundle exec rails db:migrate > /dev/null 2>&1
-    echo "✅ Migração do banco de dados concluída."
+    MSG_PT[ferramenta_woofedcrm_migracao_ok]="✅ Migração do banco de dados concluída."
+    MSG_EN[ferramenta_woofedcrm_migracao_ok]="✅ Database migration complete."
+    MSG_ES[ferramenta_woofedcrm_migracao_ok]="✅ Migración de la base de datos completada."
+    echo "$(t ferramenta_woofedcrm_migracao_ok)"
   else
-    echo "❌ Não foi possível encontrar o contêiner do WoofedCRM para migrar o banco de dados."
+    MSG_PT[ferramenta_woofedcrm_migracao_falhou]="❌ Não foi possível encontrar o contêiner do WoofedCRM para migrar o banco de dados."
+    MSG_EN[ferramenta_woofedcrm_migracao_falhou]="❌ Could not find the WoofedCRM container to migrate the database."
+    MSG_ES[ferramenta_woofedcrm_migracao_falhou]="❌ No fue posible encontrar el contenedor de WoofedCRM para migrar la base de datos."
+    echo "$(t ferramenta_woofedcrm_migracao_falhou)"
   fi
 
   cd /root/dados_vps
@@ -7005,10 +9007,22 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Woofed CRM instalado com sucesso!"
-  echo "Acesse em: https://${url_woofed}"
-  echo "Crie seu usuário no primeiro acesso."
-  echo "Painel Admin (MOTOR): https://${url_woofed}/motor_admin"
+  MSG_PT[ferramenta_woofedcrm_sucesso]="✅ Woofed CRM instalado com sucesso!"
+  MSG_EN[ferramenta_woofedcrm_sucesso]="✅ Woofed CRM installed successfully!"
+  MSG_ES[ferramenta_woofedcrm_sucesso]="✅ ¡Woofed CRM instalado con éxito!"
+  echo "$(t ferramenta_woofedcrm_sucesso)"
+  MSG_PT[ferramenta_woofedcrm_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_woofedcrm_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_woofedcrm_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_woofedcrm_acesse "$url_woofed")"
+  MSG_PT[ferramenta_woofedcrm_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_woofedcrm_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_woofedcrm_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_woofedcrm_crie_usuario)"
+  MSG_PT[ferramenta_woofedcrm_painel_admin]="Painel Admin (MOTOR): https://%s/motor_admin"
+  MSG_EN[ferramenta_woofedcrm_painel_admin]="Admin Panel (MOTOR): https://%s/motor_admin"
+  MSG_ES[ferramenta_woofedcrm_painel_admin]="Panel Admin (MOTOR): https://%s/motor_admin"
+  echo "$(t ferramenta_woofedcrm_painel_admin "$url_woofed")"
   msg_retorno_menu
 
 }
@@ -7018,26 +9032,59 @@ ferramenta_twentycrm() {
     dados
 
     while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o TwentyCRM (ex: 20.encha.ai): \e[0m" && read -r url_twentycrm
-        echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-        echo -en "👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m" && read -r user_motor_woofed # Esta variável pode ser renomeada para _twentycrm, mas funciona
-        echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-        echo -en "🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m" && read -s -r pass_motor_woofed # Esta variável pode ser renomeada
+        MSG_PT[ferramenta_twentycrm_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+        MSG_EN[ferramenta_twentycrm_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+        MSG_ES[ferramenta_twentycrm_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+        echo -e "$(t ferramenta_twentycrm_passo1)"
+        MSG_PT[ferramenta_twentycrm_pede_dominio]="🔗 \e[33mDigite o domínio para o TwentyCRM (ex: 20.encha.ai): \e[0m"
+        MSG_EN[ferramenta_twentycrm_pede_dominio]="🔗 \e[33mEnter the domain for TwentyCRM (e.g. 20.encha.ai): \e[0m"
+        MSG_ES[ferramenta_twentycrm_pede_dominio]="🔗 \e[33mIngrese el dominio para TwentyCRM (ej: 20.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_twentycrm_pede_dominio)" && read -r url_twentycrm
+        MSG_PT[ferramenta_twentycrm_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+        MSG_EN[ferramenta_twentycrm_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+        MSG_ES[ferramenta_twentycrm_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+        echo -e "$(t ferramenta_twentycrm_passo2)"
+        MSG_PT[ferramenta_twentycrm_pede_usuario]="👤 \e[33mDigite o usuário para o painel MOTOR (admin) (ex: encha_admin): \e[0m"
+        MSG_EN[ferramenta_twentycrm_pede_usuario]="👤 \e[33mEnter the username for the MOTOR panel (admin) (e.g. encha_admin): \e[0m"
+        MSG_ES[ferramenta_twentycrm_pede_usuario]="👤 \e[33mIngrese el usuario para el panel MOTOR (admin) (ej: encha_admin): \e[0m"
+        echo -en "$(t ferramenta_twentycrm_pede_usuario)" && read -r user_motor_woofed # Esta variável pode ser renomeada para _twentycrm, mas funciona
+        MSG_PT[ferramenta_twentycrm_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+        MSG_EN[ferramenta_twentycrm_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+        MSG_ES[ferramenta_twentycrm_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+        echo -e "$(t ferramenta_twentycrm_passo3)"
+        MSG_PT[ferramenta_twentycrm_pede_senha]="🔑 \e[33mDigite a senha para o painel MOTOR: \e[0m"
+        MSG_EN[ferramenta_twentycrm_pede_senha]="🔑 \e[33mEnter the password for the MOTOR panel: \e[0m"
+        MSG_ES[ferramenta_twentycrm_pede_senha]="🔑 \e[33mIngrese la contraseña para el panel MOTOR: \e[0m"
+        echo -en "$(t ferramenta_twentycrm_pede_senha)" && read -s -r pass_motor_woofed # Esta variável pode ser renomeada
         echo ""
 
         clear
         msg_twentycrm
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_twentycrm_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_twentycrm_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_twentycrm_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_twentycrm_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio TwentyCRM:\e[97m $url_twentycrm\e[0m"
-        echo -e "👤 \e[33mUsuário MOTOR:\e[97m $user_motor_woofed\e[0m"
+        MSG_PT[ferramenta_twentycrm_resumo_dominio]="🌐 \e[33mDomínio TwentyCRM:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_twentycrm_resumo_dominio]="🌐 \e[33mTwentyCRM Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_twentycrm_resumo_dominio]="🌐 \e[33mDominio TwentyCRM:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_twentycrm_resumo_dominio "$url_twentycrm")"
+        MSG_PT[ferramenta_twentycrm_resumo_usuario]="👤 \e[33mUsuário MOTOR:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_twentycrm_resumo_usuario]="👤 \e[33mMOTOR Username:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_twentycrm_resumo_usuario]="👤 \e[33mUsuario MOTOR:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_twentycrm_resumo_usuario "$user_motor_woofed")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_twentycrm_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_twentycrm_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_twentycrm_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_twentycrm_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_twentycrm; fi
     done
 
-    echo -e "\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
+    MSG_PT[ferramenta_twentycrm_iniciando]="\e[97m🚀 Iniciando a instalação do TwentyCRM...\e[0m"
+    MSG_EN[ferramenta_twentycrm_iniciando]="\e[97m🚀 Starting TwentyCRM installation...\e[0m"
+    MSG_ES[ferramenta_twentycrm_iniciando]="\e[97m🚀 Iniciando la instalación de TwentyCRM...\e[0m"
+    echo -e "$(t ferramenta_twentycrm_iniciando)"
     
     senha_postgres_twentycrm=$(openssl rand -hex 16)
     Key_aleatoria_twentycrm_1=$(openssl rand -hex 16)
@@ -7124,9 +9171,18 @@ EOL
     cd
 
     msg_resumo_informacoes
-    echo "✅ TwentyCRM instalado com sucesso!"
-    echo "Acesse em: https://${url_twentycrm}"
-    echo "Crie seu usuário no primeiro acesso."
+    MSG_PT[ferramenta_twentycrm_sucesso]="✅ TwentyCRM instalado com sucesso!"
+    MSG_EN[ferramenta_twentycrm_sucesso]="✅ TwentyCRM installed successfully!"
+    MSG_ES[ferramenta_twentycrm_sucesso]="✅ ¡TwentyCRM instalado con éxito!"
+    echo "$(t ferramenta_twentycrm_sucesso)"
+    MSG_PT[ferramenta_twentycrm_acesse]="Acesse em: https://%s"
+    MSG_EN[ferramenta_twentycrm_acesse]="Access it at: https://%s"
+    MSG_ES[ferramenta_twentycrm_acesse]="Acceda en: https://%s"
+    echo "$(t ferramenta_twentycrm_acesse "$url_twentycrm")"
+    MSG_PT[ferramenta_twentycrm_crie_usuario]="Crie seu usuário no primeiro acesso."
+    MSG_EN[ferramenta_twentycrm_crie_usuario]="Create your user on first access."
+    MSG_ES[ferramenta_twentycrm_crie_usuario]="Cree su usuario en el primer acceso."
+    echo "$(t ferramenta_twentycrm_crie_usuario)"
     msg_retorno_menu
 }
 
@@ -7134,9 +9190,15 @@ ferramenta_mattermost() {
     msg_mattermost
     dados
 
-    read -p $'\e[33mDigite o domínio para o Mattermost (ex: chat.encha.ai): \e[0m' url_mattermost
-    
-    echo -e "\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
+    MSG_PT[ferramenta_mattermost_pede_dominio]=$'\e[33mDigite o domínio para o Mattermost (ex: chat.encha.ai): \e[0m'
+    MSG_EN[ferramenta_mattermost_pede_dominio]=$'\e[33mEnter the domain for Mattermost (e.g. chat.encha.ai): \e[0m'
+    MSG_ES[ferramenta_mattermost_pede_dominio]=$'\e[33mIngrese el dominio para Mattermost (ej: chat.encha.ai): \e[0m'
+    read -p "$(t ferramenta_mattermost_pede_dominio)" url_mattermost
+
+    MSG_PT[ferramenta_mattermost_iniciando]="\e[97m🚀 Iniciando a instalação do Mattermost...\e[0m"
+    MSG_EN[ferramenta_mattermost_iniciando]="\e[97m🚀 Starting Mattermost installation...\e[0m"
+    MSG_ES[ferramenta_mattermost_iniciando]="\e[97m🚀 Iniciando la instalación de Mattermost...\e[0m"
+    echo -e "$(t ferramenta_mattermost_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "mattermost"
@@ -7203,9 +9265,18 @@ EOL
     cd
 
     msg_resumo_informacoes
-    echo "✅ Mattermost instalado com sucesso!"
-    echo "Acesse em: https://${url_mattermost}"
-    echo "Crie seu usuário no primeiro acesso."
+    MSG_PT[ferramenta_mattermost_sucesso]="✅ Mattermost instalado com sucesso!"
+    MSG_EN[ferramenta_mattermost_sucesso]="✅ Mattermost installed successfully!"
+    MSG_ES[ferramenta_mattermost_sucesso]="✅ ¡Mattermost instalado con éxito!"
+    echo "$(t ferramenta_mattermost_sucesso)"
+    MSG_PT[ferramenta_mattermost_acesse]="Acesse em: https://%s"
+    MSG_EN[ferramenta_mattermost_acesse]="Access it at: https://%s"
+    MSG_ES[ferramenta_mattermost_acesse]="Acceda en: https://%s"
+    echo "$(t ferramenta_mattermost_acesse "$url_mattermost")"
+    MSG_PT[ferramenta_mattermost_crie_usuario]="Crie seu usuário no primeiro acesso."
+    MSG_EN[ferramenta_mattermost_crie_usuario]="Create your user on first access."
+    MSG_ES[ferramenta_mattermost_crie_usuario]="Cree su usuario en el primer acceso."
+    echo "$(t ferramenta_mattermost_crie_usuario)"
     msg_retorno_menu
 }
 
@@ -7214,29 +9285,71 @@ ferramenta_outline(){
   dados
 
   while true; do
-    echo -e "\n\e[33mO Outline requer integração com um provedor de login (Google, Slack, etc).\e[0m"
-    echo -e "\e[33mVamos configurar com o Google.\e[0m"
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Outline (ex: wiki.encha.ai): \e[0m" && read -r url_outline
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -e "🔑 \e[33mCrie as credenciais em: https://console.cloud.google.com/apis/credentials\e[0m"
-    echo -en "🆔 \e[33mDigite seu ID de Cliente do Google: \e[0m" && read -r id_google_outline
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔒 \e[33mDigite sua Chave Secreta de Cliente do Google: \e[0m" && read -s -r key_google_outline
+    MSG_PT[ferramenta_outline_requer_provedor]="\n\e[33mO Outline requer integração com um provedor de login (Google, Slack, etc).\e[0m"
+    MSG_EN[ferramenta_outline_requer_provedor]="\n\e[33mOutline requires integration with a login provider (Google, Slack, etc).\e[0m"
+    MSG_ES[ferramenta_outline_requer_provedor]="\n\e[33mOutline requiere integración con un proveedor de acceso (Google, Slack, etc).\e[0m"
+    echo -e "$(t ferramenta_outline_requer_provedor)"
+    MSG_PT[ferramenta_outline_vamos_configurar]="\e[33mVamos configurar com o Google.\e[0m"
+    MSG_EN[ferramenta_outline_vamos_configurar]="\e[33mLet's configure it with Google.\e[0m"
+    MSG_ES[ferramenta_outline_vamos_configurar]="\e[33mVamos a configurarlo con Google.\e[0m"
+    echo -e "$(t ferramenta_outline_vamos_configurar)"
+    MSG_PT[ferramenta_outline_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    MSG_EN[ferramenta_outline_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+    MSG_ES[ferramenta_outline_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+    echo -e "$(t ferramenta_outline_passo1)"
+    MSG_PT[ferramenta_outline_pede_dominio]="🔗 \e[33mDigite o domínio para o Outline (ex: wiki.encha.ai): \e[0m"
+    MSG_EN[ferramenta_outline_pede_dominio]="🔗 \e[33mEnter the domain for Outline (e.g. wiki.encha.ai): \e[0m"
+    MSG_ES[ferramenta_outline_pede_dominio]="🔗 \e[33mIngrese el dominio para Outline (ej: wiki.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_outline_pede_dominio)" && read -r url_outline
+    MSG_PT[ferramenta_outline_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    MSG_EN[ferramenta_outline_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+    MSG_ES[ferramenta_outline_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+    echo -e "$(t ferramenta_outline_passo2)"
+    MSG_PT[ferramenta_outline_crie_credenciais]="🔑 \e[33mCrie as credenciais em: https://console.cloud.google.com/apis/credentials\e[0m"
+    MSG_EN[ferramenta_outline_crie_credenciais]="🔑 \e[33mCreate the credentials at: https://console.cloud.google.com/apis/credentials\e[0m"
+    MSG_ES[ferramenta_outline_crie_credenciais]="🔑 \e[33mCree las credenciales en: https://console.cloud.google.com/apis/credentials\e[0m"
+    echo -e "$(t ferramenta_outline_crie_credenciais)"
+    MSG_PT[ferramenta_outline_pede_client_id]="🆔 \e[33mDigite seu ID de Cliente do Google: \e[0m"
+    MSG_EN[ferramenta_outline_pede_client_id]="🆔 \e[33mEnter your Google Client ID: \e[0m"
+    MSG_ES[ferramenta_outline_pede_client_id]="🆔 \e[33mIngrese su ID de Cliente de Google: \e[0m"
+    echo -en "$(t ferramenta_outline_pede_client_id)" && read -r id_google_outline
+    MSG_PT[ferramenta_outline_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    MSG_EN[ferramenta_outline_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+    MSG_ES[ferramenta_outline_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+    echo -e "$(t ferramenta_outline_passo3)"
+    MSG_PT[ferramenta_outline_pede_client_secret]="🔒 \e[33mDigite sua Chave Secreta de Cliente do Google: \e[0m"
+    MSG_EN[ferramenta_outline_pede_client_secret]="🔒 \e[33mEnter your Google Client Secret: \e[0m"
+    MSG_ES[ferramenta_outline_pede_client_secret]="🔒 \e[33mIngrese su Clave Secreta de Cliente de Google: \e[0m"
+    echo -en "$(t ferramenta_outline_pede_client_secret)" && read -s -r key_google_outline
     echo ""
 
     clear
     msg_outline
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_outline_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_outline_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_outline_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_outline_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_outline\e[0m"
-    echo -e "🆔 \e[33mID Cliente Google:\e[97m $id_google_outline\e[0m"
+    MSG_PT[ferramenta_outline_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_outline_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_outline_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_outline_resumo_dominio "$url_outline")"
+    MSG_PT[ferramenta_outline_resumo_client_id]="🆔 \e[33mID Cliente Google:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_outline_resumo_client_id]="🆔 \e[33mGoogle Client ID:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_outline_resumo_client_id]="🆔 \e[33mID Cliente de Google:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_outline_resumo_client_id "$id_google_outline")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_outline_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_outline_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_outline_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_outline_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_outline; fi
   done
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Outline...\e[0m"   
+  MSG_PT[ferramenta_outline_iniciando]="\e[97m🚀 Iniciando a instalação do Outline...\e[0m"
+  MSG_EN[ferramenta_outline_iniciando]="\e[97m🚀 Starting Outline installation...\e[0m"
+  MSG_ES[ferramenta_outline_iniciando]="\e[97m🚀 Iniciando la instalación de Outline...\e[0m"
+  echo -e "$(t ferramenta_outline_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "outline"
@@ -7302,9 +9415,18 @@ EOL
 
   cd
   msg_resumo_informacoes
-  echo "✅ Outline instalado com sucesso!"
-  echo "Acesse em: https://${url_outline}"
-  echo -e "⚠️  \e[33mIMPORTANTE: Adicione a seguinte URL de Callback nas suas credenciais do Google:\e[0m"
+  MSG_PT[ferramenta_outline_sucesso]="✅ Outline instalado com sucesso!"
+  MSG_EN[ferramenta_outline_sucesso]="✅ Outline installed successfully!"
+  MSG_ES[ferramenta_outline_sucesso]="✅ Outline instalado con éxito!"
+  echo "$(t ferramenta_outline_sucesso)"
+  MSG_PT[ferramenta_outline_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_outline_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_outline_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_outline_acesse "$url_outline")"
+  MSG_PT[ferramenta_outline_lembrete_callback]="⚠️  \e[33mIMPORTANTE: Adicione a seguinte URL de Callback nas suas credenciais do Google:\e[0m"
+  MSG_EN[ferramenta_outline_lembrete_callback]="⚠️  \e[33mIMPORTANT: Add the following Callback URL to your Google credentials:\e[0m"
+  MSG_ES[ferramenta_outline_lembrete_callback]="⚠️  \e[33mIMPORTANTE: Agregue la siguiente URL de Callback en sus credenciales de Google:\e[0m"
+  echo -e "$(t ferramenta_outline_lembrete_callback)"
   echo -e "➡️  \e[97mhttps://${url_outline}/auth/oidc.callback\e[0m"
   msg_retorno_menu
 
@@ -7314,9 +9436,15 @@ ferramenta_focalboard() {
   msg_focalboard
   dados
 
-  read -p $'\e[33mDigite o domínio para o Focalboard (ex: boards.encha.ai): \e[0m' url_focalboard
+  MSG_PT[ferramenta_focalboard_dominio]=$'\e[33mDigite o domínio para o Focalboard (ex: boards.encha.ai): \e[0m'
+  MSG_EN[ferramenta_focalboard_dominio]=$'\e[33mEnter the domain for Focalboard (e.g.: boards.encha.ai): \e[0m'
+  MSG_ES[ferramenta_focalboard_dominio]=$'\e[33mEscriba el dominio para Focalboard (ej: boards.encha.ai): \e[0m'
+  read -p "$(t ferramenta_focalboard_dominio)" url_focalboard
 
-  echo -e "\e[97m🚀 Iniciando a instalação do Focalboard...\e[0m"
+  MSG_PT[ferramenta_focalboard_iniciando]="\e[97m🚀 Iniciando a instalação do Focalboard...\e[0m"
+  MSG_EN[ferramenta_focalboard_iniciando]="\e[97m🚀 Starting Focalboard installation...\e[0m"
+  MSG_ES[ferramenta_focalboard_iniciando]="\e[97m🚀 Iniciando la instalación de Focalboard...\e[0m"
+  echo -e "$(t ferramenta_focalboard_iniciando)"
 
   cat > focalboard.yaml <<EOL
 version: "3.8"
@@ -7360,9 +9488,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo "✅ Focalboard instalado com sucesso!"
-  echo "Acesse em: https://${url_focalboard}"
-  echo "Crie seu usuário no primeiro acesso."
+  MSG_PT[ferramenta_focalboard_sucesso]="✅ Focalboard instalado com sucesso!"
+  MSG_EN[ferramenta_focalboard_sucesso]="✅ Focalboard installed successfully!"
+  MSG_ES[ferramenta_focalboard_sucesso]="✅ ¡Focalboard instalado con éxito!"
+  echo "$(t ferramenta_focalboard_sucesso)"
+  MSG_PT[ferramenta_focalboard_acesse]="Acesse em: https://%s"
+  MSG_EN[ferramenta_focalboard_acesse]="Access it at: https://%s"
+  MSG_ES[ferramenta_focalboard_acesse]="Acceda en: https://%s"
+  echo "$(t ferramenta_focalboard_acesse "$url_focalboard")"
+  MSG_PT[ferramenta_focalboard_crie_usuario]="Crie seu usuário no primeiro acesso."
+  MSG_EN[ferramenta_focalboard_crie_usuario]="Create your user on first access."
+  MSG_ES[ferramenta_focalboard_crie_usuario]="Cree su usuario en el primer acceso."
+  echo "$(t ferramenta_focalboard_crie_usuario)"
   msg_retorno_menu
 
 }
@@ -7371,9 +9508,15 @@ ferramenta_glpi(){
   msg_glpi
   dados
 
-  read -p $'\e[33mDigite o domínio para o GLPI (ex: helpdesk.encha.ai): \e[0m' url_glpi
+  MSG_PT[ferramenta_glpi_dominio]=$'\e[33mDigite o domínio para o GLPI (ex: helpdesk.encha.ai): \e[0m'
+  MSG_EN[ferramenta_glpi_dominio]=$'\e[33mEnter the domain for GLPI (e.g.: helpdesk.encha.ai): \e[0m'
+  MSG_ES[ferramenta_glpi_dominio]=$'\e[33mEscriba el dominio para GLPI (ej: helpdesk.encha.ai): \e[0m'
+  read -p "$(t ferramenta_glpi_dominio)" url_glpi
 
-  echo -e "\e[97m🚀 Iniciando a instalação do GLPI...\e[0m"
+  MSG_PT[ferramenta_glpi_iniciando]="\e[97m🚀 Iniciando a instalação do GLPI...\e[0m"
+  MSG_EN[ferramenta_glpi_iniciando]="\e[97m🚀 Starting GLPI installation...\e[0m"
+  MSG_ES[ferramenta_glpi_iniciando]="\e[97m🚀 Iniciando la instalación de GLPI...\e[0m"
+  echo -e "$(t ferramenta_glpi_iniciando)"
   verificar_container_mysql || ferramenta_mysql
   pegar_senha_mysql_da_stack
   criar_banco_mysql_da_stack "glpi"
@@ -7426,14 +9569,35 @@ EOL
 
   cd
   msg_resumo_informacoes
-  echo "✅ GLPI instalado!"
-  echo "Acesse https://${url_glpi} para completar a instalação."
+  MSG_PT[ferramenta_glpi_instalado]="✅ GLPI instalado!"
+  MSG_EN[ferramenta_glpi_instalado]="✅ GLPI installed!"
+  MSG_ES[ferramenta_glpi_instalado]="✅ ¡GLPI instalado!"
+  echo "$(t ferramenta_glpi_instalado)"
+  MSG_PT[ferramenta_glpi_acesse]="Acesse https://%s para completar a instalação."
+  MSG_EN[ferramenta_glpi_acesse]="Access https://%s to complete the installation."
+  MSG_ES[ferramenta_glpi_acesse]="Acceda a https://%s para completar la instalación."
+  echo "$(t ferramenta_glpi_acesse "$url_glpi")"
   echo ""
-  echo -e "\e[33mUse as seguintes informações na tela de setup do banco de dados:\e[0m"
-  echo "Endereço do servidor SQL: mysql"
-  echo "Usuário SQL: root"
-  echo "Senha SQL: ${senha_mysql}"
-  echo "Banco de dados: glpi"
+  MSG_PT[ferramenta_glpi_infos_setup]="\e[33mUse as seguintes informações na tela de setup do banco de dados:\e[0m"
+  MSG_EN[ferramenta_glpi_infos_setup]="\e[33mUse the following information on the database setup screen:\e[0m"
+  MSG_ES[ferramenta_glpi_infos_setup]="\e[33mUse la siguiente información en la pantalla de configuración de la base de datos:\e[0m"
+  echo -e "$(t ferramenta_glpi_infos_setup)"
+  MSG_PT[ferramenta_glpi_endereco_sql]="Endereço do servidor SQL: mysql"
+  MSG_EN[ferramenta_glpi_endereco_sql]="SQL server address: mysql"
+  MSG_ES[ferramenta_glpi_endereco_sql]="Dirección del servidor SQL: mysql"
+  echo "$(t ferramenta_glpi_endereco_sql)"
+  MSG_PT[ferramenta_glpi_usuario_sql]="Usuário SQL: root"
+  MSG_EN[ferramenta_glpi_usuario_sql]="SQL user: root"
+  MSG_ES[ferramenta_glpi_usuario_sql]="Usuario SQL: root"
+  echo "$(t ferramenta_glpi_usuario_sql)"
+  MSG_PT[ferramenta_glpi_senha_sql]="Senha SQL: %s"
+  MSG_EN[ferramenta_glpi_senha_sql]="SQL password: %s"
+  MSG_ES[ferramenta_glpi_senha_sql]="Contraseña SQL: %s"
+  echo "$(t ferramenta_glpi_senha_sql "$senha_mysql")"
+  MSG_PT[ferramenta_glpi_banco_dados]="Banco de dados: glpi"
+  MSG_EN[ferramenta_glpi_banco_dados]="Database: glpi"
+  MSG_ES[ferramenta_glpi_banco_dados]="Base de datos: glpi"
+  echo "$(t ferramenta_glpi_banco_dados)"
   msg_retorno_menu
 
 }
@@ -7443,34 +9607,70 @@ ferramenta_flowise() {
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o Flowise (ex: flowise.encha.ai): \e[0m" && read -r url_flowise
-        
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -en "👤 \e[33mDigite um usuário para o Flowise (ex: admin): \e[0m" && read -r user_flowise
-        
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_flowise
+    MSG_PT[ferramenta_flowise_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    MSG_EN[ferramenta_flowise_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+    MSG_ES[ferramenta_flowise_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+    echo -e "$(t ferramenta_flowise_passo1)"
+    MSG_PT[ferramenta_flowise_dominio]="🔗 \e[33mDigite o domínio para o Flowise (ex: flowise.encha.ai): \e[0m"
+    MSG_EN[ferramenta_flowise_dominio]="🔗 \e[33mEnter the domain for Flowise (e.g.: flowise.encha.ai): \e[0m"
+    MSG_ES[ferramenta_flowise_dominio]="🔗 \e[33mEscriba el dominio para Flowise (ej: flowise.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_flowise_dominio)" && read -r url_flowise
+
+    MSG_PT[ferramenta_flowise_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    MSG_EN[ferramenta_flowise_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+    MSG_ES[ferramenta_flowise_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+    echo -e "$(t ferramenta_flowise_passo2)"
+    MSG_PT[ferramenta_flowise_usuario]="👤 \e[33mDigite um usuário para o Flowise (ex: admin): \e[0m"
+    MSG_EN[ferramenta_flowise_usuario]="👤 \e[33mEnter a username for Flowise (e.g.: admin): \e[0m"
+    MSG_ES[ferramenta_flowise_usuario]="👤 \e[33mEscriba un usuario para Flowise (ej: admin): \e[0m"
+    echo -en "$(t ferramenta_flowise_usuario)" && read -r user_flowise
+
+    MSG_PT[ferramenta_flowise_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    MSG_EN[ferramenta_flowise_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+    MSG_ES[ferramenta_flowise_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+    echo -e "$(t ferramenta_flowise_passo3)"
+    MSG_PT[ferramenta_flowise_senha]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_flowise_senha]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_flowise_senha]="🔑 \e[33mEscriba una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_flowise_senha)" && read -s -r pass_flowise
     echo ""
 
     clear
     msg_flowise
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_flowise_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_flowise_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_flowise_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_flowise_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Flowise:\e[97m $url_flowise\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_flowise\e[0m"
+    MSG_PT[ferramenta_flowise_resumo_dominio]="🌐 \e[33mDomínio Flowise:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_flowise_resumo_dominio]="🌐 \e[33mFlowise Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_flowise_resumo_dominio]="🌐 \e[33mDominio Flowise:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_flowise_resumo_dominio "$url_flowise")"
+    MSG_PT[ferramenta_flowise_resumo_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_flowise_resumo_usuario]="👤 \e[33mUser:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_flowise_resumo_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_flowise_resumo_usuario "$user_flowise")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_flowise_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_flowise_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_flowise_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_flowise_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; msg_flowise; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Flowise...\e[0m"
+  MSG_PT[ferramenta_flowise_iniciando]="\e[97m🚀 Iniciando a instalação do Flowise...\e[0m"
+  MSG_EN[ferramenta_flowise_iniciando]="\e[97m🚀 Starting Flowise installation...\e[0m"
+  MSG_ES[ferramenta_flowise_iniciando]="\e[97m🚀 Iniciando la instalación de Flowise...\e[0m"
+  echo -e "$(t ferramenta_flowise_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "flowise"
 
-  echo -e "\e[97m⚙️ Instalando o Flowise...\e[0m"
+  MSG_PT[ferramenta_flowise_instalando]="\e[97m⚙️ Instalando o Flowise...\e[0m"
+  MSG_EN[ferramenta_flowise_instalando]="\e[97m⚙️ Installing Flowise...\e[0m"
+  MSG_ES[ferramenta_flowise_instalando]="\e[97m⚙️ Instalando Flowise...\e[0m"
+  echo -e "$(t ferramenta_flowise_instalando)"
   encryption_key=$(openssl rand -hex 16)
 
   cat > flowise.yaml <<EOL
@@ -7533,9 +9733,18 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ FLOWISE ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_flowise\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m $user_flowise\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $pass_flowise\e[0m\n"
+  MSG_PT[ferramenta_flowise_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_flowise_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_flowise_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_flowise_final_dominio "$url_flowise")"
+  MSG_PT[ferramenta_flowise_final_usuario]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_flowise_final_usuario]="\e[33m👤 User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_flowise_final_usuario]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_flowise_final_usuario "$user_flowise")"
+  MSG_PT[ferramenta_flowise_final_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m\n"
+  MSG_EN[ferramenta_flowise_final_senha]="\e[33m🔑 Password:\e[97m %s\e[0m\n"
+  MSG_ES[ferramenta_flowise_final_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m\n"
+  echo -e "$(t ferramenta_flowise_final_senha "$pass_flowise")"
   msg_retorno_menu
 
 }
@@ -7545,34 +9754,70 @@ ferramenta_langflow(){
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o LangFlow (ex: langflow.encha.ai): \e[0m" && read -r url_langflow
-        
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -en "👤 \e[33mDigite um usuário para o LangFlow (ex: admin): \e[0m" && read -r user_langflow
-        
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_langflow
+    MSG_PT[ferramenta_langflow_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    MSG_EN[ferramenta_langflow_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+    MSG_ES[ferramenta_langflow_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+    echo -e "$(t ferramenta_langflow_passo1)"
+    MSG_PT[ferramenta_langflow_dominio]="🔗 \e[33mDigite o domínio para o LangFlow (ex: langflow.encha.ai): \e[0m"
+    MSG_EN[ferramenta_langflow_dominio]="🔗 \e[33mEnter the domain for LangFlow (e.g.: langflow.encha.ai): \e[0m"
+    MSG_ES[ferramenta_langflow_dominio]="🔗 \e[33mEscriba el dominio para LangFlow (ej: langflow.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_langflow_dominio)" && read -r url_langflow
+
+    MSG_PT[ferramenta_langflow_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    MSG_EN[ferramenta_langflow_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+    MSG_ES[ferramenta_langflow_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+    echo -e "$(t ferramenta_langflow_passo2)"
+    MSG_PT[ferramenta_langflow_usuario]="👤 \e[33mDigite um usuário para o LangFlow (ex: admin): \e[0m"
+    MSG_EN[ferramenta_langflow_usuario]="👤 \e[33mEnter a username for LangFlow (e.g.: admin): \e[0m"
+    MSG_ES[ferramenta_langflow_usuario]="👤 \e[33mEscriba un usuario para LangFlow (ej: admin): \e[0m"
+    echo -en "$(t ferramenta_langflow_usuario)" && read -r user_langflow
+
+    MSG_PT[ferramenta_langflow_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    MSG_EN[ferramenta_langflow_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+    MSG_ES[ferramenta_langflow_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+    echo -e "$(t ferramenta_langflow_passo3)"
+    MSG_PT[ferramenta_langflow_senha]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_langflow_senha]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_langflow_senha]="🔑 \e[33mEscriba una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_langflow_senha)" && read -s -r pass_langflow
     echo ""
 
     clear
     msg_langflow
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_langflow_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_langflow_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_langflow_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_langflow_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio LangFlow:\e[97m $url_langflow\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_langflow\e[0m"
+    MSG_PT[ferramenta_langflow_resumo_dominio]="🌐 \e[33mDomínio LangFlow:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langflow_resumo_dominio]="🌐 \e[33mLangFlow Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langflow_resumo_dominio]="🌐 \e[33mDominio LangFlow:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langflow_resumo_dominio "$url_langflow")"
+    MSG_PT[ferramenta_langflow_resumo_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langflow_resumo_usuario]="👤 \e[33mUser:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langflow_resumo_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langflow_resumo_usuario "$user_langflow")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_langflow_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_langflow_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_langflow_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_langflow_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_langflow; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do LangFlow...\e[0m"
+  MSG_PT[ferramenta_langflow_iniciando]="\e[97m🚀 Iniciando a instalação do LangFlow...\e[0m"
+  MSG_EN[ferramenta_langflow_iniciando]="\e[97m🚀 Starting LangFlow installation...\e[0m"
+  MSG_ES[ferramenta_langflow_iniciando]="\e[97m🚀 Iniciando la instalación de LangFlow...\e[0m"
+  echo -e "$(t ferramenta_langflow_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "langflow"
 
-  echo -e "\e[97m⚙️ Instalando o LangFlow...\e[0m"
+  MSG_PT[ferramenta_langflow_instalando]="\e[97m⚙️ Instalando o LangFlow...\e[0m"
+  MSG_EN[ferramenta_langflow_instalando]="\e[97m⚙️ Installing LangFlow...\e[0m"
+  MSG_ES[ferramenta_langflow_instalando]="\e[97m⚙️ Instalando LangFlow...\e[0m"
+  echo -e "$(t ferramenta_langflow_instalando)"
   key_langflow=$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')
 
   cat > langflow.yaml <<EOL
@@ -7634,9 +9879,18 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ LANGFLOW ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_langflow\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m $user_langflow\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $pass_langflow\e[0m\n"
+  MSG_PT[ferramenta_langflow_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_langflow_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_langflow_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_langflow_final_dominio "$url_langflow")"
+  MSG_PT[ferramenta_langflow_final_usuario]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_langflow_final_usuario]="\e[33m👤 User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_langflow_final_usuario]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_langflow_final_usuario "$user_langflow")"
+  MSG_PT[ferramenta_langflow_final_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m\n"
+  MSG_EN[ferramenta_langflow_final_senha]="\e[33m🔑 Password:\e[97m %s\e[0m\n"
+  MSG_ES[ferramenta_langflow_final_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m\n"
+  echo -e "$(t ferramenta_langflow_final_senha "$pass_langflow")"
   msg_retorno_menu
 
 }
@@ -7646,26 +9900,53 @@ ferramenta_ollama(){
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para a WebUI do Ollama (ex: ollama.encha.ai): \e[0m" && read -r url_ollama
+    MSG_PT[ferramenta_ollama_passo1]="\n📍 \e[97mPasso ${amarelo}1/2\e[0m"
+    MSG_EN[ferramenta_ollama_passo1]="\n📍 \e[97mStep ${amarelo}1/2\e[0m"
+    MSG_ES[ferramenta_ollama_passo1]="\n📍 \e[97mPaso ${amarelo}1/2\e[0m"
+    echo -e "$(t ferramenta_ollama_passo1)"
+    MSG_PT[ferramenta_ollama_dominio_webui]="🔗 \e[33mDigite o domínio para a WebUI do Ollama (ex: ollama.encha.ai): \e[0m"
+    MSG_EN[ferramenta_ollama_dominio_webui]="🔗 \e[33mEnter the domain for the Ollama WebUI (e.g.: ollama.encha.ai): \e[0m"
+    MSG_ES[ferramenta_ollama_dominio_webui]="🔗 \e[33mEscriba el dominio para la WebUI de Ollama (ej: ollama.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_ollama_dominio_webui)" && read -r url_ollama
     echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para a API do Ollama (ex: api-ollama.encha.ai): \e[0m" && read -r url_apiollama
+    MSG_PT[ferramenta_ollama_passo2]="\n📍 \e[97mPasso ${amarelo}2/2\e[0m"
+    MSG_EN[ferramenta_ollama_passo2]="\n📍 \e[97mStep ${amarelo}2/2\e[0m"
+    MSG_ES[ferramenta_ollama_passo2]="\n📍 \e[97mPaso ${amarelo}2/2\e[0m"
+    echo -e "$(t ferramenta_ollama_passo2)"
+    MSG_PT[ferramenta_ollama_dominio_api]="🔗 \e[33mDigite o domínio para a API do Ollama (ex: api-ollama.encha.ai): \e[0m"
+    MSG_EN[ferramenta_ollama_dominio_api]="🔗 \e[33mEnter the domain for the Ollama API (e.g.: api-ollama.encha.ai): \e[0m"
+    MSG_ES[ferramenta_ollama_dominio_api]="🔗 \e[33mEscriba el dominio para la API de Ollama (ej: api-ollama.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_ollama_dominio_api)" && read -r url_apiollama
     echo ""
-  
+
     clear
     msg_ollama
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_ollama_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_ollama_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_ollama_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_ollama_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio WebUI:\e[97m $url_ollama\e[0m"
-    echo -e "🔗 \e[33mDomínio API:\e[97m $url_apiollama\e[0m"
+    MSG_PT[ferramenta_ollama_resumo_webui]="🌐 \e[33mDomínio WebUI:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_ollama_resumo_webui]="🌐 \e[33mWebUI Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_ollama_resumo_webui]="🌐 \e[33mDominio WebUI:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_ollama_resumo_webui "$url_ollama")"
+    MSG_PT[ferramenta_ollama_resumo_api]="🔗 \e[33mDomínio API:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_ollama_resumo_api]="🔗 \e[33mAPI Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_ollama_resumo_api]="🔗 \e[33mDominio API:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_ollama_resumo_api "$url_apiollama")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_ollama_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_ollama_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_ollama_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_ollama_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_ollama; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Ollama & OpenWebUI...\e[0m"
+  MSG_PT[ferramenta_ollama_iniciando]="\e[97m🚀 Iniciando a instalação do Ollama & OpenWebUI...\e[0m"
+  MSG_EN[ferramenta_ollama_iniciando]="\e[97m🚀 Starting Ollama & OpenWebUI installation...\e[0m"
+  MSG_ES[ferramenta_ollama_iniciando]="\e[97m🚀 Iniciando la instalación de Ollama y OpenWebUI...\e[0m"
+  echo -e "$(t ferramenta_ollama_iniciando)"
 
   WEBUI_SECRET_KEY=$(openssl rand -hex 16)
   cat > ollama.yaml << EOL
@@ -7741,8 +10022,14 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ OLLAMA & OPENWEBUI ]\e[0m\n"
-  echo -e "\e[33m🌐 WebUI:\e[97m https://$url_ollama\e[0m"
-  echo -e "\e[33m🔗 API:\e[97m https://$url_apiollama\e[0m"
+  MSG_PT[ferramenta_ollama_final_webui]="\e[33m🌐 WebUI:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_ollama_final_webui]="\e[33m🌐 WebUI:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_ollama_final_webui]="\e[33m🌐 WebUI:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_ollama_final_webui "$url_ollama")"
+  MSG_PT[ferramenta_ollama_final_api]="\e[33m🔗 API:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_ollama_final_api]="\e[33m🔗 API:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_ollama_final_api]="\e[33m🔗 API:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_ollama_final_api "$url_apiollama")"
   msg_retorno_menu
 
 }
@@ -7753,29 +10040,62 @@ ferramenta_anythingllm() {
 
   while true; do
     read -r ip _ <<<"$(hostname -I)"
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o AnythingLLM (ex: anything.encha.ai): \e[0m" && read -r url_anythingllm
+    MSG_PT[ferramenta_anythingllm_passo1]="\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
+    MSG_EN[ferramenta_anythingllm_passo1]="\n📍 \e[97mStep ${amarelo}1/3\e[0m"
+    MSG_ES[ferramenta_anythingllm_passo1]="\n📍 \e[97mPaso ${amarelo}1/3\e[0m"
+    echo -e "$(t ferramenta_anythingllm_passo1)"
+    MSG_PT[ferramenta_anythingllm_dominio]="🔗 \e[33mDigite o domínio para o AnythingLLM (ex: anything.encha.ai): \e[0m"
+    MSG_EN[ferramenta_anythingllm_dominio]="🔗 \e[33mEnter the domain for AnythingLLM (e.g.: anything.encha.ai): \e[0m"
+    MSG_ES[ferramenta_anythingllm_dominio]="🔗 \e[33mEscriba el dominio para AnythingLLM (ej: anything.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_anythingllm_dominio)" && read -r url_anythingllm
     echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -en "🔗 \e[33mDigite o endpoint do Qdrant (ex: http://$ip:6333): \e[0m" && read -r qdrant_anythingllm
+    MSG_PT[ferramenta_anythingllm_passo2]="\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
+    MSG_EN[ferramenta_anythingllm_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
+    MSG_ES[ferramenta_anythingllm_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
+    echo -e "$(t ferramenta_anythingllm_passo2)"
+    MSG_PT[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mDigite o endpoint do Qdrant (ex: http://%s:6333): \e[0m"
+    MSG_EN[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEnter the Qdrant endpoint (e.g.: http://%s:6333): \e[0m"
+    MSG_ES[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEscriba el endpoint de Qdrant (ej: http://%s:6333): \e[0m"
+    echo -en "$(t ferramenta_anythingllm_qdrant_endpoint "$ip")" && read -r qdrant_anythingllm
     echo ""
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -en "🔑 \e[33mDigite a API Key do Qdrant (se houver): \e[0m" && read -r api_qdrant_anythingllm
+    MSG_PT[ferramenta_anythingllm_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
+    MSG_EN[ferramenta_anythingllm_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
+    MSG_ES[ferramenta_anythingllm_passo3]="\n📍 \e[97mPaso ${amarelo}3/3\e[0m"
+    echo -e "$(t ferramenta_anythingllm_passo3)"
+    MSG_PT[ferramenta_anythingllm_qdrant_apikey]="🔑 \e[33mDigite a API Key do Qdrant (se houver): \e[0m"
+    MSG_EN[ferramenta_anythingllm_qdrant_apikey]="🔑 \e[33mEnter the Qdrant API Key (if any): \e[0m"
+    MSG_ES[ferramenta_anythingllm_qdrant_apikey]="🔑 \e[33mEscriba la API Key de Qdrant (si tiene): \e[0m"
+    echo -en "$(t ferramenta_anythingllm_qdrant_apikey)" && read -r api_qdrant_anythingllm
     echo ""
 
     clear
     msg_anythingllm
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_anythingllm_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_anythingllm_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_anythingllm_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_anythingllm_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio AnythingLLM:\e[97m $url_anythingllm\e[0m"
-    echo -e "🔗 \e[33mEndpoint Qdrant:\e[97m $qdrant_anythingllm\e[0m"
+    MSG_PT[ferramenta_anythingllm_resumo_dominio]="🌐 \e[33mDomínio AnythingLLM:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_anythingllm_resumo_dominio]="🌐 \e[33mAnythingLLM Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_anythingllm_resumo_dominio]="🌐 \e[33mDominio AnythingLLM:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_anythingllm_resumo_dominio "$url_anythingllm")"
+    MSG_PT[ferramenta_anythingllm_resumo_qdrant]="🔗 \e[33mEndpoint Qdrant:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_anythingllm_resumo_qdrant]="🔗 \e[33mQdrant Endpoint:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_anythingllm_resumo_qdrant]="🔗 \e[33mEndpoint Qdrant:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_anythingllm_resumo_qdrant "$qdrant_anythingllm")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_anythingllm_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_anythingllm_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_anythingllm_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_anythingllm_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_anythingllm; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do AnythingLLM...\e[0m"
+  MSG_PT[ferramenta_anythingllm_iniciando]="\e[97m🚀 Iniciando a instalação do AnythingLLM...\e[0m"
+  MSG_EN[ferramenta_anythingllm_iniciando]="\e[97m🚀 Starting AnythingLLM installation...\e[0m"
+  MSG_ES[ferramenta_anythingllm_iniciando]="\e[97m🚀 Iniciando la instalación de AnythingLLM...\e[0m"
+  echo -e "$(t ferramenta_anythingllm_iniciando)"
   verificar_docker_e_portainer_traefik || return
   verificar_stack "qdrant" || ferramenta_qdrant
 
@@ -7833,7 +10153,10 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ ANYTHINGLLM ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_anythingllm\e[0m"
+  MSG_PT[ferramenta_anythingllm_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_anythingllm_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_anythingllm_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_anythingllm_final_dominio "$url_anythingllm")"
   msg_retorno_menu
 
 }
@@ -7843,22 +10166,40 @@ ferramenta_nocodb() {
   dados
 
   while true; do
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para o NocoDB (ex: nocodb.encha.ai): \e[0m" && read -r url_nocodb
+    MSG_PT[ferramenta_nocodb_passo1]="\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+    MSG_EN[ferramenta_nocodb_passo1]="\n📍 \e[97mStep ${amarelo}1/1\e[0m"
+    MSG_ES[ferramenta_nocodb_passo1]="\n📍 \e[97mPaso ${amarelo}1/1\e[0m"
+    echo -e "$(t ferramenta_nocodb_passo1)"
+    MSG_PT[ferramenta_nocodb_dominio]="🔗 \e[33mDigite o domínio para o NocoDB (ex: nocodb.encha.ai): \e[0m"
+    MSG_EN[ferramenta_nocodb_dominio]="🔗 \e[33mEnter the domain for NocoDB (e.g.: nocodb.encha.ai): \e[0m"
+    MSG_ES[ferramenta_nocodb_dominio]="🔗 \e[33mEscriba el dominio para NocoDB (ej: nocodb.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_nocodb_dominio)" && read -r url_nocodb
     echo ""
 
     clear
     msg_nocodb
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_nocodb_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_nocodb_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_nocodb_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_nocodb_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio NocoDB:\e[97m $url_nocodb\e[0m"
+    MSG_PT[ferramenta_nocodb_resumo_dominio]="🌐 \e[33mDomínio NocoDB:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nocodb_resumo_dominio]="🌐 \e[33mNocoDB Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nocodb_resumo_dominio]="🌐 \e[33mDominio NocoDB:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_nocodb_resumo_dominio "$url_nocodb")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_nocodb_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_nocodb_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_nocodb_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_nocodb_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nocodb; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do NocoDB...\e[0m"
+  MSG_PT[ferramenta_nocodb_iniciando]="\e[97m🚀 Iniciando a instalação do NocoDB...\e[0m"
+  MSG_EN[ferramenta_nocodb_iniciando]="\e[97m🚀 Starting NocoDB installation...\e[0m"
+  MSG_ES[ferramenta_nocodb_iniciando]="\e[97m🚀 Iniciando la instalación de NocoDB...\e[0m"
+  echo -e "$(t ferramenta_nocodb_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "nocodb"
@@ -7921,7 +10262,10 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ NOCODB ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_nocodb\e[0m"
+  MSG_PT[ferramenta_nocodb_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_nocodb_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_nocodb_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_nocodb_final_dominio "$url_nocodb")"
   msg_retorno_menu
 
 }
@@ -7931,23 +10275,41 @@ ferramenta_humhub() {
     dados
 
     while true; do
-        echo -e "\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
-        echo -en "🔗 \e[33mDigite o domínio para o HumHub (ex: social.encha.ai): \e[0m" && read -r url_humhub
+        MSG_PT[ferramenta_humhub_passo1]="\n📍 \e[97mPasso ${amarelo}1/1\e[0m"
+        MSG_EN[ferramenta_humhub_passo1]="\n📍 \e[97mStep ${amarelo}1/1\e[0m"
+        MSG_ES[ferramenta_humhub_passo1]="\n📍 \e[97mPaso ${amarelo}1/1\e[0m"
+        echo -e "$(t ferramenta_humhub_passo1)"
+        MSG_PT[ferramenta_humhub_dominio]="🔗 \e[33mDigite o domínio para o HumHub (ex: social.encha.ai): \e[0m"
+        MSG_EN[ferramenta_humhub_dominio]="🔗 \e[33mEnter the domain for HumHub (e.g.: social.encha.ai): \e[0m"
+        MSG_ES[ferramenta_humhub_dominio]="🔗 \e[33mEscriba el dominio para HumHub (ej: social.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_humhub_dominio)" && read -r url_humhub
         echo ""
 
         clear
         msg_humhub
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_humhub_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_humhub_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_humhub_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_humhub_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio HumHub:\e[97m $url_humhub\e[0m"
+        MSG_PT[ferramenta_humhub_resumo_dominio]="🌐 \e[33mDomínio HumHub:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_humhub_resumo_dominio]="🌐 \e[33mHumHub Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_humhub_resumo_dominio]="🌐 \e[33mDominio HumHub:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_humhub_resumo_dominio "$url_humhub")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_humhub_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_humhub_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_humhub_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_humhub_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_humhub; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do HumHub...\e[0m"
-    verificar_container_mysql || ferramenta_mysql 
+    MSG_PT[ferramenta_humhub_iniciando]="\e[97m🚀 Iniciando a instalação do HumHub...\e[0m"
+    MSG_EN[ferramenta_humhub_iniciando]="\e[97m🚀 Starting HumHub installation...\e[0m"
+    MSG_ES[ferramenta_humhub_iniciando]="\e[97m🚀 Iniciando la instalación de HumHub...\e[0m"
+    echo -e "$(t ferramenta_humhub_iniciando)"
+    verificar_container_mysql || ferramenta_mysql
     pegar_senha_mysql_da_stack
     criar_banco_mysql_da_stack "humhub"
     
@@ -8006,8 +10368,14 @@ EOL
     
     msg_resumo_informacoes
     echo -e "\e[32m[ HUMHUB ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_humhub\e[0m"
-    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    MSG_PT[ferramenta_humhub_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_humhub_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_humhub_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_humhub_final_dominio "$url_humhub")"
+    MSG_PT[ferramenta_humhub_aviso_setup]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    MSG_EN[ferramenta_humhub_aviso_setup]="\e[33m⚠️  Access the domain to complete the installation and create your admin user.\e[0m"
+    MSG_ES[ferramenta_humhub_aviso_setup]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario administrador.\e[0m"
+    echo -e "$(t ferramenta_humhub_aviso_setup)"
     msg_retorno_menu
 }
 
@@ -8016,28 +10384,58 @@ ferramenta_wordpress() {
     dados
 
     while true; do
-        echo -e "\n📍 Passo 1/2"
-        echo -en "🔗 \e[33mDigite o domínio para o Wordpress (ex: loja.encha.ai): \e[0m" && read -r url_wordpress
+        MSG_PT[ferramenta_wordpress_passo1]="\n📍 Passo 1/2"
+        MSG_EN[ferramenta_wordpress_passo1]="\n📍 Step 1/2"
+        MSG_ES[ferramenta_wordpress_passo1]="\n📍 Paso 1/2"
+        echo -e "$(t ferramenta_wordpress_passo1)"
+        MSG_PT[ferramenta_wordpress_dominio]="🔗 \e[33mDigite o domínio para o Wordpress (ex: loja.encha.ai): \e[0m"
+        MSG_EN[ferramenta_wordpress_dominio]="🔗 \e[33mEnter the domain for Wordpress (e.g.: loja.encha.ai): \e[0m"
+        MSG_ES[ferramenta_wordpress_dominio]="🔗 \e[33mEscriba el dominio para Wordpress (ej: loja.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_wordpress_dominio)" && read -r url_wordpress
         echo ""
 
-        echo -e "\n📍 Passo 2/2"
-        echo -e "\e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
-        echo -en "🔗 \e[33mDigite o nome do Site para os arquivos (ex: lojaencha): \e[0m" && read -r nome_site_wordpress
+        MSG_PT[ferramenta_wordpress_passo2]="\n📍 Passo 2/2"
+        MSG_EN[ferramenta_wordpress_passo2]="\n📍 Step 2/2"
+        MSG_ES[ferramenta_wordpress_passo2]="\n📍 Paso 2/2"
+        echo -e "$(t ferramenta_wordpress_passo2)"
+        MSG_PT[ferramenta_wordpress_aviso_nome]="\e[33m--> Use apenas letras minúsculas, sem espaços ou caracteres especiais.\e[0m"
+        MSG_EN[ferramenta_wordpress_aviso_nome]="\e[33m--> Use only lowercase letters, no spaces or special characters.\e[0m"
+        MSG_ES[ferramenta_wordpress_aviso_nome]="\e[33m--> Use solo letras minúsculas, sin espacios ni caracteres especiales.\e[0m"
+        echo -e "$(t ferramenta_wordpress_aviso_nome)"
+        MSG_PT[ferramenta_wordpress_nome_site]="🔗 \e[33mDigite o nome do Site para os arquivos (ex: lojaencha): \e[0m"
+        MSG_EN[ferramenta_wordpress_nome_site]="🔗 \e[33mEnter the Site name for the files (e.g.: lojaencha): \e[0m"
+        MSG_ES[ferramenta_wordpress_nome_site]="🔗 \e[33mEscriba el nombre del Sitio para los archivos (ej: lojaencha): \e[0m"
+        echo -en "$(t ferramenta_wordpress_nome_site)" && read -r nome_site_wordpress
         echo ""
 
         clear
         msg_wordpress
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_wordpress_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_wordpress_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_wordpress_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_wordpress_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio do Wordpress:\e[97m $url_wordpress\e[0m"
-        echo -e "📁 \e[33mNome do Site:\e[97m $nome_site_wordpress\e[0m"
+        MSG_PT[ferramenta_wordpress_resumo_dominio]="🌐 \e[33mDomínio do Wordpress:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_wordpress_resumo_dominio]="🌐 \e[33mWordpress Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_wordpress_resumo_dominio]="🌐 \e[33mDominio de Wordpress:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_wordpress_resumo_dominio "$url_wordpress")"
+        MSG_PT[ferramenta_wordpress_resumo_nome_site]="📁 \e[33mNome do Site:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_wordpress_resumo_nome_site]="📁 \e[33mSite Name:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_wordpress_resumo_nome_site]="📁 \e[33mNombre del Sitio:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_wordpress_resumo_nome_site "$nome_site_wordpress")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_wordpress_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_wordpress_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_wordpress_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_wordpress_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wordpress; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
+    MSG_PT[ferramenta_wordpress_iniciando]="\e[97m🚀 Iniciando a instalação do Wordpress...\e[0m"
+    MSG_EN[ferramenta_wordpress_iniciando]="\e[97m🚀 Starting Wordpress installation...\e[0m"
+    MSG_ES[ferramenta_wordpress_iniciando]="\e[97m🚀 Iniciando la instalación de Wordpress...\e[0m"
+    echo -e "$(t ferramenta_wordpress_iniciando)"
     verificar_container_mysql || ferramenta_mysql
     pegar_senha_mysql_da_stack
     criar_banco_mysql_da_stack "$nome_site_wordpress"
@@ -8099,16 +10497,22 @@ EOL
     stack_editavel
     wait_stack "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}"
 
-    echo "Aguardando para configurar o php.ini..."
+    MSG_PT[ferramenta_wordpress_aguardando_php]="Aguardando para configurar o php.ini..."
+    MSG_EN[ferramenta_wordpress_aguardando_php]="Waiting to configure php.ini..."
+    MSG_ES[ferramenta_wordpress_aguardando_php]="Esperando para configurar el php.ini..."
+    echo "$(t ferramenta_wordpress_aguardando_php)"
     sleep 20
-    
+
     cp /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini-production /var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini
     caminho_php_ini="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}_php/_data/php.ini"
     sed -i "s/^upload_max_filesize =.*/upload_max_filesize = 1024M/" "$caminho_php_ini"
     sed -i "s/^max_execution_time =.*/max_execution_time = 450/" "$caminho_php_ini"
     sed -i "s/^memory_limit =.*/memory_limit = 1024M/" "$caminho_php_ini"
-    
-    echo "Aguardando para configurar o wp-config.php..."
+
+    MSG_PT[ferramenta_wordpress_aguardando_wpconfig]="Aguardando para configurar o wp-config.php..."
+    MSG_EN[ferramenta_wordpress_aguardando_wpconfig]="Waiting to configure wp-config.php..."
+    MSG_ES[ferramenta_wordpress_aguardando_wpconfig]="Esperando para configurar el wp-config.php..."
+    echo "$(t ferramenta_wordpress_aguardando_wpconfig)"
     sleep 20
 
     caminho_wp_config="/var/lib/docker/volumes/wordpress_${nome_site_wordpress}/_data/wp-config.php"
@@ -8118,7 +10522,10 @@ define( 'WP_REDIS_HOST', 'redis' );\n\
 define( 'WP_REDIS_PORT', 6379 );\n" "$caminho_wp_config"
         docker service update --force "wordpress_${nome_site_wordpress}_wordpress_${nome_site_wordpress}" > /dev/null 2>&1
     else
-        echo "Arquivo wp-config.php não encontrado, pule a configuração do Redis."
+        MSG_PT[ferramenta_wordpress_wpconfig_nao_encontrado]="Arquivo wp-config.php não encontrado, pule a configuração do Redis."
+        MSG_EN[ferramenta_wordpress_wpconfig_nao_encontrado]="wp-config.php file not found, skipping the Redis configuration."
+        MSG_ES[ferramenta_wordpress_wpconfig_nao_encontrado]="Archivo wp-config.php no encontrado, se omite la configuración de Redis."
+        echo "$(t ferramenta_wordpress_wpconfig_nao_encontrado)"
     fi
 
     cd /root/dados_vps
@@ -8132,8 +10539,14 @@ EOL
 
     msg_resumo_informacoes
     echo -e "\e[32m[ WORDPRESS ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://${url_wordpress}\e[0m"
-    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    MSG_PT[ferramenta_wordpress_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_wordpress_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_wordpress_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_wordpress_final_dominio "$url_wordpress")"
+    MSG_PT[ferramenta_wordpress_aviso_setup]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário admin.\e[0m"
+    MSG_EN[ferramenta_wordpress_aviso_setup]="\e[33m⚠️  Access the domain to complete the installation and create your admin user.\e[0m"
+    MSG_ES[ferramenta_wordpress_aviso_setup]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario administrador.\e[0m"
+    echo -e "$(t ferramenta_wordpress_aviso_setup)"
     msg_retorno_menu
 }
 
@@ -8142,19 +10555,55 @@ ferramenta_formbricks() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/6"
-    echo -en "🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m" && read -r url_formbricks
-    echo -e "\n📍 Passo 2/6"
-    echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_formbricks
-    echo -e "\n📍 Passo 3/6"
-    echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_formbricks
-    echo -e "\n📍 Passo 4/6"
-    echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_formbricks
+    MSG_PT[ferramenta_formbricks_passo1]="\n📍 Passo 1/6"
+    MSG_EN[ferramenta_formbricks_passo1]="\n📍 Step 1/6"
+    MSG_ES[ferramenta_formbricks_passo1]="\n📍 Paso 1/6"
+    echo -e "$(t ferramenta_formbricks_passo1)"
+    MSG_PT[ferramenta_formbricks_dominio]="🔗 \e[33mDigite o domínio para o Formbricks (ex: forms.encha.ai): \e[0m"
+    MSG_EN[ferramenta_formbricks_dominio]="🔗 \e[33mEnter the domain for Formbricks (e.g.: forms.encha.ai): \e[0m"
+    MSG_ES[ferramenta_formbricks_dominio]="🔗 \e[33mEscriba el dominio para Formbricks (ej: forms.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_formbricks_dominio)" && read -r url_formbricks
+    MSG_PT[ferramenta_formbricks_passo2]="\n📍 Passo 2/6"
+    MSG_EN[ferramenta_formbricks_passo2]="\n📍 Step 2/6"
+    MSG_ES[ferramenta_formbricks_passo2]="\n📍 Paso 2/6"
+    echo -e "$(t ferramenta_formbricks_passo2)"
+    MSG_PT[ferramenta_formbricks_email_smtp]="📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_formbricks_email_smtp]="📧 \e[33mEnter the SMTP Email (e.g.: noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_formbricks_email_smtp]="📧 \e[33mEscriba el Email para SMTP (ej: noreply@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_formbricks_email_smtp)" && read -r email_formbricks
+    MSG_PT[ferramenta_formbricks_passo3]="\n📍 Passo 3/6"
+    MSG_EN[ferramenta_formbricks_passo3]="\n📍 Step 3/6"
+    MSG_ES[ferramenta_formbricks_passo3]="\n📍 Paso 3/6"
+    echo -e "$(t ferramenta_formbricks_passo3)"
+    MSG_PT[ferramenta_formbricks_user_smtp]="👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m"
+    MSG_EN[ferramenta_formbricks_user_smtp]="👤 \e[33mEnter the SMTP User (can be the same email): \e[0m"
+    MSG_ES[ferramenta_formbricks_user_smtp]="👤 \e[33mEscriba el Usuario para SMTP (puede ser el mismo email): \e[0m"
+    echo -en "$(t ferramenta_formbricks_user_smtp)" && read -r user_smtp_formbricks
+    MSG_PT[ferramenta_formbricks_passo4]="\n📍 Passo 4/6"
+    MSG_EN[ferramenta_formbricks_passo4]="\n📍 Step 4/6"
+    MSG_ES[ferramenta_formbricks_passo4]="\n📍 Paso 4/6"
+    echo -e "$(t ferramenta_formbricks_passo4)"
+    MSG_PT[ferramenta_formbricks_senha_smtp]="🔑 \e[33mDigite a Senha SMTP do email: \e[0m"
+    MSG_EN[ferramenta_formbricks_senha_smtp]="🔑 \e[33mEnter the email's SMTP Password: \e[0m"
+    MSG_ES[ferramenta_formbricks_senha_smtp]="🔑 \e[33mEscriba la Contraseña SMTP del email: \e[0m"
+    echo -en "$(t ferramenta_formbricks_senha_smtp)" && read -s -r senha_formbricks
     echo ""
-    echo -e "\n📍 Passo 5/6"
-    echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_formbricks
-    echo -e "\n📍 Passo 6/6"
-    echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_formbricks
+    MSG_PT[ferramenta_formbricks_passo5]="\n📍 Passo 5/6"
+    MSG_EN[ferramenta_formbricks_passo5]="\n📍 Step 5/6"
+    MSG_ES[ferramenta_formbricks_passo5]="\n📍 Paso 5/6"
+    echo -e "$(t ferramenta_formbricks_passo5)"
+    MSG_PT[ferramenta_formbricks_host_smtp]="🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_formbricks_host_smtp]="🏠 \e[33mEnter the email's SMTP Host (e.g.: smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_formbricks_host_smtp]="🏠 \e[33mEscriba el Host SMTP del email (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_formbricks_host_smtp)" && read -r host_formbricks
+    MSG_PT[ferramenta_formbricks_passo6]="\n📍 Passo 6/6"
+    MSG_EN[ferramenta_formbricks_passo6]="\n📍 Step 6/6"
+    MSG_ES[ferramenta_formbricks_passo6]="\n📍 Paso 6/6"
+    echo -e "$(t ferramenta_formbricks_passo6)"
+    MSG_PT[ferramenta_formbricks_porta_smtp]="🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m"
+    MSG_EN[ferramenta_formbricks_porta_smtp]="🔌 \e[33mEnter the email's SMTP port (e.g.: 465 or 587): \e[0m"
+    MSG_ES[ferramenta_formbricks_porta_smtp]="🔌 \e[33mEscriba el puerto SMTP del email (ej: 465 o 587): \e[0m"
+    echo -en "$(t ferramenta_formbricks_porta_smtp)" && read -r porta_formbricks
 
     if [ "$porta_formbricks" -eq 465 ] || [ "$porta_formbricks" -eq 25 ]; then
       ssl_formbricks=1
@@ -8164,17 +10613,32 @@ ferramenta_formbricks() {
 
     clear
     msg_formbricks
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_formbricks_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_formbricks_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_formbricks_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_formbricks_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_formbricks\e[0m"
-    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_formbricks\e[0m"
+    MSG_PT[ferramenta_formbricks_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_formbricks_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_formbricks_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_formbricks_resumo_dominio "$url_formbricks")"
+    MSG_PT[ferramenta_formbricks_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_formbricks_resumo_email]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_formbricks_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_formbricks_resumo_email "$email_formbricks")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_formbricks_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_formbricks_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_formbricks_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_formbricks_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_formbricks; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
+  MSG_PT[ferramenta_formbricks_iniciando]="\e[97m🚀 Iniciando a instalação do Formbricks...\e[0m"
+  MSG_EN[ferramenta_formbricks_iniciando]="\e[97m🚀 Starting Formbricks installation...\e[0m"
+  MSG_ES[ferramenta_formbricks_iniciando]="\e[97m🚀 Iniciando la instalación de Formbricks...\e[0m"
+  echo -e "$(t ferramenta_formbricks_iniciando)"
   verificar_container_pgvector || ferramenta_pgvector
   pegar_senha_pgvector
   criar_banco_pgvector_da_stack "formbricks"
@@ -8301,9 +10765,12 @@ EOF
   stack_editavel
 
   ## Mensagem de Passo
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_formbricks_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_formbricks_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_formbricks_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_formbricks_verificando)"
   echo ""
- 
+
   ## Baixando imagens:
   pull ghcr.io/formbricks/formbricks:latest
 
@@ -8321,11 +10788,17 @@ Senha: Precisa de criar dentro do Formbricks
 EOL
 
   cd
-  
+
   msg_resumo_informacoes
   echo -e "\e[32m[ FORMBRICKS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_formbricks\e[0m"
-  echo -e "\e[33m⚠️  Aguarde aproximadamente 5 minutos antes de acessar devido à migração do banco de dados.\e[0m"
+  MSG_PT[ferramenta_formbricks_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_formbricks_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_formbricks_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_formbricks_final_dominio "$url_formbricks")"
+  MSG_PT[ferramenta_formbricks_aviso_migracao]="\e[33m⚠️  Aguarde aproximadamente 5 minutos antes de acessar devido à migração do banco de dados.\e[0m"
+  MSG_EN[ferramenta_formbricks_aviso_migracao]="\e[33m⚠️  Wait approximately 5 minutes before accessing due to the database migration.\e[0m"
+  MSG_ES[ferramenta_formbricks_aviso_migracao]="\e[33m⚠️  Espere aproximadamente 5 minutos antes de acceder debido a la migración de la base de datos.\e[0m"
+  echo -e "$(t ferramenta_formbricks_aviso_migracao)"
   msg_retorno_menu
 }
 
@@ -8334,22 +10807,40 @@ ferramenta_metabase() {
     dados
 
     while true; do
-        echo -e "\n📍 Passo 1/1"
-        echo -en "🔗 \e[33mDigite o domínio para o Metabase (ex: bi.encha.ai): \e[0m" && read -r url_metabase
+        MSG_PT[ferramenta_metabase_passo1]="\n📍 Passo 1/1"
+        MSG_EN[ferramenta_metabase_passo1]="\n📍 Step 1/1"
+        MSG_ES[ferramenta_metabase_passo1]="\n📍 Paso 1/1"
+        echo -e "$(t ferramenta_metabase_passo1)"
+        MSG_PT[ferramenta_metabase_dominio]="🔗 \e[33mDigite o domínio para o Metabase (ex: bi.encha.ai): \e[0m"
+        MSG_EN[ferramenta_metabase_dominio]="🔗 \e[33mEnter the domain for Metabase (e.g.: bi.encha.ai): \e[0m"
+        MSG_ES[ferramenta_metabase_dominio]="🔗 \e[33mEscriba el dominio para Metabase (ej: bi.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_metabase_dominio)" && read -r url_metabase
         echo ""
 
         clear
         msg_metabase
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_metabase_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_metabase_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_metabase_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_metabase_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Metabase:\e[97m $url_metabase\e[0m"
+        MSG_PT[ferramenta_metabase_resumo_dominio]="🌐 \e[33mDomínio Metabase:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_metabase_resumo_dominio]="🌐 \e[33mMetabase Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_metabase_resumo_dominio]="🌐 \e[33mDominio Metabase:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_metabase_resumo_dominio "$url_metabase")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_metabase_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_metabase_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_metabase_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_metabase_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_metabase; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Metabase...\e[0m"
+    MSG_PT[ferramenta_metabase_iniciando]="\e[97m🚀 Iniciando a instalação do Metabase...\e[0m"
+    MSG_EN[ferramenta_metabase_iniciando]="\e[97m🚀 Starting Metabase installation...\e[0m"
+    MSG_ES[ferramenta_metabase_iniciando]="\e[97m🚀 Iniciando la instalación de Metabase...\e[0m"
+    echo -e "$(t ferramenta_metabase_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "metabase"
@@ -8429,7 +10920,10 @@ EOL
     stack_editavel
 
     ## Mensagem de Passo
-    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+    MSG_PT[ferramenta_metabase_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+    MSG_EN[ferramenta_metabase_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+    MSG_ES[ferramenta_metabase_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+    echo -e "$(t ferramenta_metabase_verificando)"
     echo ""
 
     ## Baixando imagens:
@@ -8445,11 +10939,17 @@ Usuario: (criado no primeiro acesso)
 Senha: (criada no primeiro acesso)
 EOL
     cd
-    
+
     msg_resumo_informacoes
     echo -e "\e[32m[ METABASE ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_metabase\e[0m"
-    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    MSG_PT[ferramenta_metabase_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_metabase_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_metabase_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_metabase_final_dominio "$url_metabase")"
+    MSG_PT[ferramenta_metabase_aviso_setup]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    MSG_EN[ferramenta_metabase_aviso_setup]="\e[33m⚠️  Access the domain to complete the installation and create your user.\e[0m"
+    MSG_ES[ferramenta_metabase_aviso_setup]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario.\e[0m"
+    echo -e "$(t ferramenta_metabase_aviso_setup)"
     msg_retorno_menu
 }
 
@@ -8458,42 +10958,105 @@ ferramenta_docuseal() {
     dados
 
     while true; do
-        echo -e "\n📍 Passo 1/6"
-        echo -en "🔗 \e[33mDigite o domínio para o Docuseal (ex: assine.encha.ai): \e[0m" && read -r url_docuseal
+        MSG_PT[ferramenta_docuseal_passo1]="\n📍 Passo 1/6"
+        MSG_EN[ferramenta_docuseal_passo1]="\n📍 Step 1/6"
+        MSG_ES[ferramenta_docuseal_passo1]="\n📍 Paso 1/6"
+        echo -e "$(t ferramenta_docuseal_passo1)"
+        MSG_PT[ferramenta_docuseal_dominio]="🔗 \e[33mDigite o domínio para o Docuseal (ex: assine.encha.ai): \e[0m"
+        MSG_EN[ferramenta_docuseal_dominio]="🔗 \e[33mEnter the domain for Docuseal (e.g.: assine.encha.ai): \e[0m"
+        MSG_ES[ferramenta_docuseal_dominio]="🔗 \e[33mEscriba el dominio para Docuseal (ej: assine.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_docuseal_dominio)" && read -r url_docuseal
         echo ""
-        echo -e "\n📍 Passo 2/6"
-        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_docuseal
+        MSG_PT[ferramenta_docuseal_passo2]="\n📍 Passo 2/6"
+        MSG_EN[ferramenta_docuseal_passo2]="\n📍 Step 2/6"
+        MSG_ES[ferramenta_docuseal_passo2]="\n📍 Paso 2/6"
+        echo -e "$(t ferramenta_docuseal_passo2)"
+        MSG_PT[ferramenta_docuseal_email_smtp]="📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m"
+        MSG_EN[ferramenta_docuseal_email_smtp]="📧 \e[33mEnter the SMTP Email (e.g.: noreply@encha.ai): \e[0m"
+        MSG_ES[ferramenta_docuseal_email_smtp]="📧 \e[33mEscriba el Email para SMTP (ej: noreply@encha.ai): \e[0m"
+        echo -en "$(t ferramenta_docuseal_email_smtp)" && read -r email_smtp_docuseal
         echo ""
-        echo -e "\n📍 Passo 3/6"
-        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_smtp_docuseal
+        MSG_PT[ferramenta_docuseal_passo3]="\n📍 Passo 3/6"
+        MSG_EN[ferramenta_docuseal_passo3]="\n📍 Step 3/6"
+        MSG_ES[ferramenta_docuseal_passo3]="\n📍 Paso 3/6"
+        echo -e "$(t ferramenta_docuseal_passo3)"
+        MSG_PT[ferramenta_docuseal_user_smtp]="👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m"
+        MSG_EN[ferramenta_docuseal_user_smtp]="👤 \e[33mEnter the SMTP User (can be the same email): \e[0m"
+        MSG_ES[ferramenta_docuseal_user_smtp]="👤 \e[33mEscriba el Usuario para SMTP (puede ser el mismo email): \e[0m"
+        echo -en "$(t ferramenta_docuseal_user_smtp)" && read -r user_smtp_docuseal
         echo ""
-        echo -e "\n📍 Passo 4/6"
-        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_smtp_docuseal
+        MSG_PT[ferramenta_docuseal_passo4]="\n📍 Passo 4/6"
+        MSG_EN[ferramenta_docuseal_passo4]="\n📍 Step 4/6"
+        MSG_ES[ferramenta_docuseal_passo4]="\n📍 Paso 4/6"
+        echo -e "$(t ferramenta_docuseal_passo4)"
+        MSG_PT[ferramenta_docuseal_senha_smtp]="🔑 \e[33mDigite a Senha SMTP do email: \e[0m"
+        MSG_EN[ferramenta_docuseal_senha_smtp]="🔑 \e[33mEnter the email's SMTP Password: \e[0m"
+        MSG_ES[ferramenta_docuseal_senha_smtp]="🔑 \e[33mEscriba la Contraseña SMTP del email: \e[0m"
+        echo -en "$(t ferramenta_docuseal_senha_smtp)" && read -s -r senha_smtp_docuseal
         echo ""
-        echo -e "\n📍 Passo 5/6"
-        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_docuseal
+        MSG_PT[ferramenta_docuseal_passo5]="\n📍 Passo 5/6"
+        MSG_EN[ferramenta_docuseal_passo5]="\n📍 Step 5/6"
+        MSG_ES[ferramenta_docuseal_passo5]="\n📍 Paso 5/6"
+        echo -e "$(t ferramenta_docuseal_passo5)"
+        MSG_PT[ferramenta_docuseal_host_smtp]="🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m"
+        MSG_EN[ferramenta_docuseal_host_smtp]="🏠 \e[33mEnter the email's SMTP Host (e.g.: smtp.hostinger.com): \e[0m"
+        MSG_ES[ferramenta_docuseal_host_smtp]="🏠 \e[33mEscriba el Host SMTP del email (ej: smtp.hostinger.com): \e[0m"
+        echo -en "$(t ferramenta_docuseal_host_smtp)" && read -r host_smtp_docuseal
         echo ""
-        echo -e "\n📍 Passo 6/6"
-        echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_smtp_docuseal
+        MSG_PT[ferramenta_docuseal_passo6]="\n📍 Passo 6/6"
+        MSG_EN[ferramenta_docuseal_passo6]="\n📍 Step 6/6"
+        MSG_ES[ferramenta_docuseal_passo6]="\n📍 Paso 6/6"
+        echo -e "$(t ferramenta_docuseal_passo6)"
+        MSG_PT[ferramenta_docuseal_porta_smtp]="🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m"
+        MSG_EN[ferramenta_docuseal_porta_smtp]="🔌 \e[33mEnter the email's SMTP port (e.g.: 465 or 587): \e[0m"
+        MSG_ES[ferramenta_docuseal_porta_smtp]="🔌 \e[33mEscriba el puerto SMTP del email (ej: 465 o 587): \e[0m"
+        echo -en "$(t ferramenta_docuseal_porta_smtp)" && read -r porta_smtp_docuseal
         echo ""
 
         clear
         msg_docuseal
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_docuseal_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_docuseal_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_docuseal_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_docuseal_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Docuseal:\e[97m $url_docuseal\e[0m"
-        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_smtp_docuseal\e[0m"
-        echo -e "\e[33mUser SMTP:\e[97m $user_smtp_docuseal\e[0m"
-        echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_docuseal\e[0m"
-        echo -e "\e[33mHost SMTP:\e[97m $host_smtp_docuseal\e[0m"
-        echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_docuseal\e[0m"
+        MSG_PT[ferramenta_docuseal_resumo_dominio]="🌐 \e[33mDomínio Docuseal:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_dominio]="🌐 \e[33mDocuseal Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_dominio]="🌐 \e[33mDominio Docuseal:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_dominio "$url_docuseal")"
+        MSG_PT[ferramenta_docuseal_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_email]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_email]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_email "$email_smtp_docuseal")"
+        MSG_PT[ferramenta_docuseal_resumo_user]="\e[33mUser SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_user]="\e[33mSMTP User:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_user]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_user "$user_smtp_docuseal")"
+        MSG_PT[ferramenta_docuseal_resumo_senha]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_senha]="\e[33mSMTP Password:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_senha]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_senha "$senha_smtp_docuseal")"
+        MSG_PT[ferramenta_docuseal_resumo_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_host "$host_smtp_docuseal")"
+        MSG_PT[ferramenta_docuseal_resumo_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_docuseal_resumo_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_docuseal_resumo_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_docuseal_resumo_porta "$porta_smtp_docuseal")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_docuseal_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_docuseal_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_docuseal_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_docuseal_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_docuseal; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Docuseal...\e[0m"
+    MSG_PT[ferramenta_docuseal_iniciando]="\e[97m🚀 Iniciando a instalação do Docuseal...\e[0m"
+    MSG_EN[ferramenta_docuseal_iniciando]="\e[97m🚀 Starting Docuseal installation...\e[0m"
+    MSG_ES[ferramenta_docuseal_iniciando]="\e[97m🚀 Iniciando la instalación de Docuseal...\e[0m"
+    echo -e "$(t ferramenta_docuseal_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "ddocuseal${1:+_$1}"
@@ -8595,8 +11158,14 @@ EOL
     
     msg_resumo_informacoes
     echo -e "\e[32m[ DOCUSEAL ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_docuseal\e[0m"
-    echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    MSG_PT[ferramenta_docuseal_final_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_docuseal_final_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_docuseal_final_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_docuseal_final_dominio "$url_docuseal")"
+    MSG_PT[ferramenta_docuseal_aviso_setup]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+    MSG_EN[ferramenta_docuseal_aviso_setup]="\e[33m⚠️  Access the domain to complete the installation and create your user.\e[0m"
+    MSG_ES[ferramenta_docuseal_aviso_setup]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario.\e[0m"
+    echo -e "$(t ferramenta_docuseal_aviso_setup)"
     msg_retorno_menu
 }
 
@@ -8605,36 +11174,84 @@ ferramenta_monitor() {
     dados
 
     while true; do
-        echo -e "\n📍 Passo 1/4"
-        echo -en "🔗 \e[33mDigite o domínio para o Grafana (ex: grafana.encha.ai): \e[0m" && read -r url_grafana
+        MSG_PT[ferramenta_monitor_passo1]="\n📍 Passo 1/4"
+        MSG_EN[ferramenta_monitor_passo1]="\n📍 Step 1/4"
+        MSG_ES[ferramenta_monitor_passo1]="\n📍 Paso 1/4"
+        echo -e "$(t ferramenta_monitor_passo1)"
+        MSG_PT[ferramenta_monitor_dominio_grafana]="🔗 \e[33mDigite o domínio para o Grafana (ex: grafana.encha.ai): \e[0m"
+        MSG_EN[ferramenta_monitor_dominio_grafana]="🔗 \e[33mEnter the domain for Grafana (e.g.: grafana.encha.ai): \e[0m"
+        MSG_ES[ferramenta_monitor_dominio_grafana]="🔗 \e[33mEscriba el dominio para Grafana (ej: grafana.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_monitor_dominio_grafana)" && read -r url_grafana
         echo ""
-        echo -e "\n📍 Passo 2/4"
-        echo -en "🔗 \e[33mDigite o domínio para o Prometheus (ex: prometheus.encha.ai): \e[0m" && read -r url_prometheus
+        MSG_PT[ferramenta_monitor_passo2]="\n📍 Passo 2/4"
+        MSG_EN[ferramenta_monitor_passo2]="\n📍 Step 2/4"
+        MSG_ES[ferramenta_monitor_passo2]="\n📍 Paso 2/4"
+        echo -e "$(t ferramenta_monitor_passo2)"
+        MSG_PT[ferramenta_monitor_dominio_prometheus]="🔗 \e[33mDigite o domínio para o Prometheus (ex: prometheus.encha.ai): \e[0m"
+        MSG_EN[ferramenta_monitor_dominio_prometheus]="🔗 \e[33mEnter the domain for Prometheus (e.g.: prometheus.encha.ai): \e[0m"
+        MSG_ES[ferramenta_monitor_dominio_prometheus]="🔗 \e[33mEscriba el dominio para Prometheus (ej: prometheus.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_monitor_dominio_prometheus)" && read -r url_prometheus
         echo ""
-        echo -e "\n📍 Passo 3/4"
-        echo -en "🔗 \e[33mDigite o domínio para o cAdvisor (ex: cadvisor.encha.ai): \e[0m" && read -r url_cadvisor
+        MSG_PT[ferramenta_monitor_passo3]="\n📍 Passo 3/4"
+        MSG_EN[ferramenta_monitor_passo3]="\n📍 Step 3/4"
+        MSG_ES[ferramenta_monitor_passo3]="\n📍 Paso 3/4"
+        echo -e "$(t ferramenta_monitor_passo3)"
+        MSG_PT[ferramenta_monitor_dominio_cadvisor]="🔗 \e[33mDigite o domínio para o cAdvisor (ex: cadvisor.encha.ai): \e[0m"
+        MSG_EN[ferramenta_monitor_dominio_cadvisor]="🔗 \e[33mEnter the domain for cAdvisor (e.g.: cadvisor.encha.ai): \e[0m"
+        MSG_ES[ferramenta_monitor_dominio_cadvisor]="🔗 \e[33mEscriba el dominio para cAdvisor (ej: cadvisor.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_monitor_dominio_cadvisor)" && read -r url_cadvisor
         echo ""
-        echo -e "\n📍 Passo 4/4"
-        echo -en "🔗 \e[33mDigite o domínio para o NodeExporter (ex: node.encha.ai): \e[0m" && read -r url_nodeexporter
+        MSG_PT[ferramenta_monitor_passo4]="\n📍 Passo 4/4"
+        MSG_EN[ferramenta_monitor_passo4]="\n📍 Step 4/4"
+        MSG_ES[ferramenta_monitor_passo4]="\n📍 Paso 4/4"
+        echo -e "$(t ferramenta_monitor_passo4)"
+        MSG_PT[ferramenta_monitor_dominio_nodeexporter]="🔗 \e[33mDigite o domínio para o NodeExporter (ex: node.encha.ai): \e[0m"
+        MSG_EN[ferramenta_monitor_dominio_nodeexporter]="🔗 \e[33mEnter the domain for NodeExporter (e.g.: node.encha.ai): \e[0m"
+        MSG_ES[ferramenta_monitor_dominio_nodeexporter]="🔗 \e[33mEscriba el dominio para NodeExporter (ej: node.encha.ai): \e[0m"
+        echo -en "$(t ferramenta_monitor_dominio_nodeexporter)" && read -r url_nodeexporter
         echo ""
 
         clear
         msg_monitor
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_PT[ferramenta_monitor_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        MSG_EN[ferramenta_monitor_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+        MSG_ES[ferramenta_monitor_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+        echo -e "$(t ferramenta_monitor_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "📊 \e[33mDomínio Grafana:\e[97m $url_grafana\e[0m"
-        echo -e "🔥 \e[33mDomínio Prometheus:\e[97m $url_prometheus\e[0m"
-        echo -e "🐋 \e[33mDomínio cAdvisor:\e[97m $url_cadvisor\e[0m"
-        echo -e "💻 \e[33mDomínio NodeExporter:\e[97m $url_nodeexporter\e[0m"
+        MSG_PT[ferramenta_monitor_resumo_grafana]="📊 \e[33mDomínio Grafana:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_monitor_resumo_grafana]="📊 \e[33mGrafana Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_monitor_resumo_grafana]="📊 \e[33mDominio Grafana:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_monitor_resumo_grafana "$url_grafana")"
+        MSG_PT[ferramenta_monitor_resumo_prometheus]="🔥 \e[33mDomínio Prometheus:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_monitor_resumo_prometheus]="🔥 \e[33mPrometheus Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_monitor_resumo_prometheus]="🔥 \e[33mDominio Prometheus:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_monitor_resumo_prometheus "$url_prometheus")"
+        MSG_PT[ferramenta_monitor_resumo_cadvisor]="🐋 \e[33mDomínio cAdvisor:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_monitor_resumo_cadvisor]="🐋 \e[33mcAdvisor Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_monitor_resumo_cadvisor]="🐋 \e[33mDominio cAdvisor:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_monitor_resumo_cadvisor "$url_cadvisor")"
+        MSG_PT[ferramenta_monitor_resumo_nodeexporter]="💻 \e[33mDomínio NodeExporter:\e[97m %s\e[0m"
+        MSG_EN[ferramenta_monitor_resumo_nodeexporter]="💻 \e[33mNodeExporter Domain:\e[97m %s\e[0m"
+        MSG_ES[ferramenta_monitor_resumo_nodeexporter]="💻 \e[33mDominio NodeExporter:\e[97m %s\e[0m"
+        echo -e "$(t ferramenta_monitor_resumo_nodeexporter "$url_nodeexporter")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        MSG_PT[ferramenta_monitor_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_EN[ferramenta_monitor_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+        MSG_ES[ferramenta_monitor_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+        read -p "$(t ferramenta_monitor_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_monitor; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Monitoramento...\e[0m"
-    
-    echo "Baixando e configurando arquivos..."
+    MSG_PT[ferramenta_monitor_iniciando]="\e[97m🚀 Iniciando a instalação do Monitoramento...\e[0m"
+    MSG_EN[ferramenta_monitor_iniciando]="\e[97m🚀 Starting Monitoring installation...\e[0m"
+    MSG_ES[ferramenta_monitor_iniciando]="\e[97m🚀 Iniciando la instalación del Monitoreo...\e[0m"
+    echo -e "$(t ferramenta_monitor_iniciando)"
+
+    MSG_PT[ferramenta_monitor_baixando]="Baixando e configurando arquivos..."
+    MSG_EN[ferramenta_monitor_baixando]="Downloading and configuring files..."
+    MSG_ES[ferramenta_monitor_baixando]="Descargando y configurando archivos..."
+    echo "$(t ferramenta_monitor_baixando)"
     mkdir -p /opt/monitor-stack/prometheus /opt/monitor-stack/grafana/provisioning/datasources /opt/monitor-stack/grafana/provisioning/dashboards
     
     cat > /opt/monitor-stack/prometheus/prometheus.yml <<EOL
@@ -8779,10 +11396,22 @@ EOL
     
     msg_resumo_informacoes
     echo -e "\e[32m[ MONITORAMENTO ]\e[0m\n"
-    echo -e "📊 \e[33mGrafana:\e[97m https://$url_grafana\e[0m (user: admin, pass: admin)"
-    echo -e "🔥 \e[33mPrometheus:\e[97m https://$url_prometheus\e[0m"
-    echo -e "🐋 \e[33mcAdvisor:\e[97m https://$url_cadvisor\e[0m"
-    echo -e "💻 \e[33mNodeExporter:\e[97m https://$url_nodeexporter\e[0m"
+    MSG_PT[ferramenta_monitor_final_grafana]="📊 \e[33mGrafana:\e[97m https://%s\e[0m (user: admin, pass: admin)"
+    MSG_EN[ferramenta_monitor_final_grafana]="📊 \e[33mGrafana:\e[97m https://%s\e[0m (user: admin, pass: admin)"
+    MSG_ES[ferramenta_monitor_final_grafana]="📊 \e[33mGrafana:\e[97m https://%s\e[0m (usuario: admin, contraseña: admin)"
+    echo -e "$(t ferramenta_monitor_final_grafana "$url_grafana")"
+    MSG_PT[ferramenta_monitor_final_prometheus]="🔥 \e[33mPrometheus:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_monitor_final_prometheus]="🔥 \e[33mPrometheus:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_monitor_final_prometheus]="🔥 \e[33mPrometheus:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_monitor_final_prometheus "$url_prometheus")"
+    MSG_PT[ferramenta_monitor_final_cadvisor]="🐋 \e[33mcAdvisor:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_monitor_final_cadvisor]="🐋 \e[33mcAdvisor:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_monitor_final_cadvisor]="🐋 \e[33mcAdvisor:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_monitor_final_cadvisor "$url_cadvisor")"
+    MSG_PT[ferramenta_monitor_final_nodeexporter]="💻 \e[33mNodeExporter:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_monitor_final_nodeexporter]="💻 \e[33mNodeExporter:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_monitor_final_nodeexporter]="💻 \e[33mNodeExporter:\e[97m https://%s\e[0m"
+    echo -e "$(t ferramenta_monitor_final_nodeexporter "$url_nodeexporter")"
     msg_retorno_menu
 }
 
@@ -8790,47 +11419,120 @@ ferramenta_dify() {
     msg_dify
     dados
 
+    MSG_PT[ferramenta_dify_passo1]="\n📍 Passo 1/7"
+    MSG_EN[ferramenta_dify_passo1]="\n📍 Step 1/7"
+    MSG_ES[ferramenta_dify_passo1]="\n📍 Paso 1/7"
+    MSG_PT[ferramenta_dify_url_web]="🔗 \e[33mDigite o domínio para a interface Web do Dify (ex: dify.encha.ai): \e[0m"
+    MSG_EN[ferramenta_dify_url_web]="🔗 \e[33mEnter the domain for the Dify Web interface (e.g. dify.encha.ai): \e[0m"
+    MSG_ES[ferramenta_dify_url_web]="🔗 \e[33mIngrese el dominio para la interfaz Web de Dify (ej: dify.encha.ai): \e[0m"
+    MSG_PT[ferramenta_dify_passo2]="\n📍 Passo 2/7"
+    MSG_EN[ferramenta_dify_passo2]="\n📍 Step 2/7"
+    MSG_ES[ferramenta_dify_passo2]="\n📍 Paso 2/7"
+    MSG_PT[ferramenta_dify_url_api]="🔗 \e[33mDigite o domínio para a API do Dify (ex: api-dify.encha.ai): \e[0m"
+    MSG_EN[ferramenta_dify_url_api]="🔗 \e[33mEnter the domain for the Dify API (e.g. api-dify.encha.ai): \e[0m"
+    MSG_ES[ferramenta_dify_url_api]="🔗 \e[33mIngrese el dominio para la API de Dify (ej: api-dify.encha.ai): \e[0m"
+    MSG_PT[ferramenta_dify_passo3]="\n📍 Passo 3/7"
+    MSG_EN[ferramenta_dify_passo3]="\n📍 Step 3/7"
+    MSG_ES[ferramenta_dify_passo3]="\n📍 Paso 3/7"
+    MSG_PT[ferramenta_dify_email_smtp]="📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_dify_email_smtp]="📧 \e[33mEnter the Email for SMTP (e.g. noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_dify_email_smtp]="📧 \e[33mIngrese el Email para SMTP (ej: noreply@encha.ai): \e[0m"
+    MSG_PT[ferramenta_dify_passo4]="\n📍 Passo 4/7"
+    MSG_EN[ferramenta_dify_passo4]="\n📍 Step 4/7"
+    MSG_ES[ferramenta_dify_passo4]="\n📍 Paso 4/7"
+    MSG_PT[ferramenta_dify_user_smtp]="👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m"
+    MSG_EN[ferramenta_dify_user_smtp]="👤 \e[33mEnter the SMTP User (can be the same email): \e[0m"
+    MSG_ES[ferramenta_dify_user_smtp]="👤 \e[33mIngrese el Usuario para SMTP (puede ser el mismo email): \e[0m"
+    MSG_PT[ferramenta_dify_passo5]="\n📍 Passo 5/7"
+    MSG_EN[ferramenta_dify_passo5]="\n📍 Step 5/7"
+    MSG_ES[ferramenta_dify_passo5]="\n📍 Paso 5/7"
+    MSG_PT[ferramenta_dify_senha_smtp]="🔑 \e[33mDigite a Senha SMTP do email: \e[0m"
+    MSG_EN[ferramenta_dify_senha_smtp]="🔑 \e[33mEnter the email's SMTP Password: \e[0m"
+    MSG_ES[ferramenta_dify_senha_smtp]="🔑 \e[33mIngrese la Contraseña SMTP del email: \e[0m"
+    MSG_PT[ferramenta_dify_passo6]="\n📍 Passo 6/7"
+    MSG_EN[ferramenta_dify_passo6]="\n📍 Step 6/7"
+    MSG_ES[ferramenta_dify_passo6]="\n📍 Paso 6/7"
+    MSG_PT[ferramenta_dify_host_smtp]="🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_dify_host_smtp]="🏠 \e[33mEnter the email's SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_dify_host_smtp]="🏠 \e[33mIngrese el Host SMTP del email (ej: smtp.hostinger.com): \e[0m"
+    MSG_PT[ferramenta_dify_passo7]="\n📍 Passo 7/7"
+    MSG_EN[ferramenta_dify_passo7]="\n📍 Step 7/7"
+    MSG_ES[ferramenta_dify_passo7]="\n📍 Paso 7/7"
+    MSG_PT[ferramenta_dify_porta_smtp]="🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m"
+    MSG_EN[ferramenta_dify_porta_smtp]="🔌 \e[33mEnter the email's SMTP port (e.g. 465 or 587): \e[0m"
+    MSG_ES[ferramenta_dify_porta_smtp]="🔌 \e[33mIngrese el puerto SMTP del email (ej: 465 o 587): \e[0m"
+    MSG_PT[ferramenta_dify_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_dify_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_dify_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    MSG_PT[ferramenta_dify_dominio_web]="🌐 \e[33mDomínio Web Dify:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_dominio_web]="🌐 \e[33mDify Web Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_dominio_web]="🌐 \e[33mDominio Web Dify:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_dominio_api]="🔗 \e[33mDomínio API Dify:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_dominio_api]="🔗 \e[33mDify API Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_dominio_api]="🔗 \e[33mDominio API Dify:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_email_smtp_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_email_smtp_resumo]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_email_smtp_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_user_resumo]="\e[33mUser do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_user_resumo]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_user_resumo]="\e[33mUsuario del SMTP:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_senha_resumo]="\e[33mSenha do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_senha_resumo]="\e[33mEmail Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_senha_resumo]="\e[33mContraseña del Email:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_host_resumo]="\e[33mHost SMTP do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_host_resumo]="\e[33mEmail SMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_host_resumo]="\e[33mHost SMTP del Email:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_porta_resumo]="\e[33mPorta SMTP do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_dify_porta_resumo]="\e[33mEmail SMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_dify_porta_resumo]="\e[33mPuerto SMTP del Email:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_dify_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_dify_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_dify_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_PT[ferramenta_dify_iniciando]="\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
+    MSG_EN[ferramenta_dify_iniciando]="\e[97m🚀 Starting the Dify AI installation...\e[0m"
+    MSG_ES[ferramenta_dify_iniciando]="\e[97m🚀 Iniciando la instalación de Dify AI...\e[0m"
+
     while true; do
-        echo -e "\n📍 Passo 1/7"
-        echo -en "🔗 \e[33mDigite o domínio para a interface Web do Dify (ex: dify.encha.ai): \e[0m" && read -r url_dify
+        echo -e "$(t ferramenta_dify_passo1)"
+        echo -en "$(t ferramenta_dify_url_web)" && read -r url_dify
         echo ""
-        echo -e "\n📍 Passo 2/7"
-        echo -en "🔗 \e[33mDigite o domínio para a API do Dify (ex: api-dify.encha.ai): \e[0m" && read -r url_dify_api
+        echo -e "$(t ferramenta_dify_passo2)"
+        echo -en "$(t ferramenta_dify_url_api)" && read -r url_dify_api
         echo ""
-        echo -e "\n📍 Passo 3/7"
-        echo -en "📧 \e[33mDigite o Email para SMTP (ex: noreply@encha.ai): \e[0m" && read -r email_dify
+        echo -e "$(t ferramenta_dify_passo3)"
+        echo -en "$(t ferramenta_dify_email_smtp)" && read -r email_dify
         echo ""
-        echo -e "\n📍 Passo 4/7"
-        echo -en "👤 \e[33mDigite o Usuário para SMTP (pode ser o mesmo email): \e[0m" && read -r user_email_dify
+        echo -e "$(t ferramenta_dify_passo4)"
+        echo -en "$(t ferramenta_dify_user_smtp)" && read -r user_email_dify
         echo ""
-        echo -e "\n📍 Passo 5/7"
-        echo -en "🔑 \e[33mDigite a Senha SMTP do email: \e[0m" && read -s -r senha_email_dify
+        echo -e "$(t ferramenta_dify_passo5)"
+        echo -en "$(t ferramenta_dify_senha_smtp)" && read -s -r senha_email_dify
         echo ""
-        echo -e "\n📍 Passo 6/7"
-        echo -en "🏠 \e[33mDigite o Host SMTP do email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_dify
+        echo -e "$(t ferramenta_dify_passo6)"
+        echo -en "$(t ferramenta_dify_host_smtp)" && read -r smtp_email_dify
         echo ""
-        echo -e "\n📍 Passo 7/7"
-        echo -en "🔌 \e[33mDigite a porta SMTP do email (ex: 465 ou 587): \e[0m" && read -r porta_smtp_dify
+        echo -e "$(t ferramenta_dify_passo7)"
+        echo -en "$(t ferramenta_dify_porta_smtp)" && read -r porta_smtp_dify
         echo ""
 
         clear
         msg_dify
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "$(t ferramenta_dify_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Web Dify:\e[97m $url_dify\e[0m"
-        echo -e "🔗 \e[33mDomínio API Dify:\e[97m $url_dify_api\e[0m"
-        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_dify\e[0m"
-        echo -e "\e[33mUser do SMTP:\e[97m $user_email_dify\e[0m"
-        echo -e "\e[33mSenha do Email:\e[97m $senha_email_dify\e[0m"
-        echo -e "\e[33mHost SMTP do Email:\e[97m $smtp_email_dify\e[0m"
-        echo -e "\e[33mPorta SMTP do Email:\e[97m $porta_smtp_dify\e[0m"
+        echo -e "$(t ferramenta_dify_dominio_web "$url_dify")"
+        echo -e "$(t ferramenta_dify_dominio_api "$url_dify_api")"
+        echo -e "$(t ferramenta_dify_email_smtp_resumo "$email_dify")"
+        echo -e "$(t ferramenta_dify_user_resumo "$user_email_dify")"
+        echo -e "$(t ferramenta_dify_senha_resumo "$senha_email_dify")"
+        echo -e "$(t ferramenta_dify_host_resumo "$smtp_email_dify")"
+        echo -e "$(t ferramenta_dify_porta_resumo "$porta_smtp_dify")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        read -p "$(t ferramenta_dify_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_dify; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Dify AI...\e[0m"
+    echo -e "$(t ferramenta_dify_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "dify${1:+-$1}"
@@ -9463,7 +12165,10 @@ EOL
     stack_editavel
 
     ## Mensagem de Passo
-    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[6/6]\e[0m"
+    MSG_PT[ferramenta_dify_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[6/6]\e[0m"
+    MSG_EN[ferramenta_dify_verificando]="\e[97m• CHECKING SERVICE \e[33m[6/6]\e[0m"
+    MSG_ES[ferramenta_dify_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[6/6]\e[0m"
+    echo -e "$(t ferramenta_dify_verificando)"
     echo ""
 
     ## Baixando imagens:
@@ -9481,11 +12186,24 @@ Senha: (criada no primeiro acesso)
 EOL
     cd
     
+    MSG_PT[ferramenta_dify_resumo_titulo]="\e[32m[ DIFY AI ]\e[0m\n"
+    MSG_EN[ferramenta_dify_resumo_titulo]="\e[32m[ DIFY AI ]\e[0m\n"
+    MSG_ES[ferramenta_dify_resumo_titulo]="\e[32m[ DIFY AI ]\e[0m\n"
+    MSG_PT[ferramenta_dify_resumo_web]="🌐 \e[33mWeb:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_dify_resumo_web]="🌐 \e[33mWeb:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_dify_resumo_web]="🌐 \e[33mWeb:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_dify_resumo_api]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_dify_resumo_api]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_dify_resumo_api]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_dify_resumo_aviso]="⚠️ \e[33m Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
+    MSG_EN[ferramenta_dify_resumo_aviso]="⚠️ \e[33m Wait a few minutes for the database migration before the first access.\e[0m"
+    MSG_ES[ferramenta_dify_resumo_aviso]="⚠️ \e[33m Espere unos minutos a que finalice la migración de la base de datos antes del primer acceso.\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ DIFY AI ]\e[0m\n"
-    echo -e "🌐 \e[33mWeb:\e[97m https://$url_dify\e[0m"
-    echo -e "🔗 \e[33mAPI:\e[97m https://$url_dify_api\e[0m"
-    echo -e "⚠️ \e[33m Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
+    echo -e "$(t ferramenta_dify_resumo_titulo)"
+    echo -e "$(t ferramenta_dify_resumo_web "$url_dify")"
+    echo -e "$(t ferramenta_dify_resumo_api "$url_dify_api")"
+    echo -e "$(t ferramenta_dify_resumo_aviso)"
     msg_retorno_menu
 }
 
@@ -9493,43 +12211,104 @@ ferramenta_affine() {
     msg_affine
     dados
 
+    MSG_PT[ferramenta_affine_passo1]="\n📍 Passo 1/7"
+    MSG_EN[ferramenta_affine_passo1]="\n📍 Step 1/7"
+    MSG_ES[ferramenta_affine_passo1]="\n📍 Paso 1/7"
+    MSG_PT[ferramenta_affine_url]="🔗 \e[33mDigite o domínio para o Affine (ex: affine.encha.ai): \e[0m"
+    MSG_EN[ferramenta_affine_url]="🔗 \e[33mEnter the domain for Affine (e.g. affine.encha.ai): \e[0m"
+    MSG_ES[ferramenta_affine_url]="🔗 \e[33mIngrese el dominio para Affine (ej: affine.encha.ai): \e[0m"
+    MSG_PT[ferramenta_affine_passo2]="\n📍 Passo 2/7"
+    MSG_EN[ferramenta_affine_passo2]="\n📍 Step 2/7"
+    MSG_ES[ferramenta_affine_passo2]="\n📍 Paso 2/7"
+    MSG_PT[ferramenta_affine_email_admin]="📧 \e[33mDigite o email do administrador: \e[0m"
+    MSG_EN[ferramenta_affine_email_admin]="📧 \e[33mEnter the administrator email: \e[0m"
+    MSG_ES[ferramenta_affine_email_admin]="📧 \e[33mIngrese el email del administrador: \e[0m"
+    MSG_PT[ferramenta_affine_passo3]="\n📍 Passo 3/7"
+    MSG_EN[ferramenta_affine_passo3]="\n📍 Step 3/7"
+    MSG_ES[ferramenta_affine_passo3]="\n📍 Paso 3/7"
+    MSG_PT[ferramenta_affine_senha_admin]="🔑 \e[33mDigite a senha do administrador: \e[0m"
+    MSG_EN[ferramenta_affine_senha_admin]="🔑 \e[33mEnter the administrator password: \e[0m"
+    MSG_ES[ferramenta_affine_senha_admin]="🔑 \e[33mIngrese la contraseña del administrador: \e[0m"
+    MSG_PT[ferramenta_affine_config_email]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_affine_config_email]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_affine_config_email]="\n\e[97m--- Configuración de Email (SMTP) ---\e[0m"
+    MSG_PT[ferramenta_affine_passo4]="\n📍 Passo 4/7"
+    MSG_EN[ferramenta_affine_passo4]="\n📍 Step 4/7"
+    MSG_ES[ferramenta_affine_passo4]="\n📍 Paso 4/7"
+    MSG_PT[ferramenta_affine_email_envio]="📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_affine_email_envio]="📧 \e[33mEnter your sending email (e.g. noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_affine_email_envio]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+    MSG_PT[ferramenta_affine_passo5]="\n📍 Passo 5/7"
+    MSG_EN[ferramenta_affine_passo5]="\n📍 Step 5/7"
+    MSG_ES[ferramenta_affine_passo5]="\n📍 Paso 5/7"
+    MSG_PT[ferramenta_affine_senha_envio]="🔑 \e[33mDigite a senha do seu email de envio: \e[0m"
+    MSG_EN[ferramenta_affine_senha_envio]="🔑 \e[33mEnter the password of your sending email: \e[0m"
+    MSG_ES[ferramenta_affine_senha_envio]="🔑 \e[33mIngrese la contraseña de su email de envío: \e[0m"
+    MSG_PT[ferramenta_affine_passo6]="\n📍 Passo 6/7"
+    MSG_EN[ferramenta_affine_passo6]="\n📍 Step 6/7"
+    MSG_ES[ferramenta_affine_passo6]="\n📍 Paso 6/7"
+    MSG_PT[ferramenta_affine_host_smtp]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_affine_host_smtp]="🏠 \e[33mEnter the SMTP host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_affine_host_smtp]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+    MSG_PT[ferramenta_affine_passo7]="\n📍 Passo 7/7"
+    MSG_EN[ferramenta_affine_passo7]="\n📍 Step 7/7"
+    MSG_ES[ferramenta_affine_passo7]="\n📍 Paso 7/7"
+    MSG_PT[ferramenta_affine_porta_smtp]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_affine_porta_smtp]="🔌 \e[33mEnter the SMTP port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_affine_porta_smtp]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+    MSG_PT[ferramenta_affine_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_affine_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_affine_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    MSG_PT[ferramenta_affine_dominio_resumo]="🌐 \e[33mDomínio Affine:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_affine_dominio_resumo]="🌐 \e[33mAffine Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_affine_dominio_resumo]="🌐 \e[33mDominio Affine:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_affine_email_resumo]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_affine_email_resumo]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_affine_email_resumo]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_affine_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_affine_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_affine_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_PT[ferramenta_affine_iniciando]="\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
+    MSG_EN[ferramenta_affine_iniciando]="\e[97m🚀 Starting the Affine installation...\e[0m"
+    MSG_ES[ferramenta_affine_iniciando]="\e[97m🚀 Iniciando la instalación de Affine...\e[0m"
+
     while true; do
-        echo -e "\n📍 Passo 1/7"
-        echo -en "🔗 \e[33mDigite o domínio para o Affine (ex: affine.encha.ai): \e[0m" && read -r url_affine
+        echo -e "$(t ferramenta_affine_passo1)"
+        echo -en "$(t ferramenta_affine_url)" && read -r url_affine
         echo ""
-        echo -e "\n📍 Passo 2/7"
-        echo -en "📧 \e[33mDigite o email do administrador: \e[0m" && read -r email_affine
+        echo -e "$(t ferramenta_affine_passo2)"
+        echo -en "$(t ferramenta_affine_email_admin)" && read -r email_affine
         echo ""
-        echo -e "\n📍 Passo 3/7"
-        echo -en "🔑 \e[33mDigite a senha do administrador: \e[0m" && read -s -r senha_affine
+        echo -e "$(t ferramenta_affine_passo3)"
+        echo -en "$(t ferramenta_affine_senha_admin)" && read -s -r senha_affine
         echo ""
-        echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-        echo -e "\n📍 Passo 4/7"
-        echo -en "📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_affine
+        echo -e "$(t ferramenta_affine_config_email)"
+        echo -e "$(t ferramenta_affine_passo4)"
+        echo -en "$(t ferramenta_affine_email_envio)" && read -r email_smtp_affine
         echo ""
-        echo -e "\n📍 Passo 5/7"
-        echo -en "🔑 \e[33mDigite a senha do seu email de envio: \e[0m" && read -s -r senha_smtp_affine
+        echo -e "$(t ferramenta_affine_passo5)"
+        echo -en "$(t ferramenta_affine_senha_envio)" && read -s -r senha_smtp_affine
         echo ""
-        echo -e "\n📍 Passo 6/7"
-        echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_affine
+        echo -e "$(t ferramenta_affine_passo6)"
+        echo -en "$(t ferramenta_affine_host_smtp)" && read -r host_smtp_affine
         echo ""
-        echo -e "\n📍 Passo 7/7"
-        echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_affine
+        echo -e "$(t ferramenta_affine_passo7)"
+        echo -en "$(t ferramenta_affine_porta_smtp)" && read -r porta_smtp_affine
         echo ""
 
         clear
         msg_affine
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "$(t ferramenta_affine_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Affine:\e[97m $url_affine\e[0m"
-        echo -e "📧 \e[33mEmail Admin:\e[97m $email_affine\e[0m"
+        echo -e "$(t ferramenta_affine_dominio_resumo "$url_affine")"
+        echo -e "$(t ferramenta_affine_email_resumo "$email_affine")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        read -p "$(t ferramenta_affine_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_affine; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Affine...\e[0m"
+    echo -e "$(t ferramenta_affine_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "affine"
@@ -9638,11 +12417,24 @@ Senha: $senha_affine
 EOL
     cd
     
+    MSG_PT[ferramenta_affine_resumo_titulo]="\e[32m[ AFFINE ]\e[0m\n"
+    MSG_EN[ferramenta_affine_resumo_titulo]="\e[32m[ AFFINE ]\e[0m\n"
+    MSG_ES[ferramenta_affine_resumo_titulo]="\e[32m[ AFFINE ]\e[0m\n"
+    MSG_PT[ferramenta_affine_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_affine_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_affine_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_affine_resumo_usuario]="\e[33m📧 Usuário Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_affine_resumo_usuario]="\e[33m📧 Admin User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_affine_resumo_usuario]="\e[33m📧 Usuario Admin:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_affine_resumo_senha]="\e[33m🔑 Senha Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_affine_resumo_senha]="\e[33m🔑 Admin Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_affine_resumo_senha]="\e[33m🔑 Contraseña Admin:\e[97m %s\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ AFFINE ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_affine\e[0m"
-    echo -e "\e[33m📧 Usuário Admin:\e[97m $email_affine\e[0m"
-    echo -e "\e[33m🔑 Senha Admin:\e[97m $senha_affine\e[0m"
+    echo -e "$(t ferramenta_affine_resumo_titulo)"
+    echo -e "$(t ferramenta_affine_resumo_dominio "$url_affine")"
+    echo -e "$(t ferramenta_affine_resumo_usuario "$email_affine")"
+    echo -e "$(t ferramenta_affine_resumo_senha "$senha_affine")"
     msg_retorno_menu
 }
 
@@ -9650,22 +12442,71 @@ ferramenta_vaultwarden() {
     msg_vaultwarden
     dados
 
+    MSG_PT[ferramenta_vaultwarden_passo1]="\n📍 Passo 1/5"
+    MSG_EN[ferramenta_vaultwarden_passo1]="\n📍 Step 1/5"
+    MSG_ES[ferramenta_vaultwarden_passo1]="\n📍 Paso 1/5"
+    MSG_PT[ferramenta_vaultwarden_url]="🔗 \e[33mDigite o domínio para o Vaultwarden (ex: senhas.encha.ai): \e[0m"
+    MSG_EN[ferramenta_vaultwarden_url]="🔗 \e[33mEnter the domain for Vaultwarden (e.g. senhas.encha.ai): \e[0m"
+    MSG_ES[ferramenta_vaultwarden_url]="🔗 \e[33mIngrese el dominio para Vaultwarden (ej: senhas.encha.ai): \e[0m"
+    MSG_PT[ferramenta_vaultwarden_config_email]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_vaultwarden_config_email]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_vaultwarden_config_email]="\n\e[97m--- Configuración de Email (SMTP) ---\e[0m"
+    MSG_PT[ferramenta_vaultwarden_passo2]="\n📍 Passo 2/5"
+    MSG_EN[ferramenta_vaultwarden_passo2]="\n📍 Step 2/5"
+    MSG_ES[ferramenta_vaultwarden_passo2]="\n📍 Paso 2/5"
+    MSG_PT[ferramenta_vaultwarden_email_envio]="📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_vaultwarden_email_envio]="📧 \e[33mEnter your sending email (e.g. noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_vaultwarden_email_envio]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+    MSG_PT[ferramenta_vaultwarden_passo3]="\n📍 Passo 3/5"
+    MSG_EN[ferramenta_vaultwarden_passo3]="\n📍 Step 3/5"
+    MSG_ES[ferramenta_vaultwarden_passo3]="\n📍 Paso 3/5"
+    MSG_PT[ferramenta_vaultwarden_senha_email]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+    MSG_EN[ferramenta_vaultwarden_senha_email]="🔑 \e[33mEnter your email password: \e[0m"
+    MSG_ES[ferramenta_vaultwarden_senha_email]="🔑 \e[33mIngrese la contraseña de su email: \e[0m"
+    MSG_PT[ferramenta_vaultwarden_passo4]="\n📍 Passo 4/5"
+    MSG_EN[ferramenta_vaultwarden_passo4]="\n📍 Step 4/5"
+    MSG_ES[ferramenta_vaultwarden_passo4]="\n📍 Paso 4/5"
+    MSG_PT[ferramenta_vaultwarden_host_smtp]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_vaultwarden_host_smtp]="🏠 \e[33mEnter the SMTP host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_vaultwarden_host_smtp]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+    MSG_PT[ferramenta_vaultwarden_passo5]="\n📍 Passo 5/5"
+    MSG_EN[ferramenta_vaultwarden_passo5]="\n📍 Step 5/5"
+    MSG_ES[ferramenta_vaultwarden_passo5]="\n📍 Paso 5/5"
+    MSG_PT[ferramenta_vaultwarden_porta_smtp]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_vaultwarden_porta_smtp]="🔌 \e[33mEnter the SMTP port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_vaultwarden_porta_smtp]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+    MSG_PT[ferramenta_vaultwarden_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_vaultwarden_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_vaultwarden_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    MSG_PT[ferramenta_vaultwarden_dominio_resumo]="🌐 \e[33mDomínio Vaultwarden:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_vaultwarden_dominio_resumo]="🌐 \e[33mVaultwarden Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_vaultwarden_dominio_resumo]="🌐 \e[33mDominio Vaultwarden:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_vaultwarden_email_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_vaultwarden_email_resumo]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_vaultwarden_email_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_vaultwarden_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_vaultwarden_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_vaultwarden_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_PT[ferramenta_vaultwarden_iniciando]="\e[97m🚀 Iniciando a instalação do Vaultwarden...\e[0m"
+    MSG_EN[ferramenta_vaultwarden_iniciando]="\e[97m🚀 Starting the Vaultwarden installation...\e[0m"
+    MSG_ES[ferramenta_vaultwarden_iniciando]="\e[97m🚀 Iniciando la instalación de Vaultwarden...\e[0m"
+
     while true; do
-        echo -e "\n📍 Passo 1/5"
-        echo -en "🔗 \e[33mDigite o domínio para o Vaultwarden (ex: senhas.encha.ai): \e[0m" && read -r url_vaultwarden
+        echo -e "$(t ferramenta_vaultwarden_passo1)"
+        echo -en "$(t ferramenta_vaultwarden_url)" && read -r url_vaultwarden
         echo ""
-        echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-        echo -e "\n📍 Passo 2/5"
-        echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_vaultwarden
+        echo -e "$(t ferramenta_vaultwarden_config_email)"
+        echo -e "$(t ferramenta_vaultwarden_passo2)"
+        echo -en "$(t ferramenta_vaultwarden_email_envio)" && read -r email_vaultwarden
         echo ""
-        echo -e "\n📍 Passo 3/5"
-        echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_vaultwarden
+        echo -e "$(t ferramenta_vaultwarden_passo3)"
+        echo -en "$(t ferramenta_vaultwarden_senha_email)" && read -s -r senha_vaultwarden
         echo ""
-        echo -e "\n📍 Passo 4/5"
-        echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_vaultwarden
+        echo -e "$(t ferramenta_vaultwarden_passo4)"
+        echo -en "$(t ferramenta_vaultwarden_host_smtp)" && read -r host_vaultwarden
         echo ""
-        echo -e "\n📍 Passo 5/5"
-        echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_vaultwarden
+        echo -e "$(t ferramenta_vaultwarden_passo5)"
+        echo -en "$(t ferramenta_vaultwarden_porta_smtp)" && read -r porta_vaultwarden
         echo ""
 
         if [ "$porta_vaultwarden" -eq 465 ] || [ "$porta_vaultwarden" -eq 25 ]; then
@@ -9676,18 +12517,18 @@ ferramenta_vaultwarden() {
 
         clear
         msg_vaultwarden
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "$(t ferramenta_vaultwarden_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Vaultwarden:\e[97m $url_vaultwarden\e[0m"
-        echo -e "📧 \e[33mEmail SMTP:\e[97m $email_vaultwarden\e[0m"
+        echo -e "$(t ferramenta_vaultwarden_dominio_resumo "$url_vaultwarden")"
+        echo -e "$(t ferramenta_vaultwarden_email_resumo "$email_vaultwarden")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        read -p "$(t ferramenta_vaultwarden_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_vaultwarden; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Vaultwarden...\e[0m"
-    
+    echo -e "$(t ferramenta_vaultwarden_iniciando)"
+
     cat > vaultwarden.yaml <<EOL
 version: "3.7"
 services:
@@ -9741,10 +12582,20 @@ Senha: (criada no primeiro acesso)
 EOL
     cd
     
+    MSG_PT[ferramenta_vaultwarden_resumo_titulo]="\e[32m[ VAULTWARDEN ]\e[0m\n"
+    MSG_EN[ferramenta_vaultwarden_resumo_titulo]="\e[32m[ VAULTWARDEN ]\e[0m\n"
+    MSG_ES[ferramenta_vaultwarden_resumo_titulo]="\e[32m[ VAULTWARDEN ]\e[0m\n"
+    MSG_PT[ferramenta_vaultwarden_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_vaultwarden_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_vaultwarden_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_vaultwarden_resumo_aviso]="\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio.\e[0m"
+    MSG_EN[ferramenta_vaultwarden_resumo_aviso]="\e[33m⚠️  Create your account on the first access to the domain.\e[0m"
+    MSG_ES[ferramenta_vaultwarden_resumo_aviso]="\e[33m⚠️  Cree su cuenta en el primer acceso al dominio.\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ VAULTWARDEN ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_vaultwarden\e[0m"
-    echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio.\e[0m"
+    echo -e "$(t ferramenta_vaultwarden_resumo_titulo)"
+    echo -e "$(t ferramenta_vaultwarden_resumo_dominio "$url_vaultwarden")"
+    echo -e "$(t ferramenta_vaultwarden_resumo_aviso)"
     msg_retorno_menu
 }
 
@@ -9752,31 +12603,68 @@ ferramenta_nextcloud() {
     msg_nextcloud
     dados
 
+    MSG_PT[ferramenta_nextcloud_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_nextcloud_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_nextcloud_passo1]="\n📍 Paso 1/3"
+    MSG_PT[ferramenta_nextcloud_url]="🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m"
+    MSG_EN[ferramenta_nextcloud_url]="🔗 \e[33mEnter the domain for Nextcloud (e.g. cloud.encha.ai): \e[0m"
+    MSG_ES[ferramenta_nextcloud_url]="🔗 \e[33mIngrese el dominio para Nextcloud (ej: cloud.encha.ai): \e[0m"
+    MSG_PT[ferramenta_nextcloud_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_nextcloud_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_nextcloud_passo2]="\n📍 Paso 2/3"
+    MSG_PT[ferramenta_nextcloud_user]="👤 \e[33mDigite o nome do usuário administrador: \e[0m"
+    MSG_EN[ferramenta_nextcloud_user]="👤 \e[33mEnter the administrator username: \e[0m"
+    MSG_ES[ferramenta_nextcloud_user]="👤 \e[33mIngrese el nombre del usuario administrador: \e[0m"
+    MSG_PT[ferramenta_nextcloud_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_nextcloud_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_nextcloud_passo3]="\n📍 Paso 3/3"
+    MSG_PT[ferramenta_nextcloud_senha]="🔑 \e[33mDigite a senha para o administrador: \e[0m"
+    MSG_EN[ferramenta_nextcloud_senha]="🔑 \e[33mEnter the administrator password: \e[0m"
+    MSG_ES[ferramenta_nextcloud_senha]="🔑 \e[33mIngrese la contraseña para el administrador: \e[0m"
+    MSG_PT[ferramenta_nextcloud_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_nextcloud_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_nextcloud_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    MSG_PT[ferramenta_nextcloud_dominio_resumo]="🌐 \e[33mDomínio Nextcloud:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nextcloud_dominio_resumo]="🌐 \e[33mNextcloud Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nextcloud_dominio_resumo]="🌐 \e[33mDominio Nextcloud:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_nextcloud_usuario_resumo]="👤 \e[33mUsuário Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nextcloud_usuario_resumo]="👤 \e[33mAdmin User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nextcloud_usuario_resumo]="👤 \e[33mUsuario Admin:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_nextcloud_senha_resumo]="\e[33mSenha do NextCloud:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nextcloud_senha_resumo]="\e[33mNextCloud Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nextcloud_senha_resumo]="\e[33mContraseña de NextCloud:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_nextcloud_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_nextcloud_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_nextcloud_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_PT[ferramenta_nextcloud_iniciando]="\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
+    MSG_EN[ferramenta_nextcloud_iniciando]="\e[97m🚀 Starting the Nextcloud installation...\e[0m"
+    MSG_ES[ferramenta_nextcloud_iniciando]="\e[97m🚀 Iniciando la instalación de Nextcloud...\e[0m"
+
     while true; do
-        echo -e "\n📍 Passo 1/3"
-        echo -en "🔗 \e[33mDigite o domínio para o Nextcloud (ex: cloud.encha.ai): \e[0m" && read -r url_nextcloud
+        echo -e "$(t ferramenta_nextcloud_passo1)"
+        echo -en "$(t ferramenta_nextcloud_url)" && read -r url_nextcloud
         echo ""
-        echo -e "\n📍 Passo 2/3"
-        echo -en "👤 \e[33mDigite o nome do usuário administrador: \e[0m" && read -r user_nextcloud
+        echo -e "$(t ferramenta_nextcloud_passo2)"
+        echo -en "$(t ferramenta_nextcloud_user)" && read -r user_nextcloud
         echo ""
-        echo -e "\n📍 Passo 3/3"
-        echo -en "🔑 \e[33mDigite a senha para o administrador: \e[0m" && read -s -r pass_nextcloud
+        echo -e "$(t ferramenta_nextcloud_passo3)"
+        echo -en "$(t ferramenta_nextcloud_senha)" && read -s -r pass_nextcloud
         echo ""
 
         clear
         msg_nextcloud
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "$(t ferramenta_nextcloud_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Nextcloud:\e[97m $url_nextcloud\e[0m"
-        echo -e "👤 \e[33mUsuário Admin:\e[97m $user_nextcloud\e[0m"
-        echo -e "\e[33mSenha do NextCloud:\e[97m $pass_nextcloud\e[0m"
+        echo -e "$(t ferramenta_nextcloud_dominio_resumo "$url_nextcloud")"
+        echo -e "$(t ferramenta_nextcloud_usuario_resumo "$user_nextcloud")"
+        echo -e "$(t ferramenta_nextcloud_senha_resumo "$pass_nextcloud")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        read -p "$(t ferramenta_nextcloud_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_nextcloud; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Nextcloud...\e[0m"
+    echo -e "$(t ferramenta_nextcloud_iniciando)"
     verificar_container_postgres || ferramenta_postgres
     pegar_senha_postgres
     criar_banco_postgres_da_stack "nextcloud${1:+_$1}"
@@ -9876,7 +12764,10 @@ EOL
     stack_editavel
 
     ## Mensagem de Passo
-    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+    MSG_PT[ferramenta_nextcloud_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+    MSG_EN[ferramenta_nextcloud_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+    MSG_ES[ferramenta_nextcloud_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+    echo -e "$(t ferramenta_nextcloud_verificando)"
     echo ""
 
     ## Baixando imagens:
@@ -9905,11 +12796,24 @@ Senha: $pass_nextcloud
 EOL
     cd
     
+    MSG_PT[ferramenta_nextcloud_resumo_titulo]="\e[32m[ NEXTCLOUD ]\e[0m\n"
+    MSG_EN[ferramenta_nextcloud_resumo_titulo]="\e[32m[ NEXTCLOUD ]\e[0m\n"
+    MSG_ES[ferramenta_nextcloud_resumo_titulo]="\e[32m[ NEXTCLOUD ]\e[0m\n"
+    MSG_PT[ferramenta_nextcloud_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_nextcloud_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_nextcloud_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_nextcloud_resumo_usuario]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nextcloud_resumo_usuario]="\e[33m👤 User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nextcloud_resumo_usuario]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_nextcloud_resumo_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_nextcloud_resumo_senha]="\e[33m🔑 Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_nextcloud_resumo_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ NEXTCLOUD ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_nextcloud\e[0m"
-    echo -e "\e[33m👤 Usuário:\e[97m $user_nextcloud\e[0m"
-    echo -e "\e[33m🔑 Senha:\e[97m $pass_nextcloud\e[0m"
+    echo -e "$(t ferramenta_nextcloud_resumo_titulo)"
+    echo -e "$(t ferramenta_nextcloud_resumo_dominio "$url_nextcloud")"
+    echo -e "$(t ferramenta_nextcloud_resumo_usuario "$user_nextcloud")"
+    echo -e "$(t ferramenta_nextcloud_resumo_senha "$pass_nextcloud")"
     msg_retorno_menu
 }
 
@@ -9917,23 +12821,42 @@ ferramenta_strapi() {
     msg_strapi
     dados
 
+    MSG_PT[ferramenta_strapi_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_strapi_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_strapi_passo1]="\n📍 Paso 1/1"
+    MSG_PT[ferramenta_strapi_url]="🔗 \e[33mDigite o domínio para o Strapi (ex: strapi.encha.ai): \e[0m"
+    MSG_EN[ferramenta_strapi_url]="🔗 \e[33mEnter the domain for Strapi (e.g. strapi.encha.ai): \e[0m"
+    MSG_ES[ferramenta_strapi_url]="🔗 \e[33mIngrese el dominio para Strapi (ej: strapi.encha.ai): \e[0m"
+    MSG_PT[ferramenta_strapi_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_strapi_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_strapi_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    MSG_PT[ferramenta_strapi_dominio_resumo]="🌐 \e[33mDomínio Strapi:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_strapi_dominio_resumo]="🌐 \e[33mStrapi Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_strapi_dominio_resumo]="🌐 \e[33mDominio Strapi:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_strapi_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_strapi_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_strapi_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_PT[ferramenta_strapi_iniciando]="\e[97m🚀 Iniciando a instalação do Strapi...\e[0m"
+    MSG_EN[ferramenta_strapi_iniciando]="\e[97m🚀 Starting the Strapi installation...\e[0m"
+    MSG_ES[ferramenta_strapi_iniciando]="\e[97m🚀 Iniciando la instalación de Strapi...\e[0m"
+
     while true; do
-        echo -e "\n📍 Passo 1/1"
-        echo -en "🔗 \e[33mDigite o domínio para o Strapi (ex: strapi.encha.ai): \e[0m" && read -r url_strapi
+        echo -e "$(t ferramenta_strapi_passo1)"
+        echo -en "$(t ferramenta_strapi_url)" && read -r url_strapi
         echo ""
 
         clear
         msg_strapi
-        echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+        echo -e "$(t ferramenta_strapi_revise)"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo -e "🌐 \e[33mDomínio Strapi:\e[97m $url_strapi\e[0m"
+        echo -e "$(t ferramenta_strapi_dominio_resumo "$url_strapi")"
         echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+        read -p "$(t ferramenta_strapi_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_strapi; fi
     done
 
     clear
-    echo -e "\e[97m🚀 Iniciando a instalação do Strapi...\e[0m"
+    echo -e "$(t ferramenta_strapi_iniciando)"
     
     jwt_secret=$(openssl rand -hex 16)
     admin_jwt=$(openssl rand -hex 16)
@@ -10058,7 +12981,10 @@ EOL
     STACK_NAME="strapi${1:+_$1}"
     stack_editavel
 
-    echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+    MSG_PT[ferramenta_strapi_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+    MSG_EN[ferramenta_strapi_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+    MSG_ES[ferramenta_strapi_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+    echo -e "$(t ferramenta_strapi_verificando)"
     echo ""
 
     pull strapi/strapi percona/percona-server:8.0
@@ -10074,10 +13000,20 @@ Senha: (criada no primeiro acesso)
 EOL
     cd
     
+    MSG_PT[ferramenta_strapi_resumo_titulo]="\e[32m[ STRAPI ]\e[0m\n"
+    MSG_EN[ferramenta_strapi_resumo_titulo]="\e[32m[ STRAPI ]\e[0m\n"
+    MSG_ES[ferramenta_strapi_resumo_titulo]="\e[32m[ STRAPI ]\e[0m\n"
+    MSG_PT[ferramenta_strapi_resumo_dominio]="\e[33m🌐 Domínio Admin:\e[97m https://%s/admin\e[0m"
+    MSG_EN[ferramenta_strapi_resumo_dominio]="\e[33m🌐 Admin Domain:\e[97m https://%s/admin\e[0m"
+    MSG_ES[ferramenta_strapi_resumo_dominio]="\e[33m🌐 Dominio Admin:\e[97m https://%s/admin\e[0m"
+    MSG_PT[ferramenta_strapi_resumo_aviso]="\e[33m⚠️  Aguarde até 5 minutos para a primeira inicialização e acesse o link para criar seu usuário.\e[0m"
+    MSG_EN[ferramenta_strapi_resumo_aviso]="\e[33m⚠️  Wait up to 5 minutes for the first startup and access the link to create your user.\e[0m"
+    MSG_ES[ferramenta_strapi_resumo_aviso]="\e[33m⚠️  Espere hasta 5 minutos para el primer inicio y acceda al enlace para crear su usuario.\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ STRAPI ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_strapi/admin\e[0m"
-    echo -e "\e[33m⚠️  Aguarde até 5 minutos para a primeira inicialização e acesse o link para criar seu usuário.\e[0m"
+    echo -e "$(t ferramenta_strapi_resumo_titulo)"
+    echo -e "$(t ferramenta_strapi_resumo_dominio "$url_strapi")"
+    echo -e "$(t ferramenta_strapi_resumo_aviso)"
     msg_retorno_menu
 }
 
@@ -10085,31 +13021,59 @@ ferramenta_phpmyadmin(){
   msg_phpmyadmin
   dados
 
+  MSG_PT[ferramenta_phpmyadmin_passo1]="\e[97mPasso$amarelo 1/2\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_passo1]="\e[97mStep$amarelo 1/2\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_passo1]="\e[97mPaso$amarelo 1/2\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_url]="\e[33mDigite o dominio para o PhpMyAdmin (ex: phpmyadmin.encha.ai): \e[0m"
+  MSG_EN[ferramenta_phpmyadmin_url]="\e[33mEnter the domain for PhpMyAdmin (e.g. phpmyadmin.encha.ai): \e[0m"
+  MSG_ES[ferramenta_phpmyadmin_url]="\e[33mIngrese el dominio para PhpMyAdmin (ej: phpmyadmin.encha.ai): \e[0m"
+  MSG_PT[ferramenta_phpmyadmin_passo2]="\e[97mPasso$amarelo 2/2\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_passo2]="\e[97mStep$amarelo 2/2\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_passo2]="\e[97mPaso$amarelo 2/2\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_host]="\e[33mDigite o Host MySQL (ex: mysql ou 1.111.111.11:3306): \e[0m"
+  MSG_EN[ferramenta_phpmyadmin_host]="\e[33mEnter the MySQL Host (e.g. mysql or 1.111.111.11:3306): \e[0m"
+  MSG_ES[ferramenta_phpmyadmin_host]="\e[33mIngrese el Host de MySQL (ej: mysql o 1.111.111.11:3306): \e[0m"
+  MSG_PT[ferramenta_phpmyadmin_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_phpmyadmin_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_phpmyadmin_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+  MSG_PT[ferramenta_phpmyadmin_dominio_resumo]="🌐 \e[33mDomínio PhpMyAdmin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_dominio_resumo]="🌐 \e[33mPhpMyAdmin Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_dominio_resumo]="🌐 \e[33mDominio PhpMyAdmin:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_host_resumo]="🏠 \e[33mHost MySQL:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_host_resumo]="🏠 \e[33mMySQL Host:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_host_resumo]="🏠 \e[33mHost MySQL:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_phpmyadmin_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_phpmyadmin_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_PT[ferramenta_phpmyadmin_iniciando]="\e[97m🚀 Iniciando a instalação do PhpMyAdmin...\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_iniciando]="\e[97m🚀 Starting the PhpMyAdmin installation...\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_iniciando]="\e[97m🚀 Iniciando la instalación de PhpMyAdmin...\e[0m"
+
   while true; do
     ##Pergunta o Dominio para a ferramenta
-    echo -e "\e[97mPasso$amarelo 1/2\e[0m"
-    echo -en "\e[33mDigite o dominio para o PhpMyAdmin (ex: phpmyadmin.encha.ai): \e[0m" && read -r url_phpmyadmin
+    echo -e "$(t ferramenta_phpmyadmin_passo1)"
+    echo -en "$(t ferramenta_phpmyadmin_url)" && read -r url_phpmyadmin
     echo ""
 
     ##Pergunta o Dominio para a ferramenta
-    echo -e "\e[97mPasso$amarelo 2/2\e[0m"
-    echo -en "\e[33mDigite o Host MySQL (ex: mysql ou 1.111.111.11:3306): \e[0m" && read -r host_phpmyadmin
+    echo -e "$(t ferramenta_phpmyadmin_passo2)"
+    echo -en "$(t ferramenta_phpmyadmin_host)" && read -r host_phpmyadmin
     echo ""
-    
+
     ## Limpa o terminal
     clear
     msg_pgAdmin
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_phpmyadmin_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio PhpMyAdmin:\e[97m $url_phpmyadmin\e[0m"
-    echo -e "🏠 \e[33mHost MySQL:\e[97m $host_phpmyadmin\e[0m"
+    echo -e "$(t ferramenta_phpmyadmin_dominio_resumo "$url_phpmyadmin")"
+    echo -e "$(t ferramenta_phpmyadmin_host_resumo "$host_phpmyadmin")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_phpmyadmin_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_phpmyadmin; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do PhpMyAdmin...\e[0m"
+  echo -e "$(t ferramenta_phpmyadmin_iniciando)"
 
   cat > phpmyadmin${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -10170,7 +13134,10 @@ EOL
   STACK_NAME="phpmyadmin${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_phpmyadmin_verificando)"
   echo ""
 
   pull phpmyadmin/phpmyadmin:latest
@@ -10189,10 +13156,20 @@ EOL
 
   cd
 
+  MSG_PT[ferramenta_phpmyadmin_resumo_titulo]="\e[32m[ PHPMYADMIN ]\e[0m\n"
+  MSG_EN[ferramenta_phpmyadmin_resumo_titulo]="\e[32m[ PHPMYADMIN ]\e[0m\n"
+  MSG_ES[ferramenta_phpmyadmin_resumo_titulo]="\e[32m[ PHPMYADMIN ]\e[0m\n"
+  MSG_PT[ferramenta_phpmyadmin_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  MSG_PT[ferramenta_phpmyadmin_resumo_aviso]="\e[33m⚠️  Use as credenciais do seu banco de dados MySQL para fazer login.\e[0m"
+  MSG_EN[ferramenta_phpmyadmin_resumo_aviso]="\e[33m⚠️  Use your MySQL database credentials to log in.\e[0m"
+  MSG_ES[ferramenta_phpmyadmin_resumo_aviso]="\e[33m⚠️  Use las credenciales de su base de datos MySQL para iniciar sesión.\e[0m"
+
   msg_resumo_informacoes
-  echo -e "\e[32m[ PHPMYADMIN ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_phpmyadmin\e[0m"
-  echo -e "\e[33m⚠️  Use as credenciais do seu banco de dados MySQL para fazer login.\e[0m"
+  echo -e "$(t ferramenta_phpmyadmin_resumo_titulo)"
+  echo -e "$(t ferramenta_phpmyadmin_resumo_dominio "$url_phpmyadmin")"
+  echo -e "$(t ferramenta_phpmyadmin_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -10201,10 +13178,29 @@ ferramenta_supabase() {
   msg_supabase
   dados
 
+  MSG_PT[ferramenta_supabase_openssl_ausente]="O comando 'openssl' não está disponível. Tentando instalar..."
+  MSG_EN[ferramenta_supabase_openssl_ausente]="The 'openssl' command is not available. Trying to install it..."
+  MSG_ES[ferramenta_supabase_openssl_ausente]="El comando 'openssl' no está disponible. Intentando instalar..."
+  MSG_PT[ferramenta_supabase_openssl_distro_desconhecida]="Não foi possível identificar a distribuição Linux. Por favor, instale o OpenSSL manualmente."
+  MSG_EN[ferramenta_supabase_openssl_distro_desconhecida]="Could not identify the Linux distribution. Please install OpenSSL manually."
+  MSG_ES[ferramenta_supabase_openssl_distro_desconhecida]="No fue posible identificar la distribución Linux. Por favor, instale OpenSSL manualmente."
+  MSG_PT[ferramenta_supabase_openssl_so_nao_suportado]="Sistema operacional não suportado. Por favor, instale o OpenSSL manualmente."
+  MSG_EN[ferramenta_supabase_openssl_so_nao_suportado]="Unsupported operating system. Please install OpenSSL manually."
+  MSG_ES[ferramenta_supabase_openssl_so_nao_suportado]="Sistema operativo no compatible. Por favor, instale OpenSSL manualmente."
+  MSG_PT[ferramenta_supabase_jq_ausente]="O comando 'jq' não está disponível. Tentando instalar..."
+  MSG_EN[ferramenta_supabase_jq_ausente]="The 'jq' command is not available. Trying to install it..."
+  MSG_ES[ferramenta_supabase_jq_ausente]="El comando 'jq' no está disponible. Intentando instalar..."
+  MSG_PT[ferramenta_supabase_jq_distro_desconhecida]="Não foi possível identificar a distribuição Linux. Por favor, instale o jq manualmente."
+  MSG_EN[ferramenta_supabase_jq_distro_desconhecida]="Could not identify the Linux distribution. Please install jq manually."
+  MSG_ES[ferramenta_supabase_jq_distro_desconhecida]="No fue posible identificar la distribución Linux. Por favor, instale jq manualmente."
+  MSG_PT[ferramenta_supabase_jq_so_nao_suportado]="Sistema operacional não suportado. Por favor, instale o jq manualmente."
+  MSG_EN[ferramenta_supabase_jq_so_nao_suportado]="Unsupported operating system. Please install jq manually."
+  MSG_ES[ferramenta_supabase_jq_so_nao_suportado]="Sistema operativo no compatible. Por favor, instale jq manualmente."
+
   generate_jwt_tokens() {
     # Verificar a disponibilidade dos comandos necessários e instalá-los se necessário
     if ! command -v openssl &> /dev/null; then
-        echo "O comando 'openssl' não está disponível. Tentando instalar..."
+        echo "$(t ferramenta_supabase_openssl_ausente)"
         if [[ "$(uname)" == "Darwin" ]]; then
             # macOS
             brew install openssl
@@ -10217,17 +13213,17 @@ ferramenta_supabase() {
                 # Debian, Ubuntu
                 sudo apt-get install -y openssl
             else
-                echo "Não foi possível identificar a distribuição Linux. Por favor, instale o OpenSSL manualmente."
+                echo "$(t ferramenta_supabase_openssl_distro_desconhecida)"
                 return 1
             fi
         else
-            echo "Sistema operacional não suportado. Por favor, instale o OpenSSL manualmente."
+            echo "$(t ferramenta_supabase_openssl_so_nao_suportado)"
             return 1
         fi
     fi
 
     if ! command -v jq &> /dev/null; then
-        echo "O comando 'jq' não está disponível. Tentando instalar..."
+        echo "$(t ferramenta_supabase_jq_ausente)"
         if [[ "$(uname)" == "Darwin" ]]; then
             # macOS
             brew install jq
@@ -10240,11 +13236,11 @@ ferramenta_supabase() {
                 # Debian, Ubuntu
                 sudo apt-get install -y jq
             else
-                echo "Não foi possível identificar a distribuição Linux. Por favor, instale o jq manualmente."
+                echo "$(t ferramenta_supabase_jq_distro_desconhecida)"
                 return 1
             fi
         else
-            echo "Sistema operacional não suportado. Por favor, instale o jq manualmente."
+            echo "$(t ferramenta_supabase_jq_so_nao_suportado)"
             return 1
         fi
     fi
@@ -10290,30 +13286,80 @@ ferramenta_supabase() {
   # Chamar a função e armazenar o retorno em uma variável
   result=$(generate_jwt_tokens)
 
+  MSG_PT[ferramenta_supabase_resultado_vazio]="A função retornou um resultado vazio. Verifique a configuração do ambiente e as dependências."
+  MSG_EN[ferramenta_supabase_resultado_vazio]="The function returned an empty result. Check the environment configuration and dependencies."
+  MSG_ES[ferramenta_supabase_resultado_vazio]="La función devolvió un resultado vacío. Verifique la configuración del entorno y las dependencias."
+
   # Verificar se o resultado está vazio
   if [[ -z "$result" ]]; then
-      echo "A função retornou um resultado vazio. Verifique a configuração do ambiente e as dependências."
+      echo "$(t ferramenta_supabase_resultado_vazio)"
       exit 1
   fi
 
   # Extrair os valores individuais usando o comando 'read'
   read secret token_service_key token_anon_key <<< "$result"
 
+  MSG_PT[ferramenta_supabase_passo1]="\e[97mPasso$amarelo 1/3\e[0m"
+  MSG_EN[ferramenta_supabase_passo1]="\e[97mStep$amarelo 1/3\e[0m"
+  MSG_ES[ferramenta_supabase_passo1]="\e[97mPaso$amarelo 1/3\e[0m"
+  MSG_PT[ferramenta_supabase_url]="\e[33mDigite o Dominio para o Supabase (ex: supabase.encha.ai): \e[0m"
+  MSG_EN[ferramenta_supabase_url]="\e[33mEnter the Domain for Supabase (e.g. supabase.encha.ai): \e[0m"
+  MSG_ES[ferramenta_supabase_url]="\e[33mIngrese el Dominio para Supabase (ej: supabase.encha.ai): \e[0m"
+  MSG_PT[ferramenta_supabase_passo2]="\e[97mPasso$amarelo 2/3\e[0m"
+  MSG_EN[ferramenta_supabase_passo2]="\e[97mStep$amarelo 2/3\e[0m"
+  MSG_ES[ferramenta_supabase_passo2]="\e[97mPaso$amarelo 2/3\e[0m"
+  MSG_PT[ferramenta_supabase_user]="\e[33mDigite o Usuario para o Supabase (ex: encha || admin): \e[0m"
+  MSG_EN[ferramenta_supabase_user]="\e[33mEnter the User for Supabase (e.g. encha || admin): \e[0m"
+  MSG_ES[ferramenta_supabase_user]="\e[33mIngrese el Usuario para Supabase (ej: encha || admin): \e[0m"
+  MSG_PT[ferramenta_supabase_passo3]="\e[97mPasso$amarelo 3/3\e[0m"
+  MSG_EN[ferramenta_supabase_passo3]="\e[97mStep$amarelo 3/3\e[0m"
+  MSG_ES[ferramenta_supabase_passo3]="\e[97mPaso$amarelo 3/3\e[0m"
+  MSG_PT[ferramenta_supabase_senha_aviso]="$amarelo--> Sem NENHUM caracteres especiais, tais como: @\!#$ entre outros"
+  MSG_EN[ferramenta_supabase_senha_aviso]="$amarelo--> With NO special characters, such as: @\!#$ among others"
+  MSG_ES[ferramenta_supabase_senha_aviso]="$amarelo--> Sin NINGÚN carácter especial, tales como: @\!#$ entre otros"
+  MSG_PT[ferramenta_supabase_senha]="\e[33mDigite a Senha do usuario para o Supabase (ex: Senha123): \e[0m"
+  MSG_EN[ferramenta_supabase_senha]="\e[33mEnter the user's Password for Supabase (e.g. Senha123): \e[0m"
+  MSG_ES[ferramenta_supabase_senha]="\e[33mIngrese la Contraseña del usuario para Supabase (ej: Senha123): \e[0m"
+  MSG_PT[ferramenta_supabase_dominio_resumo]="\e[33mDominio do Supabase:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_dominio_resumo]="\e[33mSupabase Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_dominio_resumo]="\e[33mDominio de Supabase:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_user_resumo]="\e[33mUsuario:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_user_resumo]="\e[33mUser:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_user_resumo]="\e[33mUsuario:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_senha_resumo]="\e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_senha_resumo]="\e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_senha_resumo]="\e[33mContraseña:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_jwt_resumo]="\e[33mJWT_Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_jwt_resumo]="\e[33mJWT_Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_jwt_resumo]="\e[33mJWT_Key:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_anon_resumo]="\e[33mAnon Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_anon_resumo]="\e[33mAnon Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_anon_resumo]="\e[33mAnon Key:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_service_resumo]="\e[33mService Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_service_resumo]="\e[33mService Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_service_resumo]="\e[33mService Key:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_supabase_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_supabase_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_PT[ferramenta_supabase_iniciando]="\e[97m• INICIANDO A INSTALAÇÃO DO SUPABASE \e[33m[1/4]\e[0m"
+  MSG_EN[ferramenta_supabase_iniciando]="\e[97m• STARTING THE SUPABASE INSTALLATION \e[33m[1/4]\e[0m"
+  MSG_ES[ferramenta_supabase_iniciando]="\e[97m• INICIANDO LA INSTALACIÓN DE SUPABASE \e[33m[1/4]\e[0m"
+
   while true; do
     ##Pergunta o Dominio do Builder
-    echo -e "\e[97mPasso$amarelo 1/3\e[0m"
-    echo -en "\e[33mDigite o Dominio para o Supabase (ex: supabase.encha.ai): \e[0m" && read -r url_supabase
+    echo -e "$(t ferramenta_supabase_passo1)"
+    echo -en "$(t ferramenta_supabase_url)" && read -r url_supabase
     echo ""
 
     ##Pergunta o Dominio do Viewer
-    echo -e "\e[97mPasso$amarelo 2/3\e[0m"
-    echo -en "\e[33mDigite o Usuario para o Supabase (ex: encha || admin): \e[0m" && read -r user_supabase
+    echo -e "$(t ferramenta_supabase_passo2)"
+    echo -en "$(t ferramenta_supabase_user)" && read -r user_supabase
     echo ""
 
     ##Pergunta a versão da ferramenta
-    echo -e "\e[97mPasso$amarelo 3/3\e[0m"
-    echo -e "$amarelo--> Sem NENHUM caracteres especiais, tais como: @\!#$ entre outros"
-    echo -en "\e[33mDigite a Senha do usuario para o Supabase (ex: Senha123): \e[0m" && read -r pass_supabase
+    echo -e "$(t ferramenta_supabase_passo3)"
+    echo -e "$(t ferramenta_supabase_senha_aviso)"
+    echo -en "$(t ferramenta_supabase_senha)" && read -r pass_supabase
     echo ""
 
     ## Gera a JWT_Key
@@ -10328,34 +13374,34 @@ ferramenta_supabase() {
     clear
     msg_supabase
     ## Informação sobre URL do Builder
-    echo -e "\e[33mDominio do Supabase:\e[97m $url_supabase\e[0m"
+    echo -e "$(t ferramenta_supabase_dominio_resumo "$url_supabase")"
     echo ""
 
     ## Informação sobre URL do Viewer
-    echo -e "\e[33mUsuario:\e[97m $user_supabase\e[0m"
+    echo -e "$(t ferramenta_supabase_user_resumo "$user_supabase")"
     echo ""
 
     ## Informação sobre a versão da ferramenta
-    echo -e "\e[33mSenha:\e[97m $pass_supabase\e[0m"
-    echo ""    
+    echo -e "$(t ferramenta_supabase_senha_resumo "$pass_supabase")"
+    echo ""
 
     ## Informação sobre JWT_Key
-    echo -e "\e[33mJWT_Key:\e[97m $JWT_Key\e[0m"
+    echo -e "$(t ferramenta_supabase_jwt_resumo "$JWT_Key")"
     echo ""
 
     ## Informação sobre ANON_KEY
-    echo -e "\e[33mAnon Key:\e[97m $ANON_KEY\e[0m"
+    echo -e "$(t ferramenta_supabase_anon_resumo "$ANON_KEY")"
     echo ""
 
     ## Informação sobre SERVICE_KEY
-    echo -e "\e[33mService Key:\e[97m $SERVICE_KEY\e[0m"
+    echo -e "$(t ferramenta_supabase_service_resumo "$SERVICE_KEY")"
     echo ""
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_supabase_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_supabase; fi
   done
 
   clear
-  echo -e "\e[97m• INICIANDO A INSTALAÇÃO DO SUPABASE \e[33m[1/4]\e[0m"
+  echo -e "$(t ferramenta_supabase_iniciando)"
   echo ""
 
   cd
@@ -10368,12 +13414,22 @@ ferramenta_supabase() {
 
   cd temp${1:+_$1}
 
+  MSG_PT[ferramenta_supabase_clone_ok]="1/3 - [ OK ] - Baixando Repositório do Supabase"
+  MSG_EN[ferramenta_supabase_clone_ok]="1/3 - [ OK ] - Downloading Supabase Repository"
+  MSG_ES[ferramenta_supabase_clone_ok]="1/3 - [ OK ] - Descargando Repositorio de Supabase"
+  MSG_PT[ferramenta_supabase_clone_off]="1/3 - [ OFF ] - Baixando Repositório do Supabase"
+  MSG_EN[ferramenta_supabase_clone_off]="1/3 - [ OFF ] - Downloading Supabase Repository"
+  MSG_ES[ferramenta_supabase_clone_off]="1/3 - [ OFF ] - Descargando Repositorio de Supabase"
+  MSG_PT[ferramenta_supabase_clone_erro]="Não foi possivel Baixar."
+  MSG_EN[ferramenta_supabase_clone_erro]="It was not possible to download."
+  MSG_ES[ferramenta_supabase_clone_erro]="No fue posible descargar."
+
   git clone --depth 1 https://github.com/supabase/supabase.git > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-      echo "1/3 - [ OK ] - Baixando Repositório do Supabase"
+      echo "$(t ferramenta_supabase_clone_ok)"
   else
-      echo "1/3 - [ OFF ] - Baixando Repositório do Supabase"
-      echo "Não foi possivel Baixar."
+      echo "$(t ferramenta_supabase_clone_off)"
+      echo "$(t ferramenta_supabase_clone_erro)"
   fi
   cd supabase
   git checkout a3c77cd0609fd4524114f69dd3ef8ea36156f023 > /dev/null 2>&1
@@ -10391,20 +13447,36 @@ ferramenta_supabase() {
 
   rm -r temp${1:+_$1}
 
+  MSG_PT[ferramenta_supabase_dir1_ok]="2/3 - [ OK ] - Criando diretório 1"
+  MSG_EN[ferramenta_supabase_dir1_ok]="2/3 - [ OK ] - Creating directory 1"
+  MSG_ES[ferramenta_supabase_dir1_ok]="2/3 - [ OK ] - Creando directorio 1"
+  MSG_PT[ferramenta_supabase_dir1_off]="2/3 - [ OFF ] - Criando diretório 1"
+  MSG_EN[ferramenta_supabase_dir1_off]="2/3 - [ OFF ] - Creating directory 1"
+  MSG_ES[ferramenta_supabase_dir1_off]="2/3 - [ OFF ] - Creando directorio 1"
+  MSG_PT[ferramenta_supabase_dir_erro]="Não foi criar o diretório"
+  MSG_EN[ferramenta_supabase_dir_erro]="Could not create the directory"
+  MSG_ES[ferramenta_supabase_dir_erro]="No fue posible crear el directorio"
+  MSG_PT[ferramenta_supabase_dir2_ok]="3/3 - [ OK ] - Criando diretório 2"
+  MSG_EN[ferramenta_supabase_dir2_ok]="3/3 - [ OK ] - Creating directory 2"
+  MSG_ES[ferramenta_supabase_dir2_ok]="3/3 - [ OK ] - Creando directorio 2"
+  MSG_PT[ferramenta_supabase_dir2_off]="3/3 - [ OFF ] - Criando diretório 2"
+  MSG_EN[ferramenta_supabase_dir2_off]="3/3 - [ OFF ] - Creating directory 2"
+  MSG_ES[ferramenta_supabase_dir2_off]="3/3 - [ OFF ] - Creando directorio 2"
+
   sudo mkdir -p /root/supabase${1:+_$1}/docker/volumes/db/data
   if [ $? -eq 0 ]; then
-      echo "2/3 - [ OK ] - Criando diretório 1"
+      echo "$(t ferramenta_supabase_dir1_ok)"
   else
-      echo "2/3 - [ OFF ] - Criando diretório 1"
-      echo "Não foi criar o diretório"
+      echo "$(t ferramenta_supabase_dir1_off)"
+      echo "$(t ferramenta_supabase_dir_erro)"
   fi
 
   sudo mkdir -p /root/supabase${1:+_$1}/docker/volumes/storage
   if [ $? -eq 0 ]; then
-      echo "3/3 - [ OK ] - Criando diretório 2"
+      echo "$(t ferramenta_supabase_dir2_ok)"
   else
-      echo "3/3 - [ OFF ] - Criando diretório 2"
-      echo "Não foi criar o diretório"
+      echo "$(t ferramenta_supabase_dir2_off)"
+      echo "$(t ferramenta_supabase_dir_erro)"
   fi
 
   cat > kong.yml <<EOL
@@ -10657,23 +13729,36 @@ EOL
 
   echo ""
 
+  MSG_PT[ferramenta_supabase_criando_bucket_passo]="\e[97m• CRIANDO BUCKET NO MINIO \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_supabase_criando_bucket_passo]="\e[97m• CREATING BUCKET IN MINIO \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_supabase_criando_bucket_passo]="\e[97m• CREANDO BUCKET EN MINIO \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_supabase_bucket_ok]="1/1 - [ OK ] - Criando Bucket\e[33m %s\e[0m"
+  MSG_EN[ferramenta_supabase_bucket_ok]="1/1 - [ OK ] - Creating Bucket\e[33m %s\e[0m"
+  MSG_ES[ferramenta_supabase_bucket_ok]="1/1 - [ OK ] - Creando Bucket\e[33m %s\e[0m"
+  MSG_PT[ferramenta_supabase_bucket_off]="1/1 - [ OFF ] - Erro ao criar Bucket"
+  MSG_EN[ferramenta_supabase_bucket_off]="1/1 - [ OFF ] - Error creating Bucket"
+  MSG_ES[ferramenta_supabase_bucket_off]="1/1 - [ OFF ] - Error al crear Bucket"
+  MSG_PT[ferramenta_supabase_instalando_passo]="\e[97m• INSTALANDO SUPABASE \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_supabase_instalando_passo]="\e[97m• INSTALLING SUPABASE \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_supabase_instalando_passo]="\e[97m• INSTALANDO SUPABASE \e[33m[3/4]\e[0m"
+
   ## Mensagem de Passo
-  echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_supabase_criando_bucket_passo)"
   echo ""
 
   pegar_senha_minio
   criar_bucket.minio supabase${1:+-$1}
 
   if [ $? -eq 0 ]; then
-    echo -e "1/1 - [ OK ] - Criando Bucket\e[33m $BUCKET\e[0m"
+    echo -e "$(t ferramenta_supabase_bucket_ok "$BUCKET")"
   else
-    echo "1/1 - [ OFF ] - Erro ao criar Bucket"
+    echo "$(t ferramenta_supabase_bucket_off)"
     echo ""
   fi
 
   echo ""
   ## Mensagem de Passo
-  echo -e "\e[97m• INSTALANDO SUPABASE \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_supabase_instalando_passo)"
   echo ""
 
   ## Criando key Aleatórias
@@ -11259,7 +14344,10 @@ EOL
   stack_editavel
 
   ## Mensagem de Passo
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_supabase_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_supabase_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_supabase_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_supabase_verificando)"
   echo ""
   sleep 1
 
@@ -11284,24 +14372,43 @@ EOL
   cd
   clear
 
+  MSG_PT[ferramenta_supabase_resumo_titulo]="\e[32m[ SUPABASE ]\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_titulo]="\e[32m[ SUPABASE ]\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_titulo]="\e[32m[ SUPABASE ]\e[0m"
+  MSG_PT[ferramenta_supabase_resumo_dominio]="\e[33mDominio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_dominio]="\e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_dominio]="\e[33mDominio:\e[97m https://%s\e[0m"
+  MSG_PT[ferramenta_supabase_resumo_usuario]="\e[33mUsuario:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_usuario]="\e[33mUser:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_usuario]="\e[33mUsuario:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_resumo_senha]="\e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_senha]="\e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_senha]="\e[33mContraseña:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_resumo_anon]="\e[33mAnon key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_anon]="\e[33mAnon key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_anon]="\e[33mAnon key:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_supabase_resumo_service]="\e[33mService key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_supabase_resumo_service]="\e[33mService key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_supabase_resumo_service]="\e[33mService key:\e[97m %s\e[0m"
+
   msg_resumo_informacoes
     ## Dados da Aplicação:
-  echo -e "\e[32m[ SUPABASE ]\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_titulo)"
   echo ""
 
-  echo -e "\e[33mDominio:\e[97m https://$url_supabase\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_dominio "$url_supabase")"
   echo ""
 
-  echo -e "\e[33mUsuario:\e[97m $user_supabase\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_usuario "$user_supabase")"
   echo ""
 
-  echo -e "\e[33mSenha:\e[97m $pass_supabase\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_senha "$pass_supabase")"
   echo ""
 
-  echo -e "\e[33mAnon key:\e[97m $ANON_KEY\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_anon "$ANON_KEY")"
   echo ""
 
-  echo -e "\e[33mService key:\e[97m $SERVICE_KEY\e[0m"
+  echo -e "$(t ferramenta_supabase_resumo_service "$SERVICE_KEY")"
   msg_retorno_menu
 }
 
@@ -11309,31 +14416,68 @@ ferramenta_ntfy(){
   msg_ntfy
   dados
 
+  MSG_PT[ferramenta_ntfy_passo1]="\n📍 Passo 1/3"
+  MSG_EN[ferramenta_ntfy_passo1]="\n📍 Step 1/3"
+  MSG_ES[ferramenta_ntfy_passo1]="\n📍 Paso 1/3"
+  MSG_PT[ferramenta_ntfy_url]="🔗 \e[33mDigite o domínio para o Ntfy (ex: ntfy.encha.ai): \e[0m"
+  MSG_EN[ferramenta_ntfy_url]="🔗 \e[33mEnter the domain for Ntfy (e.g. ntfy.encha.ai): \e[0m"
+  MSG_ES[ferramenta_ntfy_url]="🔗 \e[33mIngrese el dominio para Ntfy (ej: ntfy.encha.ai): \e[0m"
+  MSG_PT[ferramenta_ntfy_passo2]="\n📍 Passo 2/3"
+  MSG_EN[ferramenta_ntfy_passo2]="\n📍 Step 2/3"
+  MSG_ES[ferramenta_ntfy_passo2]="\n📍 Paso 2/3"
+  MSG_PT[ferramenta_ntfy_user]="👤 \e[33mDigite um nome de usuário para proteger o acesso (ex: encha): \e[0m"
+  MSG_EN[ferramenta_ntfy_user]="👤 \e[33mEnter a username to protect access (e.g. encha): \e[0m"
+  MSG_ES[ferramenta_ntfy_user]="👤 \e[33mIngrese un nombre de usuario para proteger el acceso (ej: encha): \e[0m"
+  MSG_PT[ferramenta_ntfy_passo3]="\n📍 Passo 3/3"
+  MSG_EN[ferramenta_ntfy_passo3]="\n📍 Step 3/3"
+  MSG_ES[ferramenta_ntfy_passo3]="\n📍 Paso 3/3"
+  MSG_PT[ferramenta_ntfy_senha]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+  MSG_EN[ferramenta_ntfy_senha]="🔑 \e[33mEnter a password for the user: \e[0m"
+  MSG_ES[ferramenta_ntfy_senha]="🔑 \e[33mIngrese una contraseña para el usuario: \e[0m"
+  MSG_PT[ferramenta_ntfy_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_ntfy_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_ntfy_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+  MSG_PT[ferramenta_ntfy_dominio_resumo]="🌐 \e[33mDomínio Ntfy:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_ntfy_dominio_resumo]="🌐 \e[33mNtfy Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_ntfy_dominio_resumo]="🌐 \e[33mDominio Ntfy:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_ntfy_usuario_resumo]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_ntfy_usuario_resumo]="👤 \e[33mUser:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_ntfy_usuario_resumo]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_ntfy_senha_resumo]="🔑 \e[33mSenha do Ntfy:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_ntfy_senha_resumo]="🔑 \e[33mNtfy Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_ntfy_senha_resumo]="🔑 \e[33mContraseña de Ntfy:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_ntfy_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_ntfy_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_ntfy_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_PT[ferramenta_ntfy_iniciando]="\e[97m🚀 Iniciando a instalação do Ntfy...\e[0m"
+  MSG_EN[ferramenta_ntfy_iniciando]="\e[97m🚀 Starting the Ntfy installation...\e[0m"
+  MSG_ES[ferramenta_ntfy_iniciando]="\e[97m🚀 Iniciando la instalación de Ntfy...\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio para o Ntfy (ex: ntfy.encha.ai): \e[0m" && read -r url_ntfy
+    echo -e "$(t ferramenta_ntfy_passo1)"
+    echo -en "$(t ferramenta_ntfy_url)" && read -r url_ntfy
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "👤 \e[33mDigite um nome de usuário para proteger o acesso (ex: encha): \e[0m" && read -r user_ntfy
+    echo -e "$(t ferramenta_ntfy_passo2)"
+    echo -en "$(t ferramenta_ntfy_user)" && read -r user_ntfy
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_ntfy
+    echo -e "$(t ferramenta_ntfy_passo3)"
+    echo -en "$(t ferramenta_ntfy_senha)" && read -s -r pass_ntfy
     echo ""
 
     clear
     msg_ntfy
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_ntfy_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Ntfy:\e[97m $url_ntfy\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_ntfy\e[0m"
-    echo -e "🔑 \e[33mSenha do Ntfy:\e[97m $pass_ntfy\e[0m"
+    echo -e "$(t ferramenta_ntfy_dominio_resumo "$url_ntfy")"
+    echo -e "$(t ferramenta_ntfy_usuario_resumo "$user_ntfy")"
+    echo -e "$(t ferramenta_ntfy_senha_resumo "$pass_ntfy")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_ntfy_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_ntfy; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Ntfy...\e[0m"
+  echo -e "$(t ferramenta_ntfy_iniciando)"
   ## Gerando Hash
   hashed_senha=$(htpasswd -nbB "$user_ntfy" "$pass_ntfy" | sed -e 's/\\$/\\$\\$/g')
 
@@ -11407,7 +14551,10 @@ EOL
   STACK_NAME="ntfy${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_ntfy_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_ntfy_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_ntfy_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_ntfy_verificando)"
   echo ""
   pull binwiederhier/ntfy:latest
 
@@ -11423,12 +14570,28 @@ Authorization: Basic $authentication
 EOL
   cd
 
+    MSG_PT[ferramenta_ntfy_resumo_titulo]="\e[32m[ NTFY ]\e[0m\n"
+    MSG_EN[ferramenta_ntfy_resumo_titulo]="\e[32m[ NTFY ]\e[0m\n"
+    MSG_ES[ferramenta_ntfy_resumo_titulo]="\e[32m[ NTFY ]\e[0m\n"
+    MSG_PT[ferramenta_ntfy_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+    MSG_EN[ferramenta_ntfy_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+    MSG_ES[ferramenta_ntfy_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+    MSG_PT[ferramenta_ntfy_resumo_usuario]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_ntfy_resumo_usuario]="\e[33m👤 User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_ntfy_resumo_usuario]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_ntfy_resumo_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_ntfy_resumo_senha]="\e[33m🔑 Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_ntfy_resumo_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m"
+    MSG_PT[ferramenta_ntfy_resumo_auth]="\e[33m🔐 Autorização para API:\e[97m Basic %s\e[0m"
+    MSG_EN[ferramenta_ntfy_resumo_auth]="\e[33m🔐 API Authorization:\e[97m Basic %s\e[0m"
+    MSG_ES[ferramenta_ntfy_resumo_auth]="\e[33m🔐 Autorización para API:\e[97m Basic %s\e[0m"
+
     msg_resumo_informacoes
-    echo -e "\e[32m[ NTFY ]\e[0m\n"
-    echo -e "\e[33m🌐 Domínio:\e[97m https://$url_ntfy\e[0m"
-    echo -e "\e[33m👤 Usuário:\e[97m $user_ntfy\e[0m"
-    echo -e "\e[33m🔑 Senha:\e[97m $pass_ntfy\e[0m"
-    echo -e "\e[33m🔐 Autorização para API:\e[97m Basic $authentication\e[0m"
+    echo -e "$(t ferramenta_ntfy_resumo_titulo)"
+    echo -e "$(t ferramenta_ntfy_resumo_dominio "$url_ntfy")"
+    echo -e "$(t ferramenta_ntfy_resumo_usuario "$user_ntfy")"
+    echo -e "$(t ferramenta_ntfy_resumo_senha "$pass_ntfy")"
+    echo -e "$(t ferramenta_ntfy_resumo_auth "$authentication")"
     msg_retorno_menu
 
 }
@@ -11437,32 +14600,123 @@ ferramenta_lowcoder(){
   msg_lowcoder
   dados
 
+  MSG_PT[ferramenta_lowcoder_passo1]="\n📍 Passo 1/8"
+  MSG_EN[ferramenta_lowcoder_passo1]="\n📍 Step 1/8"
+  MSG_ES[ferramenta_lowcoder_passo1]="\n📍 Paso 1/8"
+  MSG_PT[ferramenta_lowcoder_url]="🔗 \e[33mDigite o domínio para o Lowcoder (ex: low.encha.ai): \e[0m"
+  MSG_EN[ferramenta_lowcoder_url]="🔗 \e[33mEnter the domain for Lowcoder (e.g. low.encha.ai): \e[0m"
+  MSG_ES[ferramenta_lowcoder_url]="🔗 \e[33mIngrese el dominio para Lowcoder (ej: low.encha.ai): \e[0m"
+  MSG_PT[ferramenta_lowcoder_credenciais_mongodb]="\n\e[97m--- Credenciais do MongoDB ---\e[0m"
+  MSG_EN[ferramenta_lowcoder_credenciais_mongodb]="\n\e[97m--- MongoDB Credentials ---\e[0m"
+  MSG_ES[ferramenta_lowcoder_credenciais_mongodb]="\n\e[97m--- Credenciales de MongoDB ---\e[0m"
+  MSG_PT[ferramenta_lowcoder_passo2]="\n📍 Passo 2/8"
+  MSG_EN[ferramenta_lowcoder_passo2]="\n📍 Step 2/8"
+  MSG_ES[ferramenta_lowcoder_passo2]="\n📍 Paso 2/8"
+  MSG_PT[ferramenta_lowcoder_user_mongodb]="👤 \e[33mDigite o usuário do MongoDB: \e[0m"
+  MSG_EN[ferramenta_lowcoder_user_mongodb]="👤 \e[33mEnter the MongoDB user: \e[0m"
+  MSG_ES[ferramenta_lowcoder_user_mongodb]="👤 \e[33mIngrese el usuario de MongoDB: \e[0m"
+  MSG_PT[ferramenta_lowcoder_passo3]="\n📍 Passo 3/8"
+  MSG_EN[ferramenta_lowcoder_passo3]="\n📍 Step 3/8"
+  MSG_ES[ferramenta_lowcoder_passo3]="\n📍 Paso 3/8"
+  MSG_PT[ferramenta_lowcoder_senha_mongodb]="🔑 \e[33mDigite a senha do MongoDB: \e[0m"
+  MSG_EN[ferramenta_lowcoder_senha_mongodb]="🔑 \e[33mEnter the MongoDB password: \e[0m"
+  MSG_ES[ferramenta_lowcoder_senha_mongodb]="🔑 \e[33mIngrese la contraseña de MongoDB: \e[0m"
+  MSG_PT[ferramenta_lowcoder_config_email]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+  MSG_EN[ferramenta_lowcoder_config_email]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+  MSG_ES[ferramenta_lowcoder_config_email]="\n\e[97m--- Configuración de Email (SMTP) ---\e[0m"
+  MSG_PT[ferramenta_lowcoder_passo4]="\n📍 Passo 4/8"
+  MSG_EN[ferramenta_lowcoder_passo4]="\n📍 Step 4/8"
+  MSG_ES[ferramenta_lowcoder_passo4]="\n📍 Paso 4/8"
+  MSG_PT[ferramenta_lowcoder_email_envio]="📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m"
+  MSG_EN[ferramenta_lowcoder_email_envio]="📧 \e[33mEnter your sending email (e.g. noreply@encha.ai): \e[0m"
+  MSG_ES[ferramenta_lowcoder_email_envio]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+  MSG_PT[ferramenta_lowcoder_passo5]="\n📍 Passo 5/8"
+  MSG_EN[ferramenta_lowcoder_passo5]="\n📍 Step 5/8"
+  MSG_ES[ferramenta_lowcoder_passo5]="\n📍 Paso 5/8"
+  MSG_PT[ferramenta_lowcoder_user_smtp]="👤 \e[33mDigite o usuário do seu email (pode ser o mesmo email): \e[0m"
+  MSG_EN[ferramenta_lowcoder_user_smtp]="👤 \e[33mEnter your email's user (can be the same email): \e[0m"
+  MSG_ES[ferramenta_lowcoder_user_smtp]="👤 \e[33mIngrese el usuario de su email (puede ser el mismo email): \e[0m"
+  MSG_PT[ferramenta_lowcoder_passo6]="\n📍 Passo 6/8"
+  MSG_EN[ferramenta_lowcoder_passo6]="\n📍 Step 6/8"
+  MSG_ES[ferramenta_lowcoder_passo6]="\n📍 Paso 6/8"
+  MSG_PT[ferramenta_lowcoder_senha_smtp]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+  MSG_EN[ferramenta_lowcoder_senha_smtp]="🔑 \e[33mEnter your email password: \e[0m"
+  MSG_ES[ferramenta_lowcoder_senha_smtp]="🔑 \e[33mIngrese la contraseña de su email: \e[0m"
+  MSG_PT[ferramenta_lowcoder_passo7]="\n📍 Passo 7/8"
+  MSG_EN[ferramenta_lowcoder_passo7]="\n📍 Step 7/8"
+  MSG_ES[ferramenta_lowcoder_passo7]="\n📍 Paso 7/8"
+  MSG_PT[ferramenta_lowcoder_host_smtp]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+  MSG_EN[ferramenta_lowcoder_host_smtp]="🏠 \e[33mEnter the SMTP host (e.g. smtp.hostinger.com): \e[0m"
+  MSG_ES[ferramenta_lowcoder_host_smtp]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+  MSG_PT[ferramenta_lowcoder_passo8]="\n📍 Passo 8/8"
+  MSG_EN[ferramenta_lowcoder_passo8]="\n📍 Step 8/8"
+  MSG_ES[ferramenta_lowcoder_passo8]="\n📍 Paso 8/8"
+  MSG_PT[ferramenta_lowcoder_porta_smtp]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+  MSG_EN[ferramenta_lowcoder_porta_smtp]="🔌 \e[33mEnter the SMTP port (e.g. 465): \e[0m"
+  MSG_ES[ferramenta_lowcoder_porta_smtp]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+  MSG_PT[ferramenta_lowcoder_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_lowcoder_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_lowcoder_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+  MSG_PT[ferramenta_lowcoder_dominio_resumo]="🌐 \e[33mDomínio Lowcoder:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_dominio_resumo]="🌐 \e[33mLowcoder Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_dominio_resumo]="🌐 \e[33mDominio Lowcoder:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_user_mongodb_resumo]="🗄️ \e[33mUsuário MongoDB:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_user_mongodb_resumo]="🗄️ \e[33mMongoDB User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_user_mongodb_resumo]="🗄️ \e[33mUsuario MongoDB:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_senha_mongodb_resumo]="\e[33mSenha do MongoDB:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_senha_mongodb_resumo]="\e[33mMongoDB Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_senha_mongodb_resumo]="\e[33mContraseña de MongoDB:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_email_smtp_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_email_smtp_resumo]="📧 \e[33mSMTP Email:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_email_smtp_resumo]="📧 \e[33mEmail SMTP:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_user_smtp_resumo]="\e[33mUser SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_user_smtp_resumo]="\e[33mSMTP User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_user_smtp_resumo]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_senha_smtp_resumo]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_senha_smtp_resumo]="\e[33mSMTP Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_senha_smtp_resumo]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_host_smtp_resumo]="\e[33mHost SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_host_smtp_resumo]="\e[33mSMTP Host:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_host_smtp_resumo]="\e[33mHost SMTP:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_porta_smtp_resumo]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_porta_smtp_resumo]="\e[33mSMTP Port:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_porta_smtp_resumo]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_lowcoder_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_lowcoder_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_PT[ferramenta_lowcoder_iniciando]="\e[97m🚀 Iniciando a instalação do Lowcoder...\e[0m"
+  MSG_EN[ferramenta_lowcoder_iniciando]="\e[97m🚀 Starting the Lowcoder installation...\e[0m"
+  MSG_ES[ferramenta_lowcoder_iniciando]="\e[97m🚀 Iniciando la instalación de Lowcoder...\e[0m"
+  MSG_PT[ferramenta_lowcoder_instalando]="\e[97m• INSTALANDO O LOWCODER \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_lowcoder_instalando]="\e[97m• INSTALLING LOWCODER \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_lowcoder_instalando]="\e[97m• INSTALANDO LOWCODER \e[33m[3/4]\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/8"
-    echo -en "🔗 \e[33mDigite o domínio para o Lowcoder (ex: low.encha.ai): \e[0m" && read -r url_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo1)"
+    echo -en "$(t ferramenta_lowcoder_url)" && read -r url_lowcoder
     echo ""
-    echo -e "\n\e[97m--- Credenciais do MongoDB ---\e[0m"
-    echo -e "\n📍 Passo 2/8"
-    echo -en "👤 \e[33mDigite o usuário do MongoDB: \e[0m" && read -r user_mongodb_lowcoder
+    echo -e "$(t ferramenta_lowcoder_credenciais_mongodb)"
+    echo -e "$(t ferramenta_lowcoder_passo2)"
+    echo -en "$(t ferramenta_lowcoder_user_mongodb)" && read -r user_mongodb_lowcoder
     echo ""
-    echo -e "\n📍 Passo 3/8"
-    echo -en "🔑 \e[33mDigite a senha do MongoDB: \e[0m" && read -s -r pass_mongodb_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo3)"
+    echo -en "$(t ferramenta_lowcoder_senha_mongodb)" && read -s -r pass_mongodb_lowcoder
     echo ""
-    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 4/8"
-    echo -en "📧 \e[33mDigite o seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_smtp_lowcoder
+    echo -e "$(t ferramenta_lowcoder_config_email)"
+    echo -e "$(t ferramenta_lowcoder_passo4)"
+    echo -en "$(t ferramenta_lowcoder_email_envio)" && read -r email_smtp_lowcoder
     echo ""
-    echo -e "\n📍 Passo 5/8"
-    echo -en "👤 \e[33mDigite o usuário do seu email (pode ser o mesmo email): \e[0m" && read -r user_smtp_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo5)"
+    echo -en "$(t ferramenta_lowcoder_user_smtp)" && read -r user_smtp_lowcoder
     echo ""
-    echo -e "\n📍 Passo 6/8"
-    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_smtp_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo6)"
+    echo -en "$(t ferramenta_lowcoder_senha_smtp)" && read -s -r senha_smtp_lowcoder
     echo ""
-    echo -e "\n📍 Passo 7/8"
-    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo7)"
+    echo -en "$(t ferramenta_lowcoder_host_smtp)" && read -r host_smtp_lowcoder
     echo ""
-    echo -e "\n📍 Passo 8/8"
-    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_lowcoder
+    echo -e "$(t ferramenta_lowcoder_passo8)"
+    echo -en "$(t ferramenta_lowcoder_porta_smtp)" && read -r porta_smtp_lowcoder
     echo ""
 
     if [ "$porta_smtp_lowcoder" -eq 465 ]; then
@@ -11475,26 +14729,26 @@ ferramenta_lowcoder(){
 
     clear
     msg_lowcoder
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_lowcoder_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Lowcoder:\e[97m $url_lowcoder\e[0m"
-    echo -e "🗄️ \e[33mUsuário MongoDB:\e[97m $user_mongodb_lowcoder\e[0m"
-    echo -e "\e[33mSenha do MongoDB:\e[97m $pass_mongodb_lowcoder\e[0m"
-    echo -e "📧 \e[33mEmail SMTP:\e[97m $email_smtp_lowcoder\e[0m"
-    echo -e "\e[33mUser SMTP:\e[97m $user_smtp_lowcoder\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_lowcoder\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $host_smtp_lowcoder\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_lowcoder\e[0m"
+    echo -e "$(t ferramenta_lowcoder_dominio_resumo "$url_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_user_mongodb_resumo "$user_mongodb_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_senha_mongodb_resumo "$pass_mongodb_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_email_smtp_resumo "$email_smtp_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_user_smtp_resumo "$user_smtp_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_senha_smtp_resumo "$senha_smtp_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_host_smtp_resumo "$host_smtp_lowcoder")"
+    echo -e "$(t ferramenta_lowcoder_porta_smtp_resumo "$porta_smtp_lowcoder")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_lowcoder_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_lowcoder; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Lowcoder...\e[0m"
+  echo -e "$(t ferramenta_lowcoder_iniciando)"
   verificar_container_redis || ferramenta_redis
 
-  echo -e "\e[97m• INSTALANDO O LOWCODER \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_lowcoder_instalando)"
   echo ""
 
   ## Gerando Encryption
@@ -11656,7 +14910,10 @@ EOL
   STACK_NAME="lowcoder${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_lowcoder_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_lowcoder_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_lowcoder_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_lowcoder_verificando)"
   echo ""
 
   pull lowcoderorg/lowcoder-ce-api-service:latest lowcoderorg/lowcoder-ce-node-service:latest lowcoderorg/lowcoder-ce-frontend:latest
@@ -11674,11 +14931,24 @@ EOL
 
   cad
 
+  MSG_PT[ferramenta_lowcoder_resumo_titulo]="\e[32m[ LOWCODER ]\e[0m\n"
+  MSG_EN[ferramenta_lowcoder_resumo_titulo]="\e[32m[ LOWCODER ]\e[0m\n"
+  MSG_ES[ferramenta_lowcoder_resumo_titulo]="\e[32m[ LOWCODER ]\e[0m\n"
+  MSG_PT[ferramenta_lowcoder_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_lowcoder_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_lowcoder_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  MSG_PT[ferramenta_lowcoder_resumo_apikey]="\e[33m🔑 API Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_lowcoder_resumo_apikey]="\e[33m🔑 API Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_lowcoder_resumo_apikey]="\e[33m🔑 API Key:\e[97m %s\e[0m"
+  MSG_PT[ferramenta_lowcoder_resumo_aviso]="\e[33m⚠️  Crie seu usuário no primeiro acesso.\e[0m"
+  MSG_EN[ferramenta_lowcoder_resumo_aviso]="\e[33m⚠️  Create your user on the first access.\e[0m"
+  MSG_ES[ferramenta_lowcoder_resumo_aviso]="\e[33m⚠️  Cree su usuario en el primer acceso.\e[0m"
+
   msg_resumo_informacoes
-  echo -e "\e[32m[ LOWCODER ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_lowcoder\e[0m"
-  echo -e "\e[33m🔑 API Key:\e[97m $encryption_key_lowcoder3\e[0m"
-  echo -e "\e[33m⚠️  Crie seu usuário no primeiro acesso.\e[0m"
+  echo -e "$(t ferramenta_lowcoder_resumo_titulo)"
+  echo -e "$(t ferramenta_lowcoder_resumo_dominio "$url_lowcoder")"
+  echo -e "$(t ferramenta_lowcoder_resumo_apikey "$encryption_key_lowcoder3")"
+  echo -e "$(t ferramenta_lowcoder_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -11688,28 +14958,49 @@ ferramenta_openproject() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o OpenProject (ex: projetos.encha.ai): \e[0m" && read -r url_openproject
+    MSG_PT[ferramenta_openproject_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_openproject_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_openproject_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_openproject_passo1)"
+    MSG_PT[ferramenta_openproject_dominio_prompt]="🔗 \e[33mDigite o domínio para o OpenProject (ex: projetos.encha.ai): \e[0m"
+    MSG_EN[ferramenta_openproject_dominio_prompt]="🔗 \e[33mEnter the domain for OpenProject (e.g.: projects.encha.ai): \e[0m"
+    MSG_ES[ferramenta_openproject_dominio_prompt]="🔗 \e[33mIngrese el dominio para OpenProject (ej: proyectos.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_openproject_dominio_prompt)" && read -r url_openproject
     echo ""
 
     clear
     msg_openproject
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_openproject_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_openproject_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_openproject_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_openproject_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio OpenProject:\e[97m $url_openproject\e[0m"
+    MSG_PT[ferramenta_openproject_resumo_dominio]="🌐 \e[33mDomínio OpenProject:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_openproject_resumo_dominio]="🌐 \e[33mOpenProject Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_openproject_resumo_dominio]="🌐 \e[33mDominio de OpenProject:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_openproject_resumo_dominio "$url_openproject")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_openproject_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_openproject_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_openproject_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_openproject_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_openproject; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do OpenProject...\e[0m"
+  MSG_PT[ferramenta_openproject_iniciando]="\e[97m🚀 Iniciando a instalação do OpenProject...\e[0m"
+  MSG_EN[ferramenta_openproject_iniciando]="\e[97m🚀 Starting OpenProject installation...\e[0m"
+  MSG_ES[ferramenta_openproject_iniciando]="\e[97m🚀 Iniciando la instalación de OpenProject...\e[0m"
+  echo -e "$(t ferramenta_openproject_iniciando)"
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "openproject${1:+_$1}"
   verificar_container_redis || ferramenta_redis
 
-  echo -e "\e[97m• INSTALANDO OPENPROJECT \e[33m[4/5]\e[0m"
+  MSG_PT[ferramenta_openproject_instalando]="\e[97m• INSTALANDO OPENPROJECT \e[33m[4/5]\e[0m"
+  MSG_EN[ferramenta_openproject_instalando]="\e[97m• INSTALLING OPENPROJECT \e[33m[4/5]\e[0m"
+  MSG_ES[ferramenta_openproject_instalando]="\e[97m• INSTALANDO OPENPROJECT \e[33m[4/5]\e[0m"
+  echo -e "$(t ferramenta_openproject_instalando)"
   echo ""
 
   key_openproject=$(openssl rand -hex 16)
@@ -11801,7 +15092,10 @@ EOL
   STACK_NAME="openproject${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_openproject_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_openproject_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_openproject_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_openproject_verificando)"
   echo ""
 
   pull openproject/openproject:15
@@ -11820,9 +15114,18 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ OPENPROJECT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_openproject\e[0m"
-  echo -e "\e[33m👤 Usuário padrão:\e[97m admin\e[0m"
-  echo -e "\e[33m🔑 Senha padrão:\e[97m admin (você deverá alterá-la no primeiro login)\e[0m"
+  MSG_PT[ferramenta_openproject_resumo_dominio2]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_openproject_resumo_dominio2]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_openproject_resumo_dominio2]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_openproject_resumo_dominio2 "$url_openproject")"
+  MSG_PT[ferramenta_openproject_resumo_usuario]="👤 \e[33mUsuário padrão:\e[97m admin\e[0m"
+  MSG_EN[ferramenta_openproject_resumo_usuario]="👤 \e[33mDefault user:\e[97m admin\e[0m"
+  MSG_ES[ferramenta_openproject_resumo_usuario]="👤 \e[33mUsuario predeterminado:\e[97m admin\e[0m"
+  echo -e "$(t ferramenta_openproject_resumo_usuario)"
+  MSG_PT[ferramenta_openproject_resumo_senha]="🔑 \e[33mSenha padrão:\e[97m admin (você deverá alterá-la no primeiro login)\e[0m"
+  MSG_EN[ferramenta_openproject_resumo_senha]="🔑 \e[33mDefault password:\e[97m admin (you must change it on first login)\e[0m"
+  MSG_ES[ferramenta_openproject_resumo_senha]="🔑 \e[33mContraseña predeterminada:\e[97m admin (deberá cambiarla en el primer inicio de sesión)\e[0m"
+  echo -e "$(t ferramenta_openproject_resumo_senha)"
   msg_retorno_menu
 
 }
@@ -11832,11 +15135,23 @@ ferramenta_zep(){
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/2"
-    echo -en "🔗 \e[33mDigite o domínio para o Zep (ex: zep.encha.ai): \e[0m" && read -r url_zep
+    MSG_PT[ferramenta_zep_passo1]="\n📍 Passo 1/2"
+    MSG_EN[ferramenta_zep_passo1]="\n📍 Step 1/2"
+    MSG_ES[ferramenta_zep_passo1]="\n📍 Paso 1/2"
+    echo -e "$(t ferramenta_zep_passo1)"
+    MSG_PT[ferramenta_zep_dominio_prompt]="🔗 \e[33mDigite o domínio para o Zep (ex: zep.encha.ai): \e[0m"
+    MSG_EN[ferramenta_zep_dominio_prompt]="🔗 \e[33mEnter the domain for Zep (e.g.: zep.encha.ai): \e[0m"
+    MSG_ES[ferramenta_zep_dominio_prompt]="🔗 \e[33mIngrese el dominio para Zep (ej: zep.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_zep_dominio_prompt)" && read -r url_zep
     echo ""
-    echo -e "\n📍 Passo 2/2"
-    echo -en "🔑 \e[33mDigite sua API Key da OpenAI: \e[0m" && read -s -r apikey_openai_zep
+    MSG_PT[ferramenta_zep_passo2]="\n📍 Passo 2/2"
+    MSG_EN[ferramenta_zep_passo2]="\n📍 Step 2/2"
+    MSG_ES[ferramenta_zep_passo2]="\n📍 Paso 2/2"
+    echo -e "$(t ferramenta_zep_passo2)"
+    MSG_PT[ferramenta_zep_apikey_prompt]="🔑 \e[33mDigite sua API Key da OpenAI: \e[0m"
+    MSG_EN[ferramenta_zep_apikey_prompt]="🔑 \e[33mEnter your OpenAI API Key: \e[0m"
+    MSG_ES[ferramenta_zep_apikey_prompt]="🔑 \e[33mIngrese su API Key de OpenAI: \e[0m"
+    echo -en "$(t ferramenta_zep_apikey_prompt)" && read -s -r apikey_openai_zep
     echo ""
 
     encryption_key_zep=$(openssl rand -hex 16)
@@ -11844,18 +15159,36 @@ ferramenta_zep(){
 
     clear
     msg_zep
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_zep_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_zep_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_zep_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_zep_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Zep:\e[97m $url_zep\e[0m"
-    echo -e "\e[33mApiKey da OpenAI:\e[97m $apikey_openai_zep\e[0m"
-    echo -e "🔑 \e[33mAPI Key Zep (será gerada):\e[97m $apikey_zep\e[0m"
+    MSG_PT[ferramenta_zep_resumo_dominio]="🌐 \e[33mDomínio Zep:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_zep_resumo_dominio]="🌐 \e[33mZep Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_zep_resumo_dominio]="🌐 \e[33mDominio de Zep:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_zep_resumo_dominio "$url_zep")"
+    MSG_PT[ferramenta_zep_resumo_apikey_openai]="\e[33mApiKey da OpenAI:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_zep_resumo_apikey_openai]="\e[33mOpenAI ApiKey:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_zep_resumo_apikey_openai]="\e[33mApiKey de OpenAI:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_zep_resumo_apikey_openai "$apikey_openai_zep")"
+    MSG_PT[ferramenta_zep_resumo_apikey_zep]="🔑 \e[33mAPI Key Zep (será gerada):\e[97m %s\e[0m"
+    MSG_EN[ferramenta_zep_resumo_apikey_zep]="🔑 \e[33mZep API Key (will be generated):\e[97m %s\e[0m"
+    MSG_ES[ferramenta_zep_resumo_apikey_zep]="🔑 \e[33mAPI Key de Zep (será generada):\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_zep_resumo_apikey_zep "$apikey_zep")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_zep_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_zep_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_zep_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_zep_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_zep; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Zep...\e[0m"
+  MSG_PT[ferramenta_zep_iniciando]="\e[97m🚀 Iniciando a instalação do Zep...\e[0m"
+  MSG_EN[ferramenta_zep_iniciando]="\e[97m🚀 Starting Zep installation...\e[0m"
+  MSG_ES[ferramenta_zep_iniciando]="\e[97m🚀 Iniciando la instalación de Zep...\e[0m"
+  echo -e "$(t ferramenta_zep_iniciando)"
 
   cd
   mkdir temp
@@ -11863,10 +15196,19 @@ ferramenta_zep(){
 
   git clone --depth 1 https://github.com/oriondesign2015/setuporion > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-      echo "1/1 - [ OK ] - Baixando Repositório do Zep"
+      MSG_PT[ferramenta_zep_clone_ok]="1/1 - [ OK ] - Baixando Repositório do Zep"
+      MSG_EN[ferramenta_zep_clone_ok]="1/1 - [ OK ] - Downloading Zep Repository"
+      MSG_ES[ferramenta_zep_clone_ok]="1/1 - [ OK ] - Descargando repositorio de Zep"
+      echo "$(t ferramenta_zep_clone_ok)"
   else
-      echo "1/1 - [ OFF ] - Baixando Repositório do Zep"
-      echo "Não foi possivel Baixar."
+      MSG_PT[ferramenta_zep_clone_off]="1/1 - [ OFF ] - Baixando Repositório do Zep"
+      MSG_EN[ferramenta_zep_clone_off]="1/1 - [ OFF ] - Downloading Zep Repository"
+      MSG_ES[ferramenta_zep_clone_off]="1/1 - [ OFF ] - Descargando repositorio de Zep"
+      echo "$(t ferramenta_zep_clone_off)"
+      MSG_PT[ferramenta_zep_clone_erro]="Não foi possivel Baixar."
+      MSG_EN[ferramenta_zep_clone_erro]="Could not download."
+      MSG_ES[ferramenta_zep_clone_erro]="No fue posible descargar."
+      echo "$(t ferramenta_zep_clone_erro)"
   fi
 
   mv setuporion/Extras/Zep /root/zep${1:+_$1}
@@ -11877,14 +15219,20 @@ ferramenta_zep(){
   cd
   echo ""
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES VECTOR \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_zep_verif_pgvector]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES VECTOR \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_zep_verif_pgvector]="\e[97m• CHECKING/INSTALLING POSTGRES VECTOR \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_zep_verif_pgvector]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES VECTOR \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_zep_verif_pgvector)"
   echo ""
 
   verificar_container_pgvector || ferramenta_pgvector
   pegar_senha_pgvector
   criar_banco_pgvector_da_stack "zep${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO ZEP \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_zep_instalando]="\e[97m• INSTALANDO ZEP \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_zep_instalando]="\e[97m• INSTALLING ZEP \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_zep_instalando]="\e[97m• INSTALANDO ZEP \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_zep_instalando)"
   echo ""
 
   cat > zep${1:+_$1}.yaml <<EOL
@@ -11980,7 +15328,10 @@ EOL
   STACK_NAME="zep${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_zep_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_zep_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_zep_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_zep_verificando)"
   echo ""
 
   pull ghcr.io/getzep/zep-nlp-server:latest ghcr.io/getzep/zep:latest
@@ -11998,8 +15349,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ ZEP ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_zep/admin\e[0m"
-  echo -e "\e[33m🔑 API Key do Zep:\e[97m $apikey_zep\e[0m"
+  MSG_PT[ferramenta_zep_resumo_dominio2]="🌐 \e[33mDomínio Admin:\e[97m https://%s/admin\e[0m"
+  MSG_EN[ferramenta_zep_resumo_dominio2]="🌐 \e[33mAdmin Domain:\e[97m https://%s/admin\e[0m"
+  MSG_ES[ferramenta_zep_resumo_dominio2]="🌐 \e[33mDominio Admin:\e[97m https://%s/admin\e[0m"
+  echo -e "$(t ferramenta_zep_resumo_dominio2 "$url_zep")"
+  MSG_PT[ferramenta_zep_resumo_apikey2]="🔑 \e[33mAPI Key do Zep:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_zep_resumo_apikey2]="🔑 \e[33mZep API Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_zep_resumo_apikey2]="🔑 \e[33mAPI Key de Zep:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_zep_resumo_apikey2 "$apikey_zep")"
   msg_retorno_menu
 
 }
@@ -12009,35 +15366,74 @@ ferramenta_yourls() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio para o Yourls (ex: link.encha.ai): \e[0m" && read -r url_yourls
+    MSG_PT[ferramenta_yourls_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_yourls_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_yourls_passo1]="\n📍 Paso 1/3"
+    echo -e "$(t ferramenta_yourls_passo1)"
+    MSG_PT[ferramenta_yourls_dominio_prompt]="🔗 \e[33mDigite o domínio para o Yourls (ex: link.encha.ai): \e[0m"
+    MSG_EN[ferramenta_yourls_dominio_prompt]="🔗 \e[33mEnter the domain for Yourls (e.g.: link.encha.ai): \e[0m"
+    MSG_ES[ferramenta_yourls_dominio_prompt]="🔗 \e[33mIngrese el dominio para Yourls (ej: link.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_yourls_dominio_prompt)" && read -r url_yourls
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "👤 \e[33mDigite um nome de usuário para o painel: \e[0m" && read -r user_yourls
+    MSG_PT[ferramenta_yourls_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_yourls_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_yourls_passo2]="\n📍 Paso 2/3"
+    echo -e "$(t ferramenta_yourls_passo2)"
+    MSG_PT[ferramenta_yourls_user_prompt]="👤 \e[33mDigite um nome de usuário para o painel: \e[0m"
+    MSG_EN[ferramenta_yourls_user_prompt]="👤 \e[33mEnter a username for the panel: \e[0m"
+    MSG_ES[ferramenta_yourls_user_prompt]="👤 \e[33mIngrese un nombre de usuario para el panel: \e[0m"
+    echo -en "$(t ferramenta_yourls_user_prompt)" && read -r user_yourls
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_yourls
+    MSG_PT[ferramenta_yourls_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_yourls_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_yourls_passo3]="\n📍 Paso 3/3"
+    echo -e "$(t ferramenta_yourls_passo3)"
+    MSG_PT[ferramenta_yourls_senha_prompt]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_yourls_senha_prompt]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_yourls_senha_prompt]="🔑 \e[33mIngrese una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_yourls_senha_prompt)" && read -s -r pass_yourls
     echo ""
 
     clear
     msg_yourls
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_yourls_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_yourls_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_yourls_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_yourls_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Yourls:\e[97m $url_yourls\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_yourls\e[0m"
-    echo -e "\e[33mSenha:\e[97m $pass_yourls\e[0m"
+    MSG_PT[ferramenta_yourls_resumo_dominio]="🌐 \e[33mDomínio Yourls:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_yourls_resumo_dominio]="🌐 \e[33mYourls Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_yourls_resumo_dominio]="🌐 \e[33mDominio de Yourls:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_yourls_resumo_dominio "$url_yourls")"
+    MSG_PT[ferramenta_yourls_resumo_user]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_yourls_resumo_user]="👤 \e[33mUser:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_yourls_resumo_user]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_yourls_resumo_user "$user_yourls")"
+    MSG_PT[ferramenta_yourls_resumo_senha]="\e[33mSenha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_yourls_resumo_senha]="\e[33mPassword:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_yourls_resumo_senha]="\e[33mContraseña:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_yourls_resumo_senha "$pass_yourls")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_yourls_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_yourls_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_yourls_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_yourls_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_yourls; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Yourls...\e[0m"
+  MSG_PT[ferramenta_yourls_iniciando]="\e[97m🚀 Iniciando a instalação do Yourls...\e[0m"
+  MSG_EN[ferramenta_yourls_iniciando]="\e[97m🚀 Starting Yourls installation...\e[0m"
+  MSG_ES[ferramenta_yourls_iniciando]="\e[97m🚀 Iniciando la instalación de Yourls...\e[0m"
+  echo -e "$(t ferramenta_yourls_iniciando)"
   verificar_container_mysql || ferramenta_mysql
   pegar_senha_mysql_da_stack
   criar_banco_mysql_da_stack "yourls${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO YOURLS \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_yourls_instalando]="\e[97m• INSTALANDO YOURLS \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_yourls_instalando]="\e[97m• INSTALLING YOURLS \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_yourls_instalando]="\e[97m• INSTALANDO YOURLS \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_yourls_instalando)"
   echo ""
 
   cat > yourls${1:+_$1}.yaml <<EOL
@@ -12095,7 +15491,10 @@ EOL
   STACK_NAME="yourls${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_yourls_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_yourls_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_yourls_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_yourls_verificando)"
   echo ""
 
   pull yourls:latest
@@ -12113,9 +15512,18 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ YOURLS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_yourls/admin\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m $user_yourls\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $pass_yourls\e[0m"
+  MSG_PT[ferramenta_yourls_resumo_dominio2]="🌐 \e[33mDomínio Admin:\e[97m https://%s/admin\e[0m"
+  MSG_EN[ferramenta_yourls_resumo_dominio2]="🌐 \e[33mAdmin Domain:\e[97m https://%s/admin\e[0m"
+  MSG_ES[ferramenta_yourls_resumo_dominio2]="🌐 \e[33mDominio Admin:\e[97m https://%s/admin\e[0m"
+  echo -e "$(t ferramenta_yourls_resumo_dominio2 "$url_yourls")"
+  MSG_PT[ferramenta_yourls_resumo_user2]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_yourls_resumo_user2]="👤 \e[33mUser:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_yourls_resumo_user2]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_yourls_resumo_user2 "$user_yourls")"
+  MSG_PT[ferramenta_yourls_resumo_senha2]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_yourls_resumo_senha2]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_yourls_resumo_senha2]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_yourls_resumo_senha2 "$pass_yourls")"
   msg_retorno_menu
 
 }
@@ -12125,22 +15533,40 @@ ferramenta_wisemapping(){
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o WiseMapping (ex: mapa.encha.ai): \e[0m" && read -r url_wisemapping
+    MSG_PT[ferramenta_wisemapping_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_wisemapping_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_wisemapping_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_wisemapping_passo1)"
+    MSG_PT[ferramenta_wisemapping_dominio_prompt]="🔗 \e[33mDigite o domínio para o WiseMapping (ex: mapa.encha.ai): \e[0m"
+    MSG_EN[ferramenta_wisemapping_dominio_prompt]="🔗 \e[33mEnter the domain for WiseMapping (e.g.: map.encha.ai): \e[0m"
+    MSG_ES[ferramenta_wisemapping_dominio_prompt]="🔗 \e[33mIngrese el dominio para WiseMapping (ej: mapa.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_wisemapping_dominio_prompt)" && read -r url_wisemapping
     echo ""
 
     clear
     msg_wisemapping
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_wisemapping_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_wisemapping_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_wisemapping_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_wisemapping_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio WiseMapping:\e[97m $url_wisemapping\e[0m"
+    MSG_PT[ferramenta_wisemapping_resumo_dominio]="🌐 \e[33mDomínio WiseMapping:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_wisemapping_resumo_dominio]="🌐 \e[33mWiseMapping Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_wisemapping_resumo_dominio]="🌐 \e[33mDominio de WiseMapping:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_wisemapping_resumo_dominio "$url_wisemapping")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_wisemapping_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_wisemapping_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_wisemapping_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_wisemapping_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wisemapping; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do WiseMapping...\e[0m"
+  MSG_PT[ferramenta_wisemapping_iniciando]="\e[97m🚀 Iniciando a instalação do WiseMapping...\e[0m"
+  MSG_EN[ferramenta_wisemapping_iniciando]="\e[97m🚀 Starting WiseMapping installation...\e[0m"
+  MSG_ES[ferramenta_wisemapping_iniciando]="\e[97m🚀 Iniciando la instalación de WiseMapping...\e[0m"
+  echo -e "$(t ferramenta_wisemapping_iniciando)"
   cat > wisemapping${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -12198,7 +15624,10 @@ EOL
   STACK_NAME="wisemapping${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_wisemapping_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_wisemapping_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_wisemapping_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_wisemapping_verificando)"
   echo ""
 
   pull wisemapping/wisemapping:latest
@@ -12214,8 +15643,14 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ WISEMAPPING ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wisemapping\e[0m"
-  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio.\e[0m"
+  MSG_PT[ferramenta_wisemapping_resumo_dominio2]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_wisemapping_resumo_dominio2]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_wisemapping_resumo_dominio2]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_wisemapping_resumo_dominio2 "$url_wisemapping")"
+  MSG_PT[ferramenta_wisemapping_resumo_aviso]="⚠️  Crie sua conta no primeiro acesso ao domínio."
+  MSG_EN[ferramenta_wisemapping_resumo_aviso]="⚠️  Create your account on first access to the domain."
+  MSG_ES[ferramenta_wisemapping_resumo_aviso]="⚠️  Cree su cuenta en el primer acceso al dominio."
+  echo -e "\e[33m$(t ferramenta_wisemapping_resumo_aviso)\e[0m"
   msg_retorno_menu
 
 }
@@ -12225,33 +15660,90 @@ ferramenta_evoai(){
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/9"
-    echo -en "🔗 \e[33mDigite o domínio para o painel da EvoAI (ex: evo.encha.ai): \e[0m" && read -r url_evoai_front
+    MSG_PT[ferramenta_evoai_passo1]="\n📍 Passo 1/9"
+    MSG_EN[ferramenta_evoai_passo1]="\n📍 Step 1/9"
+    MSG_ES[ferramenta_evoai_passo1]="\n📍 Paso 1/9"
+    echo -e "$(t ferramenta_evoai_passo1)"
+    MSG_PT[ferramenta_evoai_front_prompt]="🔗 \e[33mDigite o domínio para o painel da EvoAI (ex: evo.encha.ai): \e[0m"
+    MSG_EN[ferramenta_evoai_front_prompt]="🔗 \e[33mEnter the domain for the EvoAI panel (e.g.: evo.encha.ai): \e[0m"
+    MSG_ES[ferramenta_evoai_front_prompt]="🔗 \e[33mIngrese el dominio para el panel de EvoAI (ej: evo.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_evoai_front_prompt)" && read -r url_evoai_front
     echo ""
-    echo -e "\n📍 Passo 2/9"
-    echo -en "🔗 \e[33mDigite o domínio para a API da EvoAI (ex: api-evo.encha.ai): \e[0m" && read -r url_evoai_api
+    MSG_PT[ferramenta_evoai_passo2]="\n📍 Passo 2/9"
+    MSG_EN[ferramenta_evoai_passo2]="\n📍 Step 2/9"
+    MSG_ES[ferramenta_evoai_passo2]="\n📍 Paso 2/9"
+    echo -e "$(t ferramenta_evoai_passo2)"
+    MSG_PT[ferramenta_evoai_api_prompt]="🔗 \e[33mDigite o domínio para a API da EvoAI (ex: api-evo.encha.ai): \e[0m"
+    MSG_EN[ferramenta_evoai_api_prompt]="🔗 \e[33mEnter the domain for the EvoAI API (e.g.: api-evo.encha.ai): \e[0m"
+    MSG_ES[ferramenta_evoai_api_prompt]="🔗 \e[33mIngrese el dominio para la API de EvoAI (ej: api-evo.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_evoai_api_prompt)" && read -r url_evoai_api
     echo ""
-    echo -e "\n📍 Passo 3/9"
-    echo -en "📧 \e[33mDigite um email para o usuário admin: \e[0m" && read -r email_evoai
+    MSG_PT[ferramenta_evoai_passo3]="\n📍 Passo 3/9"
+    MSG_EN[ferramenta_evoai_passo3]="\n📍 Step 3/9"
+    MSG_ES[ferramenta_evoai_passo3]="\n📍 Paso 3/9"
+    echo -e "$(t ferramenta_evoai_passo3)"
+    MSG_PT[ferramenta_evoai_email_prompt]="📧 \e[33mDigite um email para o usuário admin: \e[0m"
+    MSG_EN[ferramenta_evoai_email_prompt]="📧 \e[33mEnter an email for the admin user: \e[0m"
+    MSG_ES[ferramenta_evoai_email_prompt]="📧 \e[33mIngrese un email para el usuario admin: \e[0m"
+    echo -en "$(t ferramenta_evoai_email_prompt)" && read -r email_evoai
     echo ""
-    echo -e "\n📍 Passo 4/9"
-    echo -en "🔑 \e[33mDigite uma senha para o admin: \e[0m" && read -s -r pass_evoai
+    MSG_PT[ferramenta_evoai_passo4]="\n📍 Passo 4/9"
+    MSG_EN[ferramenta_evoai_passo4]="\n📍 Step 4/9"
+    MSG_ES[ferramenta_evoai_passo4]="\n📍 Paso 4/9"
+    echo -e "$(t ferramenta_evoai_passo4)"
+    MSG_PT[ferramenta_evoai_senha_prompt]="🔑 \e[33mDigite uma senha para o admin: \e[0m"
+    MSG_EN[ferramenta_evoai_senha_prompt]="🔑 \e[33mEnter a password for the admin: \e[0m"
+    MSG_ES[ferramenta_evoai_senha_prompt]="🔑 \e[33mIngrese una contraseña para el admin: \e[0m"
+    echo -en "$(t ferramenta_evoai_senha_prompt)" && read -s -r pass_evoai
     echo ""
-    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 5/9"
-    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r smtp_email_evoai
+    MSG_PT[ferramenta_evoai_smtp_titulo]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_evoai_smtp_titulo]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_evoai_smtp_titulo]="\n\e[97m--- Configuración de correo (SMTP) ---\e[0m"
+    echo -e "$(t ferramenta_evoai_smtp_titulo)"
+    MSG_PT[ferramenta_evoai_passo5]="\n📍 Passo 5/9"
+    MSG_EN[ferramenta_evoai_passo5]="\n📍 Step 5/9"
+    MSG_ES[ferramenta_evoai_passo5]="\n📍 Paso 5/9"
+    echo -e "$(t ferramenta_evoai_passo5)"
+    MSG_PT[ferramenta_evoai_smtp_email_prompt]="📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_evoai_smtp_email_prompt]="📧 \e[33mEnter your sender email (e.g.: noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_evoai_smtp_email_prompt]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_evoai_smtp_email_prompt)" && read -r smtp_email_evoai
     echo ""
-    echo -e "\n📍 Passo 6/9"
-    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r smtp_user_evoai
+    MSG_PT[ferramenta_evoai_passo6]="\n📍 Passo 6/9"
+    MSG_EN[ferramenta_evoai_passo6]="\n📍 Step 6/9"
+    MSG_ES[ferramenta_evoai_passo6]="\n📍 Paso 6/9"
+    echo -e "$(t ferramenta_evoai_passo6)"
+    MSG_PT[ferramenta_evoai_smtp_user_prompt]="👤 \e[33mDigite o usuário do seu email: \e[0m"
+    MSG_EN[ferramenta_evoai_smtp_user_prompt]="👤 \e[33mEnter your email username: \e[0m"
+    MSG_ES[ferramenta_evoai_smtp_user_prompt]="👤 \e[33mIngrese el usuario de su email: \e[0m"
+    echo -en "$(t ferramenta_evoai_smtp_user_prompt)" && read -r smtp_user_evoai
     echo ""
-    echo -e "\n📍 Passo 7/9"
-    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r smtp_pass_evoai
+    MSG_PT[ferramenta_evoai_passo7]="\n📍 Passo 7/9"
+    MSG_EN[ferramenta_evoai_passo7]="\n📍 Step 7/9"
+    MSG_ES[ferramenta_evoai_passo7]="\n📍 Paso 7/9"
+    echo -e "$(t ferramenta_evoai_passo7)"
+    MSG_PT[ferramenta_evoai_smtp_pass_prompt]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+    MSG_EN[ferramenta_evoai_smtp_pass_prompt]="🔑 \e[33mEnter your email password: \e[0m"
+    MSG_ES[ferramenta_evoai_smtp_pass_prompt]="🔑 \e[33mIngrese la contraseña de su email: \e[0m"
+    echo -en "$(t ferramenta_evoai_smtp_pass_prompt)" && read -s -r smtp_pass_evoai
     echo ""
-    echo -e "\n📍 Passo 8/9"
-    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r smtp_host_evoai
+    MSG_PT[ferramenta_evoai_passo8]="\n📍 Passo 8/9"
+    MSG_EN[ferramenta_evoai_passo8]="\n📍 Step 8/9"
+    MSG_ES[ferramenta_evoai_passo8]="\n📍 Paso 8/9"
+    echo -e "$(t ferramenta_evoai_passo8)"
+    MSG_PT[ferramenta_evoai_smtp_host_prompt]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_evoai_smtp_host_prompt]="🏠 \e[33mEnter the SMTP host (e.g.: smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_evoai_smtp_host_prompt]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_evoai_smtp_host_prompt)" && read -r smtp_host_evoai
     echo ""
-    echo -e "\n📍 Passo 9/9"
-    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r smtp_port_evoai
+    MSG_PT[ferramenta_evoai_passo9]="\n📍 Passo 9/9"
+    MSG_EN[ferramenta_evoai_passo9]="\n📍 Step 9/9"
+    MSG_ES[ferramenta_evoai_passo9]="\n📍 Paso 9/9"
+    echo -e "$(t ferramenta_evoai_passo9)"
+    MSG_PT[ferramenta_evoai_smtp_port_prompt]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_evoai_smtp_port_prompt]="🔌 \e[33mEnter the SMTP port (e.g.: 465): \e[0m"
+    MSG_ES[ferramenta_evoai_smtp_port_prompt]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_evoai_smtp_port_prompt)" && read -r smtp_port_evoai
     echo ""
 
     if [ "$smtp_port_evoai" -eq 465 ]; then
@@ -12264,36 +15756,81 @@ ferramenta_evoai(){
 
     clear
     msg_evoai
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_evoai_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_evoai_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_evoai_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_evoai_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Painel:\e[97m $url_evoai_front\e[0m"
-    echo -e "🔗 \e[33mDomínio API:\e[97m $url_evoai_api\e[0m"
-    echo -e "📧 \e[33mEmail Admin:\e[97m $email_evoai\e[0m"
-    echo -e "\e[33mSenha do Admin:\e[97m $pass_evoai\e[0m"
-    echo -e "\e[33mSenha do usuario:\e[97m $pass_evoai\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $smtp_email_evoai\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $smtp_pass_evoai\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $smtp_host_evoai\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $smtp_port_evoai\e[0m"
+    MSG_PT[ferramenta_evoai_resumo_front]="🌐 \e[33mDomínio Painel:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_front]="🌐 \e[33mPanel Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_front]="🌐 \e[33mDominio del Panel:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_front "$url_evoai_front")"
+    MSG_PT[ferramenta_evoai_resumo_api]="🔗 \e[33mDomínio API:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_api]="🔗 \e[33mAPI Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_api]="🔗 \e[33mDominio de la API:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_api "$url_evoai_api")"
+    MSG_PT[ferramenta_evoai_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_email]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_email "$email_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_senha_admin]="\e[33mSenha do Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_senha_admin]="\e[33mAdmin Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_senha_admin]="\e[33mContraseña del Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_senha_admin "$pass_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_senha_user]="\e[33mSenha do usuario:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_senha_user]="\e[33mUser password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_senha_user]="\e[33mContraseña del usuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_senha_user "$pass_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_smtp_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_smtp_email "$smtp_email_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_smtp_senha]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_smtp_senha]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_smtp_senha]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_smtp_senha "$smtp_pass_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_smtp_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_smtp_host "$smtp_host_evoai")"
+    MSG_PT[ferramenta_evoai_resumo_smtp_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_evoai_resumo_smtp_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_evoai_resumo_smtp_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_evoai_resumo_smtp_porta "$smtp_port_evoai")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_evoai_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_evoai_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_evoai_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_evoai_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_evoai; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação da Evo AI...\e[0m"
+  MSG_PT[ferramenta_evoai_iniciando]="\e[97m🚀 Iniciando a instalação da Evo AI...\e[0m"
+  MSG_EN[ferramenta_evoai_iniciando]="\e[97m🚀 Starting Evo AI installation...\e[0m"
+  MSG_ES[ferramenta_evoai_iniciando]="\e[97m🚀 Iniciando la instalación de Evo AI...\e[0m"
+  echo -e "$(t ferramenta_evoai_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_evoai_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_evoai_verif_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_evoai_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_evoai_verif_postgres)"
   echo ""
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "evoai${1:+_$1}"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_PT[ferramenta_evoai_verif_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_EN[ferramenta_evoai_verif_redis]="\e[97m• CHECKING/INSTALLING REDIS \e[33m[3/5]\e[0m"
+  MSG_ES[ferramenta_evoai_verif_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo -e "$(t ferramenta_evoai_verif_redis)"
   echo ""
   verificar_container_redis || ferramenta_redis
 
-  echo -e "\e[97m• INSTALANDO A EVO AI \e[33m[4/5]\e[0m"
+  MSG_PT[ferramenta_evoai_instalando]="\e[97m• INSTALANDO A EVO AI \e[33m[4/5]\e[0m"
+  MSG_EN[ferramenta_evoai_instalando]="\e[97m• INSTALLING EVO AI \e[33m[4/5]\e[0m"
+  MSG_ES[ferramenta_evoai_instalando]="\e[97m• INSTALANDO EVO AI \e[33m[4/5]\e[0m"
+  echo -e "$(t ferramenta_evoai_instalando)"
   echo ""
 
   EVO_AI_ENCRYPTION_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
@@ -12428,7 +15965,10 @@ EOL
   STACK_NAME="evoai${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_evoai_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_evoai_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_evoai_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_evoai_verificando)"
   echo ""
 
   pull evoapicloud/evo-ai:latest evoapicloud/evo-ai-frontend:latest
@@ -12447,10 +15987,22 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ EVO AI ]\e[0m\n"
-  echo -e "\e[33m🌐 Painel:\e[97m https://$url_evoai_front\e[0m"
-  echo -e "\e[33m🔗 API:\e[97m https://$url_evoai_api\e[0m"
-  echo -e "\e[33m📧 Email Admin:\e[97m $email_evoai\e[0m"
-  echo -e "\e[33m🔑 Senha Admin:\e[97m $pass_evoai\e[0m"
+  MSG_PT[ferramenta_evoai_resumo_painel]="🌐 \e[33mPainel:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_evoai_resumo_painel]="🌐 \e[33mPanel:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_evoai_resumo_painel]="🌐 \e[33mPanel:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_evoai_resumo_painel "$url_evoai_front")"
+  MSG_PT[ferramenta_evoai_resumo_api2]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_evoai_resumo_api2]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_evoai_resumo_api2]="🔗 \e[33mAPI:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_evoai_resumo_api2 "$url_evoai_api")"
+  MSG_PT[ferramenta_evoai_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_evoai_resumo_email2]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_evoai_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_evoai_resumo_email2 "$email_evoai")"
+  MSG_PT[ferramenta_evoai_resumo_senha2]="🔑 \e[33mSenha Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_evoai_resumo_senha2]="🔑 \e[33mAdmin Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_evoai_resumo_senha2]="🔑 \e[33mContraseña Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_evoai_resumo_senha2 "$pass_evoai")"
   msg_retorno_menu
 
 }
@@ -12460,49 +16012,91 @@ ferramenta_enchat(){
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/3"
+    MSG_PT[ferramenta_enchat_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_enchat_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_enchat_passo1]="\n📍 Paso 1/3"
+    echo -e "$(t ferramenta_enchat_passo1)"
     while true; do
-      echo -en "🔗 \e[33mDigite o domínio do painel EnchaT (ex: crm.suaempresa.com): \e[0m" && read -r url_enchat
+      MSG_PT[ferramenta_enchat_dominio_prompt]="🔗 \e[33mDigite o domínio do painel EnchaT (ex: crm.suaempresa.com): \e[0m"
+      MSG_EN[ferramenta_enchat_dominio_prompt]="🔗 \e[33mEnter the domain for the EnchaT panel (e.g.: crm.yourcompany.com): \e[0m"
+      MSG_ES[ferramenta_enchat_dominio_prompt]="🔗 \e[33mIngrese el dominio del panel de EnchaT (ej: crm.suempresa.com): \e[0m"
+      echo -en "$(t ferramenta_enchat_dominio_prompt)" && read -r url_enchat
       validar_dominio "$url_enchat" && break
     done
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m" && read -r versao_enchat
+    MSG_PT[ferramenta_enchat_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_enchat_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_enchat_passo2]="\n📍 Paso 2/3"
+    echo -e "$(t ferramenta_enchat_passo2)"
+    MSG_PT[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
+    MSG_EN[ferramenta_enchat_versao_prompt]="🔢 \e[33mEnchaT version (EnchaT portal, never 'latest') [1.0.0]: \e[0m"
+    MSG_ES[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersión de EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
+    echo -en "$(t ferramenta_enchat_versao_prompt)" && read -r versao_enchat
     versao_enchat="${versao_enchat:-1.0.0}"
     if [ "$versao_enchat" = "latest" ] || ! [[ "$versao_enchat" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo -e "\e[31m❌ Use uma versão fixa no formato X.Y.Z indicada no portal EnchaT (nunca 'latest').\e[0m"
+      MSG_PT[ferramenta_enchat_versao_invalida]="\e[31m❌ Use uma versão fixa no formato X.Y.Z indicada no portal EnchaT (nunca 'latest').\e[0m"
+      MSG_EN[ferramenta_enchat_versao_invalida]="\e[31m❌ Use a fixed version in X.Y.Z format shown on the EnchaT portal (never 'latest').\e[0m"
+      MSG_ES[ferramenta_enchat_versao_invalida]="\e[31m❌ Use una versión fija en formato X.Y.Z indicada en el portal EnchaT (nunca 'latest').\e[0m"
+      echo -e "$(t ferramenta_enchat_versao_invalida)"
       sleep 3
       msg_enchat
       continue
     fi
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "🔑 \e[33mChave de licença EnchaT (não é gravada em disco): \e[0m" && read -s -r chave_licenca
+    MSG_PT[ferramenta_enchat_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_enchat_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_enchat_passo3]="\n📍 Paso 3/3"
+    echo -e "$(t ferramenta_enchat_passo3)"
+    MSG_PT[ferramenta_enchat_licenca_prompt]="🔑 \e[33mChave de licença EnchaT (não é gravada em disco): \e[0m"
+    MSG_EN[ferramenta_enchat_licenca_prompt]="🔑 \e[33mEnchaT license key (not saved to disk): \e[0m"
+    MSG_ES[ferramenta_enchat_licenca_prompt]="🔑 \e[33mClave de licencia EnchaT (no se guarda en disco): \e[0m"
+    echo -en "$(t ferramenta_enchat_licenca_prompt)" && read -s -r chave_licenca
     echo ""
 
     esconder_senha "$chave_licenca"
 
     clear
     msg_enchat
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_enchat_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_enchat_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_enchat_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_enchat_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_enchat\e[0m"
-    echo -e "🔢 \e[33mVersão:\e[97m $versao_enchat\e[0m"
-    echo -e "🔑 \e[33mChave de licença:\e[97m $SENHAOCULTA\e[0m"
+    MSG_PT[ferramenta_enchat_resumo_dominio]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_enchat_resumo_dominio]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_enchat_resumo_dominio]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_enchat_resumo_dominio "$url_enchat")"
+    MSG_PT[ferramenta_enchat_resumo_versao]="🔢 \e[33mVersão:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_enchat_resumo_versao]="🔢 \e[33mVersion:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_enchat_resumo_versao]="🔢 \e[33mVersión:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_enchat_resumo_versao "$versao_enchat")"
+    MSG_PT[ferramenta_enchat_resumo_licenca]="🔑 \e[33mChave de licença:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_enchat_resumo_licenca]="🔑 \e[33mLicense key:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_enchat_resumo_licenca]="🔑 \e[33mClave de licencia:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_enchat_resumo_licenca "$SENHAOCULTA")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_enchat_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_enchat_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_enchat_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_enchat_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_enchat; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do EnchaT Grátis...\e[0m"
+  MSG_PT[ferramenta_enchat_iniciando]="\e[97m🚀 Iniciando a instalação do EnchaT Grátis...\e[0m"
+  MSG_EN[ferramenta_enchat_iniciando]="\e[97m🚀 Starting EnchaT Free installation...\e[0m"
+  MSG_ES[ferramenta_enchat_iniciando]="\e[97m🚀 Iniciando la instalación de EnchaT Free...\e[0m"
+  echo -e "$(t ferramenta_enchat_iniciando)"
 
   if ! command -v jq &> /dev/null; then
     sudo apt-get update -y > /dev/null 2>&1
     sudo apt-get install -y jq > /dev/null 2>&1
   fi
 
-  echo -e "\e[97m• OBTENDO CREDENCIAL DO REGISTRO DE IMAGENS \e[33m[1/5]\e[0m"
+  MSG_PT[ferramenta_enchat_obtendo_cred]="\e[97m• OBTENDO CREDENCIAL DO REGISTRO DE IMAGENS \e[33m[1/5]\e[0m"
+  MSG_EN[ferramenta_enchat_obtendo_cred]="\e[97m• OBTAINING IMAGE REGISTRY CREDENTIAL \e[33m[1/5]\e[0m"
+  MSG_ES[ferramenta_enchat_obtendo_cred]="\e[97m• OBTENIENDO CREDENCIAL DEL REGISTRO DE IMÁGENES \e[33m[1/5]\e[0m"
+  echo -e "$(t ferramenta_enchat_obtendo_cred)"
   echo ""
   # A chave vai por stdin do curl (--data @-), nunca em argv — argv fica
   # visível em `ps` enquanto a requisição roda.
@@ -12513,7 +16107,10 @@ ferramenta_enchat(){
   GHCR_TOKEN=$(printf '%s' "$AUTH_JSON" | jq -r '.token // empty' 2>/dev/null || true)
 
   if [ -z "$GHCR_USER" ] || [ -z "$GHCR_TOKEN" ]; then
-    echo -e "\e[31m❌ Não foi possível obter credencial de acesso ao GHCR (chave inválida ou console indisponível).\e[0m"
+    MSG_PT[ferramenta_enchat_erro_ghcr]="\e[31m❌ Não foi possível obter credencial de acesso ao GHCR (chave inválida ou console indisponível).\e[0m"
+    MSG_EN[ferramenta_enchat_erro_ghcr]="\e[31m❌ Could not obtain GHCR access credential (invalid key or console unavailable).\e[0m"
+    MSG_ES[ferramenta_enchat_erro_ghcr]="\e[31m❌ No fue posible obtener la credencial de acceso al GHCR (clave inválida o consola no disponible).\e[0m"
+    echo -e "$(t ferramenta_enchat_erro_ghcr)"
     unset chave_licenca
     msg_retorno_menu
     return 1
@@ -12523,7 +16120,10 @@ ferramenta_enchat(){
   registrar_registry_portainer
   REGISTRY_OK=$?
 
-  echo -e "\e[97m• GERANDO SEGREDOS \e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_enchat_gerando_segredos]="\e[97m• GERANDO SEGREDOS \e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_enchat_gerando_segredos]="\e[97m• GENERATING SECRETS \e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_enchat_gerando_segredos]="\e[97m• GENERANDO SECRETOS \e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_enchat_gerando_segredos)"
   echo ""
   enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
   postgres_password=$(openssl rand -hex 24)
@@ -12533,7 +16133,10 @@ ferramenta_enchat(){
 
   mkdir -p /var/enchat/media /var/enchat/postgres
 
-  echo -e "\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
+  MSG_PT[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
+  MSG_EN[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALLING ENCHAT \e[33m[3/5]\e[0m"
+  MSG_ES[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALANDO ENCHAT \e[33m[3/5]\e[0m"
+  echo -e "$(t ferramenta_enchat_instalando_enchat)"
   echo ""
 
   cat > enchat.yaml <<EOL
@@ -12675,17 +16278,26 @@ EOL
   # registrado), tenta o caminho independente do Portainer, só com o
   # `docker login` do host.
   if ! docker stack ls --format "{{.Name}}" | grep -q "^enchat$"; then
-    echo -e "\e[33m⚠️  Deploy via Portainer não confirmado — tentando via docker stack deploy direto...\e[0m"
+    MSG_PT[ferramenta_enchat_deploy_nao_confirmado]="\e[33m⚠️  Deploy via Portainer não confirmado — tentando via docker stack deploy direto...\e[0m"
+    MSG_EN[ferramenta_enchat_deploy_nao_confirmado]="\e[33m⚠️  Deploy via Portainer not confirmed — trying direct docker stack deploy...\e[0m"
+    MSG_ES[ferramenta_enchat_deploy_nao_confirmado]="\e[33m⚠️  Deploy vía Portainer no confirmado — intentando vía docker stack deploy directo...\e[0m"
+    echo -e "$(t ferramenta_enchat_deploy_nao_confirmado)"
     docker stack deploy --with-registry-auth -c enchat.yaml enchat
   fi
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇOS \e[33m[4/5]\e[0m"
+  MSG_PT[ferramenta_enchat_verificando_servicos]="\e[97m• VERIFICANDO SERVIÇOS \e[33m[4/5]\e[0m"
+  MSG_EN[ferramenta_enchat_verificando_servicos]="\e[97m• CHECKING SERVICES \e[33m[4/5]\e[0m"
+  MSG_ES[ferramenta_enchat_verificando_servicos]="\e[97m• VERIFICANDO SERVICIOS \e[33m[4/5]\e[0m"
+  echo -e "$(t ferramenta_enchat_verificando_servicos)"
   echo ""
 
   pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy:$versao_enchat
   wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
 
-  echo -e "\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_enchat_salvando_credenciais]="\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_enchat_salvando_credenciais]="\e[97m• SAVING CREDENTIALS \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_enchat_salvando_credenciais]="\e[97m• GUARDANDO CREDENCIALES \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_enchat_salvando_credenciais)"
   echo ""
 
   cd /root/dados_vps
@@ -12706,14 +16318,35 @@ EOL
   unset chave_licenca GHCR_TOKEN AUTH_JSON
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ ENCHAT GRÁTIS ]\e[0m\n"
-  echo -e "\e[33m🌐 Painel:\e[97m https://$url_enchat\e[0m"
-  echo -e "\e[33m🔢 Versão:\e[97m $versao_enchat\e[0m"
+  MSG_PT[ferramenta_enchat_resumo_titulo]="\e[32m[ ENCHAT GRÁTIS ]\e[0m\n"
+  MSG_EN[ferramenta_enchat_resumo_titulo]="\e[32m[ ENCHAT FREE ]\e[0m\n"
+  MSG_ES[ferramenta_enchat_resumo_titulo]="\e[32m[ ENCHAT FREE ]\e[0m\n"
+  echo -e "$(t ferramenta_enchat_resumo_titulo)"
+  MSG_PT[ferramenta_enchat_resumo_painel]="🌐 \e[33mPainel:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_enchat_resumo_painel]="🌐 \e[33mPanel:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_enchat_resumo_painel]="🌐 \e[33mPanel:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_enchat_resumo_painel "$url_enchat")"
+  MSG_PT[ferramenta_enchat_resumo_versao2]="🔢 \e[33mVersão:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_enchat_resumo_versao2]="🔢 \e[33mVersion:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_enchat_resumo_versao2]="🔢 \e[33mVersión:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_enchat_resumo_versao2 "$versao_enchat")"
   echo -e ""
-  echo -e "\e[33m  Próximo passo — ATIVAÇÃO:\e[0m"
-  echo -e "  1. Abra https://$url_enchat no navegador (DNS já deve apontar para esta VPS)."
-  echo -e "  2. Pareie pelo WhatsApp (ou digite o CPF, fluxo legado) no primeiro acesso."
-  echo -e "  3. Crie o usuário administrador e comece a usar."
+  MSG_PT[ferramenta_enchat_proximo_passo_titulo]="\e[33m  Próximo passo — ATIVAÇÃO:\e[0m"
+  MSG_EN[ferramenta_enchat_proximo_passo_titulo]="\e[33m  Next step — ACTIVATION:\e[0m"
+  MSG_ES[ferramenta_enchat_proximo_passo_titulo]="\e[33m  Próximo paso — ACTIVACIÓN:\e[0m"
+  echo -e "$(t ferramenta_enchat_proximo_passo_titulo)"
+  MSG_PT[ferramenta_enchat_proximo_passo1]="  1. Abra https://%s no navegador (DNS já deve apontar para esta VPS)."
+  MSG_EN[ferramenta_enchat_proximo_passo1]="  1. Open https://%s in the browser (DNS should already point to this VPS)."
+  MSG_ES[ferramenta_enchat_proximo_passo1]="  1. Abra https://%s en el navegador (el DNS ya debe apuntar a este VPS)."
+  echo -e "$(t ferramenta_enchat_proximo_passo1 "$url_enchat")"
+  MSG_PT[ferramenta_enchat_proximo_passo2]="  2. Pareie pelo WhatsApp (ou digite o CPF, fluxo legado) no primeiro acesso."
+  MSG_EN[ferramenta_enchat_proximo_passo2]="  2. Pair via WhatsApp (or enter the CPF, legacy flow) on first access."
+  MSG_ES[ferramenta_enchat_proximo_passo2]="  2. Vincule por WhatsApp (o ingrese el CPF, flujo legado) en el primer acceso."
+  echo -e "$(t ferramenta_enchat_proximo_passo2)"
+  MSG_PT[ferramenta_enchat_proximo_passo3]="  3. Crie o usuário administrador e comece a usar."
+  MSG_EN[ferramenta_enchat_proximo_passo3]="  3. Create the administrator user and start using it."
+  MSG_ES[ferramenta_enchat_proximo_passo3]="  3. Cree el usuario administrador y comience a usarlo."
+  echo -e "$(t ferramenta_enchat_proximo_passo3)"
   msg_retorno_menu
 
 }
@@ -12723,38 +16356,80 @@ ferramenta_keycloak() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio para o Keycloak (ex: auth.encha.ai): \e[0m" && read -r url_keycloak
+    MSG_PT[ferramenta_keycloak_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_keycloak_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_keycloak_passo1]="\n📍 Paso 1/3"
+    echo -e "$(t ferramenta_keycloak_passo1)"
+    MSG_PT[ferramenta_keycloak_dominio_prompt]="🔗 \e[33mDigite o domínio para o Keycloak (ex: auth.encha.ai): \e[0m"
+    MSG_EN[ferramenta_keycloak_dominio_prompt]="🔗 \e[33mEnter the domain for Keycloak (e.g.: auth.encha.ai): \e[0m"
+    MSG_ES[ferramenta_keycloak_dominio_prompt]="🔗 \e[33mIngrese el dominio para Keycloak (ej: auth.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_keycloak_dominio_prompt)" && read -r url_keycloak
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "👤 \e[33mDigite um usuário para o painel admin: \e[0m" && read -r user_keycloak
+    MSG_PT[ferramenta_keycloak_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_keycloak_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_keycloak_passo2]="\n📍 Paso 2/3"
+    echo -e "$(t ferramenta_keycloak_passo2)"
+    MSG_PT[ferramenta_keycloak_user_prompt]="👤 \e[33mDigite um usuário para o painel admin: \e[0m"
+    MSG_EN[ferramenta_keycloak_user_prompt]="👤 \e[33mEnter a username for the admin panel: \e[0m"
+    MSG_ES[ferramenta_keycloak_user_prompt]="👤 \e[33mIngrese un usuario para el panel admin: \e[0m"
+    echo -en "$(t ferramenta_keycloak_user_prompt)" && read -r user_keycloak
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r senha_keycloak
+    MSG_PT[ferramenta_keycloak_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_keycloak_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_keycloak_passo3]="\n📍 Paso 3/3"
+    echo -e "$(t ferramenta_keycloak_passo3)"
+    MSG_PT[ferramenta_keycloak_senha_prompt]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_keycloak_senha_prompt]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_keycloak_senha_prompt]="🔑 \e[33mIngrese una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_keycloak_senha_prompt)" && read -s -r senha_keycloak
     echo ""
 
     clear
     msg_keycloak
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_keycloak_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_keycloak_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_keycloak_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_keycloak_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Keycloak:\e[97m $url_keycloak\e[0m"
-    echo -e "👤 \e[33mUsuário Admin:\e[97m $user_keycloak\e[0m"
-    echo -e "\e[33mSenha:\e[97m $senha_keycloak\e[0m"
+    MSG_PT[ferramenta_keycloak_resumo_dominio]="🌐 \e[33mDomínio Keycloak:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_keycloak_resumo_dominio]="🌐 \e[33mKeycloak Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_keycloak_resumo_dominio]="🌐 \e[33mDominio de Keycloak:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_keycloak_resumo_dominio "$url_keycloak")"
+    MSG_PT[ferramenta_keycloak_resumo_user]="👤 \e[33mUsuário Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_keycloak_resumo_user]="👤 \e[33mAdmin User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_keycloak_resumo_user]="👤 \e[33mUsuario Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_keycloak_resumo_user "$user_keycloak")"
+    MSG_PT[ferramenta_keycloak_resumo_senha]="\e[33mSenha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_keycloak_resumo_senha]="\e[33mPassword:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_keycloak_resumo_senha]="\e[33mContraseña:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_keycloak_resumo_senha "$senha_keycloak")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_keycloak_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_keycloak_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_keycloak_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_keycloak_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_keycloak; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Keycloak...\e[0m"
+  MSG_PT[ferramenta_keycloak_iniciando]="\e[97m🚀 Iniciando a instalação do Keycloak...\e[0m"
+  MSG_EN[ferramenta_keycloak_iniciando]="\e[97m🚀 Starting Keycloak installation...\e[0m"
+  MSG_ES[ferramenta_keycloak_iniciando]="\e[97m🚀 Iniciando la instalación de Keycloak...\e[0m"
+  echo -e "$(t ferramenta_keycloak_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_keycloak_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_keycloak_verif_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_keycloak_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_keycloak_verif_postgres)"
   echo ""
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "keycloak${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO keycloak \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_keycloak_instalando]="\e[97m• INSTALANDO keycloak \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_keycloak_instalando]="\e[97m• INSTALLING keycloak \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_keycloak_instalando]="\e[97m• INSTALANDO keycloak \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_keycloak_instalando)"
   echo ""
 
   cat > keycloak${1:+_$1}.yaml <<EOL
@@ -12831,7 +16506,10 @@ EOL
   STACK_NAME="keycloak${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_keycloak_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_keycloak_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_keycloak_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_keycloak_verificando)"
   echo ""
 
   pull quay.io/keycloak/keycloak:latest
@@ -12851,9 +16529,18 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ KEYCLOAK ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio Admin:\e[97m https://$url_keycloak/admin\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m $user_keycloak\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $senha_keycloak\e[0m"
+  MSG_PT[ferramenta_keycloak_resumo_dominio2]="🌐 \e[33mDomínio Admin:\e[97m https://%s/admin\e[0m"
+  MSG_EN[ferramenta_keycloak_resumo_dominio2]="🌐 \e[33mAdmin Domain:\e[97m https://%s/admin\e[0m"
+  MSG_ES[ferramenta_keycloak_resumo_dominio2]="🌐 \e[33mDominio Admin:\e[97m https://%s/admin\e[0m"
+  echo -e "$(t ferramenta_keycloak_resumo_dominio2 "$url_keycloak")"
+  MSG_PT[ferramenta_keycloak_resumo_user2]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_keycloak_resumo_user2]="👤 \e[33mUser:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_keycloak_resumo_user2]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_keycloak_resumo_user2 "$user_keycloak")"
+  MSG_PT[ferramenta_keycloak_resumo_senha2]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_keycloak_resumo_senha2]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_keycloak_resumo_senha2]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_keycloak_resumo_senha2 "$senha_keycloak")"
   msg_retorno_menu
 
 }
@@ -12863,30 +16550,75 @@ ferramenta_passbolt() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/7"
-    echo -en "🔗 \e[33mDigite o domínio para o Passbolt (ex: pass.encha.ai): \e[0m" && read -r url_passbolt
+    MSG_PT[ferramenta_passbolt_passo1]="\n📍 Passo 1/7"
+    MSG_EN[ferramenta_passbolt_passo1]="\n📍 Step 1/7"
+    MSG_ES[ferramenta_passbolt_passo1]="\n📍 Paso 1/7"
+    echo -e "$(t ferramenta_passbolt_passo1)"
+    MSG_PT[ferramenta_passbolt_dominio_prompt]="🔗 \e[33mDigite o domínio para o Passbolt (ex: pass.encha.ai): \e[0m"
+    MSG_EN[ferramenta_passbolt_dominio_prompt]="🔗 \e[33mEnter the domain for Passbolt (e.g.: pass.encha.ai): \e[0m"
+    MSG_ES[ferramenta_passbolt_dominio_prompt]="🔗 \e[33mIngrese el dominio para Passbolt (ej: pass.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_passbolt_dominio_prompt)" && read -r url_passbolt
     echo ""
-    echo -e "\n📍 Passo 2/7"
-    echo -en "📧 \e[33mDigite o email do usuário administrador: \e[0m" && read -r email_user_passbolt
+    MSG_PT[ferramenta_passbolt_passo2]="\n📍 Passo 2/7"
+    MSG_EN[ferramenta_passbolt_passo2]="\n📍 Step 2/7"
+    MSG_ES[ferramenta_passbolt_passo2]="\n📍 Paso 2/7"
+    echo -e "$(t ferramenta_passbolt_passo2)"
+    MSG_PT[ferramenta_passbolt_email_prompt]="📧 \e[33mDigite o email do usuário administrador: \e[0m"
+    MSG_EN[ferramenta_passbolt_email_prompt]="📧 \e[33mEnter the administrator user's email: \e[0m"
+    MSG_ES[ferramenta_passbolt_email_prompt]="📧 \e[33mIngrese el email del usuario administrador: \e[0m"
+    echo -en "$(t ferramenta_passbolt_email_prompt)" && read -r email_user_passbolt
     echo ""
-    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 3/7"
-    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r smtp_email_passbolt
+    MSG_PT[ferramenta_passbolt_smtp_titulo]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_titulo]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_titulo]="\n\e[97m--- Configuración de correo (SMTP) ---\e[0m"
+    echo -e "$(t ferramenta_passbolt_smtp_titulo)"
+    MSG_PT[ferramenta_passbolt_passo3]="\n📍 Passo 3/7"
+    MSG_EN[ferramenta_passbolt_passo3]="\n📍 Step 3/7"
+    MSG_ES[ferramenta_passbolt_passo3]="\n📍 Paso 3/7"
+    echo -e "$(t ferramenta_passbolt_passo3)"
+    MSG_PT[ferramenta_passbolt_smtp_email_prompt]="📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_email_prompt]="📧 \e[33mEnter your sender email (e.g.: noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_email_prompt]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_passbolt_smtp_email_prompt)" && read -r smtp_email_passbolt
     echo ""
-    echo -e "\n📍 Passo 4/7"
-    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r smtp_user_passbolt
+    MSG_PT[ferramenta_passbolt_passo4]="\n📍 Passo 4/7"
+    MSG_EN[ferramenta_passbolt_passo4]="\n📍 Step 4/7"
+    MSG_ES[ferramenta_passbolt_passo4]="\n📍 Paso 4/7"
+    echo -e "$(t ferramenta_passbolt_passo4)"
+    MSG_PT[ferramenta_passbolt_smtp_user_prompt]="👤 \e[33mDigite o usuário do seu email: \e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_user_prompt]="👤 \e[33mEnter your email username: \e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_user_prompt]="👤 \e[33mIngrese el usuario de su email: \e[0m"
+    echo -en "$(t ferramenta_passbolt_smtp_user_prompt)" && read -r smtp_user_passbolt
     echo ""
-    echo -e "\n📍 Passo 5/7"
-    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r smtp_pass_passbolt
+    MSG_PT[ferramenta_passbolt_passo5]="\n📍 Passo 5/7"
+    MSG_EN[ferramenta_passbolt_passo5]="\n📍 Step 5/7"
+    MSG_ES[ferramenta_passbolt_passo5]="\n📍 Paso 5/7"
+    echo -e "$(t ferramenta_passbolt_passo5)"
+    MSG_PT[ferramenta_passbolt_smtp_pass_prompt]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_pass_prompt]="🔑 \e[33mEnter your email password: \e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_pass_prompt]="🔑 \e[33mIngrese la contraseña de su email: \e[0m"
+    echo -en "$(t ferramenta_passbolt_smtp_pass_prompt)" && read -s -r smtp_pass_passbolt
     echo ""
-    echo -e "\n📍 Passo 6/7"
-    echo -en "🏠 \e[33mDDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_host_passbolt
+    MSG_PT[ferramenta_passbolt_passo6]="\n📍 Passo 6/7"
+    MSG_EN[ferramenta_passbolt_passo6]="\n📍 Step 6/7"
+    MSG_ES[ferramenta_passbolt_passo6]="\n📍 Paso 6/7"
+    echo -e "$(t ferramenta_passbolt_passo6)"
+    MSG_PT[ferramenta_passbolt_smtp_host_prompt]="🏠 \e[33mDDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_host_prompt]="🏠 \e[33mEnter the Email SMTP Host (e.g.: smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_host_prompt]="🏠 \e[33mIngrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_passbolt_smtp_host_prompt)" && read -r smtp_host_passbolt
     echo ""
-    echo -e "\n📍 Passo 6/7"
-    echo -en "🏠 \e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r smtp_port_passbolt
+    MSG_PT[ferramenta_passbolt_passo6b]="\n📍 Passo 6/7"
+    MSG_EN[ferramenta_passbolt_passo6b]="\n📍 Step 6/7"
+    MSG_ES[ferramenta_passbolt_passo6b]="\n📍 Paso 6/7"
+    echo -e "$(t ferramenta_passbolt_passo6b)"
+    MSG_PT[ferramenta_passbolt_smtp_port_prompt]="🏠 \e[33mDigite a porta SMTP do Email (ex: 465): \e[0m"
+    MSG_EN[ferramenta_passbolt_smtp_port_prompt]="🏠 \e[33mEnter the Email SMTP port (e.g.: 465): \e[0m"
+    MSG_ES[ferramenta_passbolt_smtp_port_prompt]="🏠 \e[33mIngrese el puerto SMTP del Email (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_passbolt_smtp_port_prompt)" && read -r smtp_port_passbolt
     echo ""
 
-    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false
     if [ "$smtp_port_passbolt" -eq 465 ]; then
     smtp_ssltls_passbolt=false
     else
@@ -12895,30 +16627,66 @@ ferramenta_passbolt() {
 
     clear
     msg_passbolt
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_passbolt_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_passbolt_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_passbolt_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_passbolt_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Passbolt:\e[97m $url_passbolt\e[0m"
-    echo -e "📧 \e[33mEmail Admin:\e[97m $email_user_passbolt\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $smtp_email_passbolt\e[0m"
-    echo -e "\e[33mUser SMTP:\e[97m $smtp_user_passbolt\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $smtp_pass_passbolt\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $smtp_host_passbolt\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $smtp_port_passbolt\e[0m"
+    MSG_PT[ferramenta_passbolt_resumo_dominio]="🌐 \e[33mDomínio Passbolt:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_dominio]="🌐 \e[33mPassbolt Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_dominio]="🌐 \e[33mDominio de Passbolt:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_dominio "$url_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_email]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_email "$email_user_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_smtp_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_smtp_email "$smtp_email_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_smtp_user]="\e[33mUser SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_smtp_user]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_smtp_user]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_smtp_user "$smtp_user_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_smtp_senha]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_smtp_senha]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_smtp_senha]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_smtp_senha "$smtp_pass_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_smtp_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_smtp_host "$smtp_host_passbolt")"
+    MSG_PT[ferramenta_passbolt_resumo_smtp_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_passbolt_resumo_smtp_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_passbolt_resumo_smtp_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_passbolt_resumo_smtp_porta "$smtp_port_passbolt")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_passbolt_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_passbolt_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_passbolt_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_passbolt_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_passbolt; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Passbolt...\e[0m"
+  MSG_PT[ferramenta_passbolt_iniciando]="\e[97m🚀 Iniciando a instalação do Passbolt...\e[0m"
+  MSG_EN[ferramenta_passbolt_iniciando]="\e[97m🚀 Starting Passbolt installation...\e[0m"
+  MSG_ES[ferramenta_passbolt_iniciando]="\e[97m🚀 Iniciando la instalación de Passbolt...\e[0m"
+  echo -e "$(t ferramenta_passbolt_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_passbolt_verif_mysql]="\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_passbolt_verif_mysql]="\e[97m• CHECKING/INSTALLING MYSQL \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_passbolt_verif_mysql]="\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_passbolt_verif_mysql)"
   echo ""
   verificar_container_mysql || ferramenta_mysql
   pegar_senha_mysql_da_stack
   criar_banco_mysql_da_stack "passbolt${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO A PASSBOLT \e[33m[4/5]\e[0m"
+  MSG_PT[ferramenta_passbolt_instalando]="\e[97m• INSTALANDO A PASSBOLT \e[33m[4/5]\e[0m"
+  MSG_EN[ferramenta_passbolt_instalando]="\e[97m• INSTALLING PASSBOLT \e[33m[4/5]\e[0m"
+  MSG_ES[ferramenta_passbolt_instalando]="\e[97m• INSTALANDO PASSBOLT \e[33m[4/5]\e[0m"
+  echo -e "$(t ferramenta_passbolt_instalando)"
   echo ""
   cat > passbolt${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -12995,7 +16763,10 @@ EOL
   STACK_NAME="passbolt${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_passbolt_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_passbolt_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_passbolt_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_passbolt_verificando)"
   echo ""
 
   pull passbolt/passbolt:latest
@@ -13016,9 +16787,18 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ PASSBOLT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_passbolt\e[0m"
-  echo -e "\e[33m📧 Email Admin:\e[97m $email_user_passbolt\e[0m"
-  echo -e "\e[33m⚠️  Um e-mail de configuração foi enviado para \e[97m$email_user_passbolt\e[33m. Siga o link para definir sua senha.\e[0m"
+  MSG_PT[ferramenta_passbolt_resumo_dominio2]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_passbolt_resumo_dominio2]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_passbolt_resumo_dominio2]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_passbolt_resumo_dominio2 "$url_passbolt")"
+  MSG_PT[ferramenta_passbolt_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_passbolt_resumo_email2]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_passbolt_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_passbolt_resumo_email2 "$email_user_passbolt")"
+  MSG_PT[ferramenta_passbolt_resumo_aviso]="⚠️  Um e-mail de configuração foi enviado para \e[97m%s\e[33m. Siga o link para definir sua senha."
+  MSG_EN[ferramenta_passbolt_resumo_aviso]="⚠️  A setup email was sent to \e[97m%s\e[33m. Follow the link to set your password."
+  MSG_ES[ferramenta_passbolt_resumo_aviso]="⚠️  Se envió un correo de configuración a \e[97m%s\e[33m. Siga el enlace para definir su contraseña."
+  echo -e "\e[33m$(t ferramenta_passbolt_resumo_aviso "$email_user_passbolt")\e[0m"
   msg_retorno_menu
 
 }
@@ -13028,37 +16808,103 @@ ferramenta_planka() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/10"
-    echo -en "🔗 \e[33mDigite o domínio para o Planka (ex: planka.encha.ai): \e[0m" && read -r url_planka
+    MSG_PT[ferramenta_planka_passo1]="\n📍 Passo 1/10"
+    MSG_EN[ferramenta_planka_passo1]="\n📍 Step 1/10"
+    MSG_ES[ferramenta_planka_passo1]="\n📍 Paso 1/10"
+    echo -e "$(t ferramenta_planka_passo1)"
+    MSG_PT[ferramenta_planka_dominio_prompt]="🔗 \e[33mDigite o domínio para o Planka (ex: planka.encha.ai): \e[0m"
+    MSG_EN[ferramenta_planka_dominio_prompt]="🔗 \e[33mEnter the domain for Planka (e.g.: planka.encha.ai): \e[0m"
+    MSG_ES[ferramenta_planka_dominio_prompt]="🔗 \e[33mIngrese el dominio para Planka (ej: planka.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_planka_dominio_prompt)" && read -r url_planka
     echo ""
-    echo -e "\n\e[97m--- Usuário Administrador ---\e[0m"
-    echo -e "\n📍 Passo 2/10"
-    echo -en "👤 \e[33mDigite o nome do administrador: \e[0m" && read -r nome_adm_planka
+    MSG_PT[ferramenta_planka_admin_titulo]="\n\e[97m--- Usuário Administrador ---\e[0m"
+    MSG_EN[ferramenta_planka_admin_titulo]="\n\e[97m--- Administrator User ---\e[0m"
+    MSG_ES[ferramenta_planka_admin_titulo]="\n\e[97m--- Usuario Administrador ---\e[0m"
+    echo -e "$(t ferramenta_planka_admin_titulo)"
+    MSG_PT[ferramenta_planka_passo2]="\n📍 Passo 2/10"
+    MSG_EN[ferramenta_planka_passo2]="\n📍 Step 2/10"
+    MSG_ES[ferramenta_planka_passo2]="\n📍 Paso 2/10"
+    echo -e "$(t ferramenta_planka_passo2)"
+    MSG_PT[ferramenta_planka_nome_adm_prompt]="👤 \e[33mDigite o nome do administrador: \e[0m"
+    MSG_EN[ferramenta_planka_nome_adm_prompt]="👤 \e[33mEnter the administrator's name: \e[0m"
+    MSG_ES[ferramenta_planka_nome_adm_prompt]="👤 \e[33mIngrese el nombre del administrador: \e[0m"
+    echo -en "$(t ferramenta_planka_nome_adm_prompt)" && read -r nome_adm_planka
     echo ""
-    echo -e "\n📍 Passo 3/10"
-    echo -en "📧 \e[33mDigite o email do administrador: \e[0m" && read -r email_adm_planka
+    MSG_PT[ferramenta_planka_passo3]="\n📍 Passo 3/10"
+    MSG_EN[ferramenta_planka_passo3]="\n📍 Step 3/10"
+    MSG_ES[ferramenta_planka_passo3]="\n📍 Paso 3/10"
+    echo -e "$(t ferramenta_planka_passo3)"
+    MSG_PT[ferramenta_planka_email_adm_prompt]="📧 \e[33mDigite o email do administrador: \e[0m"
+    MSG_EN[ferramenta_planka_email_adm_prompt]="📧 \e[33mEnter the administrator's email: \e[0m"
+    MSG_ES[ferramenta_planka_email_adm_prompt]="📧 \e[33mIngrese el email del administrador: \e[0m"
+    echo -en "$(t ferramenta_planka_email_adm_prompt)" && read -r email_adm_planka
     echo ""
-    echo -e "\n📍 Passo 4/10"
-    echo -en "🧑‍💼 \e[33mDigite o nome de usuário do administrador: \e[0m" && read -r user_adm_planka
+    MSG_PT[ferramenta_planka_passo4]="\n📍 Passo 4/10"
+    MSG_EN[ferramenta_planka_passo4]="\n📍 Step 4/10"
+    MSG_ES[ferramenta_planka_passo4]="\n📍 Paso 4/10"
+    echo -e "$(t ferramenta_planka_passo4)"
+    MSG_PT[ferramenta_planka_user_adm_prompt]="🧑‍💼 \e[33mDigite o nome de usuário do administrador: \e[0m"
+    MSG_EN[ferramenta_planka_user_adm_prompt]="🧑‍💼 \e[33mEnter the administrator's username: \e[0m"
+    MSG_ES[ferramenta_planka_user_adm_prompt]="🧑‍💼 \e[33mIngrese el nombre de usuario del administrador: \e[0m"
+    echo -en "$(t ferramenta_planka_user_adm_prompt)" && read -r user_adm_planka
     echo ""
-    echo -e "\n📍 Passo 5/10"
-    echo -en "🔑 \e[33mDigite a senha do administrador: \e[0m" && read -s -r senha_adm_planka
+    MSG_PT[ferramenta_planka_passo5]="\n📍 Passo 5/10"
+    MSG_EN[ferramenta_planka_passo5]="\n📍 Step 5/10"
+    MSG_ES[ferramenta_planka_passo5]="\n📍 Paso 5/10"
+    echo -e "$(t ferramenta_planka_passo5)"
+    MSG_PT[ferramenta_planka_senha_adm_prompt]="🔑 \e[33mDigite a senha do administrador: \e[0m"
+    MSG_EN[ferramenta_planka_senha_adm_prompt]="🔑 \e[33mEnter the administrator's password: \e[0m"
+    MSG_ES[ferramenta_planka_senha_adm_prompt]="🔑 \e[33mIngrese la contraseña del administrador: \e[0m"
+    echo -en "$(t ferramenta_planka_senha_adm_prompt)" && read -s -r senha_adm_planka
     echo ""
-    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 6/10"
-    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r email_planka
+    MSG_PT[ferramenta_planka_smtp_titulo]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_planka_smtp_titulo]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_planka_smtp_titulo]="\n\e[97m--- Configuración de correo (SMTP) ---\e[0m"
+    echo -e "$(t ferramenta_planka_smtp_titulo)"
+    MSG_PT[ferramenta_planka_passo6]="\n📍 Passo 6/10"
+    MSG_EN[ferramenta_planka_passo6]="\n📍 Step 6/10"
+    MSG_ES[ferramenta_planka_passo6]="\n📍 Paso 6/10"
+    echo -e "$(t ferramenta_planka_passo6)"
+    MSG_PT[ferramenta_planka_smtp_email_prompt]="📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_planka_smtp_email_prompt]="📧 \e[33mEnter your sender email (e.g.: noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_planka_smtp_email_prompt]="📧 \e[33mIngrese su email de envío (ej: noreply@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_planka_smtp_email_prompt)" && read -r email_planka
     echo ""
-    echo -e "\n📍 Passo 7/10"
-    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r usuario_email_planka
+    MSG_PT[ferramenta_planka_passo7]="\n📍 Passo 7/10"
+    MSG_EN[ferramenta_planka_passo7]="\n📍 Step 7/10"
+    MSG_ES[ferramenta_planka_passo7]="\n📍 Paso 7/10"
+    echo -e "$(t ferramenta_planka_passo7)"
+    MSG_PT[ferramenta_planka_smtp_user_prompt]="👤 \e[33mDigite o usuário do seu email: \e[0m"
+    MSG_EN[ferramenta_planka_smtp_user_prompt]="👤 \e[33mEnter your email username: \e[0m"
+    MSG_ES[ferramenta_planka_smtp_user_prompt]="👤 \e[33mIngrese el usuario de su email: \e[0m"
+    echo -en "$(t ferramenta_planka_smtp_user_prompt)" && read -r usuario_email_planka
     echo ""
-    echo -e "\n📍 Passo 8/10"
-    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r senha_email_planka
+    MSG_PT[ferramenta_planka_passo8]="\n📍 Passo 8/10"
+    MSG_EN[ferramenta_planka_passo8]="\n📍 Step 8/10"
+    MSG_ES[ferramenta_planka_passo8]="\n📍 Paso 8/10"
+    echo -e "$(t ferramenta_planka_passo8)"
+    MSG_PT[ferramenta_planka_smtp_pass_prompt]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+    MSG_EN[ferramenta_planka_smtp_pass_prompt]="🔑 \e[33mEnter your email password: \e[0m"
+    MSG_ES[ferramenta_planka_smtp_pass_prompt]="🔑 \e[33mIngrese la contraseña de su email: \e[0m"
+    echo -en "$(t ferramenta_planka_smtp_pass_prompt)" && read -s -r senha_email_planka
     echo ""
-    echo -e "\n📍 Passo 9/10"
-    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_planka
+    MSG_PT[ferramenta_planka_passo9]="\n📍 Passo 9/10"
+    MSG_EN[ferramenta_planka_passo9]="\n📍 Step 9/10"
+    MSG_ES[ferramenta_planka_passo9]="\n📍 Paso 9/10"
+    echo -e "$(t ferramenta_planka_passo9)"
+    MSG_PT[ferramenta_planka_smtp_host_prompt]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_planka_smtp_host_prompt]="🏠 \e[33mEnter the SMTP host (e.g.: smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_planka_smtp_host_prompt]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_planka_smtp_host_prompt)" && read -r smtp_email_planka
     echo ""
-    echo -e "\n📍 Passo 10/10"
-    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r porta_smtp_planka
+    MSG_PT[ferramenta_planka_passo10]="\n📍 Passo 10/10"
+    MSG_EN[ferramenta_planka_passo10]="\n📍 Step 10/10"
+    MSG_ES[ferramenta_planka_passo10]="\n📍 Paso 10/10"
+    echo -e "$(t ferramenta_planka_passo10)"
+    MSG_PT[ferramenta_planka_smtp_port_prompt]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_planka_smtp_port_prompt]="🔌 \e[33mEnter the SMTP port (e.g.: 465): \e[0m"
+    MSG_ES[ferramenta_planka_smtp_port_prompt]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_planka_smtp_port_prompt)" && read -r porta_smtp_planka
     echo ""
 
     if [ "$porta_smtp_planka" -eq 465 ]; then
@@ -13071,33 +16917,75 @@ ferramenta_planka() {
 
     clear
     msg_planka
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_planka_revisar]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_planka_revisar]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_planka_revisar]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_planka_revisar)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Planka:\e[97m $url_planka\e[0m"
-    echo -e "📧 \e[33mEmail Admin:\e[97m $email_adm_planka\e[0m"
-    echo -e "🧑‍💼 \e[33mUsuário Admin:\e[97m $user_adm_planka\e[0m"
-    echo -e "\e[33mSenha do Admin:\e[97m $senha_adm_planka\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $email_planka\e[0m"
-    echo -e "\e[33mUsuario SMTP:\e[97m $usuario_email_planka\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $senha_email_planka\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $smtp_email_planka\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_planka\e[0m"
+    MSG_PT[ferramenta_planka_resumo_dominio]="🌐 \e[33mDomínio Planka:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_dominio]="🌐 \e[33mPlanka Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_dominio]="🌐 \e[33mDominio de Planka:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_dominio "$url_planka")"
+    MSG_PT[ferramenta_planka_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_email]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_email]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_email "$email_adm_planka")"
+    MSG_PT[ferramenta_planka_resumo_user]="🧑‍💼 \e[33mUsuário Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_user]="🧑‍💼 \e[33mAdmin User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_user]="🧑‍💼 \e[33mUsuario Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_user "$user_adm_planka")"
+    MSG_PT[ferramenta_planka_resumo_senha_adm]="\e[33mSenha do Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_senha_adm]="\e[33mAdmin Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_senha_adm]="\e[33mContraseña del Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_senha_adm "$senha_adm_planka")"
+    MSG_PT[ferramenta_planka_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_smtp_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_smtp_email "$email_planka")"
+    MSG_PT[ferramenta_planka_resumo_smtp_user]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_smtp_user]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_smtp_user]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_smtp_user "$usuario_email_planka")"
+    MSG_PT[ferramenta_planka_resumo_smtp_senha]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_smtp_senha]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_smtp_senha]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_smtp_senha "$senha_email_planka")"
+    MSG_PT[ferramenta_planka_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_smtp_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_smtp_host "$smtp_email_planka")"
+    MSG_PT[ferramenta_planka_resumo_smtp_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_planka_resumo_smtp_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_planka_resumo_smtp_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_planka_resumo_smtp_porta "$porta_smtp_planka")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_planka_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_planka_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_planka_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_planka_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_planka; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Planka...\e[0m"
+  MSG_PT[ferramenta_planka_iniciando]="\e[97m🚀 Iniciando a instalação do Planka...\e[0m"
+  MSG_EN[ferramenta_planka_iniciando]="\e[97m🚀 Starting Planka installation...\e[0m"
+  MSG_ES[ferramenta_planka_iniciando]="\e[97m🚀 Iniciando la instalación de Planka...\e[0m"
+  echo -e "$(t ferramenta_planka_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_planka_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_planka_verif_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_planka_verif_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_planka_verif_postgres)"
   echo ""
 
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "planka${1:+_$1}"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_PT[ferramenta_planka_verif_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_EN[ferramenta_planka_verif_redis]="\e[97m• CHECKING/INSTALLING REDIS \e[33m[3/5]\e[0m"
+  MSG_ES[ferramenta_planka_verif_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo -e "$(t ferramenta_planka_verif_redis)"
   echo ""
 
   verificar_container_redis || ferramenta_redis
@@ -13201,7 +17089,10 @@ EOL
   STACK_NAME="planka${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_planka_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_planka_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_planka_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_planka_verificando)"
   echo ""
 
   pull ghcr.io/plankanban/planka:latest
@@ -13222,10 +17113,22 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ PLANKA ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_planka\e[0m"
-  echo -e "\e[33m📧 Email Admin:\e[97m $email_adm_planka\e[0m"
-  echo -e "\e[33m👤 Usuário Admin:\e[97m $user_adm_planka\e[0m"
-  echo -e "\e[33m🔑 Senha Admin:\e[97m $senha_adm_planka\e[0m"
+  MSG_PT[ferramenta_planka_resumo_dominio2]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_planka_resumo_dominio2]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_planka_resumo_dominio2]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_planka_resumo_dominio2 "$url_planka")"
+  MSG_PT[ferramenta_planka_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_planka_resumo_email2]="📧 \e[33mAdmin Email:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_planka_resumo_email2]="📧 \e[33mEmail Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_planka_resumo_email2 "$email_adm_planka")"
+  MSG_PT[ferramenta_planka_resumo_user2]="👤 \e[33mUsuário Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_planka_resumo_user2]="👤 \e[33mAdmin User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_planka_resumo_user2]="👤 \e[33mUsuario Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_planka_resumo_user2 "$user_adm_planka")"
+  MSG_PT[ferramenta_planka_resumo_senha2]="🔑 \e[33mSenha Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_planka_resumo_senha2]="🔑 \e[33mAdmin Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_planka_resumo_senha2]="🔑 \e[33mContraseña Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_planka_resumo_senha2 "$senha_adm_planka")"
   msg_retorno_menu
 
 }
@@ -13235,22 +17138,40 @@ ferramenta_wppconnect() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o WPPConnect (ex: wpp.encha.ai): \e[0m" && read -r url_wppconnect
+    MSG_PT[ferramenta_wppconnect_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_wppconnect_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_wppconnect_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_wppconnect_passo)"
+    MSG_PT[ferramenta_wppconnect_pergunta_dominio]="🔗 \e[33mDigite o domínio para o WPPConnect (ex: wpp.encha.ai): \e[0m"
+    MSG_EN[ferramenta_wppconnect_pergunta_dominio]="🔗 \e[33mEnter the domain for WPPConnect (e.g. wpp.encha.ai): \e[0m"
+    MSG_ES[ferramenta_wppconnect_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el WPPConnect (ej: wpp.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_wppconnect_pergunta_dominio)" && read -r url_wppconnect
     echo ""
 
     clear
     msg_wppconnect
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_wppconnect_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_wppconnect_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_wppconnect_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_wppconnect_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio WPPConnect:\e[97m $url_wppconnect\e[0m"
+    MSG_PT[ferramenta_wppconnect_dominio]="🌐 \e[33mDomínio WPPConnect:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_wppconnect_dominio]="🌐 \e[33mWPPConnect Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_wppconnect_dominio]="🌐 \e[33mDominio WPPConnect:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_wppconnect_dominio "$url_wppconnect")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_wppconnect_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_wppconnect_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_wppconnect_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_wppconnect_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; msg_wppconnect; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do WPPConnect...\e[0m"
+  MSG_PT[ferramenta_wppconnect_iniciando]="\e[97m🚀 Iniciando a instalação do WPPConnect...\e[0m"
+  MSG_EN[ferramenta_wppconnect_iniciando]="\e[97m🚀 Starting WPPConnect installation...\e[0m"
+  MSG_ES[ferramenta_wppconnect_iniciando]="\e[97m🚀 Iniciando la instalación del WPPConnect...\e[0m"
+  echo -e "$(t ferramenta_wppconnect_iniciando)"
   cat > wppconnect${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -13302,7 +17223,10 @@ EOL
   STACK_NAME="wppconnect${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_wppconnect_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_wppconnect_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_wppconnect_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_wppconnect_verificando)"
   echo ""
 
   pull wppconnect/server-cli:latest
@@ -13319,9 +17243,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ WPPCONNECT ]\e[0m\n"
-  echo -e "\e[33m🔗 Domínio API:\e[97m https://$url_wppconnect\e[0m"
-  echo -e "\e[33m📚 Documentação:\e[97m https://$url_wppconnect/api-docs\e[0m"
+  MSG_PT[ferramenta_wppconnect_resumo_titulo]="\e[32m[ WPPCONNECT ]\e[0m\n"
+  MSG_EN[ferramenta_wppconnect_resumo_titulo]="\e[32m[ WPPCONNECT ]\e[0m\n"
+  MSG_ES[ferramenta_wppconnect_resumo_titulo]="\e[32m[ WPPCONNECT ]\e[0m\n"
+  echo -e "$(t ferramenta_wppconnect_resumo_titulo)"
+  MSG_PT[ferramenta_wppconnect_resumo_dominio]="\e[33m🔗 Domínio API:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_wppconnect_resumo_dominio]="\e[33m🔗 API Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_wppconnect_resumo_dominio]="\e[33m🔗 Dominio API:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_wppconnect_resumo_dominio "https://$url_wppconnect")"
+  MSG_PT[ferramenta_wppconnect_resumo_doc]="\e[33m📚 Documentação:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_wppconnect_resumo_doc]="\e[33m📚 Documentation:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_wppconnect_resumo_doc]="\e[33m📚 Documentación:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_wppconnect_resumo_doc "https://$url_wppconnect/api-docs")"
   msg_retorno_menu
 
 }
@@ -13331,22 +17264,40 @@ ferramenta_browserless() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Browserless (ex: browserless.encha.ai): \e[0m" && read -r url_browserless
+    MSG_PT[ferramenta_browserless_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_browserless_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_browserless_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_browserless_passo)"
+    MSG_PT[ferramenta_browserless_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Browserless (ex: browserless.encha.ai): \e[0m"
+    MSG_EN[ferramenta_browserless_pergunta_dominio]="🔗 \e[33mEnter the domain for Browserless (e.g. browserless.encha.ai): \e[0m"
+    MSG_ES[ferramenta_browserless_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el Browserless (ej: browserless.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_browserless_pergunta_dominio)" && read -r url_browserless
     echo ""
 
     clear
     msg_browserless
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_browserless_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_browserless_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_browserless_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_browserless_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Browserless:\e[97m $url_browserless\e[0m"
+    MSG_PT[ferramenta_browserless_dominio]="🌐 \e[33mDomínio Browserless:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_browserless_dominio]="🌐 \e[33mBrowserless Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_browserless_dominio]="🌐 \e[33mDominio Browserless:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_browserless_dominio "$url_browserless")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_browserless_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_browserless_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_browserless_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_browserless_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_browserless; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Browserless...\e[0m"
+  MSG_PT[ferramenta_browserless_iniciando]="\e[97m🚀 Iniciando a instalação do Browserless...\e[0m"
+  MSG_EN[ferramenta_browserless_iniciando]="\e[97m🚀 Starting Browserless installation...\e[0m"
+  MSG_ES[ferramenta_browserless_iniciando]="\e[97m🚀 Iniciando la instalación del Browserless...\e[0m"
+  echo -e "$(t ferramenta_browserless_iniciando)"
   cat > browserless${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -13402,7 +17353,10 @@ EOL
   STACK_NAME="browserless${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_browserless_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_browserless_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_browserless_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_browserless_verificando)"
   echo ""
 
   pull browserless/chrome:latest
@@ -13419,9 +17373,18 @@ EOL
 
   cd
   msg_resumo_informacoes
-  echo -e "\e[32m[ BROWSERLESS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_browserless\e[0m"
-  echo -e "\e[33mℹ️  Serviço de automação de navegador pronto para uso.\e[0m"  
+  MSG_PT[ferramenta_browserless_resumo_titulo]="\e[32m[ BROWSERLESS ]\e[0m\n"
+  MSG_EN[ferramenta_browserless_resumo_titulo]="\e[32m[ BROWSERLESS ]\e[0m\n"
+  MSG_ES[ferramenta_browserless_resumo_titulo]="\e[32m[ BROWSERLESS ]\e[0m\n"
+  echo -e "$(t ferramenta_browserless_resumo_titulo)"
+  MSG_PT[ferramenta_browserless_resumo_dominio]="\e[33m🌐 Domínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_browserless_resumo_dominio]="\e[33m🌐 Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_browserless_resumo_dominio]="\e[33m🌐 Dominio:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_browserless_resumo_dominio "https://$url_browserless")"
+  MSG_PT[ferramenta_browserless_resumo_info]="\e[33mℹ️  Serviço de automação de navegador pronto para uso.\e[0m"
+  MSG_EN[ferramenta_browserless_resumo_info]="\e[33mℹ️  Browser automation service ready to use.\e[0m"
+  MSG_ES[ferramenta_browserless_resumo_info]="\e[33mℹ️  Servicio de automatización de navegador listo para usar.\e[0m"
+  echo -e "$(t ferramenta_browserless_resumo_info)"
   msg_retorno_menu
 
 }
@@ -13431,22 +17394,40 @@ ferramenta_gotenberg() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Gotenberg (ex: pdf.encha.ai): \e[0m" && read -r url_gotenberg
+    MSG_PT[ferramenta_gotenberg_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_gotenberg_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_gotenberg_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_gotenberg_passo)"
+    MSG_PT[ferramenta_gotenberg_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Gotenberg (ex: pdf.encha.ai): \e[0m"
+    MSG_EN[ferramenta_gotenberg_pergunta_dominio]="🔗 \e[33mEnter the domain for Gotenberg (e.g. pdf.encha.ai): \e[0m"
+    MSG_ES[ferramenta_gotenberg_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el Gotenberg (ej: pdf.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_gotenberg_pergunta_dominio)" && read -r url_gotenberg
     echo ""
 
     clear
     msg_gotenberg
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_gotenberg_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_gotenberg_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_gotenberg_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_gotenberg_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Gotenberg:\e[97m $url_gotenberg\e[0m"
+    MSG_PT[ferramenta_gotenberg_dominio]="🌐 \e[33mDomínio Gotenberg:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_gotenberg_dominio]="🌐 \e[33mGotenberg Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_gotenberg_dominio]="🌐 \e[33mDominio Gotenberg:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_gotenberg_dominio "$url_gotenberg")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_gotenberg_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_gotenberg_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_gotenberg_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_gotenberg_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_gotenberg; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Gotenberg...\e[0m"
+  MSG_PT[ferramenta_gotenberg_iniciando]="\e[97m🚀 Iniciando a instalação do Gotenberg...\e[0m"
+  MSG_EN[ferramenta_gotenberg_iniciando]="\e[97m🚀 Starting Gotenberg installation...\e[0m"
+  MSG_ES[ferramenta_gotenberg_iniciando]="\e[97m🚀 Iniciando la instalación del Gotenberg...\e[0m"
+  echo -e "$(t ferramenta_gotenberg_iniciando)"
   cat > gotenberg${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -13507,7 +17488,10 @@ EOL
   STACK_NAME="gotenberg${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_gotenberg_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_gotenberg_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_gotenberg_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_gotenberg_verificando)"
   echo ""
 
   pull gotenberg/gotenberg:latest
@@ -13524,9 +17508,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ GOTENBERG ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio da API:\e[97m https://$url_gotenberg\e[0m"
-  echo -e "\e[33mℹ️  Esta é uma API. Acesse a documentação oficial para saber como usá-la.\e[0m"  
+  MSG_PT[ferramenta_gotenberg_resumo_titulo]="\e[32m[ GOTENBERG ]\e[0m\n"
+  MSG_EN[ferramenta_gotenberg_resumo_titulo]="\e[32m[ GOTENBERG ]\e[0m\n"
+  MSG_ES[ferramenta_gotenberg_resumo_titulo]="\e[32m[ GOTENBERG ]\e[0m\n"
+  echo -e "$(t ferramenta_gotenberg_resumo_titulo)"
+  MSG_PT[ferramenta_gotenberg_resumo_dominio]="\e[33m🌐 Domínio da API:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_gotenberg_resumo_dominio]="\e[33m🌐 API Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_gotenberg_resumo_dominio]="\e[33m🌐 Dominio de la API:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_gotenberg_resumo_dominio "https://$url_gotenberg")"
+  MSG_PT[ferramenta_gotenberg_resumo_info]="\e[33mℹ️  Esta é uma API. Acesse a documentação oficial para saber como usá-la.\e[0m"
+  MSG_EN[ferramenta_gotenberg_resumo_info]="\e[33mℹ️  This is an API. Check the official documentation to learn how to use it.\e[0m"
+  MSG_ES[ferramenta_gotenberg_resumo_info]="\e[33mℹ️  Esta es una API. Consulte la documentación oficial para saber cómo usarla.\e[0m"
+  echo -e "$(t ferramenta_gotenberg_resumo_info)"
   msg_retorno_menu
 
 
@@ -13537,22 +17530,40 @@ ferramenta_wiki() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Wiki.js (ex: wiki.encha.ai): \e[0m" && read -r url_wiki
+    MSG_PT[ferramenta_wiki_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_wiki_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_wiki_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_wiki_passo)"
+    MSG_PT[ferramenta_wiki_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Wiki.js (ex: wiki.encha.ai): \e[0m"
+    MSG_EN[ferramenta_wiki_pergunta_dominio]="🔗 \e[33mEnter the domain for Wiki.js (e.g. wiki.encha.ai): \e[0m"
+    MSG_ES[ferramenta_wiki_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el Wiki.js (ej: wiki.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_wiki_pergunta_dominio)" && read -r url_wiki
     echo ""
 
     clear
     msg_wiki
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_wiki_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_wiki_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_wiki_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_wiki_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Wiki.js:\e[97m $url_wiki\e[0m"
+    MSG_PT[ferramenta_wiki_dominio]="🌐 \e[33mDomínio Wiki.js:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_wiki_dominio]="🌐 \e[33mWiki.js Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_wiki_dominio]="🌐 \e[33mDominio Wiki.js:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_wiki_dominio "$url_wiki")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_wiki_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_wiki_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_wiki_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_wiki_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wiki; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Wiki.js...\e[0m"
+  MSG_PT[ferramenta_wiki_iniciando]="\e[97m🚀 Iniciando a instalação do Wiki.js...\e[0m"
+  MSG_EN[ferramenta_wiki_iniciando]="\e[97m🚀 Starting Wiki.js installation...\e[0m"
+  MSG_ES[ferramenta_wiki_iniciando]="\e[97m🚀 Iniciando la instalación del Wiki.js...\e[0m"
+  echo -e "$(t ferramenta_wiki_iniciando)"
 
   wiki_postgres_password=$(openssl rand -hex 16)
   cat > wiki${1:+_$1}.yaml <<EOL
@@ -13636,7 +17647,10 @@ EOL
   STACK_NAME="wiki${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_wiki_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_wiki_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_wiki_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_wiki_verificando)"
   echo ""
 
   pull requarks/wiki:latest postgres:15-alpine
@@ -13655,9 +17669,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ WIKI.JS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_wiki\e[0m"
-  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
+  MSG_PT[ferramenta_wiki_resumo_titulo]="\e[32m[ WIKI.JS ]\e[0m\n"
+  MSG_EN[ferramenta_wiki_resumo_titulo]="\e[32m[ WIKI.JS ]\e[0m\n"
+  MSG_ES[ferramenta_wiki_resumo_titulo]="\e[32m[ WIKI.JS ]\e[0m\n"
+  echo -e "$(t ferramenta_wiki_resumo_titulo)"
+  MSG_PT[ferramenta_wiki_resumo_dominio]="\e[33m🌐 Domínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_wiki_resumo_dominio]="\e[33m🌐 Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_wiki_resumo_dominio]="\e[33m🌐 Dominio:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_wiki_resumo_dominio "https://$url_wiki")"
+  MSG_PT[ferramenta_wiki_resumo_aviso]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+  MSG_EN[ferramenta_wiki_resumo_aviso]="\e[33m⚠️  Access the domain to complete the installation and create your user.\e[0m"
+  MSG_ES[ferramenta_wiki_resumo_aviso]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario.\e[0m"
+  echo -e "$(t ferramenta_wiki_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -13667,22 +17690,40 @@ ferramenta_azuracast() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o AzuraCast (ex: radio.encha.ai): \e[0m" && read -r url_azuracast
+    MSG_PT[ferramenta_azuracast_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_azuracast_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_azuracast_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_azuracast_passo)"
+    MSG_PT[ferramenta_azuracast_pergunta_dominio]="🔗 \e[33mDigite o domínio para o AzuraCast (ex: radio.encha.ai): \e[0m"
+    MSG_EN[ferramenta_azuracast_pergunta_dominio]="🔗 \e[33mEnter the domain for AzuraCast (e.g. radio.encha.ai): \e[0m"
+    MSG_ES[ferramenta_azuracast_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el AzuraCast (ej: radio.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_azuracast_pergunta_dominio)" && read -r url_azuracast
     echo ""
 
     clear
     msg_azuracast
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_azuracast_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_azuracast_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_azuracast_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_azuracast_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio AzuraCast:\e[97m $url_azuracast\e[0m"
+    MSG_PT[ferramenta_azuracast_dominio]="🌐 \e[33mDomínio AzuraCast:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_azuracast_dominio]="🌐 \e[33mAzuraCast Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_azuracast_dominio]="🌐 \e[33mDominio AzuraCast:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_azuracast_dominio "$url_azuracast")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_azuracast_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_azuracast_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_azuracast_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_azuracast_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_azuracast; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do AzuraCast...\e[0m"
+  MSG_PT[ferramenta_azuracast_iniciando]="\e[97m🚀 Iniciando a instalação do AzuraCast...\e[0m"
+  MSG_EN[ferramenta_azuracast_iniciando]="\e[97m🚀 Starting AzuraCast installation...\e[0m"
+  MSG_ES[ferramenta_azuracast_iniciando]="\e[97m🚀 Iniciando la instalación del AzuraCast...\e[0m"
+  echo -e "$(t ferramenta_azuracast_iniciando)"
   
   azuracast_mysql_password=$(openssl rand -hex 16)
 
@@ -13826,7 +17867,10 @@ EOL
   STACK_NAME="azuracast${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_azuracast_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_azuracast_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_azuracast_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_azuracast_verificando)"
   echo ""
 
   pull ghcr.io/azuracast/azuracast:latest ghcr.io/azuracast/updater:latest
@@ -13845,9 +17889,18 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ AZURACAST ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_azuracast\e[0m"
-  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta.\e[0m"
+  MSG_PT[ferramenta_azuracast_resumo_titulo]="\e[32m[ AZURACAST ]\e[0m\n"
+  MSG_EN[ferramenta_azuracast_resumo_titulo]="\e[32m[ AZURACAST ]\e[0m\n"
+  MSG_ES[ferramenta_azuracast_resumo_titulo]="\e[32m[ AZURACAST ]\e[0m\n"
+  echo -e "$(t ferramenta_azuracast_resumo_titulo)"
+  MSG_PT[ferramenta_azuracast_resumo_dominio]="\e[33m🌐 Domínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_azuracast_resumo_dominio]="\e[33m🌐 Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_azuracast_resumo_dominio]="\e[33m🌐 Dominio:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_azuracast_resumo_dominio "https://$url_azuracast")"
+  MSG_PT[ferramenta_azuracast_resumo_aviso]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta.\e[0m"
+  MSG_EN[ferramenta_azuracast_resumo_aviso]="\e[33m⚠️  Access the domain to complete the installation and create your account.\e[0m"
+  MSG_ES[ferramenta_azuracast_resumo_aviso]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su cuenta.\e[0m"
+  echo -e "$(t ferramenta_azuracast_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -13857,26 +17910,53 @@ ferramenta_rustdesk() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/2"
-    echo -en "🔗 \e[33mDigite o domínio para o servidor de ID (hbbs) (ex: hbbs-rustdesk.encha.ai): \e[0m" && read -r url_hbbs
+    MSG_PT[ferramenta_rustdesk_passo1]="\n📍 Passo 1/2"
+    MSG_EN[ferramenta_rustdesk_passo1]="\n📍 Step 1/2"
+    MSG_ES[ferramenta_rustdesk_passo1]="\n📍 Paso 1/2"
+    echo -e "$(t ferramenta_rustdesk_passo1)"
+    MSG_PT[ferramenta_rustdesk_pergunta_hbbs]="🔗 \e[33mDigite o domínio para o servidor de ID (hbbs) (ex: hbbs-rustdesk.encha.ai): \e[0m"
+    MSG_EN[ferramenta_rustdesk_pergunta_hbbs]="🔗 \e[33mEnter the domain for the ID server (hbbs) (e.g. hbbs-rustdesk.encha.ai): \e[0m"
+    MSG_ES[ferramenta_rustdesk_pergunta_hbbs]="🔗 \e[33mIngrese el dominio para el servidor de ID (hbbs) (ej: hbbs-rustdesk.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_rustdesk_pergunta_hbbs)" && read -r url_hbbs
     echo ""
-    echo -e "\n📍 Passo 2/2"
-    echo -en "🔗 \e[33mDigite o domínio para o servidor de Relay (hbbr) (ex: hbbr-rustdesk.encha.ai): \e[0m" && read -r url_hbbr
+    MSG_PT[ferramenta_rustdesk_passo2]="\n📍 Passo 2/2"
+    MSG_EN[ferramenta_rustdesk_passo2]="\n📍 Step 2/2"
+    MSG_ES[ferramenta_rustdesk_passo2]="\n📍 Paso 2/2"
+    echo -e "$(t ferramenta_rustdesk_passo2)"
+    MSG_PT[ferramenta_rustdesk_pergunta_hbbr]="🔗 \e[33mDigite o domínio para o servidor de Relay (hbbr) (ex: hbbr-rustdesk.encha.ai): \e[0m"
+    MSG_EN[ferramenta_rustdesk_pergunta_hbbr]="🔗 \e[33mEnter the domain for the Relay server (hbbr) (e.g. hbbr-rustdesk.encha.ai): \e[0m"
+    MSG_ES[ferramenta_rustdesk_pergunta_hbbr]="🔗 \e[33mIngrese el dominio para el servidor de Relay (hbbr) (ej: hbbr-rustdesk.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_rustdesk_pergunta_hbbr)" && read -r url_hbbr
     echo ""
 
     clear
     msg_rustdesk
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_rustdesk_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_rustdesk_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_rustdesk_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_rustdesk_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🆔 \e[33mDomínio HBBS:\e[97m $url_hbbs\e[0m"
-    echo -e "릴 \e[33mDomínio HBBR:\e[97m $url_hbbr\e[0m"
+    MSG_PT[ferramenta_rustdesk_dominio_hbbs]="🆔 \e[33mDomínio HBBS:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_rustdesk_dominio_hbbs]="🆔 \e[33mHBBS Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_rustdesk_dominio_hbbs]="🆔 \e[33mDominio HBBS:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_rustdesk_dominio_hbbs "$url_hbbs")"
+    MSG_PT[ferramenta_rustdesk_dominio_hbbr]="릴 \e[33mDomínio HBBR:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_rustdesk_dominio_hbbr]="릴 \e[33mHBBR Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_rustdesk_dominio_hbbr]="릴 \e[33mDominio HBBR:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_rustdesk_dominio_hbbr "$url_hbbr")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_rustdesk_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_rustdesk_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_rustdesk_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_rustdesk_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_rustdesk; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do RustDesk Server...\e[0m"
+  MSG_PT[ferramenta_rustdesk_iniciando]="\e[97m🚀 Iniciando a instalação do RustDesk Server...\e[0m"
+  MSG_EN[ferramenta_rustdesk_iniciando]="\e[97m🚀 Starting RustDesk Server installation...\e[0m"
+  MSG_ES[ferramenta_rustdesk_iniciando]="\e[97m🚀 Iniciando la instalación del RustDesk Server...\e[0m"
+  echo -e "$(t ferramenta_rustdesk_iniciando)"
   rustdesk_api_key=$(openssl rand -hex 16)
 
   generate_rustdesk_string() {
@@ -13998,7 +18078,10 @@ EOL
   STACK_NAME="rustdesk${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_rustdesk_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_rustdesk_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_rustdesk_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_rustdesk_verificando)"
   echo ""
 
   pull rustdesk/rustdesk-server:latest
@@ -14017,11 +18100,26 @@ EOL
 
   cd
   msg_resumo_informacoes
-  echo -e "\e[32m[ RUSTDESK ]\e[0m\n"
-  echo -e "\e[33m🆔 Servidor de ID (hbbs):\e[97m $url_hbbs\e[0m"
-  echo -e "\e[33m릴 Servidor de Relay (hbbr):\e[97m $url_hbbr\e[0m"
-  echo -e "\e[33m🔑 Key:\e[97m $rustdesk_api_key\e[0m"
-  echo -e "\e[33m⚙️ String de Configuração (para o cliente):\e[97m $rustdesk_config_string\e[0m"  
+  MSG_PT[ferramenta_rustdesk_resumo_titulo]="\e[32m[ RUSTDESK ]\e[0m\n"
+  MSG_EN[ferramenta_rustdesk_resumo_titulo]="\e[32m[ RUSTDESK ]\e[0m\n"
+  MSG_ES[ferramenta_rustdesk_resumo_titulo]="\e[32m[ RUSTDESK ]\e[0m\n"
+  echo -e "$(t ferramenta_rustdesk_resumo_titulo)"
+  MSG_PT[ferramenta_rustdesk_resumo_hbbs]="\e[33m🆔 Servidor de ID (hbbs):\e[97m %s\e[0m"
+  MSG_EN[ferramenta_rustdesk_resumo_hbbs]="\e[33m🆔 ID Server (hbbs):\e[97m %s\e[0m"
+  MSG_ES[ferramenta_rustdesk_resumo_hbbs]="\e[33m🆔 Servidor de ID (hbbs):\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_rustdesk_resumo_hbbs "$url_hbbs")"
+  MSG_PT[ferramenta_rustdesk_resumo_hbbr]="\e[33m릴 Servidor de Relay (hbbr):\e[97m %s\e[0m"
+  MSG_EN[ferramenta_rustdesk_resumo_hbbr]="\e[33m릴 Relay Server (hbbr):\e[97m %s\e[0m"
+  MSG_ES[ferramenta_rustdesk_resumo_hbbr]="\e[33m릴 Servidor de Relay (hbbr):\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_rustdesk_resumo_hbbr "$url_hbbr")"
+  MSG_PT[ferramenta_rustdesk_resumo_key]="\e[33m🔑 Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_rustdesk_resumo_key]="\e[33m🔑 Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_rustdesk_resumo_key]="\e[33m🔑 Key:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_rustdesk_resumo_key "$rustdesk_api_key")"
+  MSG_PT[ferramenta_rustdesk_resumo_config]="\e[33m⚙️ String de Configuração (para o cliente):\e[97m %s\e[0m"
+  MSG_EN[ferramenta_rustdesk_resumo_config]="\e[33m⚙️ Configuration String (for the client):\e[97m %s\e[0m"
+  MSG_ES[ferramenta_rustdesk_resumo_config]="\e[33m⚙️ Cadena de Configuración (para el cliente):\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_rustdesk_resumo_config "$rustdesk_config_string")"
   msg_retorno_menu
 
 }
@@ -14031,30 +18129,81 @@ ferramenta_hoppscotch() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/8"
-    echo -en "🔗 \e[33mDigite o domínio para a Interface Principal (ex: hop.encha.ai): \e[0m" && read -r url_hoppscotch_frontend
+    MSG_PT[ferramenta_hoppscotch_passo1]="\n📍 Passo 1/8"
+    MSG_EN[ferramenta_hoppscotch_passo1]="\n📍 Step 1/8"
+    MSG_ES[ferramenta_hoppscotch_passo1]="\n📍 Paso 1/8"
+    echo -e "$(t ferramenta_hoppscotch_passo1)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_frontend]="🔗 \e[33mDigite o domínio para a Interface Principal (ex: hop.encha.ai): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_frontend]="🔗 \e[33mEnter the domain for the Main Interface (e.g. hop.encha.ai): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_frontend]="🔗 \e[33mIngrese el dominio para la Interfaz Principal (ej: hop.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_frontend)" && read -r url_hoppscotch_frontend
     echo ""
-    echo -e "\n📍 Passo 2/8"
-    echo -en "🔗 \e[33mDigite o domínio para o Painel Admin (ex: admin-hop.encha.ai): \e[0m" && read -r url_hoppscotch_admin
+    MSG_PT[ferramenta_hoppscotch_passo2]="\n📍 Passo 2/8"
+    MSG_EN[ferramenta_hoppscotch_passo2]="\n📍 Step 2/8"
+    MSG_ES[ferramenta_hoppscotch_passo2]="\n📍 Paso 2/8"
+    echo -e "$(t ferramenta_hoppscotch_passo2)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_admin]="🔗 \e[33mDigite o domínio para o Painel Admin (ex: admin-hop.encha.ai): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_admin]="🔗 \e[33mEnter the domain for the Admin Panel (e.g. admin-hop.encha.ai): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_admin]="🔗 \e[33mIngrese el dominio para el Panel Admin (ej: admin-hop.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_admin)" && read -r url_hoppscotch_admin
     echo ""
-    echo -e "\n📍 Passo 3/8"
-    echo -en "🔗 \e[33mDigite o domínio para o Backend/API (ex: api-hop.encha.ai): \e[0m" && read -r url_hoppscotch_backend
+    MSG_PT[ferramenta_hoppscotch_passo3]="\n📍 Passo 3/8"
+    MSG_EN[ferramenta_hoppscotch_passo3]="\n📍 Step 3/8"
+    MSG_ES[ferramenta_hoppscotch_passo3]="\n📍 Paso 3/8"
+    echo -e "$(t ferramenta_hoppscotch_passo3)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_backend]="🔗 \e[33mDigite o domínio para o Backend/API (ex: api-hop.encha.ai): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_backend]="🔗 \e[33mEnter the domain for the Backend/API (e.g. api-hop.encha.ai): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_backend]="🔗 \e[33mIngrese el dominio para el Backend/API (ej: api-hop.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_backend)" && read -r url_hoppscotch_backend
     echo ""
-    echo -e "\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
-    echo -e "\n📍 Passo 4/8"
-    echo -en "📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m" && read -r hoppscotch_smtp_email
+    MSG_PT[ferramenta_hoppscotch_smtp_titulo]="\n\e[97m--- Configuração de E-mail (SMTP) ---\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_titulo]="\n\e[97m--- Email Configuration (SMTP) ---\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_titulo]="\n\e[97m--- Configuración de Correo (SMTP) ---\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_titulo)"
+    MSG_PT[ferramenta_hoppscotch_passo4]="\n📍 Passo 4/8"
+    MSG_EN[ferramenta_hoppscotch_passo4]="\n📍 Step 4/8"
+    MSG_ES[ferramenta_hoppscotch_passo4]="\n📍 Paso 4/8"
+    echo -e "$(t ferramenta_hoppscotch_passo4)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_smtp_email]="📧 \e[33mDigite seu email de envio (ex: noreply@encha.ai): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_smtp_email]="📧 \e[33mEnter your sending email (e.g. noreply@encha.ai): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_smtp_email]="📧 \e[33mIngrese su correo de envío (ej: noreply@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_smtp_email)" && read -r hoppscotch_smtp_email
     echo ""
-    echo -e "\n📍 Passo 5/8"
-    echo -en "👤 \e[33mDigite o usuário do seu email: \e[0m" && read -r hoppscotch_smtp_user
+    MSG_PT[ferramenta_hoppscotch_passo5]="\n📍 Passo 5/8"
+    MSG_EN[ferramenta_hoppscotch_passo5]="\n📍 Step 5/8"
+    MSG_ES[ferramenta_hoppscotch_passo5]="\n📍 Paso 5/8"
+    echo -e "$(t ferramenta_hoppscotch_passo5)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_smtp_user]="👤 \e[33mDigite o usuário do seu email: \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_smtp_user]="👤 \e[33mEnter your email user: \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_smtp_user]="👤 \e[33mIngrese el usuario de su correo: \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_smtp_user)" && read -r hoppscotch_smtp_user
     echo ""
-    echo -e "\n📍 Passo 6/8"
-    echo -en "🔑 \e[33mDigite a senha do seu email: \e[0m" && read -s -r hoppscotch_smtp_pass
+    MSG_PT[ferramenta_hoppscotch_passo6]="\n📍 Passo 6/8"
+    MSG_EN[ferramenta_hoppscotch_passo6]="\n📍 Step 6/8"
+    MSG_ES[ferramenta_hoppscotch_passo6]="\n📍 Paso 6/8"
+    echo -e "$(t ferramenta_hoppscotch_passo6)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_smtp_pass]="🔑 \e[33mDigite a senha do seu email: \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_smtp_pass]="🔑 \e[33mEnter your email password: \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_smtp_pass]="🔑 \e[33mIngrese la contraseña de su correo: \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_smtp_pass)" && read -s -r hoppscotch_smtp_pass
     echo ""
-    echo -e "\n📍 Passo 7/8"
-    echo -en "🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m" && read -r hoppscotch_smtp_host
+    MSG_PT[ferramenta_hoppscotch_passo7]="\n📍 Passo 7/8"
+    MSG_EN[ferramenta_hoppscotch_passo7]="\n📍 Step 7/8"
+    MSG_ES[ferramenta_hoppscotch_passo7]="\n📍 Paso 7/8"
+    echo -e "$(t ferramenta_hoppscotch_passo7)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_smtp_host]="🏠 \e[33mDigite o host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_smtp_host]="🏠 \e[33mEnter the SMTP host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_smtp_host]="🏠 \e[33mIngrese el host SMTP (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_smtp_host)" && read -r hoppscotch_smtp_host
     echo ""
-    echo -e "\n📍 Passo 8/8"
-    echo -en "🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m" && read -r hoppscotch_smtp_port
+    MSG_PT[ferramenta_hoppscotch_passo8]="\n📍 Passo 8/8"
+    MSG_EN[ferramenta_hoppscotch_passo8]="\n📍 Step 8/8"
+    MSG_ES[ferramenta_hoppscotch_passo8]="\n📍 Paso 8/8"
+    echo -e "$(t ferramenta_hoppscotch_passo8)"
+    MSG_PT[ferramenta_hoppscotch_pergunta_smtp_port]="🔌 \e[33mDigite a porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_hoppscotch_pergunta_smtp_port]="🔌 \e[33mEnter the SMTP port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_hoppscotch_pergunta_smtp_port]="🔌 \e[33mIngrese el puerto SMTP (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_hoppscotch_pergunta_smtp_port)" && read -r hoppscotch_smtp_port
     echo ""
 
     if [ "$porta_smtp_typebot" -eq 465 ]; then
@@ -14065,32 +18214,71 @@ ferramenta_hoppscotch() {
 
     clear
     msg_hoppscotch
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_hoppscotch_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_hoppscotch_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_hoppscotch_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_hoppscotch_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Principal:\e[97m $url_hoppscotch_frontend\e[0m"
-    echo -e "⚙️ \e[33mDomínio Admin:\e[97m $url_hoppscotch_admin\e[0m"
-    echo -e "🔗 \e[33mDomínio Backend:\e[97m $url_hoppscotch_backend\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $hoppscotch_smtp_email\e[0m"
-    echo -e "\e[33mUsuário SMTP:\e[97m $hoppscotch_smtp_user\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $hoppscotch_smtp_host\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $hoppscotch_smtp_port\e[0m"
-    echo -e "\e[33mSSL SMTP:\e[97m $hoppscotch_smtp_secure\e[0m"
+    MSG_PT[ferramenta_hoppscotch_dominio_principal]="🌐 \e[33mDomínio Principal:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_dominio_principal]="🌐 \e[33mMain Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_dominio_principal]="🌐 \e[33mDominio Principal:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_dominio_principal "$url_hoppscotch_frontend")"
+    MSG_PT[ferramenta_hoppscotch_dominio_admin]="⚙️ \e[33mDomínio Admin:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_dominio_admin]="⚙️ \e[33mAdmin Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_dominio_admin]="⚙️ \e[33mDominio Admin:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_dominio_admin "$url_hoppscotch_admin")"
+    MSG_PT[ferramenta_hoppscotch_dominio_backend]="🔗 \e[33mDomínio Backend:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_dominio_backend]="🔗 \e[33mBackend Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_dominio_backend]="🔗 \e[33mDominio Backend:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_dominio_backend "$url_hoppscotch_backend")"
+    MSG_PT[ferramenta_hoppscotch_smtp_email]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_email]="\e[33mCorreo SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_email "$hoppscotch_smtp_email")"
+    MSG_PT[ferramenta_hoppscotch_smtp_user]="\e[33mUsuário SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_user]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_user]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_user "$hoppscotch_smtp_user")"
+    MSG_PT[ferramenta_hoppscotch_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_host]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_host]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_host "$hoppscotch_smtp_host")"
+    MSG_PT[ferramenta_hoppscotch_smtp_porta]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_porta]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_porta]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_porta "$hoppscotch_smtp_port")"
+    MSG_PT[ferramenta_hoppscotch_smtp_ssl]="\e[33mSSL SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_hoppscotch_smtp_ssl]="\e[33mSMTP SSL:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_hoppscotch_smtp_ssl]="\e[33mSSL SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_hoppscotch_smtp_ssl "$hoppscotch_smtp_secure")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_hoppscotch_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_hoppscotch_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_hoppscotch_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_hoppscotch_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_hoppscotch; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Hoppscotch...\e[0m"
+  MSG_PT[ferramenta_hoppscotch_iniciando]="\e[97m🚀 Iniciando a instalação do Hoppscotch...\e[0m"
+  MSG_EN[ferramenta_hoppscotch_iniciando]="\e[97m🚀 Starting Hoppscotch installation...\e[0m"
+  MSG_ES[ferramenta_hoppscotch_iniciando]="\e[97m🚀 Iniciando la instalación del Hoppscotch...\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_hoppscotch_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_hoppscotch_verificando_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_hoppscotch_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_verificando_postgres)"
   echo ""
 
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "hoppscotch${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO HOPPSCOTCH \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_hoppscotch_instalando]="\e[97m• INSTALANDO HOPPSCOTCH \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_hoppscotch_instalando]="\e[97m• INSTALLING HOPPSCOTCH \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_hoppscotch_instalando]="\e[97m• INSTALANDO HOPPSCOTCH \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_instalando)"
   echo ""
 
   encryption_key=$(openssl rand -hex 16)
@@ -14315,7 +18503,10 @@ EOL
   STACK_NAME="hoppscotch${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_hoppscotch_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_hoppscotch_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_hoppscotch_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_verificando)"
   echo ""
 
   pull hoppscotch/hoppscotch-backend:latest hoppscotch/hoppscotch-frontend:latest hoppscotch/hoppscotch-admin:latest
@@ -14335,11 +18526,26 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ HOPPSCOTCH ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio Principal:\e[97m https://$url_hoppscotch_frontend\e[0m"
-  echo -e "\e[33m⚙️ Domínio Admin:\e[97m https://$url_hoppscotch_admin\e[0m"
-  echo -e "\e[33m🔗 Domínio Backend:\e[97m https://$url_hoppscotch_backend\e[0m"
-  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio principal.\e[0m"  
+  MSG_PT[ferramenta_hoppscotch_resumo_titulo]="\e[32m[ HOPPSCOTCH ]\e[0m\n"
+  MSG_EN[ferramenta_hoppscotch_resumo_titulo]="\e[32m[ HOPPSCOTCH ]\e[0m\n"
+  MSG_ES[ferramenta_hoppscotch_resumo_titulo]="\e[32m[ HOPPSCOTCH ]\e[0m\n"
+  echo -e "$(t ferramenta_hoppscotch_resumo_titulo)"
+  MSG_PT[ferramenta_hoppscotch_resumo_principal]="\e[33m🌐 Domínio Principal:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_hoppscotch_resumo_principal]="\e[33m🌐 Main Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_hoppscotch_resumo_principal]="\e[33m🌐 Dominio Principal:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_resumo_principal "https://$url_hoppscotch_frontend")"
+  MSG_PT[ferramenta_hoppscotch_resumo_admin]="\e[33m⚙️ Domínio Admin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_hoppscotch_resumo_admin]="\e[33m⚙️ Admin Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_hoppscotch_resumo_admin]="\e[33m⚙️ Dominio Admin:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_resumo_admin "https://$url_hoppscotch_admin")"
+  MSG_PT[ferramenta_hoppscotch_resumo_backend]="\e[33m🔗 Domínio Backend:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_hoppscotch_resumo_backend]="\e[33m🔗 Backend Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_hoppscotch_resumo_backend]="\e[33m🔗 Dominio Backend:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_resumo_backend "https://$url_hoppscotch_backend")"
+  MSG_PT[ferramenta_hoppscotch_resumo_aviso]="\e[33m⚠️  Crie sua conta no primeiro acesso ao domínio principal.\e[0m"
+  MSG_EN[ferramenta_hoppscotch_resumo_aviso]="\e[33m⚠️  Create your account on the first access to the main domain.\e[0m"
+  MSG_ES[ferramenta_hoppscotch_resumo_aviso]="\e[33m⚠️  Cree su cuenta en el primer acceso al dominio principal.\e[0m"
+  echo -e "$(t ferramenta_hoppscotch_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -14349,22 +18555,40 @@ ferramenta_bolt() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Bolt (ex: bolt.encha.ai): \e[0m" && read -r url_bolt
+    MSG_PT[ferramenta_bolt_passo]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_bolt_passo]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_bolt_passo]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_bolt_passo)"
+    MSG_PT[ferramenta_bolt_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Bolt (ex: bolt.encha.ai): \e[0m"
+    MSG_EN[ferramenta_bolt_pergunta_dominio]="🔗 \e[33mEnter the domain for Bolt (e.g. bolt.encha.ai): \e[0m"
+    MSG_ES[ferramenta_bolt_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el Bolt (ej: bolt.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_bolt_pergunta_dominio)" && read -r url_bolt
     echo ""
 
     clear
     msg_bolt
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_bolt_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_bolt_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_bolt_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_bolt_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Bolt:\e[97m $url_bolt\e[0m"
+    MSG_PT[ferramenta_bolt_dominio]="🌐 \e[33mDomínio Bolt:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_bolt_dominio]="🌐 \e[33mBolt Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_bolt_dominio]="🌐 \e[33mDominio Bolt:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_bolt_dominio "$url_bolt")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_bolt_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_bolt_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_bolt_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_bolt_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_bolt; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Bolt...\e[0m"
+  MSG_PT[ferramenta_bolt_iniciando]="\e[97m🚀 Iniciando a instalação do Bolt...\e[0m"
+  MSG_EN[ferramenta_bolt_iniciando]="\e[97m🚀 Starting Bolt installation...\e[0m"
+  MSG_ES[ferramenta_bolt_iniciando]="\e[97m🚀 Iniciando la instalación del Bolt...\e[0m"
+  echo -e "$(t ferramenta_bolt_iniciando)"
   cat > bolt${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -14441,14 +18665,17 @@ EOL
   STACK_NAME="bolt${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_bolt_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_bolt_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_bolt_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_bolt_verificando)"
   echo ""
 
   pull docker.io/hipnologo/bolt.diy:latest
   wait_stack bolt${1:+_$1}_bolt${1:+_$1}
 
   cd /root/dados_vps
-  
+
 cat > dados_bolt${1:+_$1} <<EOL
 [ BOLT ]
 
@@ -14458,8 +18685,14 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ BOLT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_bolt\e[0m"
+  MSG_PT[ferramenta_bolt_resumo_titulo]="\e[32m[ BOLT ]\e[0m\n"
+  MSG_EN[ferramenta_bolt_resumo_titulo]="\e[32m[ BOLT ]\e[0m\n"
+  MSG_ES[ferramenta_bolt_resumo_titulo]="\e[32m[ BOLT ]\e[0m\n"
+  echo -e "$(t ferramenta_bolt_resumo_titulo)"
+  MSG_PT[ferramenta_bolt_resumo_dominio]="\e[33m🌐 Domínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_bolt_resumo_dominio]="\e[33m🌐 Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_bolt_resumo_dominio]="\e[33m🌐 Dominio:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_bolt_resumo_dominio "https://$url_bolt")"
   msg_retorno_menu
 
 }
@@ -14469,27 +18702,57 @@ ferramenta_frappe() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/2"
-    echo -en "🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m" && read -r url_frappe
+    MSG_PT[ferramenta_frappe_passo1]="\n📍 Passo 1/2"
+    MSG_EN[ferramenta_frappe_passo1]="\n📍 Step 1/2"
+    MSG_ES[ferramenta_frappe_passo1]="\n📍 Paso 1/2"
+    echo -e "$(t ferramenta_frappe_passo1)"
+    MSG_PT[ferramenta_frappe_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Frappe ERPNext (ex: erp.encha.ai): \e[0m"
+    MSG_EN[ferramenta_frappe_pergunta_dominio]="🔗 \e[33mEnter the domain for Frappe ERPNext (e.g. erp.encha.ai): \e[0m"
+    MSG_ES[ferramenta_frappe_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el Frappe ERPNext (ej: erp.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_frappe_pergunta_dominio)" && read -r url_frappe
     echo ""
-    echo -e "\n📍 Passo 2/2"
-    echo -en "🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m" && read -s -r senha_frappe
+    MSG_PT[ferramenta_frappe_passo2]="\n📍 Passo 2/2"
+    MSG_EN[ferramenta_frappe_passo2]="\n📍 Step 2/2"
+    MSG_ES[ferramenta_frappe_passo2]="\n📍 Paso 2/2"
+    echo -e "$(t ferramenta_frappe_passo2)"
+    MSG_PT[ferramenta_frappe_pergunta_senha]="🔑 \e[33mDigite a senha para o usuário 'Administrator': \e[0m"
+    MSG_EN[ferramenta_frappe_pergunta_senha]="🔑 \e[33mEnter the password for the 'Administrator' user: \e[0m"
+    MSG_ES[ferramenta_frappe_pergunta_senha]="🔑 \e[33mIngrese la contraseña para el usuario 'Administrator': \e[0m"
+    echo -en "$(t ferramenta_frappe_pergunta_senha)" && read -s -r senha_frappe
     echo ""
 
     clear
     msg_frappe
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_frappe_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_frappe_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_frappe_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_frappe_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Frappe:\e[97m $url_frappe\e[0m"
-    echo -e "🔑 \e[33mSenha do Administrador:\e[97m $senha_frappe\e[0m"
+    MSG_PT[ferramenta_frappe_dominio]="🌐 \e[33mDomínio Frappe:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_frappe_dominio]="🌐 \e[33mFrappe Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_frappe_dominio]="🌐 \e[33mDominio Frappe:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_frappe_dominio "$url_frappe")"
+    MSG_PT[ferramenta_frappe_senha_admin]="🔑 \e[33mSenha do Administrador:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_frappe_senha_admin]="🔑 \e[33mAdministrator Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_frappe_senha_admin]="🔑 \e[33mContraseña del Administrador:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_frappe_senha_admin "$senha_frappe")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_frappe_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_frappe_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_frappe_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_frappe_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_frappe; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Frappe ERPNext...\e[0m"
-  echo -e "\e[33m⚠️  Esta instalação pode demorar vários minutos. Por favor, aguarde...\e[0m"
+  MSG_PT[ferramenta_frappe_iniciando]="\e[97m🚀 Iniciando a instalação do Frappe ERPNext...\e[0m"
+  MSG_EN[ferramenta_frappe_iniciando]="\e[97m🚀 Starting Frappe ERPNext installation...\e[0m"
+  MSG_ES[ferramenta_frappe_iniciando]="\e[97m🚀 Iniciando la instalación del Frappe ERPNext...\e[0m"
+  echo -e "$(t ferramenta_frappe_iniciando)"
+  MSG_PT[ferramenta_frappe_aguarde]="\e[33m⚠️  Esta instalação pode demorar vários minutos. Por favor, aguarde...\e[0m"
+  MSG_EN[ferramenta_frappe_aguarde]="\e[33m⚠️  This installation may take several minutes. Please wait...\e[0m"
+  MSG_ES[ferramenta_frappe_aguarde]="\e[33m⚠️  Esta instalación puede demorar varios minutos. Por favor, espere...\e[0m"
+  echo -e "$(t ferramenta_frappe_aguarde)"
 
   DB_PASSWORD=$(openssl rand -hex 16)
   cat > erpnext${1:+_$1}.yaml <<EOL
@@ -14792,7 +19055,10 @@ EOL
   STACK_NAME="erpnext${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_frappe_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_frappe_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_frappe_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_frappe_verificando)"
   echo ""
 
   pull frappe/erpnext:v15.49.3 mariadb:10.6 redis:latest
@@ -14810,7 +19076,10 @@ EOL
 
   wait_stack erpnext${1:+_$1}_erpnext${1:+_$1}_frontend erpnext${1:+_$1}_erpnext${1:+_$1}_backend erpnext${1:+_$1}_erpnext${1:+_$1}_configurator erpnext${1:+_$1}_erpnext${1:+_$1}_websocket erpnext${1:+_$1}_erpnext${1:+_$1}_db erpnext${1:+_$1}_erpnext${1:+_$1}_cache erpnext${1:+_$1}_erpnext${1:+_$1}_queue erpnext${1:+_$1}_erpnext${1:+_$1}_socketio
 
-  echo -e "\e[97m• INSTALANDO APLICATIVO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_frappe_instalando]="\e[97m• INSTALANDO APLICATIVO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_frappe_instalando]="\e[97m• INSTALLING APPLICATION \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_frappe_instalando]="\e[97m• INSTALANDO APLICACIÓN \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_frappe_instalando)"
   echo ""
 
   docker exec -it $(docker ps -qf "name=erpnext${1:+_$1}_backend") bash -c "bench new-site \"$url_frappe\" --mariadb-root-password=\"$DB_PASSWORD\" --admin-password=\"$senha_frappe\" --install-app erpnext"
@@ -14827,11 +19096,26 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ FRAPPE ERPNext ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_frappe\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m Administrator\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $senha_frappe\e[0m"
-  echo -e "\e[33m⚠️  Pode levar alguns minutos para o site estar totalmente acessível após a configuração.\e[0m"
+  MSG_PT[ferramenta_frappe_resumo_titulo]="\e[32m[ FRAPPE ERPNext ]\e[0m\n"
+  MSG_EN[ferramenta_frappe_resumo_titulo]="\e[32m[ FRAPPE ERPNext ]\e[0m\n"
+  MSG_ES[ferramenta_frappe_resumo_titulo]="\e[32m[ FRAPPE ERPNext ]\e[0m\n"
+  echo -e "$(t ferramenta_frappe_resumo_titulo)"
+  MSG_PT[ferramenta_frappe_resumo_dominio]="\e[33m🌐 Domínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_frappe_resumo_dominio]="\e[33m🌐 Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_frappe_resumo_dominio]="\e[33m🌐 Dominio:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_frappe_resumo_dominio "https://$url_frappe")"
+  MSG_PT[ferramenta_frappe_resumo_usuario]="\e[33m👤 Usuário:\e[97m Administrator\e[0m"
+  MSG_EN[ferramenta_frappe_resumo_usuario]="\e[33m👤 User:\e[97m Administrator\e[0m"
+  MSG_ES[ferramenta_frappe_resumo_usuario]="\e[33m👤 Usuario:\e[97m Administrator\e[0m"
+  echo -e "$(t ferramenta_frappe_resumo_usuario)"
+  MSG_PT[ferramenta_frappe_resumo_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_frappe_resumo_senha]="\e[33m🔑 Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_frappe_resumo_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_frappe_resumo_senha "$senha_frappe")"
+  MSG_PT[ferramenta_frappe_resumo_aviso]="\e[33m⚠️  Pode levar alguns minutos para o site estar totalmente acessível após a configuração.\e[0m"
+  MSG_EN[ferramenta_frappe_resumo_aviso]="\e[33m⚠️  It may take a few minutes for the site to be fully accessible after configuration.\e[0m"
+  MSG_ES[ferramenta_frappe_resumo_aviso]="\e[33m⚠️  Puede tardar algunos minutos para que el sitio esté totalmente accesible después de la configuración.\e[0m"
+  echo -e "$(t ferramenta_frappe_resumo_aviso)"
   msg_retorno_menu
 
 }
@@ -14841,30 +19125,66 @@ ferramenta_clickhouse() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio para o ClickHouse (ex: clickhouse.encha.ai): \e[0m" && read -r url_clickhouse
+    MSG_PT[ferramenta_clickhouse_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_clickhouse_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_clickhouse_passo1]="\n📍 Paso 1/3"
+    echo -e "$(t ferramenta_clickhouse_passo1)"
+    MSG_PT[ferramenta_clickhouse_pergunta_dominio]="🔗 \e[33mDigite o domínio para o ClickHouse (ex: clickhouse.encha.ai): \e[0m"
+    MSG_EN[ferramenta_clickhouse_pergunta_dominio]="🔗 \e[33mEnter the domain for ClickHouse (e.g. clickhouse.encha.ai): \e[0m"
+    MSG_ES[ferramenta_clickhouse_pergunta_dominio]="🔗 \e[33mIngrese el dominio para el ClickHouse (ej: clickhouse.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_clickhouse_pergunta_dominio)" && read -r url_clickhouse
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "👤 \e[33mDigite um nome de usuário para o ClickHouse (ex: admin): \e[0m" && read -r user_clickhouse
+    MSG_PT[ferramenta_clickhouse_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_clickhouse_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_clickhouse_passo2]="\n📍 Paso 2/3"
+    echo -e "$(t ferramenta_clickhouse_passo2)"
+    MSG_PT[ferramenta_clickhouse_pergunta_user]="👤 \e[33mDigite um nome de usuário para o ClickHouse (ex: admin): \e[0m"
+    MSG_EN[ferramenta_clickhouse_pergunta_user]="👤 \e[33mEnter a username for ClickHouse (e.g. admin): \e[0m"
+    MSG_ES[ferramenta_clickhouse_pergunta_user]="👤 \e[33mIngrese un nombre de usuario para el ClickHouse (ej: admin): \e[0m"
+    echo -en "$(t ferramenta_clickhouse_pergunta_user)" && read -r user_clickhouse
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "🔑 \e[33mDigite uma senha para o usuário: \e[0m" && read -s -r pass_clickhouse
+    MSG_PT[ferramenta_clickhouse_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_clickhouse_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_clickhouse_passo3]="\n📍 Paso 3/3"
+    echo -e "$(t ferramenta_clickhouse_passo3)"
+    MSG_PT[ferramenta_clickhouse_pergunta_pass]="🔑 \e[33mDigite uma senha para o usuário: \e[0m"
+    MSG_EN[ferramenta_clickhouse_pergunta_pass]="🔑 \e[33mEnter a password for the user: \e[0m"
+    MSG_ES[ferramenta_clickhouse_pergunta_pass]="🔑 \e[33mIngrese una contraseña para el usuario: \e[0m"
+    echo -en "$(t ferramenta_clickhouse_pergunta_pass)" && read -s -r pass_clickhouse
     echo ""
 
     clear
     msg_clickhouse
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_clickhouse_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_clickhouse_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_clickhouse_revise]="\e[33m🔍 Por favor, revise la información abajo:\e[0m\n"
+    echo -e "$(t ferramenta_clickhouse_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio ClickHouse:\e[97m $url_clickhouse\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_clickhouse\e[0m"
-    echo -e "🔑 \e[33mSenha:\e[97m $pass_clickhouse\e[0m"
+    MSG_PT[ferramenta_clickhouse_dominio]="🌐 \e[33mDomínio ClickHouse:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_clickhouse_dominio]="🌐 \e[33mClickHouse Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_clickhouse_dominio]="🌐 \e[33mDominio ClickHouse:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_clickhouse_dominio "$url_clickhouse")"
+    MSG_PT[ferramenta_clickhouse_usuario]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_clickhouse_usuario]="👤 \e[33mUser:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_clickhouse_usuario]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_clickhouse_usuario "$user_clickhouse")"
+    MSG_PT[ferramenta_clickhouse_senha]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_clickhouse_senha]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_clickhouse_senha]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_clickhouse_senha "$pass_clickhouse")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_clickhouse_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_clickhouse_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_clickhouse_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_clickhouse_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_clickhouse; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do ClickHouse...\e[0m"
+  MSG_PT[ferramenta_clickhouse_iniciando]="\e[97m🚀 Iniciando a instalação do ClickHouse...\e[0m"
+  MSG_EN[ferramenta_clickhouse_iniciando]="\e[97m🚀 Starting ClickHouse installation...\e[0m"
+  MSG_ES[ferramenta_clickhouse_iniciando]="\e[97m🚀 Iniciando la instalación del ClickHouse...\e[0m"
+  echo -e "$(t ferramenta_clickhouse_iniciando)"
 
   cat > clickhouse${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -14930,7 +19250,10 @@ EOL
   STACK_NAME="clickhouse${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_clickhouse_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_clickhouse_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_clickhouse_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_clickhouse_verificando)"
   echo ""
 
   pull clickhouse/clickhouse-server:23.8.8.20-alpine
@@ -14954,11 +19277,26 @@ EOL
   cd
 
   msg_resumo_informacoes
-  echo -e "\e[32m[ CLICKHOUSE ]\e[0m\n"
-  echo -e "\e[33m🔗 API:\e[97m https://$url_clickhouse\e[0m"
-  echo -e "\e[33m🌐 Dashboard:\e[97m https://$url_clickhouse/play\e[0m"
-  echo -e "\e[33m👤 Usuário:\e[97m $user_clickhouse\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $pass_clickhouse\e[0m"
+  MSG_PT[ferramenta_clickhouse_resumo_titulo]="\e[32m[ CLICKHOUSE ]\e[0m\n"
+  MSG_EN[ferramenta_clickhouse_resumo_titulo]="\e[32m[ CLICKHOUSE ]\e[0m\n"
+  MSG_ES[ferramenta_clickhouse_resumo_titulo]="\e[32m[ CLICKHOUSE ]\e[0m\n"
+  echo -e "$(t ferramenta_clickhouse_resumo_titulo)"
+  MSG_PT[ferramenta_clickhouse_resumo_api]="\e[33m🔗 API:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_clickhouse_resumo_api]="\e[33m🔗 API:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_clickhouse_resumo_api]="\e[33m🔗 API:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_clickhouse_resumo_api "https://$url_clickhouse")"
+  MSG_PT[ferramenta_clickhouse_resumo_dashboard]="\e[33m🌐 Dashboard:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_clickhouse_resumo_dashboard]="\e[33m🌐 Dashboard:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_clickhouse_resumo_dashboard]="\e[33m🌐 Dashboard:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_clickhouse_resumo_dashboard "https://$url_clickhouse/play")"
+  MSG_PT[ferramenta_clickhouse_resumo_usuario]="\e[33m👤 Usuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_clickhouse_resumo_usuario]="\e[33m👤 User:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_clickhouse_resumo_usuario]="\e[33m👤 Usuario:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_clickhouse_resumo_usuario "$user_clickhouse")"
+  MSG_PT[ferramenta_clickhouse_resumo_senha]="\e[33m🔑 Senha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_clickhouse_resumo_senha]="\e[33m🔑 Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_clickhouse_resumo_senha]="\e[33m🔑 Contraseña:\e[97m %s\e[0m"
+  echo -e "$(t ferramenta_clickhouse_resumo_senha "$pass_clickhouse")"
   msg_retorno_menu
 
 }
@@ -14980,12 +19318,18 @@ ferramenta_langfuse() {
 
         # Verificação se as variáveis foram preenchidas
         if [ -z "$API_CLICKHOUSE" ] || [ -z "$USUARIO_CLICKHOUSE" ] || [ -z "$SENHA_CLICKHOUSE" ]; then
-            echo "Aviso: Uma ou mais variáveis do ClickHouse não foram encontradas no arquivo."
+            MSG_PT[ferramenta_langfuse_clickhouse_aviso]="Aviso: Uma ou mais variáveis do ClickHouse não foram encontradas no arquivo."
+            MSG_EN[ferramenta_langfuse_clickhouse_aviso]="Warning: one or more ClickHouse variables were not found in the file."
+            MSG_ES[ferramenta_langfuse_clickhouse_aviso]="Aviso: una o más variables de ClickHouse no se encontraron en el archivo."
+            echo "$(t ferramenta_langfuse_clickhouse_aviso)"
             # Opcional: retornar um erro se alguma variável for crítica
-            # return 1 
+            # return 1
         fi
     else
-        echo "Erro: Arquivo de dados do ClickHouse não encontrado em $arquivo_dados."
+        MSG_PT[ferramenta_langfuse_clickhouse_erro]="Erro: Arquivo de dados do ClickHouse não encontrado em %s."
+        MSG_EN[ferramenta_langfuse_clickhouse_erro]="Error: ClickHouse data file not found at %s."
+        MSG_ES[ferramenta_langfuse_clickhouse_erro]="Error: archivo de datos de ClickHouse no encontrado en %s."
+        echo "$(t ferramenta_langfuse_clickhouse_erro "$arquivo_dados")"
         return 1
     fi
   }
@@ -14994,43 +19338,82 @@ ferramenta_langfuse() {
   pegar_dados_clickhouse
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Langfuse (ex: langfuse.encha.ai): \e[0m" && read -r url_langfuse
+    MSG_PT[ferramenta_langfuse_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_langfuse_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_langfuse_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_langfuse_passo1)"
+    MSG_PT[ferramenta_langfuse_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Langfuse (ex: langfuse.encha.ai): \e[0m"
+    MSG_EN[ferramenta_langfuse_pergunta_dominio]="🔗 \e[33mEnter the domain for Langfuse (e.g. langfuse.encha.ai): \e[0m"
+    MSG_ES[ferramenta_langfuse_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Langfuse (ej: langfuse.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_langfuse_pergunta_dominio)" && read -r url_langfuse
     echo ""
-        
+
     clear
     msg_langfuse
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_langfuse_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_langfuse_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_langfuse_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_langfuse_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Langfuse:\e[97m $url_langfuse\e[0m"
-    echo -e "🗄️ \e[33mUsando ClickHouse em:\e[97m $API_CLICKHOUSE\e[0m"
-    echo -e "\e[33mUsuario do ClickHouse:\e[97m $USUARIO_CLICKHOUSE\e[0m"
-    echo -e "\e[33mSenha do ClickHouse:\e[97m $SENHA_CLICKHOUSE\e[0m"
+    MSG_PT[ferramenta_langfuse_dominio_label]="🌐 \e[33mDomínio Langfuse:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langfuse_dominio_label]="🌐 \e[33mLangfuse Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langfuse_dominio_label]="🌐 \e[33mDominio de Langfuse:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langfuse_dominio_label "$url_langfuse")"
+    MSG_PT[ferramenta_langfuse_clickhouse_label]="🗄️ \e[33mUsando ClickHouse em:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langfuse_clickhouse_label]="🗄️ \e[33mUsing ClickHouse at:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langfuse_clickhouse_label]="🗄️ \e[33mUsando ClickHouse en:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langfuse_clickhouse_label "$API_CLICKHOUSE")"
+    MSG_PT[ferramenta_langfuse_clickhouse_user_label]="\e[33mUsuario do ClickHouse:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langfuse_clickhouse_user_label]="\e[33mClickHouse User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langfuse_clickhouse_user_label]="\e[33mUsuario de ClickHouse:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langfuse_clickhouse_user_label "$USUARIO_CLICKHOUSE")"
+    MSG_PT[ferramenta_langfuse_clickhouse_pass_label]="\e[33mSenha do ClickHouse:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_langfuse_clickhouse_pass_label]="\e[33mClickHouse Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_langfuse_clickhouse_pass_label]="\e[33mContraseña de ClickHouse:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_langfuse_clickhouse_pass_label "$SENHA_CLICKHOUSE")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_langfuse_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_langfuse_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_langfuse_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_langfuse_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_langfuse; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Langfuse...\e[0m"
+  MSG_PT[ferramenta_langfuse_iniciando]="\e[97m🚀 Iniciando a instalação do Langfuse...\e[0m"
+  MSG_EN[ferramenta_langfuse_iniciando]="\e[97m🚀 Starting Langfuse installation...\e[0m"
+  MSG_ES[ferramenta_langfuse_iniciando]="\e[97m🚀 Iniciando la instalación de Langfuse...\e[0m"
+  echo -e "$(t ferramenta_langfuse_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/6]\e[0m"
+  MSG_PT[ferramenta_langfuse_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/6]\e[0m"
+  MSG_EN[ferramenta_langfuse_step_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/6]\e[0m"
+  MSG_ES[ferramenta_langfuse_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/6]\e[0m"
+  echo -e "$(t ferramenta_langfuse_step_postgres)"
   echo ""
   verificar_container_postgres || ferramenta_postgres
-  pegar_senha_postgres 
+  pegar_senha_postgres
   criar_banco_postgres_da_stack "langfuse${1:+_$1}"
 
-  echo -e "\e[97m• CRIANDO BANCO NO CLICKHOUSE \e[33m[3/6]\e[0m"
+  MSG_PT[ferramenta_langfuse_step_clickhouse]="\e[97m• CRIANDO BANCO NO CLICKHOUSE \e[33m[3/6]\e[0m"
+  MSG_EN[ferramenta_langfuse_step_clickhouse]="\e[97m• CREATING DATABASE IN CLICKHOUSE \e[33m[3/6]\e[0m"
+  MSG_ES[ferramenta_langfuse_step_clickhouse]="\e[97m• CREANDO BASE DE DATOS EN CLICKHOUSE \e[33m[3/6]\e[0m"
+  echo -e "$(t ferramenta_langfuse_step_clickhouse)"
   echo ""
 
   docker exec -it "$(docker ps --filter 'name=clickhouse' -q)" clickhouse-client -q "CREATE DATABASE langfuse${1:+_$1};" > /dev/null 2>&1
-  echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[4/6]\e[0m"
+  MSG_PT[ferramenta_langfuse_step_minio]="\e[97m• CRIANDO BUCKET NO MINIO \e[33m[4/6]\e[0m"
+  MSG_EN[ferramenta_langfuse_step_minio]="\e[97m• CREATING BUCKET IN MINIO \e[33m[4/6]\e[0m"
+  MSG_ES[ferramenta_langfuse_step_minio]="\e[97m• CREANDO BUCKET EN MINIO \e[33m[4/6]\e[0m"
+  echo -e "$(t ferramenta_langfuse_step_minio)"
   echo ""
 
   pegar_senha_minio
-  criar_bucket.minio langfuse${1:+-$1} 
+  criar_bucket.minio langfuse${1:+-$1}
 
-  echo -e "\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
+  MSG_PT[ferramenta_langfuse_step_instalando]="\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
+  MSG_EN[ferramenta_langfuse_step_instalando]="\e[97m• INSTALLING LANGFUSE \e[33m[5/6]\e[0m"
+  MSG_ES[ferramenta_langfuse_step_instalando]="\e[97m• INSTALANDO LANGFUSE \e[33m[5/6]\e[0m"
+  echo -e "$(t ferramenta_langfuse_step_instalando)"
   echo ""
 
   ## Criando key Aleatória 64caracteres
@@ -15252,7 +19635,10 @@ EOL
   STACK_NAME="langfuse${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[6/6]\e[0m"
+  MSG_PT[ferramenta_langfuse_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[6/6]\e[0m"
+  MSG_EN[ferramenta_langfuse_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[6/6]\e[0m"
+  MSG_ES[ferramenta_langfuse_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[6/6]\e[0m"
+  echo -e "$(t ferramenta_langfuse_step_verificando)"
   echo ""
 
   pull langfuse/langfuse:latest langfuse/langfuse-worker:latest
@@ -15273,8 +19659,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ LANGFUSE ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_langfuse\e[0m"
-  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  MSG_PT[ferramenta_langfuse_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_langfuse_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_langfuse_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_langfuse_resumo_dominio "$url_langfuse")"
+  MSG_PT[ferramenta_langfuse_resumo_criar_conta]="\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  MSG_EN[ferramenta_langfuse_resumo_criar_conta]="\e[33m⚠️  Create your account on first access.\e[0m"
+  MSG_ES[ferramenta_langfuse_resumo_criar_conta]="\e[33m⚠️  Cree su cuenta en el primer acceso.\e[0m"
+  echo -e "$(t ferramenta_langfuse_resumo_criar_conta)"
   msg_retorno_menu
 
 }
@@ -15285,38 +19677,104 @@ ferramenta_unoapi() {
   dados
 
   while true; do
-    echo -e "\e[97mPasso$amarelo 1/11\e[0m"
-    echo -en "\e[33mDigite o Dominio para a Uno API (ex: unoapi.encha.ai): \e[0m" && read -r url_unoapi
+    MSG_PT[ferramenta_unoapi_passo1]="\e[97mPasso$amarelo 1/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo1]="\e[97mStep$amarelo 1/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo1]="\e[97mPaso$amarelo 1/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo1)"
+    MSG_PT[ferramenta_unoapi_pergunta_dominio]="\e[33mDigite o Dominio para a Uno API (ex: unoapi.encha.ai): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_dominio]="\e[33mEnter the Domain for Uno API (e.g. unoapi.encha.ai): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_dominio]="\e[33mIngrese el Dominio para Uno API (ej: unoapi.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_dominio)" && read -r url_unoapi
     echo ""
-    echo -e "\e[97mPasso$amarelo 2/11\e[0m"
-    echo -en "\e[33mDigite o Dominio do Chatwoot já instalado (ex: chatwoot.encha.ai): \e[0m" && read -r url_chatwoot_uno
+    MSG_PT[ferramenta_unoapi_passo2]="\e[97mPasso$amarelo 2/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo2]="\e[97mStep$amarelo 2/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo2]="\e[97mPaso$amarelo 2/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo2)"
+    MSG_PT[ferramenta_unoapi_pergunta_chatwoot]="\e[33mDigite o Dominio do Chatwoot já instalado (ex: chatwoot.encha.ai): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_chatwoot]="\e[33mEnter the domain of the already installed Chatwoot (e.g. chatwoot.encha.ai): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_chatwoot]="\e[33mIngrese el dominio del Chatwoot ya instalado (ej: chatwoot.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_chatwoot)" && read -r url_chatwoot_uno
     echo ""
-    echo -e "\e[97mPasso$amarelo 3/11\e[0m"
-    echo -en "\e[33mDigite o token de usuario administrador do Chatwoot: \e[0m" && read -r token_chatwoot_uno
+    MSG_PT[ferramenta_unoapi_passo3]="\e[97mPasso$amarelo 3/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo3]="\e[97mStep$amarelo 3/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo3]="\e[97mPaso$amarelo 3/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo3)"
+    MSG_PT[ferramenta_unoapi_pergunta_token]="\e[33mDigite o token de usuario administrador do Chatwoot: \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_token]="\e[33mEnter the Chatwoot administrator user token: \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_token]="\e[33mIngrese el token de usuario administrador de Chatwoot: \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_token)" && read -r token_chatwoot_uno
     echo ""
-    echo -e "\e[97mPasso$amarelo 4/11\e[0m"
-    echo -en "\e[33mIgnorar mensagens de grupos (true ou false): \e[0m" && read -r op_1
+    MSG_PT[ferramenta_unoapi_passo4]="\e[97mPasso$amarelo 4/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo4]="\e[97mStep$amarelo 4/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo4]="\e[97mPaso$amarelo 4/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo4)"
+    MSG_PT[ferramenta_unoapi_pergunta_op1]="\e[33mIgnorar mensagens de grupos (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op1]="\e[33mIgnore group messages (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op1]="\e[33mIgnorar mensajes de grupos (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op1)" && read -r op_1
     echo ""
-    echo -e "\e[97mPasso$amarelo 5/11\e[0m"
-    echo -en "\e[33mIgnorar Status de Transmissão (true ou false): \e[0m" && read -r op_2
+    MSG_PT[ferramenta_unoapi_passo5]="\e[97mPasso$amarelo 5/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo5]="\e[97mStep$amarelo 5/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo5]="\e[97mPaso$amarelo 5/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo5)"
+    MSG_PT[ferramenta_unoapi_pergunta_op2]="\e[33mIgnorar Status de Transmissão (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op2]="\e[33mIgnore Broadcast Status (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op2]="\e[33mIgnorar Estado de Transmisión (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op2)" && read -r op_2
     echo ""
-    echo -e "\e[97mPasso$amarelo 6/11\e[0m"
-    echo -en "\e[33mIgnorar Mensagens de Trasmissão (true ou false): \e[0m" && read -r op_3
+    MSG_PT[ferramenta_unoapi_passo6]="\e[97mPasso$amarelo 6/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo6]="\e[97mStep$amarelo 6/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo6]="\e[97mPaso$amarelo 6/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo6)"
+    MSG_PT[ferramenta_unoapi_pergunta_op3]="\e[33mIgnorar Mensagens de Trasmissão (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op3]="\e[33mIgnore Broadcast Messages (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op3]="\e[33mIgnorar Mensajes de Transmisión (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op3)" && read -r op_3
     echo ""
-    echo -e "\e[97mPasso$amarelo 7/11\e[0m"
-    echo -en "\e[33mIgnorar Mensagem de Status (true ou false): \e[0m" && read -r op_4
+    MSG_PT[ferramenta_unoapi_passo7]="\e[97mPasso$amarelo 7/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo7]="\e[97mStep$amarelo 7/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo7]="\e[97mPaso$amarelo 7/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo7)"
+    MSG_PT[ferramenta_unoapi_pergunta_op4]="\e[33mIgnorar Mensagem de Status (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op4]="\e[33mIgnore Status Message (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op4]="\e[33mIgnorar Mensaje de Estado (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op4)" && read -r op_4
     echo ""
-    echo -e "\e[97mPasso$amarelo 8/11\e[0m"
-    echo -en "\e[33mIgnorar Proprias Mensagens (true ou false): \e[0m" && read -r op_5
+    MSG_PT[ferramenta_unoapi_passo8]="\e[97mPasso$amarelo 8/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo8]="\e[97mStep$amarelo 8/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo8]="\e[97mPaso$amarelo 8/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo8)"
+    MSG_PT[ferramenta_unoapi_pergunta_op5]="\e[33mIgnorar Proprias Mensagens (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op5]="\e[33mIgnore Own Messages (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op5]="\e[33mIgnorar Mensajes Propios (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op5)" && read -r op_5
     echo ""
-    echo -e "\e[97mPasso$amarelo 9/11\e[0m"
-    echo -en "\e[33mEnviar status de conexão (true ou false): \e[0m" && read -r op_6
+    MSG_PT[ferramenta_unoapi_passo9]="\e[97mPasso$amarelo 9/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo9]="\e[97mStep$amarelo 9/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo9]="\e[97mPaso$amarelo 9/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo9)"
+    MSG_PT[ferramenta_unoapi_pergunta_op6]="\e[33mEnviar status de conexão (true ou false): \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_op6]="\e[33mSend connection status (true or false): \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_op6]="\e[33mEnviar estado de conexión (true o false): \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_op6)" && read -r op_6
     echo ""
-    echo -e "\e[97mPasso$amarelo 10/11\e[0m"
-    echo -en "\e[33mAccess Key Minio: \e[0m" && read -r S3_ACCESS_KEY
+    MSG_PT[ferramenta_unoapi_passo10]="\e[97mPasso$amarelo 10/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo10]="\e[97mStep$amarelo 10/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo10]="\e[97mPaso$amarelo 10/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo10)"
+    MSG_PT[ferramenta_unoapi_pergunta_access_key]="\e[33mAccess Key Minio: \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_access_key]="\e[33mMinio Access Key: \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_access_key]="\e[33mAccess Key de Minio: \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_access_key)" && read -r S3_ACCESS_KEY
     echo ""
-    echo -e "\e[97mPasso$amarelo 11/11\e[0m"
-    echo -en "\e[33mSecret Key Minio: \e[0m" && read -r S3_SECRET_KEY
+    MSG_PT[ferramenta_unoapi_passo11]="\e[97mPasso$amarelo 11/11\e[0m"
+    MSG_EN[ferramenta_unoapi_passo11]="\e[97mStep$amarelo 11/11\e[0m"
+    MSG_ES[ferramenta_unoapi_passo11]="\e[97mPaso$amarelo 11/11\e[0m"
+    echo -e "$(t ferramenta_unoapi_passo11)"
+    MSG_PT[ferramenta_unoapi_pergunta_secret_key]="\e[33mSecret Key Minio: \e[0m"
+    MSG_EN[ferramenta_unoapi_pergunta_secret_key]="\e[33mMinio Secret Key: \e[0m"
+    MSG_ES[ferramenta_unoapi_pergunta_secret_key]="\e[33mSecret Key de Minio: \e[0m"
+    echo -en "$(t ferramenta_unoapi_pergunta_secret_key)" && read -r S3_SECRET_KEY
     echo ""
 
     pegar_user_senha_rabbitmq
@@ -15325,41 +19783,89 @@ ferramenta_unoapi() {
     clear
     msg_unoapi
 
-    echo -e "\e[33mDominio da Uno API:\e[97m $url_unoapi\e[0m"
+    MSG_PT[ferramenta_unoapi_label_dominio]="\e[33mDominio da Uno API:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_dominio]="\e[33mUno API Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_dominio]="\e[33mDominio de Uno API:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_dominio "$url_unoapi")"
     echo ""
-    echo -e "\e[33mDominio do Chatwoot:\e[97m $url_chatwoot_uno\e[0m"
+    MSG_PT[ferramenta_unoapi_label_chatwoot]="\e[33mDominio do Chatwoot:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_chatwoot]="\e[33mChatwoot Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_chatwoot]="\e[33mDominio de Chatwoot:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_chatwoot "$url_chatwoot_uno")"
     echo ""
-    echo -e "\e[33mToken do Administrador:\e[97m $token_chatwoot_uno\e[0m"
+    MSG_PT[ferramenta_unoapi_label_token]="\e[33mToken do Administrador:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_token]="\e[33mAdministrator Token:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_token]="\e[33mToken del Administrador:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_token "$token_chatwoot_uno")"
     echo ""
-    echo -e "\e[33mIgnorar mensagens de grupos:\e[97m $op_1\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op1]="\e[33mIgnorar mensagens de grupos:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op1]="\e[33mIgnore group messages:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op1]="\e[33mIgnorar mensajes de grupos:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op1 "$op_1")"
     echo ""
-    echo -e "\e[33mIgnorar Status de Transmissão:\e[97m $op_2\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op2]="\e[33mIgnorar Status de Transmissão:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op2]="\e[33mIgnore Broadcast Status:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op2]="\e[33mIgnorar Estado de Transmisión:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op2 "$op_2")"
     echo ""
-    echo -e "\e[33mIgnorar Mensagens de Trasmissão:\e[97m $op_3\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op3]="\e[33mIgnorar Mensagens de Trasmissão:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op3]="\e[33mIgnore Broadcast Messages:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op3]="\e[33mIgnorar Mensajes de Transmisión:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op3 "$op_3")"
     echo ""
-    echo -e "\e[33mIgnorar Mensagem de Status:\e[97m $op_4\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op4]="\e[33mIgnorar Mensagem de Status:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op4]="\e[33mIgnore Status Message:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op4]="\e[33mIgnorar Mensaje de Estado:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op4 "$op_4")"
     echo ""
-    echo -e "\e[33mIgnorar Proprias mensagens:\e[97m $op_5\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op5]="\e[33mIgnorar Proprias mensagens:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op5]="\e[33mIgnore Own Messages:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op5]="\e[33mIgnorar Mensajes Propios:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op5 "$op_5")"
     echo ""
-    echo -e "\e[33mEnviar status de conexão:\e[97m $op_6\e[0m"
+    MSG_PT[ferramenta_unoapi_label_op6]="\e[33mEnviar status de conexão:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_op6]="\e[33mSend connection status:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_op6]="\e[33mEnviar estado de conexión:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_op6 "$op_6")"
     echo ""
-    echo -e "\e[33mAccess Key Minio:\e[97m $S3_ACCESS_KEY\e[0m"
+    MSG_PT[ferramenta_unoapi_label_access_key]="\e[33mAccess Key Minio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_access_key]="\e[33mMinio Access Key:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_access_key]="\e[33mAccess Key de Minio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_access_key "$S3_ACCESS_KEY")"
     echo ""
-    echo -e "\e[33mSecret Key Minio:\e[97m $S3_SECRET_KEY\e[0m"
+    MSG_PT[ferramenta_unoapi_label_secret_key]="\e[33mSecret Key Minio:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_secret_key]="\e[33mMinio Secret Key:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_secret_key]="\e[33mSecret Key de Minio:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_secret_key "$S3_SECRET_KEY")"
     echo ""
-    echo -e "\e[33mUser RabbitMq:\e[97m $user_rabbit_mqs\e[0m"
+    MSG_PT[ferramenta_unoapi_label_user_rabbit]="\e[33mUser RabbitMq:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_user_rabbit]="\e[33mRabbitMq User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_user_rabbit]="\e[33mUsuario de RabbitMq:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_user_rabbit "$user_rabbit_mqs")"
     echo ""
-    echo -e "\e[33mSenha RabbitMq:\e[97m $senha_rabbit_mqs\e[0m"
+    MSG_PT[ferramenta_unoapi_label_senha_rabbit]="\e[33mSenha RabbitMq:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_unoapi_label_senha_rabbit]="\e[33mRabbitMq Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_unoapi_label_senha_rabbit]="\e[33mContraseña de RabbitMq:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_unoapi_label_senha_rabbit "$senha_rabbit_mqs")"
     echo ""
-    read -p "As respostas estão corretas? (Y/N): " confirmacao
+    MSG_PT[ferramenta_unoapi_confirma]="As respostas estão corretas? (Y/N): "
+    MSG_EN[ferramenta_unoapi_confirma]="Are the answers correct? (Y/N): "
+    MSG_ES[ferramenta_unoapi_confirma]="¿Las respuestas son correctas? (Y/N): "
+    read -p "$(t ferramenta_unoapi_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_unoapi; fi
   done
 
   clear
-  echo -e "\e[97m• INICIANDO A INSTALAÇÃO DA UNO API \e[33m[1/3]\e[0m"
+  MSG_PT[ferramenta_unoapi_step1]="\e[97m• INICIANDO A INSTALAÇÃO DA UNO API \e[33m[1/3]\e[0m"
+  MSG_EN[ferramenta_unoapi_step1]="\e[97m• STARTING UNO API INSTALLATION \e[33m[1/3]\e[0m"
+  MSG_ES[ferramenta_unoapi_step1]="\e[97m• INICIANDO LA INSTALACIÓN DE UNO API \e[33m[1/3]\e[0m"
+  echo -e "$(t ferramenta_unoapi_step1)"
   echo ""
 
-  echo -e "\e[97m• INSTALANDO UNO API \e[33m[2/3]\e[0m"
+  MSG_PT[ferramenta_unoapi_step2]="\e[97m• INSTALANDO UNO API \e[33m[2/3]\e[0m"
+  MSG_EN[ferramenta_unoapi_step2]="\e[97m• INSTALLING UNO API \e[33m[2/3]\e[0m"
+  MSG_ES[ferramenta_unoapi_step2]="\e[97m• INSTALANDO UNO API \e[33m[2/3]\e[0m"
+  echo -e "$(t ferramenta_unoapi_step2)"
   echo ""
 
   cat > unoapi${1:+_$1}.yaml <<EOL
@@ -15457,7 +19963,10 @@ EOL
   STACK_NAME="unoapi${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_unoapi_step3]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_unoapi_step3]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_unoapi_step3]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_unoapi_step3)"
   echo ""
 
   pull clairton/unoapi-cloud:latest
@@ -15478,11 +19987,20 @@ EOL
   msg_resumo_informacoes
   echo -e "\e[32m[ UNO API ]\e[0m"
   echo ""
-  echo -e "\e[33mDominio:\e[97m https://$url_unoapi\e[0m"
+  MSG_PT[ferramenta_unoapi_resumo_dominio]="\e[33mDominio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_unoapi_resumo_dominio]="\e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_unoapi_resumo_dominio]="\e[33mDominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_unoapi_resumo_dominio "$url_unoapi")"
   echo ""
-  echo -e "\e[33mPing:\e[97m https://$url_unoapi/ping\e[0m"
+  MSG_PT[ferramenta_unoapi_resumo_ping]="\e[33mPing:\e[97m https://%s/ping\e[0m"
+  MSG_EN[ferramenta_unoapi_resumo_ping]="\e[33mPing:\e[97m https://%s/ping\e[0m"
+  MSG_ES[ferramenta_unoapi_resumo_ping]="\e[33mPing:\e[97m https://%s/ping\e[0m"
+  echo -e "$(t ferramenta_unoapi_resumo_ping "$url_unoapi")"
   echo ""
-  echo -e "\e[33mAuth Token:\e[97m any\e[0m"
+  MSG_PT[ferramenta_unoapi_resumo_token]="\e[33mAuth Token:\e[97m any\e[0m"
+  MSG_EN[ferramenta_unoapi_resumo_token]="\e[33mAuth Token:\e[97m any\e[0m"
+  MSG_ES[ferramenta_unoapi_resumo_token]="\e[33mAuth Token:\e[97m any\e[0m"
+  echo -e "$(t ferramenta_unoapi_resumo_token)"
   msg_retorno_menu
 
 }
@@ -15492,28 +20010,58 @@ ferramenta_quepasa() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/2"
-    echo -en "🔗 \e[33mDigite o domínio para a Quepasa API (ex: quepasa.encha.ai): \e[0m" && read -r url_quepasa
+    MSG_PT[ferramenta_quepasa_passo1]="\n📍 Passo 1/2"
+    MSG_EN[ferramenta_quepasa_passo1]="\n📍 Step 1/2"
+    MSG_ES[ferramenta_quepasa_passo1]="\n📍 Paso 1/2"
+    echo -e "$(t ferramenta_quepasa_passo1)"
+    MSG_PT[ferramenta_quepasa_pergunta_dominio]="🔗 \e[33mDigite o domínio para a Quepasa API (ex: quepasa.encha.ai): \e[0m"
+    MSG_EN[ferramenta_quepasa_pergunta_dominio]="🔗 \e[33mEnter the domain for the Quepasa API (e.g. quepasa.encha.ai): \e[0m"
+    MSG_ES[ferramenta_quepasa_pergunta_dominio]="🔗 \e[33mIngrese el dominio para la Quepasa API (ej: quepasa.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_quepasa_pergunta_dominio)" && read -r url_quepasa
     echo ""
-    echo -e "\n📍 Passo 2/2"
-    echo -en "📧 \e[33mDigite um email de contato para a API (ex: contato@encha.ai): \e[0m" && read -r email_quepasa
+    MSG_PT[ferramenta_quepasa_passo2]="\n📍 Passo 2/2"
+    MSG_EN[ferramenta_quepasa_passo2]="\n📍 Step 2/2"
+    MSG_ES[ferramenta_quepasa_passo2]="\n📍 Paso 2/2"
+    echo -e "$(t ferramenta_quepasa_passo2)"
+    MSG_PT[ferramenta_quepasa_pergunta_email]="📧 \e[33mDigite um email de contato para a API (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_quepasa_pergunta_email]="📧 \e[33mEnter a contact email for the API (e.g. contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_quepasa_pergunta_email]="📧 \e[33mIngrese un email de contacto para la API (ej: contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_quepasa_pergunta_email)" && read -r email_quepasa
     echo ""
 
     clear
     msg_quepasa
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_quepasa_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_quepasa_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_quepasa_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_quepasa_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Quepasa:\e[97m $url_quepasa\e[0m"
-    echo -e "📧 \e[33mEmail de Contato:\e[97m $email_quepasa\e[0m"
+    MSG_PT[ferramenta_quepasa_label_dominio]="🌐 \e[33mDomínio Quepasa:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_quepasa_label_dominio]="🌐 \e[33mQuepasa Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_quepasa_label_dominio]="🌐 \e[33mDominio de Quepasa:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_quepasa_label_dominio "$url_quepasa")"
+    MSG_PT[ferramenta_quepasa_label_email]="📧 \e[33mEmail de Contato:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_quepasa_label_email]="📧 \e[33mContact Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_quepasa_label_email]="📧 \e[33mEmail de Contacto:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_quepasa_label_email "$email_quepasa")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_quepasa_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_quepasa_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_quepasa_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_quepasa_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_quepasa; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação da Quepasa API...\e[0m"
+  MSG_PT[ferramenta_quepasa_iniciando]="\e[97m🚀 Iniciando a instalação da Quepasa API...\e[0m"
+  MSG_EN[ferramenta_quepasa_iniciando]="\e[97m🚀 Starting Quepasa API installation...\e[0m"
+  MSG_ES[ferramenta_quepasa_iniciando]="\e[97m🚀 Iniciando la instalación de la Quepasa API...\e[0m"
+  echo -e "$(t ferramenta_quepasa_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES\e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_quepasa_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES\e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_quepasa_step_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES\e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_quepasa_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES\e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_quepasa_step_postgres)"
   echo ""
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
@@ -15652,7 +20200,10 @@ EOL
   STACK_NAME="quepasa${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_quepasa_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_quepasa_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_quepasa_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_quepasa_step_verificando)"
   echo ""
 
   pull deividms/quepasa:latest
@@ -15672,9 +20223,18 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ QUEPASA API ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio API:\e[97m https://$url_quepasa\e[0m"
-  echo -e "\e[33m⚙️ URL de Setup:\e[97m https://$url_quepasa/setup\e[0m"
-  echo -e "\e[33m⚠️  Acesse a URL de Setup para criar seu primeiro usuário.\e[0m" 
+  MSG_PT[ferramenta_quepasa_resumo_dominio]="\e[33m🌐 Domínio API:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_quepasa_resumo_dominio]="\e[33m🌐 API Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_quepasa_resumo_dominio]="\e[33m🌐 Dominio de la API:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_quepasa_resumo_dominio "$url_quepasa")"
+  MSG_PT[ferramenta_quepasa_resumo_setup]="\e[33m⚙️ URL de Setup:\e[97m https://%s/setup\e[0m"
+  MSG_EN[ferramenta_quepasa_resumo_setup]="\e[33m⚙️ Setup URL:\e[97m https://%s/setup\e[0m"
+  MSG_ES[ferramenta_quepasa_resumo_setup]="\e[33m⚙️ URL de Configuración:\e[97m https://%s/setup\e[0m"
+  echo -e "$(t ferramenta_quepasa_resumo_setup "$url_quepasa")"
+  MSG_PT[ferramenta_quepasa_resumo_acesse]="\e[33m⚠️  Acesse a URL de Setup para criar seu primeiro usuário.\e[0m"
+  MSG_EN[ferramenta_quepasa_resumo_acesse]="\e[33m⚠️  Access the Setup URL to create your first user.\e[0m"
+  MSG_ES[ferramenta_quepasa_resumo_acesse]="\e[33m⚠️  Acceda a la URL de Configuración para crear su primer usuario.\e[0m"
+  echo -e "$(t ferramenta_quepasa_resumo_acesse)"
   msg_retorno_menu
 
 }
@@ -15684,22 +20244,40 @@ ferramenta_excalidraw() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Excalidraw (ex: draw.encha.ai): \e[0m" && read -r url_excalidraw
+    MSG_PT[ferramenta_excalidraw_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_excalidraw_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_excalidraw_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_excalidraw_passo1)"
+    MSG_PT[ferramenta_excalidraw_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Excalidraw (ex: draw.encha.ai): \e[0m"
+    MSG_EN[ferramenta_excalidraw_pergunta_dominio]="🔗 \e[33mEnter the domain for Excalidraw (e.g. draw.encha.ai): \e[0m"
+    MSG_ES[ferramenta_excalidraw_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Excalidraw (ej: draw.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_excalidraw_pergunta_dominio)" && read -r url_excalidraw
     echo ""
 
     clear
     msg_excalidraw
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_excalidraw_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_excalidraw_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_excalidraw_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_excalidraw_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Excalidraw:\e[97m $url_excalidraw\e[0m"
+    MSG_PT[ferramenta_excalidraw_label_dominio]="🌐 \e[33mDomínio Excalidraw:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_excalidraw_label_dominio]="🌐 \e[33mExcalidraw Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_excalidraw_label_dominio]="🌐 \e[33mDominio de Excalidraw:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_excalidraw_label_dominio "$url_excalidraw")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_excalidraw_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_excalidraw_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_excalidraw_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_excalidraw_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_excalidraw; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Excalidraw...\e[0m"
+  MSG_PT[ferramenta_excalidraw_iniciando]="\e[97m🚀 Iniciando a instalação do Excalidraw...\e[0m"
+  MSG_EN[ferramenta_excalidraw_iniciando]="\e[97m🚀 Starting Excalidraw installation...\e[0m"
+  MSG_ES[ferramenta_excalidraw_iniciando]="\e[97m🚀 Iniciando la instalación de Excalidraw...\e[0m"
+  echo -e "$(t ferramenta_excalidraw_iniciando)"
   cat > excalidraw${1:+_$1}.yaml <<EOL
 version: "3.7"
 services:
@@ -15759,7 +20337,10 @@ EOL
   STACK_NAME="excalidraw${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_excalidraw_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_excalidraw_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_excalidraw_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_excalidraw_step_verificando)"
   echo ""
 
   pull excalidraw/excalidraw:latest
@@ -15778,7 +20359,10 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ EXCALIDRAW ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_excalidraw\e[0m"
+  MSG_PT[ferramenta_excalidraw_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_excalidraw_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_excalidraw_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_excalidraw_resumo_dominio "$url_excalidraw")"
   msg_retorno_menu
 
 }
@@ -15788,31 +20372,55 @@ ferramenta_easyappointments() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Easy!Appointments (ex: agenda.encha.ai): \e[0m" && read -r url_easyappointments
+    MSG_PT[ferramenta_easyappointments_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_easyappointments_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_easyappointments_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_easyappointments_passo1)"
+    MSG_PT[ferramenta_easyappointments_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Easy!Appointments (ex: agenda.encha.ai): \e[0m"
+    MSG_EN[ferramenta_easyappointments_pergunta_dominio]="🔗 \e[33mEnter the domain for Easy!Appointments (e.g. agenda.encha.ai): \e[0m"
+    MSG_ES[ferramenta_easyappointments_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Easy!Appointments (ej: agenda.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_easyappointments_pergunta_dominio)" && read -r url_easyappointments
     echo ""
 
     clear
     msg_easyappointments
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_easyappointments_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_easyappointments_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_easyappointments_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_easyappointments_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Easy!Appointments:\e[97m $url_easyappointments\e[0m"
+    MSG_PT[ferramenta_easyappointments_label_dominio]="🌐 \e[33mDomínio Easy!Appointments:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_easyappointments_label_dominio]="🌐 \e[33mEasy!Appointments Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_easyappointments_label_dominio]="🌐 \e[33mDominio de Easy!Appointments:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_easyappointments_label_dominio "$url_easyappointments")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_easyappointments_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_easyappointments_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_easyappointments_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_easyappointments_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_easyappointments; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Easy!Appointments...\e[0m"    
+  MSG_PT[ferramenta_easyappointments_iniciando]="\e[97m🚀 Iniciando a instalação do Easy!Appointments...\e[0m"
+  MSG_EN[ferramenta_easyappointments_iniciando]="\e[97m🚀 Starting Easy!Appointments installation...\e[0m"
+  MSG_ES[ferramenta_easyappointments_iniciando]="\e[97m🚀 Iniciando la instalación de Easy!Appointments...\e[0m"
+  echo -e "$(t ferramenta_easyappointments_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  MSG_PT[ferramenta_easyappointments_step_mysql]="\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_easyappointments_step_mysql]="\e[97m• CHECKING/INSTALLING MYSQL \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_easyappointments_step_mysql]="\e[97m• VERIFICANDO/INSTALANDO MYSQL \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_easyappointments_step_mysql)"
   echo ""
 
   verificar_container_mysql || ferramenta_mysql
   pegar_senha_mysql_da_stack
   criar_banco_mysql_da_stack "easyapointments${1:+_$1}"
 
-  echo -e "\e[97m• INSTALANDO EASY!APPOINTMENTS \e[33m[3/4]\e[0m"
+  MSG_PT[ferramenta_easyappointments_step_instalando]="\e[97m• INSTALANDO EASY!APPOINTMENTS \e[33m[3/4]\e[0m"
+  MSG_EN[ferramenta_easyappointments_step_instalando]="\e[97m• INSTALLING EASY!APPOINTMENTS \e[33m[3/4]\e[0m"
+  MSG_ES[ferramenta_easyappointments_step_instalando]="\e[97m• INSTALANDO EASY!APPOINTMENTS \e[33m[3/4]\e[0m"
+  echo -e "$(t ferramenta_easyappointments_step_instalando)"
   echo ""
 
   cat > apache-custom.conf << EOL
@@ -15902,7 +20510,10 @@ EOL
   STACK_NAME="easyappointments${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_PT[ferramenta_easyappointments_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_easyappointments_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_easyappointments_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_easyappointments_step_verificando)"
   echo ""
 
   pull alextselegidis/easyappointments:latest
@@ -15921,8 +20532,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ EASY!APPOINTMENTS ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_easyappointments\e[0m"
-  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"  
+  MSG_PT[ferramenta_easyappointments_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_easyappointments_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_easyappointments_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_easyappointments_resumo_dominio "$url_easyappointments")"
+  MSG_PT[ferramenta_easyappointments_resumo_acesse]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar seu usuário.\e[0m"
+  MSG_EN[ferramenta_easyappointments_resumo_acesse]="\e[33m⚠️  Access the domain to complete the installation and create your user.\e[0m"
+  MSG_ES[ferramenta_easyappointments_resumo_acesse]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su usuario.\e[0m"
+  echo -e "$(t ferramenta_easyappointments_resumo_acesse)"
   msg_retorno_menu
 
 }
@@ -15931,26 +20548,68 @@ ferramenta_documenso() {
   msg_documenso
   dados
 
-  while true; do 
-    echo -e "\n📍 Passo 1/6"
-    echo -en "🔗 \e[33mDigite o domínio para o Documenso (ex: doc.encha.ai): \e[0m" && read -r url_documenso
+  while true; do
+    MSG_PT[ferramenta_documenso_passo1]="\n📍 Passo 1/6"
+    MSG_EN[ferramenta_documenso_passo1]="\n📍 Step 1/6"
+    MSG_ES[ferramenta_documenso_passo1]="\n📍 Paso 1/6"
+    echo -e "$(t ferramenta_documenso_passo1)"
+    MSG_PT[ferramenta_documenso_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Documenso (ex: doc.encha.ai): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_dominio]="🔗 \e[33mEnter the domain for Documenso (e.g. doc.encha.ai): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Documenso (ej: doc.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_dominio)" && read -r url_documenso
     echo ""
-    echo -e "\n📍 Passo 2/6"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_documenso
+    MSG_PT[ferramenta_documenso_passo2]="\n📍 Passo 2/6"
+    MSG_EN[ferramenta_documenso_passo2]="\n📍 Step 2/6"
+    MSG_ES[ferramenta_documenso_passo2]="\n📍 Paso 2/6"
+    echo -e "$(t ferramenta_documenso_passo2)"
+    MSG_PT[ferramenta_documenso_pergunta_email]="\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_email]="\e[33mEnter the SMTP Email (e.g. contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_email]="\e[33mIngrese el Email para SMTP (ej: contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_email)" && read -r email_documenso
     echo ""
-    echo -e "\n📍 Passo 3/6"
-    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_email_documenso
+    MSG_PT[ferramenta_documenso_passo3]="\n📍 Passo 3/6"
+    MSG_EN[ferramenta_documenso_passo3]="\n📍 Step 3/6"
+    MSG_ES[ferramenta_documenso_passo3]="\n📍 Paso 3/6"
+    echo -e "$(t ferramenta_documenso_passo3)"
+    MSG_PT[ferramenta_documenso_dica_usuario]="$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    MSG_EN[ferramenta_documenso_dica_usuario]="$amarelo--> If you don't have an email username, use the email itself below"
+    MSG_ES[ferramenta_documenso_dica_usuario]="$amarelo--> Si no tiene un usuario de email, use el propio email a continuación"
+    echo -e "$(t ferramenta_documenso_dica_usuario)"
+    MSG_PT[ferramenta_documenso_pergunta_usuario]="\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_usuario]="\e[33mEnter the SMTP Username (e.g. encha or contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_usuario]="\e[33mIngrese el Usuario para SMTP (ej: encha o contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_usuario)" && read -r usuario_email_documenso
     echo ""
-    echo -e "\n📍 Passo 4/6"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_documenso
+    MSG_PT[ferramenta_documenso_passo4]="\n📍 Passo 4/6"
+    MSG_EN[ferramenta_documenso_passo4]="\n📍 Step 4/6"
+    MSG_ES[ferramenta_documenso_passo4]="\n📍 Paso 4/6"
+    echo -e "$(t ferramenta_documenso_passo4)"
+    MSG_PT[ferramenta_documenso_dica_senha]="$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    MSG_EN[ferramenta_documenso_dica_senha]="$amarelo--> No special characters: \!#$ | If using gmail, use the app password"
+    MSG_ES[ferramenta_documenso_dica_senha]="$amarelo--> Sin caracteres especiales: \!#$ | Si usa gmail, use la contraseña de aplicación"
+    echo -e "$(t ferramenta_documenso_dica_senha)"
+    MSG_PT[ferramenta_documenso_pergunta_senha]="\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_senha]="\e[33mEnter the Email SMTP Password (e.g. @Senha123_): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_senha]="\e[33mIngrese la Contraseña SMTP del Email (ej: @Senha123_): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_senha)" && read -r senha_email_documenso
     echo ""
-    echo -e "\n📍 Passo 5/6"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_documenso
+    MSG_PT[ferramenta_documenso_passo5]="\n📍 Passo 5/6"
+    MSG_EN[ferramenta_documenso_passo5]="\n📍 Step 5/6"
+    MSG_ES[ferramenta_documenso_passo5]="\n📍 Paso 5/6"
+    echo -e "$(t ferramenta_documenso_passo5)"
+    MSG_PT[ferramenta_documenso_pergunta_host]="\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_host]="\e[33mEnter the Email SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_host]="\e[33mIngrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_host)" && read -r smtp_email_documenso
     echo ""
-    echo -e "\n📍 Passo 6/6"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_documenso
+    MSG_PT[ferramenta_documenso_passo6]="\n📍 Passo 6/6"
+    MSG_EN[ferramenta_documenso_passo6]="\n📍 Step 6/6"
+    MSG_ES[ferramenta_documenso_passo6]="\n📍 Paso 6/6"
+    echo -e "$(t ferramenta_documenso_passo6)"
+    MSG_PT[ferramenta_documenso_pergunta_porta]="\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m"
+    MSG_EN[ferramenta_documenso_pergunta_porta]="\e[33mEnter the Email SMTP Port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_documenso_pergunta_porta]="\e[33mIngrese el puerto SMTP del Email (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_documenso_pergunta_porta)" && read -r porta_smtp_documenso
     echo ""
 
     ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
@@ -15962,30 +20621,66 @@ ferramenta_documenso() {
 
     clear
     msg_documenso
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_documenso_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_documenso_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_documenso_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_documenso_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Documenso:\e[97m $url_documenso\e[0m"
-    echo -e "\e[33mEmail do SMTP:\e[97m $email_documenso\e[0m"
-    echo -e "\e[33mUsuário do SMTP:\e[97m $usuario_email_documenso\e[0m"
-    echo -e "\e[33mSenha do Email:\e[97m $senha_email_documenso\e[0m"
-    echo -e "\e[33mHost SMTP do Email:\e[97m $smtp_email_documenso\e[0m"
-    echo -e "\e[33mPorta SMTP do Email:\e[97m $porta_smtp_documenso\e[0m"
-    echo -e "\e[33mSecure SMTP do Email:\e[97m $smtp_secure_documenso\e[0m"
+    MSG_PT[ferramenta_documenso_label_dominio]="🌐 \e[33mDomínio Documenso:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_dominio]="🌐 \e[33mDocumenso Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_dominio]="🌐 \e[33mDominio de Documenso:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_dominio "$url_documenso")"
+    MSG_PT[ferramenta_documenso_label_email]="\e[33mEmail do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_email]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_email]="\e[33mEmail del SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_email "$email_documenso")"
+    MSG_PT[ferramenta_documenso_label_usuario]="\e[33mUsuário do SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_usuario]="\e[33mSMTP Username:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_usuario]="\e[33mUsuario del SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_usuario "$usuario_email_documenso")"
+    MSG_PT[ferramenta_documenso_label_senha]="\e[33mSenha do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_senha]="\e[33mEmail Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_senha]="\e[33mContraseña del Email:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_senha "$senha_email_documenso")"
+    MSG_PT[ferramenta_documenso_label_host]="\e[33mHost SMTP do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_host]="\e[33mEmail SMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_host]="\e[33mHost SMTP del Email:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_host "$smtp_email_documenso")"
+    MSG_PT[ferramenta_documenso_label_porta]="\e[33mPorta SMTP do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_porta]="\e[33mEmail SMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_porta]="\e[33mPuerto SMTP del Email:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_porta "$porta_smtp_documenso")"
+    MSG_PT[ferramenta_documenso_label_secure]="\e[33mSecure SMTP do Email:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_documenso_label_secure]="\e[33mEmail SMTP Secure:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_documenso_label_secure]="\e[33mSecure SMTP del Email:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_documenso_label_secure "$smtp_secure_documenso")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_documenso_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_documenso_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_documenso_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_documenso_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_documenso; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Documenso...\e[0m"    
+  MSG_PT[ferramenta_documenso_iniciando]="\e[97m🚀 Iniciando a instalação do Documenso...\e[0m"
+  MSG_EN[ferramenta_documenso_iniciando]="\e[97m🚀 Starting Documenso installation...\e[0m"
+  MSG_ES[ferramenta_documenso_iniciando]="\e[97m🚀 Iniciando la instalación de Documenso...\e[0m"
+  echo -e "$(t ferramenta_documenso_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_documenso_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_documenso_step_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_documenso_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_documenso_step_postgres)"
   echo ""
   verificar_container_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "documenso${1:+_$1}"
 
-  echo -e "\e[97m• CRIANDO BUCKET NO MINIO \e[33m[3/5]\e[0m"
+  MSG_PT[ferramenta_documenso_step_minio]="\e[97m• CRIANDO BUCKET NO MINIO \e[33m[3/5]\e[0m"
+  MSG_EN[ferramenta_documenso_step_minio]="\e[97m• CREATING BUCKET IN MINIO \e[33m[3/5]\e[0m"
+  MSG_ES[ferramenta_documenso_step_minio]="\e[97m• CREANDO BUCKET EN MINIO \e[33m[3/5]\e[0m"
+  echo -e "$(t ferramenta_documenso_step_minio)"
   echo ""
 
   pegar_senha_minio
@@ -16095,7 +20790,10 @@ EOL
   STACK_NAME="documenso${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_documenso_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_documenso_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_documenso_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_documenso_step_verificando)"
   echo ""
 
   pull documenso/documenso:latest
@@ -16116,8 +20814,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ DOCUMENSO ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_documenso\e[0m"
-  echo -e "\e[33m⚠️  Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
+  MSG_PT[ferramenta_documenso_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_documenso_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_documenso_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_documenso_resumo_dominio "$url_documenso")"
+  MSG_PT[ferramenta_documenso_resumo_aguarde]="\e[33m⚠️  Aguarde alguns minutos para a migração do banco antes do primeiro acesso.\e[0m"
+  MSG_EN[ferramenta_documenso_resumo_aguarde]="\e[33m⚠️  Wait a few minutes for the database migration before first access.\e[0m"
+  MSG_ES[ferramenta_documenso_resumo_aguarde]="\e[33m⚠️  Espere unos minutos para la migración de la base de datos antes del primer acceso.\e[0m"
+  echo -e "$(t ferramenta_documenso_resumo_aguarde)"
   msg_retorno_menu
 
 }
@@ -16127,36 +20831,99 @@ ferramenta_moodle(){
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/10"
-    echo -en "🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m" && read -r url_moodle
+    MSG_PT[ferramenta_moodle_passo1]="\n📍 Passo 1/10"
+    MSG_EN[ferramenta_moodle_passo1]="\n📍 Step 1/10"
+    MSG_ES[ferramenta_moodle_passo1]="\n📍 Paso 1/10"
+    echo -e "$(t ferramenta_moodle_passo1)"
+    MSG_PT[ferramenta_moodle_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Moodle (ex: moodle.encha.ai): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_dominio]="🔗 \e[33mEnter the domain for Moodle (e.g. moodle.encha.ai): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Moodle (ej: moodle.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_dominio)" && read -r url_moodle
     echo ""
-    echo -e "\n📍 Passo 2/10"
-    echo -en "\e[33mDigite o nome para o projeto (ex: enchaProject): \e[0m" && read -r project_name_moodle
+    MSG_PT[ferramenta_moodle_passo2]="\n📍 Passo 2/10"
+    MSG_EN[ferramenta_moodle_passo2]="\n📍 Step 2/10"
+    MSG_ES[ferramenta_moodle_passo2]="\n📍 Paso 2/10"
+    echo -e "$(t ferramenta_moodle_passo2)"
+    MSG_PT[ferramenta_moodle_pergunta_projeto]="\e[33mDigite o nome para o projeto (ex: enchaProject): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_projeto]="\e[33mEnter the project name (e.g. enchaProject): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_projeto]="\e[33mIngrese el nombre del proyecto (ej: enchaProject): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_projeto)" && read -r project_name_moodle
     echo ""
-    echo -e "\n📍 Passo 3/10"
-    echo -en "\e[33mDigite um Nome de Usuario (ex: encha): \e[0m" && read -r user_moodle
+    MSG_PT[ferramenta_moodle_passo3]="\n📍 Passo 3/10"
+    MSG_EN[ferramenta_moodle_passo3]="\n📍 Step 3/10"
+    MSG_ES[ferramenta_moodle_passo3]="\n📍 Paso 3/10"
+    echo -e "$(t ferramenta_moodle_passo3)"
+    MSG_PT[ferramenta_moodle_pergunta_usuario]="\e[33mDigite um Nome de Usuario (ex: encha): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_usuario]="\e[33mEnter a Username (e.g. encha): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_usuario]="\e[33mIngrese un Nombre de Usuario (ej: encha): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_usuario)" && read -r user_moodle
     echo ""
-    echo -e "\n📍 Passo 4/10"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$"
-    echo -en "\e[33mDigite uma Senha para o Usuario (ex: @Senha123_): \e[0m" && read -r pass_moodle
+    MSG_PT[ferramenta_moodle_passo4]="\n📍 Passo 4/10"
+    MSG_EN[ferramenta_moodle_passo4]="\n📍 Step 4/10"
+    MSG_ES[ferramenta_moodle_passo4]="\n📍 Paso 4/10"
+    echo -e "$(t ferramenta_moodle_passo4)"
+    MSG_PT[ferramenta_moodle_dica_senha]="$amarelo--> Sem caracteres especiais: \!#$"
+    MSG_EN[ferramenta_moodle_dica_senha]="$amarelo--> No special characters: \!#$"
+    MSG_ES[ferramenta_moodle_dica_senha]="$amarelo--> Sin caracteres especiales: \!#$"
+    echo -e "$(t ferramenta_moodle_dica_senha)"
+    MSG_PT[ferramenta_moodle_pergunta_senha]="\e[33mDigite uma Senha para o Usuario (ex: @Senha123_): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_senha]="\e[33mEnter a Password for the User (e.g. @Senha123_): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_senha]="\e[33mIngrese una Contraseña para el Usuario (ej: @Senha123_): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_senha)" && read -r pass_moodle
     echo ""
-    echo -e "\n📍 Passo 5/10"
-    echo -en "\e[33mDigite um Email para o Usuario (ex: contato@encha.ai): \e[0m" && read -r mail_moodle
+    MSG_PT[ferramenta_moodle_passo5]="\n📍 Passo 5/10"
+    MSG_EN[ferramenta_moodle_passo5]="\n📍 Step 5/10"
+    MSG_ES[ferramenta_moodle_passo5]="\n📍 Paso 5/10"
+    echo -e "$(t ferramenta_moodle_passo5)"
+    MSG_PT[ferramenta_moodle_pergunta_email]="\e[33mDigite um Email para o Usuario (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_email]="\e[33mEnter an Email for the User (e.g. contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_email]="\e[33mIngrese un Email para el Usuario (ej: contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_email)" && read -r mail_moodle
     echo ""
-    echo -e "\n📍 Passo 6/10"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_smtp_moodle
+    MSG_PT[ferramenta_moodle_passo6]="\n📍 Passo 6/10"
+    MSG_EN[ferramenta_moodle_passo6]="\n📍 Step 6/10"
+    MSG_ES[ferramenta_moodle_passo6]="\n📍 Paso 6/10"
+    echo -e "$(t ferramenta_moodle_passo6)"
+    MSG_PT[ferramenta_moodle_pergunta_email_smtp]="\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_email_smtp]="\e[33mEnter the SMTP Email (e.g. contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_email_smtp]="\e[33mIngrese el Email para SMTP (ej: contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_email_smtp)" && read -r email_smtp_moodle
     echo ""
-    echo -e "\n📍 Passo 7/10"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_smtp_moodle
+    MSG_PT[ferramenta_moodle_passo7]="\n📍 Passo 7/10"
+    MSG_EN[ferramenta_moodle_passo7]="\n📍 Step 7/10"
+    MSG_ES[ferramenta_moodle_passo7]="\n📍 Paso 7/10"
+    echo -e "$(t ferramenta_moodle_passo7)"
+    MSG_PT[ferramenta_moodle_pergunta_usuario_smtp]="\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_usuario_smtp]="\e[33mEnter the SMTP Username (e.g. encha or contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_usuario_smtp]="\e[33mIngrese el Usuario para SMTP (ej: encha o contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_usuario_smtp)" && read -r usuario_smtp_moodle
     echo ""
-    echo -e "\n📍 Passo 8/10"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_smtp_moodle
+    MSG_PT[ferramenta_moodle_passo8]="\n📍 Passo 8/10"
+    MSG_EN[ferramenta_moodle_passo8]="\n📍 Step 8/10"
+    MSG_ES[ferramenta_moodle_passo8]="\n📍 Paso 8/10"
+    echo -e "$(t ferramenta_moodle_passo8)"
+    MSG_PT[ferramenta_moodle_pergunta_senha_smtp]="\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_senha_smtp]="\e[33mEnter the Email SMTP Password (e.g. @Senha123_): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_senha_smtp]="\e[33mIngrese la Contraseña SMTP del Email (ej: @Senha123_): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_senha_smtp)" && read -r senha_smtp_moodle
     echo ""
-    echo -e "\n📍 Passo 9/10"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_moodle
+    MSG_PT[ferramenta_moodle_passo9]="\n📍 Passo 9/10"
+    MSG_EN[ferramenta_moodle_passo9]="\n📍 Step 9/10"
+    MSG_ES[ferramenta_moodle_passo9]="\n📍 Paso 9/10"
+    echo -e "$(t ferramenta_moodle_passo9)"
+    MSG_PT[ferramenta_moodle_pergunta_host_smtp]="\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_host_smtp]="\e[33mEnter the Email SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_host_smtp]="\e[33mIngrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_host_smtp)" && read -r host_smtp_moodle
     echo ""
-    echo -e "\n📍 Passo 10/10"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_moodle
+    MSG_PT[ferramenta_moodle_passo10]="\n📍 Passo 10/10"
+    MSG_EN[ferramenta_moodle_passo10]="\n📍 Step 10/10"
+    MSG_ES[ferramenta_moodle_passo10]="\n📍 Paso 10/10"
+    echo -e "$(t ferramenta_moodle_passo10)"
+    MSG_PT[ferramenta_moodle_pergunta_porta_smtp]="\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m"
+    MSG_EN[ferramenta_moodle_pergunta_porta_smtp]="\e[33mEnter the Email SMTP Port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_moodle_pergunta_porta_smtp]="\e[33mIngrese el puerto SMTP del Email (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_moodle_pergunta_porta_smtp)" && read -r porta_smtp_moodle
     echo ""
 
     if [ "$porta_smtp_typebot" -eq 465 ]; then
@@ -16167,25 +20934,64 @@ ferramenta_moodle(){
 
     clear
     msg_moodle
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_moodle_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_moodle_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_moodle_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_moodle_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Moodle:\e[97m $url_moodle\e[0m"
-    echo -e "\e[33mNome do Projeto:\e[97m $project_name_moodle\e[0m"
-    echo -e "\e[33mUsuario:\e[97m $user_moodle\e[0m"
-    echo -e "\e[33mSenha:\e[97m $pass_moodle\e[0m"
-    echo -e "\e[33mEmail:\e[97m $mail_moodle\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $email_smtp_moodle\e[0m"
-    echo -e "\e[33mUsuario SMTP:\e[97m $usuario_smtp_moodle\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_moodle\e[0m"
-    echo -e "\e[33mHost SMTP\e[97m $host_smtp_moodle\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_moodle\e[0m"
+    MSG_PT[ferramenta_moodle_label_dominio]="🌐 \e[33mDomínio Moodle:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_dominio]="🌐 \e[33mMoodle Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_dominio]="🌐 \e[33mDominio de Moodle:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_dominio "$url_moodle")"
+    MSG_PT[ferramenta_moodle_label_projeto]="\e[33mNome do Projeto:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_projeto]="\e[33mProject Name:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_projeto]="\e[33mNombre del Proyecto:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_projeto "$project_name_moodle")"
+    MSG_PT[ferramenta_moodle_label_usuario]="\e[33mUsuario:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_usuario]="\e[33mUser:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_usuario]="\e[33mUsuario:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_usuario "$user_moodle")"
+    MSG_PT[ferramenta_moodle_label_senha]="\e[33mSenha:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_senha]="\e[33mPassword:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_senha]="\e[33mContraseña:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_senha "$pass_moodle")"
+    MSG_PT[ferramenta_moodle_label_email]="\e[33mEmail:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_email]="\e[33mEmail:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_email]="\e[33mEmail:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_email "$mail_moodle")"
+    MSG_PT[ferramenta_moodle_label_email_smtp]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_email_smtp]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_email_smtp]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_email_smtp "$email_smtp_moodle")"
+    MSG_PT[ferramenta_moodle_label_usuario_smtp]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_usuario_smtp]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_usuario_smtp]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_usuario_smtp "$usuario_smtp_moodle")"
+    MSG_PT[ferramenta_moodle_label_senha_smtp]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_senha_smtp]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_senha_smtp]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_senha_smtp "$senha_smtp_moodle")"
+    MSG_PT[ferramenta_moodle_label_host_smtp]="\e[33mHost SMTP\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_host_smtp]="\e[33mSMTP Host\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_host_smtp]="\e[33mHost SMTP\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_host_smtp "$host_smtp_moodle")"
+    MSG_PT[ferramenta_moodle_label_porta_smtp]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_moodle_label_porta_smtp]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_moodle_label_porta_smtp]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_moodle_label_porta_smtp "$porta_smtp_moodle")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_moodle_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_moodle_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_moodle_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_moodle_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_moodle; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
+  MSG_PT[ferramenta_moodle_iniciando]="\e[97m🚀 Iniciando a instalação do Moodle...\e[0m"
+  MSG_EN[ferramenta_moodle_iniciando]="\e[97m🚀 Starting Moodle installation...\e[0m"
+  MSG_ES[ferramenta_moodle_iniciando]="\e[97m🚀 Iniciando la instalación de Moodle...\e[0m"
+  echo -e "$(t ferramenta_moodle_iniciando)"
 
   senha_marinadb=$(openssl rand -hex 16)
   cat > moodle${1:+_$1}.yaml <<EOL
@@ -16311,7 +21117,10 @@ EOL
   STACK_NAME="moodle${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_moodle_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_moodle_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_moodle_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_moodle_step_verificando)"
   echo ""
 
   pull bitnami/moodle:latest bitnami/mariadb:latest
@@ -16330,8 +21139,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ MOODLE ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_moodle\e[0m"
-  echo -e "\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta de administrador.\e[0m"
+  MSG_PT[ferramenta_moodle_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_moodle_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_moodle_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_moodle_resumo_dominio "$url_moodle")"
+  MSG_PT[ferramenta_moodle_resumo_acesse]="\e[33m⚠️  Acesse o domínio para completar a instalação e criar sua conta de administrador.\e[0m"
+  MSG_EN[ferramenta_moodle_resumo_acesse]="\e[33m⚠️  Access the domain to complete the installation and create your administrator account.\e[0m"
+  MSG_ES[ferramenta_moodle_resumo_acesse]="\e[33m⚠️  Acceda al dominio para completar la instalación y crear su cuenta de administrador.\e[0m"
+  echo -e "$(t ferramenta_moodle_resumo_acesse)"
   msg_retorno_menu
 
 }
@@ -16341,53 +21156,128 @@ ferramenta_tooljet() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/6"
-    echo -en "🔗 \e[33mDigite o domínio para o ToolJet (ex: tooljet.encha.ai): \e[0m" && read -r url_tooljet
+    MSG_PT[ferramenta_tooljet_passo1]="\n📍 Passo 1/6"
+    MSG_EN[ferramenta_tooljet_passo1]="\n📍 Step 1/6"
+    MSG_ES[ferramenta_tooljet_passo1]="\n📍 Paso 1/6"
+    echo -e "$(t ferramenta_tooljet_passo1)"
+    MSG_PT[ferramenta_tooljet_pergunta_dominio]="🔗 \e[33mDigite o domínio para o ToolJet (ex: tooljet.encha.ai): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_dominio]="🔗 \e[33mEnter the domain for ToolJet (e.g. tooljet.encha.ai): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_dominio]="🔗 \e[33mIngrese el dominio para ToolJet (ej: tooljet.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_dominio)" && read -r url_tooljet
     echo ""
-    echo -e "\n📍 Passo 2/6"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_smtp_tooljet
+    MSG_PT[ferramenta_tooljet_passo2]="\n📍 Passo 2/6"
+    MSG_EN[ferramenta_tooljet_passo2]="\n📍 Step 2/6"
+    MSG_ES[ferramenta_tooljet_passo2]="\n📍 Paso 2/6"
+    echo -e "$(t ferramenta_tooljet_passo2)"
+    MSG_PT[ferramenta_tooljet_pergunta_email_smtp]="\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_email_smtp]="\e[33mEnter the SMTP Email (e.g. contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_email_smtp]="\e[33mIngrese el Email para SMTP (ej: contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_email_smtp)" && read -r email_smtp_tooljet
     echo ""
-    echo -e "\n📍 Passo 3/6"
-    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_smtp_tooljet
+    MSG_PT[ferramenta_tooljet_passo3]="\n📍 Passo 3/6"
+    MSG_EN[ferramenta_tooljet_passo3]="\n📍 Step 3/6"
+    MSG_ES[ferramenta_tooljet_passo3]="\n📍 Paso 3/6"
+    echo -e "$(t ferramenta_tooljet_passo3)"
+    MSG_PT[ferramenta_tooljet_dica_usuario]="$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
+    MSG_EN[ferramenta_tooljet_dica_usuario]="$amarelo--> If you don't have an email username, use the email itself below"
+    MSG_ES[ferramenta_tooljet_dica_usuario]="$amarelo--> Si no tiene un usuario de email, use el propio email a continuación"
+    echo -e "$(t ferramenta_tooljet_dica_usuario)"
+    MSG_PT[ferramenta_tooljet_pergunta_usuario_smtp]="\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_usuario_smtp]="\e[33mEnter the SMTP Username (e.g. encha or contact@encha.ai): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_usuario_smtp]="\e[33mIngrese el Usuario para SMTP (ej: encha o contacto@encha.ai): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_usuario_smtp)" && read -r usuario_smtp_tooljet
     echo ""
-    echo -e "\n📍 Passo 4/6"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_smtp_tooljet
+    MSG_PT[ferramenta_tooljet_passo4]="\n📍 Passo 4/6"
+    MSG_EN[ferramenta_tooljet_passo4]="\n📍 Step 4/6"
+    MSG_ES[ferramenta_tooljet_passo4]="\n📍 Paso 4/6"
+    echo -e "$(t ferramenta_tooljet_passo4)"
+    MSG_PT[ferramenta_tooljet_dica_senha]="$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
+    MSG_EN[ferramenta_tooljet_dica_senha]="$amarelo--> No special characters: \!#$ | If using gmail, use the app password"
+    MSG_ES[ferramenta_tooljet_dica_senha]="$amarelo--> Sin caracteres especiales: \!#$ | Si usa gmail, use la contraseña de aplicación"
+    echo -e "$(t ferramenta_tooljet_dica_senha)"
+    MSG_PT[ferramenta_tooljet_pergunta_senha_smtp]="\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_senha_smtp]="\e[33mEnter the Email SMTP Password (e.g. @Senha123_): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_senha_smtp]="\e[33mIngrese la Contraseña SMTP del Email (ej: @Senha123_): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_senha_smtp)" && read -r senha_smtp_tooljet
     echo ""
-    echo -e "\n📍 Passo 5/6"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_tooljet
+    MSG_PT[ferramenta_tooljet_passo5]="\n📍 Passo 5/6"
+    MSG_EN[ferramenta_tooljet_passo5]="\n📍 Step 5/6"
+    MSG_ES[ferramenta_tooljet_passo5]="\n📍 Paso 5/6"
+    echo -e "$(t ferramenta_tooljet_passo5)"
+    MSG_PT[ferramenta_tooljet_pergunta_host_smtp]="\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_host_smtp]="\e[33mEnter the Email SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_host_smtp]="\e[33mIngrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_host_smtp)" && read -r host_smtp_tooljet
     echo ""
-    echo -e "\n📍 Passo 6/6"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_tooljet
+    MSG_PT[ferramenta_tooljet_passo6]="\n📍 Passo 6/6"
+    MSG_EN[ferramenta_tooljet_passo6]="\n📍 Step 6/6"
+    MSG_ES[ferramenta_tooljet_passo6]="\n📍 Paso 6/6"
+    echo -e "$(t ferramenta_tooljet_passo6)"
+    MSG_PT[ferramenta_tooljet_pergunta_porta_smtp]="\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m"
+    MSG_EN[ferramenta_tooljet_pergunta_porta_smtp]="\e[33mEnter the Email SMTP Port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_tooljet_pergunta_porta_smtp]="\e[33mIngrese el puerto SMTP del Email (ej: 465): \e[0m"
+    echo -en "$(t ferramenta_tooljet_pergunta_porta_smtp)" && read -r porta_smtp_tooljet
     echo ""
 
     clear
     msg_tooljet
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_tooljet_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_tooljet_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_tooljet_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_tooljet_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio ToolJet:\e[97m $url_tooljet\e[0m"
-    echo -e "\e[33mEmail SMTP:\e[97m $email_smtp_tooljet\e[0m"
-    echo -e "\e[33mUser SMTP:\e[97m $usuario_smtp_tooljet\e[0m"
-    echo -e "\e[33mSenha SMTP:\e[97m $senha_smtp_tooljet\e[0m"
-    echo -e "\e[33mHost SMTP:\e[97m $host_smtp_tooljet\e[0m"
-    echo -e "\e[33mPorta SMTP:\e[97m $porta_smtp_tooljet\e[0m"
+    MSG_PT[ferramenta_tooljet_label_dominio]="🌐 \e[33mDomínio ToolJet:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_dominio]="🌐 \e[33mToolJet Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_dominio]="🌐 \e[33mDominio de ToolJet:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_dominio "$url_tooljet")"
+    MSG_PT[ferramenta_tooljet_label_email_smtp]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_email_smtp]="\e[33mSMTP Email:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_email_smtp]="\e[33mEmail SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_email_smtp "$email_smtp_tooljet")"
+    MSG_PT[ferramenta_tooljet_label_user_smtp]="\e[33mUser SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_user_smtp]="\e[33mSMTP User:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_user_smtp]="\e[33mUsuario SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_user_smtp "$usuario_smtp_tooljet")"
+    MSG_PT[ferramenta_tooljet_label_senha_smtp]="\e[33mSenha SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_senha_smtp]="\e[33mSMTP Password:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_senha_smtp]="\e[33mContraseña SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_senha_smtp "$senha_smtp_tooljet")"
+    MSG_PT[ferramenta_tooljet_label_host_smtp]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_host_smtp]="\e[33mSMTP Host:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_host_smtp]="\e[33mHost SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_host_smtp "$host_smtp_tooljet")"
+    MSG_PT[ferramenta_tooljet_label_porta_smtp]="\e[33mPorta SMTP:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_tooljet_label_porta_smtp]="\e[33mSMTP Port:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_tooljet_label_porta_smtp]="\e[33mPuerto SMTP:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_tooljet_label_porta_smtp "$porta_smtp_tooljet")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_tooljet_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_tooljet_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_tooljet_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_tooljet_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_tooljet; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do ToolJet...\e[0m"
+  MSG_PT[ferramenta_tooljet_iniciando]="\e[97m🚀 Iniciando a instalação do ToolJet...\e[0m"
+  MSG_EN[ferramenta_tooljet_iniciando]="\e[97m🚀 Starting ToolJet installation...\e[0m"
+  MSG_ES[ferramenta_tooljet_iniciando]="\e[97m🚀 Iniciando la instalación de ToolJet...\e[0m"
+  echo -e "$(t ferramenta_tooljet_iniciando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_PT[ferramenta_tooljet_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  MSG_EN[ferramenta_tooljet_step_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/5]\e[0m"
+  MSG_ES[ferramenta_tooljet_step_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/5]\e[0m"
+  echo -e "$(t ferramenta_tooljet_step_postgres)"
   echo ""
 
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
   criar_banco_postgres_da_stack "tooljet${1:+_$1}_app"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_PT[ferramenta_tooljet_step_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  MSG_EN[ferramenta_tooljet_step_redis]="\e[97m• CHECKING/INSTALLING REDIS \e[33m[3/5]\e[0m"
+  MSG_ES[ferramenta_tooljet_step_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[3/5]\e[0m"
+  echo -e "$(t ferramenta_tooljet_step_redis)"
   echo ""
 
   verificar_container_redis || ferramenta_redis
@@ -16558,7 +21448,10 @@ EOL
   STACK_NAME="tooljet${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_tooljet_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_tooljet_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_tooljet_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_tooljet_step_verificando)"
   echo ""
 
   pull tooljet/tooljet:ee-lts-latest postgrest/postgrest:v12.0.2 chromadb/chroma:latest
@@ -16576,8 +21469,14 @@ EOL
   cd
   msg_resumo_informacoes
   echo -e "\e[32m[ TOOLJET ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_tooljet\e[0m"
-  echo -e "\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  MSG_PT[ferramenta_tooljet_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_tooljet_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_tooljet_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_tooljet_resumo_dominio "$url_tooljet")"
+  MSG_PT[ferramenta_tooljet_resumo_criar_conta]="\e[33m⚠️  Crie sua conta no primeiro acesso.\e[0m"
+  MSG_EN[ferramenta_tooljet_resumo_criar_conta]="\e[33m⚠️  Create your account on first access.\e[0m"
+  MSG_ES[ferramenta_tooljet_resumo_criar_conta]="\e[33m⚠️  Cree su cuenta en el primer acceso.\e[0m"
+  echo -e "$(t ferramenta_tooljet_resumo_criar_conta)"
   msg_retorno_menu
 
 }
@@ -16587,30 +21486,66 @@ ferramenta_stirling() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/3"
-    echo -en "🔗 \e[33mDigite o domínio para o Stirling PDF (ex: stirling.encha.ai): \e[0m" && read -r url_stirling
+    MSG_PT[ferramenta_stirling_passo1]="\n📍 Passo 1/3"
+    MSG_EN[ferramenta_stirling_passo1]="\n📍 Step 1/3"
+    MSG_ES[ferramenta_stirling_passo1]="\n📍 Paso 1/3"
+    echo -e "$(t ferramenta_stirling_passo1)"
+    MSG_PT[ferramenta_stirling_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Stirling PDF (ex: stirling.encha.ai): \e[0m"
+    MSG_EN[ferramenta_stirling_pergunta_dominio]="🔗 \e[33mEnter the domain for Stirling PDF (e.g. stirling.encha.ai): \e[0m"
+    MSG_ES[ferramenta_stirling_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Stirling PDF (ej: stirling.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_stirling_pergunta_dominio)" && read -r url_stirling
     echo ""
-    echo -e "\n📍 Passo 2/3"
-    echo -en "\e[33mDigite o nome para o App (ex: enchaPdf): \e[0m" && read -r name_stirlingpdf
+    MSG_PT[ferramenta_stirling_passo2]="\n📍 Passo 2/3"
+    MSG_EN[ferramenta_stirling_passo2]="\n📍 Step 2/3"
+    MSG_ES[ferramenta_stirling_passo2]="\n📍 Paso 2/3"
+    echo -e "$(t ferramenta_stirling_passo2)"
+    MSG_PT[ferramenta_stirling_pergunta_nome]="\e[33mDigite o nome para o App (ex: enchaPdf): \e[0m"
+    MSG_EN[ferramenta_stirling_pergunta_nome]="\e[33mEnter the App name (e.g. enchaPdf): \e[0m"
+    MSG_ES[ferramenta_stirling_pergunta_nome]="\e[33mIngrese el nombre de la App (ej: enchaPdf): \e[0m"
+    echo -en "$(t ferramenta_stirling_pergunta_nome)" && read -r name_stirlingpdf
     echo ""
-    echo -e "\n📍 Passo 3/3"
-    echo -en "\e[33mDigite uma descrição para o App (ex: Meu app de PDF): \e[0m" && read -r desc_stirlingpdf
+    MSG_PT[ferramenta_stirling_passo3]="\n📍 Passo 3/3"
+    MSG_EN[ferramenta_stirling_passo3]="\n📍 Step 3/3"
+    MSG_ES[ferramenta_stirling_passo3]="\n📍 Paso 3/3"
+    echo -e "$(t ferramenta_stirling_passo3)"
+    MSG_PT[ferramenta_stirling_pergunta_desc]="\e[33mDigite uma descrição para o App (ex: Meu app de PDF): \e[0m"
+    MSG_EN[ferramenta_stirling_pergunta_desc]="\e[33mEnter a description for the App (e.g. My PDF app): \e[0m"
+    MSG_ES[ferramenta_stirling_pergunta_desc]="\e[33mIngrese una descripción para la App (ej: Mi app de PDF): \e[0m"
+    echo -en "$(t ferramenta_stirling_pergunta_desc)" && read -r desc_stirlingpdf
     echo ""
 
     clear
     msg_stirling
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_stirling_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_stirling_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_stirling_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_stirling_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Stirling PDF:\e[97m $url_stirling\e[0m"
-    echo -e "\e[33mNome do App:\e[97m $name_stirlingpdf\e[0m"
-    echo -e "\e[33mDescrição do App:\e[97m $desc_stirlingpdf\e[0m"
+    MSG_PT[ferramenta_stirling_label_dominio]="🌐 \e[33mDomínio Stirling PDF:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_stirling_label_dominio]="🌐 \e[33mStirling PDF Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_stirling_label_dominio]="🌐 \e[33mDominio de Stirling PDF:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_stirling_label_dominio "$url_stirling")"
+    MSG_PT[ferramenta_stirling_label_nome]="\e[33mNome do App:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_stirling_label_nome]="\e[33mApp Name:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_stirling_label_nome]="\e[33mNombre de la App:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_stirling_label_nome "$name_stirlingpdf")"
+    MSG_PT[ferramenta_stirling_label_desc]="\e[33mDescrição do App:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_stirling_label_desc]="\e[33mApp Description:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_stirling_label_desc]="\e[33mDescripción de la App:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_stirling_label_desc "$desc_stirlingpdf")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_stirling_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_stirling_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_stirling_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_stirling_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_stirling; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Stirling PDF...\e[0m"
+  MSG_PT[ferramenta_stirling_iniciando]="\e[97m🚀 Iniciando a instalação do Stirling PDF...\e[0m"
+  MSG_EN[ferramenta_stirling_iniciando]="\e[97m🚀 Starting Stirling PDF installation...\e[0m"
+  MSG_ES[ferramenta_stirling_iniciando]="\e[97m🚀 Iniciando la instalación de Stirling PDF...\e[0m"
+  echo -e "$(t ferramenta_stirling_iniciando)"
 
   cat > stirlingpdf${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -16691,7 +21626,10 @@ EOL
   STACK_NAME="stirlingpdf${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_stirling_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_stirling_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_stirling_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_stirling_step_verificando)"
   echo ""
 
   pull frooodle/s-pdf:latest
@@ -16711,7 +21649,10 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ STIRLING PDF ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_stirling\e[0m"
+  MSG_PT[ferramenta_stirling_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_stirling_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_stirling_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_stirling_resumo_dominio "$url_stirling")"
   msg_retorno_menu
 
 }
@@ -16721,22 +21662,40 @@ ferramenta_redisinsight() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o RedisInsight (ex: redisins.encha.ai): \e[0m" && read -r url_redisinsight
+    MSG_PT[ferramenta_redisinsight_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_redisinsight_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_redisinsight_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_redisinsight_passo1)"
+    MSG_PT[ferramenta_redisinsight_pergunta_dominio]="🔗 \e[33mDigite o domínio para o RedisInsight (ex: redisins.encha.ai): \e[0m"
+    MSG_EN[ferramenta_redisinsight_pergunta_dominio]="🔗 \e[33mEnter the domain for RedisInsight (e.g. redisins.encha.ai): \e[0m"
+    MSG_ES[ferramenta_redisinsight_pergunta_dominio]="🔗 \e[33mIngrese el dominio para RedisInsight (ej: redisins.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_redisinsight_pergunta_dominio)" && read -r url_redisinsight
     echo ""
 
     clear
     msg_redisinsight
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_redisinsight_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_redisinsight_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_redisinsight_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_redisinsight_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio RedisInsight:\e[97m $url_redisinsight\e[0m"
+    MSG_PT[ferramenta_redisinsight_label_dominio]="🌐 \e[33mDomínio RedisInsight:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_redisinsight_label_dominio]="🌐 \e[33mRedisInsight Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_redisinsight_label_dominio]="🌐 \e[33mDominio de RedisInsight:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_redisinsight_label_dominio "$url_redisinsight")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_redisinsight_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_redisinsight_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_redisinsight_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_redisinsight_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_redisinsight; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do RedisInsight...\e[0m"
+  MSG_PT[ferramenta_redisinsight_iniciando]="\e[97m🚀 Iniciando a instalação do RedisInsight...\e[0m"
+  MSG_EN[ferramenta_redisinsight_iniciando]="\e[97m🚀 Starting RedisInsight installation...\e[0m"
+  MSG_ES[ferramenta_redisinsight_iniciando]="\e[97m🚀 Iniciando la instalación de RedisInsight...\e[0m"
+  echo -e "$(t ferramenta_redisinsight_iniciando)"
 
   cat > redisinsight${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -16804,7 +21763,10 @@ EOL
   STACK_NAME="redisinsight${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_PT[ferramenta_redisinsight_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[5/5]\e[0m"
+  MSG_EN[ferramenta_redisinsight_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[5/5]\e[0m"
+  MSG_ES[ferramenta_redisinsight_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[5/5]\e[0m"
+  echo -e "$(t ferramenta_redisinsight_step_verificando)"
   echo ""
 
   pull redislabs/redisinsight:latest
@@ -16822,8 +21784,14 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ REDISINSIGHT ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_redisinsight\e[0m"
-  echo -e "\e[33mℹ️  Para conectar ao seu Redis, use o host '\e[97mredis\e[33m' e a porta '\e[97m6379\e[33m'.\e[0m" 
+  MSG_PT[ferramenta_redisinsight_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_redisinsight_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_redisinsight_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_redisinsight_resumo_dominio "$url_redisinsight")"
+  MSG_PT[ferramenta_redisinsight_resumo_info]="\e[33mℹ️  Para conectar ao seu Redis, use o host '\e[97mredis\e[33m' e a porta '\e[97m6379\e[33m'.\e[0m"
+  MSG_EN[ferramenta_redisinsight_resumo_info]="\e[33mℹ️  To connect to your Redis, use host '\e[97mredis\e[33m' and port '\e[97m6379\e[33m'.\e[0m"
+  MSG_ES[ferramenta_redisinsight_resumo_info]="\e[33mℹ️  Para conectarse a su Redis, use el host '\e[97mredis\e[33m' y el puerto '\e[97m6379\e[33m'.\e[0m"
+  echo -e "$(t ferramenta_redisinsight_resumo_info)"
   msg_retorno_menu
 
 }
@@ -16833,22 +21801,40 @@ ferramenta_traccar() {
   dados
 
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para o Traccar (ex: traccar.encha.ai): \e[0m" && read -r url_traccar
+    MSG_PT[ferramenta_traccar_passo1]="\n📍 Passo 1/1"
+    MSG_EN[ferramenta_traccar_passo1]="\n📍 Step 1/1"
+    MSG_ES[ferramenta_traccar_passo1]="\n📍 Paso 1/1"
+    echo -e "$(t ferramenta_traccar_passo1)"
+    MSG_PT[ferramenta_traccar_pergunta_dominio]="🔗 \e[33mDigite o domínio para o Traccar (ex: traccar.encha.ai): \e[0m"
+    MSG_EN[ferramenta_traccar_pergunta_dominio]="🔗 \e[33mEnter the domain for Traccar (e.g. traccar.encha.ai): \e[0m"
+    MSG_ES[ferramenta_traccar_pergunta_dominio]="🔗 \e[33mIngrese el dominio para Traccar (ej: traccar.encha.ai): \e[0m"
+    echo -en "$(t ferramenta_traccar_pergunta_dominio)" && read -r url_traccar
     echo ""
 
     clear
     msg_traccar
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_PT[ferramenta_traccar_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    MSG_EN[ferramenta_traccar_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+    MSG_ES[ferramenta_traccar_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+    echo -e "$(t ferramenta_traccar_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Traccar:\e[97m $url_traccar\e[0m"
+    MSG_PT[ferramenta_traccar_label_dominio]="🌐 \e[33mDomínio Traccar:\e[97m %s\e[0m"
+    MSG_EN[ferramenta_traccar_label_dominio]="🌐 \e[33mTraccar Domain:\e[97m %s\e[0m"
+    MSG_ES[ferramenta_traccar_label_dominio]="🌐 \e[33mDominio de Traccar:\e[97m %s\e[0m"
+    echo -e "$(t ferramenta_traccar_label_dominio "$url_traccar")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    MSG_PT[ferramenta_traccar_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_EN[ferramenta_traccar_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+    MSG_ES[ferramenta_traccar_confirma]=$'\n\e[32m✅ ¿Las respuestas son correctas?\e[0m \e[33m(Y/N)\e[0m: '
+    read -p "$(t ferramenta_traccar_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_traccar; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Traccar...\e[0m"
+  MSG_PT[ferramenta_traccar_iniciando]="\e[97m🚀 Iniciando a instalação do Traccar...\e[0m"
+  MSG_EN[ferramenta_traccar_iniciando]="\e[97m🚀 Starting Traccar installation...\e[0m"
+  MSG_ES[ferramenta_traccar_iniciando]="\e[97m🚀 Iniciando la instalación de Traccar...\e[0m"
+  echo -e "$(t ferramenta_traccar_iniciando)"
 
   gerar_senha_mysql=$(openssl rand -hex 16)
 
@@ -16868,7 +21854,10 @@ EOL
 
   mv traccar.xml /opt/traccar${1:+_$1}/
 
-  echo -e "\e[97m• INSTALANDO TRACCAR \e[33m[2/3]\e[0m"
+  MSG_PT[ferramenta_traccar_step_instalando]="\e[97m• INSTALANDO TRACCAR \e[33m[2/3]\e[0m"
+  MSG_EN[ferramenta_traccar_step_instalando]="\e[97m• INSTALLING TRACCAR \e[33m[2/3]\e[0m"
+  MSG_ES[ferramenta_traccar_step_instalando]="\e[97m• INSTALANDO TRACCAR \e[33m[2/3]\e[0m"
+  echo -e "$(t ferramenta_traccar_step_instalando)"
   echo ""
 
   cat > traccar${1:+_$1}.yaml <<EOL
@@ -16963,7 +21952,10 @@ EOL
   STACK_NAME="traccar${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_PT[ferramenta_traccar_step_verificando]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_traccar_step_verificando]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_traccar_step_verificando]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_traccar_step_verificando)"
   echo ""
 
   pull traccar/traccar:latest mysql:8.0
@@ -16982,9 +21974,18 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ TRACCAR ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_traccar\e[0m"
-  echo -e "\e[33m👤 Usuário Padrão:\e[97m admin\e[0m"
-  echo -e "\e[33m🔑 Senha Padrão:\e[97m admin\e[0m"
+  MSG_PT[ferramenta_traccar_resumo_dominio]="\e[33m🌐 Domínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_traccar_resumo_dominio]="\e[33m🌐 Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_traccar_resumo_dominio]="\e[33m🌐 Dominio:\e[97m https://%s\e[0m"
+  echo -e "$(t ferramenta_traccar_resumo_dominio "$url_traccar")"
+  MSG_PT[ferramenta_traccar_resumo_usuario]="\e[33m👤 Usuário Padrão:\e[97m admin\e[0m"
+  MSG_EN[ferramenta_traccar_resumo_usuario]="\e[33m👤 Default User:\e[97m admin\e[0m"
+  MSG_ES[ferramenta_traccar_resumo_usuario]="\e[33m👤 Usuario Predeterminado:\e[97m admin\e[0m"
+  echo -e "$(t ferramenta_traccar_resumo_usuario)"
+  MSG_PT[ferramenta_traccar_resumo_senha]="\e[33m🔑 Senha Padrão:\e[97m admin\e[0m"
+  MSG_EN[ferramenta_traccar_resumo_senha]="\e[33m🔑 Default Password:\e[97m admin\e[0m"
+  MSG_ES[ferramenta_traccar_resumo_senha]="\e[33m🔑 Contraseña Predeterminada:\e[97m admin\e[0m"
+  echo -e "$(t ferramenta_traccar_resumo_senha)"
   msg_retorno_menu
 
 }
@@ -16993,29 +21994,69 @@ ferramenta_firecrawl() {
   msg_firecrawl
   dados
 
+  MSG_PT[ferramenta_firecrawl_passo1]=$'\n📍 Passo 1/2'
+  MSG_EN[ferramenta_firecrawl_passo1]=$'\n📍 Step 1/2'
+  MSG_ES[ferramenta_firecrawl_passo1]=$'\n📍 Paso 1/2'
+
+  MSG_PT[ferramenta_firecrawl_dominio_pergunta]="🔗 \e[33mDigite o domínio para a API Firecrawl (ex: firecrawl.encha.ai): \e[0m"
+  MSG_EN[ferramenta_firecrawl_dominio_pergunta]="🔗 \e[33mEnter the domain for the Firecrawl API (e.g. firecrawl.encha.ai): \e[0m"
+  MSG_ES[ferramenta_firecrawl_dominio_pergunta]="🔗 \e[33mIngrese el dominio para la API Firecrawl (ej: firecrawl.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_firecrawl_passo2]=$'\n📍 Passo 2/2'
+  MSG_EN[ferramenta_firecrawl_passo2]=$'\n📍 Step 2/2'
+  MSG_ES[ferramenta_firecrawl_passo2]=$'\n📍 Paso 2/2'
+
+  MSG_PT[ferramenta_firecrawl_apikey_pergunta]="\e[33mDigite uma ApiKey da OpenAI: \e[0m"
+  MSG_EN[ferramenta_firecrawl_apikey_pergunta]="\e[33mEnter an OpenAI ApiKey: \e[0m"
+  MSG_ES[ferramenta_firecrawl_apikey_pergunta]="\e[33mIngrese una ApiKey de OpenAI: \e[0m"
+
+  MSG_PT[ferramenta_firecrawl_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_firecrawl_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_firecrawl_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_firecrawl_dominio_label]="🌐 \e[33mDomínio Firecrawl:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_firecrawl_dominio_label]="🌐 \e[33mFirecrawl Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_firecrawl_dominio_label]="🌐 \e[33mDominio Firecrawl:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_firecrawl_apikey_label]="\e[33mApiKey OpenAi:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_firecrawl_apikey_label]="\e[33mOpenAi ApiKey:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_firecrawl_apikey_label]="\e[33mApiKey OpenAi:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_firecrawl_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_firecrawl_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_firecrawl_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_firecrawl_instalando]="\e[97m🚀 Iniciando a instalação da Firecrawl...\e[0m"
+  MSG_EN[ferramenta_firecrawl_instalando]="\e[97m🚀 Starting the Firecrawl installation...\e[0m"
+  MSG_ES[ferramenta_firecrawl_instalando]="\e[97m🚀 Iniciando la instalación de Firecrawl...\e[0m"
+
+  MSG_PT[ferramenta_firecrawl_verificando_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_firecrawl_verificando_redis]="\e[97m• CHECKING/INSTALLING REDIS \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_firecrawl_verificando_redis]="\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[2/4]\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/2"
-    echo -en "🔗 \e[33mDigite o domínio para a API Firecrawl (ex: firecrawl.encha.ai): \e[0m" && read -r url_firecrawl
+    echo -e "$(t ferramenta_firecrawl_passo1)"
+    echo -en "$(t ferramenta_firecrawl_dominio_pergunta)" && read -r url_firecrawl
     echo ""
-    echo -e "\n📍 Passo 2/2"
-    echo -en "\e[33mDigite uma ApiKey da OpenAI: \e[0m" && read -r api_firecrawl
+    echo -e "$(t ferramenta_firecrawl_passo2)"
+    echo -en "$(t ferramenta_firecrawl_apikey_pergunta)" && read -r api_firecrawl
     echo ""
 
     clear
     msg_firecrawl
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_firecrawl_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Firecrawl:\e[97m $url_firecrawl\e[0m"
-    echo -e "\e[33mApiKey OpenAi:\e[97m $api_firecrawl\e[0m"
+    echo -e "$(t ferramenta_firecrawl_dominio_label "$url_firecrawl")"
+    echo -e "$(t ferramenta_firecrawl_apikey_label "$api_firecrawl")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_firecrawl_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_firecrawl; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação da Firecrawl...\e[0m"
+  echo -e "$(t ferramenta_firecrawl_instalando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO REDIS \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_firecrawl_verificando_redis)"
   echo ""
 
   verificar_container_redis || ferramenta_redis
@@ -17181,10 +22222,22 @@ networks:
     external: true
 EOL
 
+  MSG_PT[ferramenta_firecrawl_verificando_servico]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_firecrawl_verificando_servico]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_firecrawl_verificando_servico]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+
+  MSG_PT[ferramenta_firecrawl_dominio_api_label]="🔗 \e[33mDomínio da API:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_firecrawl_dominio_api_label]="🔗 \e[33mAPI Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_firecrawl_dominio_api_label]="🔗 \e[33mDominio de la API:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_firecrawl_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_firecrawl_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_firecrawl_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+
   STACK_NAME="firecrawl${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_firecrawl_verificando_servico)"
   echo ""
 
   pull encha/firecrawl-api:latest encha/firecrawl-api:latest encha/firecrawl-playwright-service:latest
@@ -17202,8 +22255,8 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ FIRECRAWL ]\e[0m\n"
-  echo -e "\e[33m🔗 Domínio da API:\e[97m https://$url_firecrawl\e[0m"
-  echo -e "\e[33mAPI Key:\e[97m $apikey_firecrawl\e[0m"
+  echo -e "$(t ferramenta_firecrawl_dominio_api_label "$url_firecrawl")"
+  echo -e "$(t ferramenta_firecrawl_apikey_resumo "$apikey_firecrawl")"
   msg_retorno_menu
 
 }
@@ -17212,25 +22265,53 @@ ferramenta_wuzapi() {
   msg_wuzapi
   dados
 
+  MSG_PT[ferramenta_wuzapi_passo1]=$'\n📍 Passo 1/1'
+  MSG_EN[ferramenta_wuzapi_passo1]=$'\n📍 Step 1/1'
+  MSG_ES[ferramenta_wuzapi_passo1]=$'\n📍 Paso 1/1'
+
+  MSG_PT[ferramenta_wuzapi_dominio_pergunta]="🔗 \e[33mDigite o domínio para a Wuzapi (ex: wuzapi.encha.ai): \e[0m"
+  MSG_EN[ferramenta_wuzapi_dominio_pergunta]="🔗 \e[33mEnter the domain for Wuzapi (e.g. wuzapi.encha.ai): \e[0m"
+  MSG_ES[ferramenta_wuzapi_dominio_pergunta]="🔗 \e[33mIngrese el dominio para Wuzapi (ej: wuzapi.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_wuzapi_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_wuzapi_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_wuzapi_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_wuzapi_dominio_label]="🌐 \e[33mDomínio Wuzapi:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_wuzapi_dominio_label]="🌐 \e[33mWuzapi Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_wuzapi_dominio_label]="🌐 \e[33mDominio Wuzapi:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_wuzapi_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_wuzapi_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_wuzapi_instalando]="\e[97m🚀 Iniciando a instalação da Wuzapi...\e[0m"
+  MSG_EN[ferramenta_wuzapi_instalando]="\e[97m🚀 Starting the Wuzapi installation...\e[0m"
+  MSG_ES[ferramenta_wuzapi_instalando]="\e[97m🚀 Iniciando la instalación de Wuzapi...\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_wuzapi_verificando_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_wuzapi_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/1"
-    echo -en "🔗 \e[33mDigite o domínio para a Wuzapi (ex: wuzapi.encha.ai): \e[0m" && read -r url_wuzapi
+    echo -e "$(t ferramenta_wuzapi_passo1)"
+    echo -en "$(t ferramenta_wuzapi_dominio_pergunta)" && read -r url_wuzapi
     echo ""
 
     clear
     msg_wuzapi
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_wuzapi_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Wuzapi:\e[97m $url_wuzapi\e[0m"
+    echo -e "$(t ferramenta_wuzapi_dominio_label "$url_wuzapi")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_wuzapi_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_wuzapi; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação da Wuzapi...\e[0m"
+  echo -e "$(t ferramenta_wuzapi_instalando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_wuzapi_verificando_postgres)"
   echo ""
 
   verificar_container_postgres || ferramenta_postgres
@@ -17314,10 +22395,30 @@ networks:
     external: true
 EOL
 
+  MSG_PT[ferramenta_wuzapi_verificando_servico]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_wuzapi_verificando_servico]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_wuzapi_verificando_servico]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_dominio_resumo]="\e[33mDominio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_wuzapi_dominio_resumo]="\e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_wuzapi_dominio_resumo]="\e[33mDominio:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_dashboard_resumo]="\e[33mDashboard:\e[97m https://%s/dashboard\e[0m"
+  MSG_EN[ferramenta_wuzapi_dashboard_resumo]="\e[33mDashboard:\e[97m https://%s/dashboard\e[0m"
+  MSG_ES[ferramenta_wuzapi_dashboard_resumo]="\e[33mDashboard:\e[97m https://%s/dashboard\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_doc_resumo]="\e[33mDocumentação:\e[97m https://%s/api\e[0m"
+  MSG_EN[ferramenta_wuzapi_doc_resumo]="\e[33mDocumentation:\e[97m https://%s/api\e[0m"
+  MSG_ES[ferramenta_wuzapi_doc_resumo]="\e[33mDocumentación:\e[97m https://%s/api\e[0m"
+
+  MSG_PT[ferramenta_wuzapi_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_wuzapi_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_wuzapi_apikey_resumo]="\e[33mAPI Key:\e[97m %s\e[0m"
+
   STACK_NAME="wuzapi${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_wuzapi_verificando_servico)"
   echo ""
 
   pull asternic/wuzapi:latest
@@ -17337,13 +22438,13 @@ EOL
   msg_resumo_informacoes
   echo -e "\e[32m[ WUZAPI ]\e[0m"
   echo ""
-  echo -e "\e[33mDominio:\e[97m https://$url_wuzapi\e[0m"
+  echo -e "$(t ferramenta_wuzapi_dominio_resumo "$url_wuzapi")"
   echo ""
-  echo -e "\e[33mDashboard:\e[97m https://$url_wuzapi/dashboard\e[0m"
+  echo -e "$(t ferramenta_wuzapi_dashboard_resumo "$url_wuzapi")"
   echo ""
-  echo -e "\e[33mDocumentação:\e[97m https://$url_wuzapi/api\e[0m"
+  echo -e "$(t ferramenta_wuzapi_doc_resumo "$url_wuzapi")"
   echo ""
-  echo -e "\e[33mAPI Key:\e[97m $apikey_wuzapi\e[0m"
+  echo -e "$(t ferramenta_wuzapi_apikey_resumo "$apikey_wuzapi")"
   msg_retorno_menu
 
 }
@@ -17352,56 +22453,152 @@ ferramenta_krayincrm() {
   msg_krayincrm
   dados
 
+  MSG_PT[ferramenta_krayincrm_passo1]=$'\n📍 Passo 1/6'
+  MSG_EN[ferramenta_krayincrm_passo1]=$'\n📍 Step 1/6'
+  MSG_ES[ferramenta_krayincrm_passo1]=$'\n📍 Paso 1/6'
+
+  MSG_PT[ferramenta_krayincrm_dominio_pergunta]="🔗 \e[33mDigite o domínio para o Krayin CRM (ex: krayincrm.encha.ai): \e[0m"
+  MSG_EN[ferramenta_krayincrm_dominio_pergunta]="🔗 \e[33mEnter the domain for Krayin CRM (e.g. krayincrm.encha.ai): \e[0m"
+  MSG_ES[ferramenta_krayincrm_dominio_pergunta]="🔗 \e[33mIngrese el dominio para Krayin CRM (ej: krayincrm.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_passo2]=$'\n📍 Passo 2/6'
+  MSG_EN[ferramenta_krayincrm_passo2]=$'\n📍 Step 2/6'
+  MSG_ES[ferramenta_krayincrm_passo2]=$'\n📍 Paso 2/6'
+
+  MSG_PT[ferramenta_krayincrm_email_pergunta]="\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m"
+  MSG_EN[ferramenta_krayincrm_email_pergunta]="\e[33mEnter the SMTP Email (e.g. contato@encha.ai): \e[0m"
+  MSG_ES[ferramenta_krayincrm_email_pergunta]="\e[33mIngrese el Email para SMTP (ej: contato@encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_passo3]=$'\n📍 Passo 3/6'
+  MSG_EN[ferramenta_krayincrm_passo3]=$'\n📍 Step 3/6'
+  MSG_ES[ferramenta_krayincrm_passo3]=$'\n📍 Paso 3/6'
+
+  MSG_PT[ferramenta_krayincrm_usuario_dica]="%s--> Caso não tiver um usuario do email, use o proprio email abaixo"
+  MSG_EN[ferramenta_krayincrm_usuario_dica]="%s--> If you don't have an email username, use the email itself below"
+  MSG_ES[ferramenta_krayincrm_usuario_dica]="%s--> Si no tiene un usuario del email, use el propio email a continuación"
+
+  MSG_PT[ferramenta_krayincrm_usuario_pergunta]="\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m"
+  MSG_EN[ferramenta_krayincrm_usuario_pergunta]="\e[33mEnter the SMTP Username (e.g. encha or contato@encha.ai): \e[0m"
+  MSG_ES[ferramenta_krayincrm_usuario_pergunta]="\e[33mIngrese el Usuario para SMTP (ej: encha o contato@encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_passo4]=$'\n📍 Passo 4/6'
+  MSG_EN[ferramenta_krayincrm_passo4]=$'\n📍 Step 4/6'
+  MSG_ES[ferramenta_krayincrm_passo4]=$'\n📍 Paso 4/6'
+
+  MSG_PT[ferramenta_krayincrm_senha_dica]="%s--> Sem caracteres especiais: \!#\$ | Se estiver usando gmail use a senha de app"
+  MSG_EN[ferramenta_krayincrm_senha_dica]="%s--> No special characters: \!#\$ | If using gmail, use an app password"
+  MSG_ES[ferramenta_krayincrm_senha_dica]="%s--> Sin caracteres especiales: \!#\$ | Si usa gmail, use la contraseña de aplicación"
+
+  MSG_PT[ferramenta_krayincrm_senha_pergunta]="\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m"
+  MSG_EN[ferramenta_krayincrm_senha_pergunta]="\e[33mEnter the Email SMTP Password (e.g. @Senha123_): \e[0m"
+  MSG_ES[ferramenta_krayincrm_senha_pergunta]="\e[33mIngrese la Contraseña SMTP del Email (ej: @Senha123_): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_passo5]=$'\n📍 Passo 5/6'
+  MSG_EN[ferramenta_krayincrm_passo5]=$'\n📍 Step 5/6'
+  MSG_ES[ferramenta_krayincrm_passo5]=$'\n📍 Paso 5/6'
+
+  MSG_PT[ferramenta_krayincrm_host_pergunta]="\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+  MSG_EN[ferramenta_krayincrm_host_pergunta]="\e[33mEnter the Email SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+  MSG_ES[ferramenta_krayincrm_host_pergunta]="\e[33mIngrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_passo6]=$'\n📍 Passo 6/6'
+  MSG_EN[ferramenta_krayincrm_passo6]=$'\n📍 Step 6/6'
+  MSG_ES[ferramenta_krayincrm_passo6]=$'\n📍 Paso 6/6'
+
+  MSG_PT[ferramenta_krayincrm_porta_pergunta]="\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m"
+  MSG_EN[ferramenta_krayincrm_porta_pergunta]="\e[33mEnter the Email SMTP port (e.g. 465): \e[0m"
+  MSG_ES[ferramenta_krayincrm_porta_pergunta]="\e[33mIngrese el puerto SMTP del Email (ej: 465): \e[0m"
+
+  MSG_PT[ferramenta_krayincrm_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_krayincrm_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_krayincrm_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_krayincrm_dominio_label]="🌐 \e[33mDomínio Krayin CRM:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_dominio_label]="🌐 \e[33mKrayin CRM Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_dominio_label]="🌐 \e[33mDominio Krayin CRM:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_email_label]="\e[33mEmail do SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_email_label]="\e[33mSMTP Email:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_email_label]="\e[33mEmail del SMTP:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_usuario_label]="\e[33mUsuário do SMTP:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_usuario_label]="\e[33mSMTP Username:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_usuario_label]="\e[33mUsuario del SMTP:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_senha_label]="\e[33mSenha do Email:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_senha_label]="\e[33mEmail Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_senha_label]="\e[33mContraseña del Email:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_host_label]="\e[33mHost SMTP do Email:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_host_label]="\e[33mEmail SMTP Host:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_host_label]="\e[33mHost SMTP del Email:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_porta_label]="\e[33mPorta SMTP do Email:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_porta_label]="\e[33mEmail SMTP Port:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_porta_label]="\e[33mPuerto SMTP del Email:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_secure_label]="\e[33mSecure SMTP do Email:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_secure_label]="\e[33mEmail SMTP Secure:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_secure_label]="\e[33mSecure SMTP del Email:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_krayincrm_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_krayincrm_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_krayincrm_instalando]="\e[97m🚀 Iniciando a instalação do Krayin CRM...\e[0m"
+  MSG_EN[ferramenta_krayincrm_instalando]="\e[97m🚀 Starting the Krayin CRM installation...\e[0m"
+  MSG_ES[ferramenta_krayincrm_instalando]="\e[97m🚀 Iniciando la instalación de Krayin CRM...\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/6"
-    echo -en "🔗 \e[33mDigite o domínio para o Krayin CRM (ex: krayincrm.encha.ai): \e[0m" && read -r url_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo1)"
+    echo -en "$(t ferramenta_krayincrm_dominio_pergunta)" && read -r url_krayincrm
     echo ""
-    echo -e "\n📍 Passo 2/6"
-    echo -en "\e[33mDigite o Email para SMTP (ex: contato@encha.ai): \e[0m" && read -r email_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo2)"
+    echo -en "$(t ferramenta_krayincrm_email_pergunta)" && read -r email_krayincrm
     echo ""
 
     dominio_smtp=$(echo "$email_krayincrm" | cut -d'@' -f2)
 
-    echo -e "\n📍 Passo 3/6"
-    echo -e "$amarelo--> Caso não tiver um usuario do email, use o proprio email abaixo"
-    echo -en "\e[33mDigite o Usuário para SMTP (ex: encha ou contato@encha.ai): \e[0m" && read -r usuario_email_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo3)"
+    echo -e "$(t ferramenta_krayincrm_usuario_dica "$amarelo")"
+    echo -en "$(t ferramenta_krayincrm_usuario_pergunta)" && read -r usuario_email_krayincrm
     echo ""
-    echo -e "\n📍 Passo 4/6"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ | Se estiver usando gmail use a senha de app"
-    echo -en "\e[33mDigite a Senha SMTP do Email (ex: @Senha123_): \e[0m" && read -r senha_email_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo4)"
+    echo -e "$(t ferramenta_krayincrm_senha_dica "$amarelo")"
+    echo -en "$(t ferramenta_krayincrm_senha_pergunta)" && read -r senha_email_krayincrm
     echo ""
-    echo -e "\n📍 Passo 5/6"
-    echo -en "\e[33mDigite o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r smtp_email_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo5)"
+    echo -en "$(t ferramenta_krayincrm_host_pergunta)" && read -r smtp_email_krayincrm
     echo ""
-    echo -e "\n📍 Passo 6/6"
-    echo -en "\e[33mDigite a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_krayincrm
+    echo -e "$(t ferramenta_krayincrm_passo6)"
+    echo -en "$(t ferramenta_krayincrm_porta_pergunta)" && read -r porta_smtp_krayincrm
     echo ""
 
-    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false 
+    ## Verifica se a porta é 465, se sim deixa o ssl true, se não, deixa false
     if [ "$porta_smtp_krayincrm" -eq 465 ]; then
     smtp_secure_krayincrm=ssl
     else
     smtp_secure_krayincrm=tls
-    fi 
+    fi
 
     clear
     msg_krayincrm
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_krayincrm_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Krayin CRM:\e[97m $url_krayincrm\e[0m"
-    echo -e "\e[33mEmail do SMTP:\e[97m $email_krayincrm\e[0m"
-    echo -e "\e[33mUsuário do SMTP:\e[97m $usuario_email_krayincrm\e[0m"
-    echo -e "\e[33mSenha do Email:\e[97m $senha_email_krayincrm\e[0m"
-    echo -e "\e[33mHost SMTP do Email:\e[97m $smtp_email_krayincrm\e[0m"
-    echo -e "\e[33mPorta SMTP do Email:\e[97m $porta_smtp_krayincrm\e[0m"
-    echo -e "\e[33mSecure SMTP do Email:\e[97m $smtp_secure_krayincrm\e[0m"
+    echo -e "$(t ferramenta_krayincrm_dominio_label "$url_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_email_label "$email_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_usuario_label "$usuario_email_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_senha_label "$senha_email_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_host_label "$smtp_email_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_porta_label "$porta_smtp_krayincrm")"
+    echo -e "$(t ferramenta_krayincrm_secure_label "$smtp_secure_krayincrm")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_krayincrm_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_krayincrm; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Krayin CRM...\e[0m"
+  echo -e "$(t ferramenta_krayincrm_instalando)"
 
   secret_key="base64:$(openssl rand -base64 32)"
   senha_postgres_krayin=$(openssl rand -hex 16)
@@ -17583,10 +22780,14 @@ networks:
     name: $nome_rede_interna
 EOL
 
+  MSG_PT[ferramenta_krayincrm_verificando_servico]="\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  MSG_EN[ferramenta_krayincrm_verificando_servico]="\e[97m• CHECKING SERVICE \e[33m[3/3]\e[0m"
+  MSG_ES[ferramenta_krayincrm_verificando_servico]="\e[97m• VERIFICANDO SERVICIO \e[33m[3/3]\e[0m"
+
   STACK_NAME="krayincrm${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[3/3]\e[0m"
+  echo -e "$(t ferramenta_krayincrm_verificando_servico)"
   echo ""
 
   pull francisbreit/crmk:v2.0.5-fr percona/percona-server:latest redis:latest
@@ -17616,28 +22817,68 @@ EOL
 
   cd
 
+  MSG_PT[ferramenta_krayincrm_usuario_resumo]="\e[33mUsuario:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  MSG_EN[ferramenta_krayincrm_usuario_resumo]="\e[33mUsername:\e[97m Needs to be created on first access to Krayin CRM\e[0m"
+  MSG_ES[ferramenta_krayincrm_usuario_resumo]="\e[33mUsuario:\e[97m Necesita crearse en el primer acceso a Krayin CRM\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_senha_resumo]="\e[33mSenha:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  MSG_EN[ferramenta_krayincrm_senha_resumo]="\e[33mPassword:\e[97m Needs to be created on first access to Krayin CRM\e[0m"
+  MSG_ES[ferramenta_krayincrm_senha_resumo]="\e[33mContraseña:\e[97m Necesita crearse en el primer acceso a Krayin CRM\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_doc_resumo]="\e[33mDocumentação:\e[97m https://%s/api/documentation\e[0m"
+  MSG_EN[ferramenta_krayincrm_doc_resumo]="\e[33mDocumentation:\e[97m https://%s/api/documentation\e[0m"
+  MSG_ES[ferramenta_krayincrm_doc_resumo]="\e[33mDocumentación:\e[97m https://%s/api/documentation\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_hostmysql_resumo]="\e[33mHost Mysql:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_hostmysql_resumo]="\e[33mMysql Host:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_hostmysql_resumo]="\e[33mHost Mysql:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_portamysql_resumo]="\e[33mPorta Mysql:\e[97m 3306\e[0m"
+  MSG_EN[ferramenta_krayincrm_portamysql_resumo]="\e[33mMysql Port:\e[97m 3306\e[0m"
+  MSG_ES[ferramenta_krayincrm_portamysql_resumo]="\e[33mPuerto Mysql:\e[97m 3306\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_dbmysql_resumo]="\e[33mDatabase Mysql:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_dbmysql_resumo]="\e[33mMysql Database:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_dbmysql_resumo]="\e[33mDatabase Mysql:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_prefixo_resumo]="\e[33mPrefixo:\e[97m vazio%s\e[0m"
+  MSG_EN[ferramenta_krayincrm_prefixo_resumo]="\e[33mPrefix:\e[97m empty%s\e[0m"
+  MSG_ES[ferramenta_krayincrm_prefixo_resumo]="\e[33mPrefijo:\e[97m vacío%s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_usermysql_resumo]="\e[33mUsuario Mysql:\e[97m root\e[0m"
+  MSG_EN[ferramenta_krayincrm_usermysql_resumo]="\e[33mMysql Username:\e[97m root\e[0m"
+  MSG_ES[ferramenta_krayincrm_usermysql_resumo]="\e[33mUsuario Mysql:\e[97m root\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_senhamysql_resumo]="\e[33mSenha Mysql:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_krayincrm_senhamysql_resumo]="\e[33mMysql Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_krayincrm_senhamysql_resumo]="\e[33mContraseña Mysql:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_krayincrm_dominio_resumo]="\e[33mDominio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_krayincrm_dominio_resumo]="\e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_krayincrm_dominio_resumo]="\e[33mDominio:\e[97m https://%s\e[0m"
+
   msg_resumo_informacoes
   echo -e "\e[32m[ KRAYIN CRM ]\e[0m"
   echo ""
-  echo -e "\e[33mDominio:\e[97m https://$url_krayincrm\e[0m"
+  echo -e "$(t ferramenta_krayincrm_dominio_resumo "$url_krayincrm")"
   echo ""
-  echo -e "\e[33mUsuario:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  echo -e "$(t ferramenta_krayincrm_usuario_resumo)"
   echo ""
-  echo -e "\e[33mSenha:\e[97m Precisa de criar no primeiro acesso ao Krayin CRM\e[0m"
+  echo -e "$(t ferramenta_krayincrm_senha_resumo)"
   echo ""
-  echo -e "\e[33mDocumentação:\e[97m https://$url_krayincrm/api/documentation\e[0m"
+  echo -e "$(t ferramenta_krayincrm_doc_resumo "$url_krayincrm")"
   echo ""
-  echo -e "\e[33mHost Mysql:\e[97m krayin${1:+_$1}_db\e[0m"
+  echo -e "$(t ferramenta_krayincrm_hostmysql_resumo "krayin${1:+_$1}_db")"
   echo ""
-  echo -e "\e[33mPorta Mysql:\e[97m 3306\e[0m"
+  echo -e "$(t ferramenta_krayincrm_portamysql_resumo)"
   echo ""
-  echo -e "\e[33mDatabase Mysql:\e[97m krayincrm${1:+_$1}\e[0m"
+  echo -e "$(t ferramenta_krayincrm_dbmysql_resumo "krayincrm${1:+_$1}")"
   echo ""
-  echo -e "\e[33mPrefixo:\e[97m vazio${1:+_$1}\e[0m"
+  echo -e "$(t ferramenta_krayincrm_prefixo_resumo "${1:+_$1}")"
   echo ""
-  echo -e "\e[33mUsuario Mysql:\e[97m root\e[0m"
+  echo -e "$(t ferramenta_krayincrm_usermysql_resumo)"
   echo ""
-  echo -e "\e[33mSenha Mysql:\e[97m $senha_postgres_krayin\e[0m"
+  echo -e "$(t ferramenta_krayincrm_senhamysql_resumo "$senha_postgres_krayin")"
   msg_retorno_menu
 
 }
@@ -17646,38 +22887,106 @@ ferramenta_shlink() {
   msg_shlink
   dados
 
+  MSG_PT[ferramenta_shlink_passo1]=$'\n📍 Passo 1/4'
+  MSG_EN[ferramenta_shlink_passo1]=$'\n📍 Step 1/4'
+  MSG_ES[ferramenta_shlink_passo1]=$'\n📍 Paso 1/4'
+
+  MSG_PT[ferramenta_shlink_painel_pergunta]="🔗 \e[33mDigite o domínio para o Painel do Shlink (ex: painel-shlink.encha.ai): \e[0m"
+  MSG_EN[ferramenta_shlink_painel_pergunta]="🔗 \e[33mEnter the domain for the Shlink Panel (e.g. painel-shlink.encha.ai): \e[0m"
+  MSG_ES[ferramenta_shlink_painel_pergunta]="🔗 \e[33mIngrese el dominio para el Panel de Shlink (ej: painel-shlink.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_shlink_passo2]=$'\n📍 Passo 2/4'
+  MSG_EN[ferramenta_shlink_passo2]=$'\n📍 Step 2/4'
+  MSG_ES[ferramenta_shlink_passo2]=$'\n📍 Paso 2/4'
+
+  MSG_PT[ferramenta_shlink_api_pergunta]="\e[33mDigite o dominio para a API do Shlink (ex: shlink.encha.ai): \e[0m"
+  MSG_EN[ferramenta_shlink_api_pergunta]="\e[33mEnter the domain for the Shlink API (e.g. shlink.encha.ai): \e[0m"
+  MSG_ES[ferramenta_shlink_api_pergunta]="\e[33mIngrese el dominio para la API de Shlink (ej: shlink.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_shlink_passo3]=$'\n📍 Passo 3/4'
+  MSG_EN[ferramenta_shlink_passo3]=$'\n📍 Step 3/4'
+  MSG_ES[ferramenta_shlink_passo3]=$'\n📍 Paso 3/4'
+
+  MSG_PT[ferramenta_shlink_user_dica]="%s--> Sem caracteres especiais: \!#\$ e/ou espaços"
+  MSG_EN[ferramenta_shlink_user_dica]="%s--> No special characters: \!#\$ and/or spaces"
+  MSG_ES[ferramenta_shlink_user_dica]="%s--> Sin caracteres especiales: \!#\$ y/o espacios"
+
+  MSG_PT[ferramenta_shlink_user_pergunta]="\e[33mDigite um usuario (ex: encha): \e[0m"
+  MSG_EN[ferramenta_shlink_user_pergunta]="\e[33mEnter a username (e.g. encha): \e[0m"
+  MSG_ES[ferramenta_shlink_user_pergunta]="\e[33mIngrese un usuario (ej: encha): \e[0m"
+
+  MSG_PT[ferramenta_shlink_pass_dica]="%s--> Sem caracteres especiais: \!#\$"
+  MSG_EN[ferramenta_shlink_pass_dica]="%s--> No special characters: \!#\$"
+  MSG_ES[ferramenta_shlink_pass_dica]="%s--> Sin caracteres especiales: \!#\$"
+
+  MSG_PT[ferramenta_shlink_pass_pergunta]="\e[33mDigite uma Senha (ex: @Senha123_): \e[0m"
+  MSG_EN[ferramenta_shlink_pass_pergunta]="\e[33mEnter a Password (e.g. @Senha123_): \e[0m"
+  MSG_ES[ferramenta_shlink_pass_pergunta]="\e[33mIngrese una Contraseña (ej: @Senha123_): \e[0m"
+
+  MSG_PT[ferramenta_shlink_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_shlink_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_shlink_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_shlink_painel_label]="🌐 \e[33mDomínio do Painel Shlink:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_shlink_painel_label]="🌐 \e[33mShlink Panel Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_shlink_painel_label]="🌐 \e[33mDominio del Panel Shlink:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_shlink_api_label]="\e[33mDominio da API do Shlink:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_shlink_api_label]="\e[33mShlink API Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_shlink_api_label]="\e[33mDominio de la API de Shlink:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_shlink_user_label]="\e[33mUsuario do Shlink:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_shlink_user_label]="\e[33mShlink Username:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_shlink_user_label]="\e[33mUsuario de Shlink:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_shlink_pass_label]="\e[33mSenha do Shlink:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_shlink_pass_label]="\e[33mShlink Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_shlink_pass_label]="\e[33mContraseña de Shlink:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_shlink_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_shlink_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_shlink_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_shlink_instalando]="\e[97m🚀 Iniciando a instalação do Shlink...\e[0m"
+  MSG_EN[ferramenta_shlink_instalando]="\e[97m🚀 Starting the Shlink installation...\e[0m"
+  MSG_ES[ferramenta_shlink_instalando]="\e[97m🚀 Iniciando la instalación de Shlink...\e[0m"
+
+  MSG_PT[ferramenta_shlink_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  MSG_EN[ferramenta_shlink_verificando_postgres]="\e[97m• CHECKING/INSTALLING POSTGRES \e[33m[2/4]\e[0m"
+  MSG_ES[ferramenta_shlink_verificando_postgres]="\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+
   while true; do
-    echo -e "\n📍 Passo 1/4"
-    echo -en "🔗 \e[33mDigite o domínio para o Painel do Shlink (ex: painel-shlink.encha.ai): \e[0m" && read -r url_shlink
+    echo -e "$(t ferramenta_shlink_passo1)"
+    echo -en "$(t ferramenta_shlink_painel_pergunta)" && read -r url_shlink
     echo ""
-    echo -e "\n📍 Passo 2/4"
-    echo -en "\e[33mDigite o dominio para a API do Shlink (ex: shlink.encha.ai): \e[0m" && read -r url_shlink_api
+    echo -e "$(t ferramenta_shlink_passo2)"
+    echo -en "$(t ferramenta_shlink_api_pergunta)" && read -r url_shlink_api
     echo ""
-    echo -e "\n📍 Passo 3/4"
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$ e/ou espaços"
-    echo -en "\e[33mDigite um usuario (ex: encha): \e[0m" && read -r shlink_user
+    echo -e "$(t ferramenta_shlink_passo3)"
+    echo -e "$(t ferramenta_shlink_user_dica "$amarelo")"
+    echo -en "$(t ferramenta_shlink_user_pergunta)" && read -r shlink_user
     echo ""
-    echo -e "$amarelo--> Sem caracteres especiais: \!#$"
-    echo -en "\e[33mDigite uma Senha (ex: @Senha123_): \e[0m" && read -r shlink_pass
+    echo -e "$(t ferramenta_shlink_pass_dica "$amarelo")"
+    echo -en "$(t ferramenta_shlink_pass_pergunta)" && read -r shlink_pass
     echo ""
 
     clear
     msg_shlink
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_shlink_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio do Painel Shlink:\e[97m $url_shlink\e[0m"
-    echo -e "\e[33mDominio da API do Shlink:\e[97m $url_shlink_api\e[0m"
-    echo -e "\e[33mUsuario do Shlink:\e[97m $shlink_user\e[0m"
-    echo -e "\e[33mSenha do Shlink:\e[97m $shlink_pass\e[0m"
+    echo -e "$(t ferramenta_shlink_painel_label "$url_shlink")"
+    echo -e "$(t ferramenta_shlink_api_label "$url_shlink_api")"
+    echo -e "$(t ferramenta_shlink_user_label "$shlink_user")"
+    echo -e "$(t ferramenta_shlink_pass_label "$shlink_pass")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_shlink_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_shlink; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Shlink...\e[0m"
+  echo -e "$(t ferramenta_shlink_instalando)"
 
-  echo -e "\e[97m• VERIFICANDO/INSTALANDO POSTGRES \e[33m[2/4]\e[0m"
+  echo -e "$(t ferramenta_shlink_verificando_postgres)"
   echo ""
   verificar_container_postgres || ferramenta_postgres
   pegar_senha_postgres
@@ -17812,10 +23121,26 @@ networks:
     name: $nome_rede_interna ## Nome da rede interna
 EOL
 
+  MSG_PT[ferramenta_shlink_verificando_servico]="\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  MSG_EN[ferramenta_shlink_verificando_servico]="\e[97m• CHECKING SERVICE \e[33m[4/4]\e[0m"
+  MSG_ES[ferramenta_shlink_verificando_servico]="\e[97m• VERIFICANDO SERVICIO \e[33m[4/4]\e[0m"
+
+  MSG_PT[ferramenta_shlink_dominio_resumo]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_shlink_dominio_resumo]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_shlink_dominio_resumo]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_shlink_api_resumo]="🌐 \e[33mDominio da API:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_shlink_api_resumo]="🌐 \e[33mAPI Domain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_shlink_api_resumo]="🌐 \e[33mDominio de la API:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_shlink_apikey_resumo]="\e[33mApiKey:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_shlink_apikey_resumo]="\e[33mApiKey:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_shlink_apikey_resumo]="\e[33mApiKey:\e[97m %s\e[0m"
+
   STACK_NAME="shlink${1:+_$1}"
   stack_editavel
 
-  echo -e "\e[97m• VERIFICANDO SERVIÇO \e[33m[4/4]\e[0m"
+  echo -e "$(t ferramenta_shlink_verificando_servico)"
   echo ""
 
   pull shlinkio/shlink-web-client:latest shlinkio/shlink:latest
@@ -17836,9 +23161,9 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ SHLINK ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_shlink\e[0m"
-  echo -e "\e[33m🌐 Dominio da API:\e[97m https://$url_shlink_api\e[0m"
-  echo -e "\e[33mApiKey:\e[97m $shlink_api_key\e[0m"
+  echo -e "$(t ferramenta_shlink_dominio_resumo "$url_shlink")"
+  echo -e "$(t ferramenta_shlink_api_resumo "$url_shlink_api")"
+  echo -e "$(t ferramenta_shlink_apikey_resumo "$shlink_api_key")"
   msg_retorno_menu
 
 }
@@ -17847,36 +23172,92 @@ ferramenta_duplicati() {
   msg_duplicati
   dados
 
-  while true; do 
-    echo -e "\n📍 \e[97mPasso ${amarelo}1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para acessar o Duplicati (ex: backup.encha.ai): \e[0m" && read -r url_duplicati
+  MSG_PT[ferramenta_duplicati_passo1]=$'\n📍 \e[97mPasso %s1/3\e[0m'
+  MSG_EN[ferramenta_duplicati_passo1]=$'\n📍 \e[97mStep %s1/3\e[0m'
+  MSG_ES[ferramenta_duplicati_passo1]=$'\n📍 \e[97mPaso %s1/3\e[0m'
+
+  MSG_PT[ferramenta_duplicati_dominio_pergunta]="🔗 \e[33mDigite o domínio para acessar o Duplicati (ex: backup.encha.ai): \e[0m"
+  MSG_EN[ferramenta_duplicati_dominio_pergunta]="🔗 \e[33mEnter the domain to access Duplicati (e.g. backup.encha.ai): \e[0m"
+  MSG_ES[ferramenta_duplicati_dominio_pergunta]="🔗 \e[33mIngrese el dominio para acceder a Duplicati (ej: backup.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_duplicati_passo2]=$'\n📍 \e[97mPasso %s2/3\e[0m'
+  MSG_EN[ferramenta_duplicati_passo2]=$'\n📍 \e[97mStep %s2/3\e[0m'
+  MSG_ES[ferramenta_duplicati_passo2]=$'\n📍 \e[97mPaso %s2/3\e[0m'
+
+  MSG_PT[ferramenta_duplicati_senha_pergunta]="🔑 \e[33mDigite uma senha para proteger a interface web do Duplicati (opcional, deixe em branco para não usar): \e[0m"
+  MSG_EN[ferramenta_duplicati_senha_pergunta]="🔑 \e[33mEnter a password to protect the Duplicati web interface (optional, leave blank to skip): \e[0m"
+  MSG_ES[ferramenta_duplicati_senha_pergunta]="🔑 \e[33mIngrese una contraseña para proteger la interfaz web de Duplicati (opcional, deje en blanco para no usar): \e[0m"
+
+  MSG_PT[ferramenta_duplicati_passo3]=$'\n📍 \e[97mPasso %s3/3\e[0m'
+  MSG_EN[ferramenta_duplicati_passo3]=$'\n📍 \e[97mStep %s3/3\e[0m'
+  MSG_ES[ferramenta_duplicati_passo3]=$'\n📍 \e[97mPaso %s3/3\e[0m'
+
+  MSG_PT[ferramenta_duplicati_dir_pergunta]="📂 \e[33mQual diretório do servidor você quer acessar para fazer backup? (ex: /var/lib/docker/volumes)\e[0m"
+  MSG_EN[ferramenta_duplicati_dir_pergunta]="📂 \e[33mWhich server directory do you want to access for backup? (e.g. /var/lib/docker/volumes)\e[0m"
+  MSG_ES[ferramenta_duplicati_dir_pergunta]="📂 \e[33m¿Qué directorio del servidor desea acceder para hacer backup? (ej: /var/lib/docker/volumes)\e[0m"
+
+  MSG_PT[ferramenta_duplicati_dir_dica]="   \e[36mDica: Para acessar TODOS os arquivos do servidor, use apenas a barra: /\e[0m"
+  MSG_EN[ferramenta_duplicati_dir_dica]="   \e[36mTip: To access ALL server files, use just the slash: /\e[0m"
+  MSG_ES[ferramenta_duplicati_dir_dica]="   \e[36mConsejo: Para acceder a TODOS los archivos del servidor, use solo la barra: /\e[0m"
+
+  MSG_PT[ferramenta_duplicati_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_duplicati_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_duplicati_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_duplicati_dominio_label]="🌐 \e[33mDomínio Duplicati:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_duplicati_dominio_label]="🌐 \e[33mDuplicati Domain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_duplicati_dominio_label]="🌐 \e[33mDominio Duplicati:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_duplicati_senha_definida]="(Senha definida)"
+  MSG_EN[ferramenta_duplicati_senha_definida]="(Password set)"
+  MSG_ES[ferramenta_duplicati_senha_definida]="(Contraseña definida)"
+
+  MSG_PT[ferramenta_duplicati_senha_interface_label]="🔑 \e[33mSenha da Interface:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_duplicati_senha_interface_label]="🔑 \e[33mInterface Password:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_duplicati_senha_interface_label]="🔑 \e[33mContraseña de la Interfaz:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_duplicati_dir_label]="📂 \e[33mDiretório de Origem:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_duplicati_dir_label]="📂 \e[33mSource Directory:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_duplicati_dir_label]="📂 \e[33mDirectorio de Origen:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_duplicati_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_duplicati_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_duplicati_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_duplicati_instalando]="\e[97m🚀 Iniciando a instalação do Duplicati...\e[0m"
+  MSG_EN[ferramenta_duplicati_instalando]="\e[97m🚀 Starting the Duplicati installation...\e[0m"
+  MSG_ES[ferramenta_duplicati_instalando]="\e[97m🚀 Iniciando la instalación de Duplicati...\e[0m"
+
+  while true; do
+    echo -e "$(t ferramenta_duplicati_passo1 "$amarelo")"
+    echo -en "$(t ferramenta_duplicati_dominio_pergunta)" && read -r url_duplicati
     echo ""
 
-    echo -e "\n📍 \e[97mPasso ${amarelo}2/3\e[0m"
-    echo -e "🔑 \e[33mDigite uma senha para proteger a interface web do Duplicati (opcional, deixe em branco para não usar): \e[0m"
+    echo -e "$(t ferramenta_duplicati_passo2 "$amarelo")"
+    echo -e "$(t ferramenta_duplicati_senha_pergunta)"
     read -s -r pass_duplicati
     echo ""
 
-    echo -e "\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
-    echo -e "📂 \e[33mQual diretório do servidor você quer acessar para fazer backup? (ex: /var/lib/docker/volumes)\e[0m"
-    echo -e "   \e[36mDica: Para acessar TODOS os arquivos do servidor, use apenas a barra: /\e[0m"
+    echo -e "$(t ferramenta_duplicati_passo3 "$amarelo")"
+    echo -e "$(t ferramenta_duplicati_dir_pergunta)"
+    echo -e "$(t ferramenta_duplicati_dir_dica)"
     read -r dir_origem
     echo ""
 
     clear
     msg_duplicati
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_duplicati_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio Duplicati:\e[97m $url_duplicati\e[0m"
-    echo -e "🔑 \e[33mSenha da Interface:\e[97m ${pass_duplicati:+(Senha definida)}\e[0m"
-    echo -e "📂 \e[33mDiretório de Origem:\e[97m $dir_origem\e[0m"
+    echo -e "$(t ferramenta_duplicati_dominio_label "$url_duplicati")"
+    echo -e "$(t ferramenta_duplicati_senha_interface_label "${pass_duplicati:+$(t ferramenta_duplicati_senha_definida)}")"
+    echo -e "$(t ferramenta_duplicati_dir_label "$dir_origem")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_duplicati_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_duplicati; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Duplicati...\e[0m"
+  echo -e "$(t ferramenta_duplicati_instalando)"
   encryption_key_duplicati=$(openssl rand -base64 32)
   cat > duplicati${1:+_$1}.yaml <<EOL
 version: "3.7"
@@ -17932,10 +23313,30 @@ networks:
     name: $nome_rede_interna
 EOL
 
+  MSG_PT[ferramenta_duplicati_verificando_servico]=$'\n\e[97m• VERIFICANDO SERVIÇO...\e[0m'
+  MSG_EN[ferramenta_duplicati_verificando_servico]=$'\n\e[97m• CHECKING SERVICE...\e[0m'
+  MSG_ES[ferramenta_duplicati_verificando_servico]=$'\n\e[97m• VERIFICANDO SERVICIO...\e[0m'
+
+  MSG_PT[ferramenta_duplicati_senha_indefinida]="(Nenhuma senha definida)"
+  MSG_EN[ferramenta_duplicati_senha_indefinida]="(No password set)"
+  MSG_ES[ferramenta_duplicati_senha_indefinida]="(Ninguna contraseña definida)"
+
+  MSG_PT[ferramenta_duplicati_dominio_resumo]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_duplicati_dominio_resumo]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_duplicati_dominio_resumo]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_duplicati_senha_resumo]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_duplicati_senha_resumo]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_duplicati_senha_resumo]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_duplicati_pasta_resumo]="📂 \e[33mDentro do Duplicati, a pasta '\e[97m/source\e[33m' corresponde a '\e[97m%s\e[33m' no seu servidor.\e[0m"
+  MSG_EN[ferramenta_duplicati_pasta_resumo]="📂 \e[33mInside Duplicati, the folder '\e[97m/source\e[33m' corresponds to '\e[97m%s\e[33m' on your server.\e[0m"
+  MSG_ES[ferramenta_duplicati_pasta_resumo]="📂 \e[33mDentro de Duplicati, la carpeta '\e[97m/source\e[33m' corresponde a '\e[97m%s\e[33m' en su servidor.\e[0m"
+
   STACK_NAME="duplicati${1:+_$1}"
   stack_editavel
 
-  echo -e "\n\e[97m• VERIFICANDO SERVIÇO...\e[0m"
+  echo -e "$(t ferramenta_duplicati_verificando_servico)"
   echo ""
 
   pull lscr.io/linuxserver/duplicati:latest
@@ -17953,9 +23354,9 @@ EOL
 
   msg_resumo_informacoes
   echo -e "\e[32m[ DUPLICATI ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_duplicati\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m ${pass_duplicati:-(Nenhuma senha definida)}\e[0m"
-  echo -e "\e[33m📂 Dentro do Duplicati, a pasta '\e[97m/source\e[33m' corresponde a '\e[97m$dir_origem\e[33m' no seu servidor.\e[0m"
+  echo -e "$(t ferramenta_duplicati_dominio_resumo "$url_duplicati")"
+  echo -e "$(t ferramenta_duplicati_senha_resumo "${pass_duplicati:-$(t ferramenta_duplicati_senha_indefinida)}")"
+  echo -e "$(t ferramenta_duplicati_pasta_resumo "$dir_origem")"
   msg_retorno_menu
 
 }
@@ -17964,53 +23365,141 @@ ferramenta_testeemail() {
     msg_testeemail
     dados
   
+    MSG_PT[ferramenta_testeemail_passo1]="\e[97mPasso%s 1/5\e[0m"
+    MSG_EN[ferramenta_testeemail_passo1]="\e[97mStep%s 1/5\e[0m"
+    MSG_ES[ferramenta_testeemail_passo1]="\e[97mPaso%s 1/5\e[0m"
+
+    MSG_PT[ferramenta_testeemail_email_pergunta]="\e[33mDigite o endereço de Email (ex: contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_testeemail_email_pergunta]="\e[33mEnter the Email address (e.g. contato@encha.ai): \e[0m"
+    MSG_ES[ferramenta_testeemail_email_pergunta]="\e[33mIngrese la dirección de Email (ej: contato@encha.ai): \e[0m"
+
+    MSG_PT[ferramenta_testeemail_passo2]="\e[97mPasso%s 2/5\e[0m"
+    MSG_EN[ferramenta_testeemail_passo2]="\e[97mStep%s 2/5\e[0m"
+    MSG_ES[ferramenta_testeemail_passo2]="\e[97mPaso%s 2/5\e[0m"
+
+    MSG_PT[ferramenta_testeemail_usuario_dica]="%s--> Caso não tiver um usuário do email, use o próprio email abaixo"
+    MSG_EN[ferramenta_testeemail_usuario_dica]="%s--> If you don't have an email username, use the email itself below"
+    MSG_ES[ferramenta_testeemail_usuario_dica]="%s--> Si no tiene un usuario del email, use el propio email a continuación"
+
+    MSG_PT[ferramenta_testeemail_usuario_pergunta]="\e[33mDigite o usuário de Email (ex: encha ou contato@encha.ai): \e[0m"
+    MSG_EN[ferramenta_testeemail_usuario_pergunta]="\e[33mEnter the Email username (e.g. encha or contato@encha.ai): \e[0m"
+    MSG_ES[ferramenta_testeemail_usuario_pergunta]="\e[33mIngrese el usuario del Email (ej: encha o contato@encha.ai): \e[0m"
+
+    MSG_PT[ferramenta_testeemail_passo3]="\e[97mPasso%s 3/5\e[0m"
+    MSG_EN[ferramenta_testeemail_passo3]="\e[97mStep%s 3/5\e[0m"
+    MSG_ES[ferramenta_testeemail_passo3]="\e[97mPaso%s 3/5\e[0m"
+
+    MSG_PT[ferramenta_testeemail_senha_dica]="%s--> Sem caracteres especiais: !#\$ | Se estiver usando Gmail, use a senha de app"
+    MSG_EN[ferramenta_testeemail_senha_dica]="%s--> No special characters: !#\$ | If using Gmail, use an app password"
+    MSG_ES[ferramenta_testeemail_senha_dica]="%s--> Sin caracteres especiales: !#\$ | Si usa Gmail, use la contraseña de aplicación"
+
+    MSG_PT[ferramenta_testeemail_senha_pergunta]="\e[33mDigite a Senha do email (ex: @Senha123_): \e[0m"
+    MSG_EN[ferramenta_testeemail_senha_pergunta]="\e[33mEnter the email Password (e.g. @Senha123_): \e[0m"
+    MSG_ES[ferramenta_testeemail_senha_pergunta]="\e[33mIngrese la Contraseña del email (ej: @Senha123_): \e[0m"
+
+    MSG_PT[ferramenta_testeemail_passo4]="\e[97mPasso%s 4/5\e[0m"
+    MSG_EN[ferramenta_testeemail_passo4]="\e[97mStep%s 4/5\e[0m"
+    MSG_ES[ferramenta_testeemail_passo4]="\e[97mPaso%s 4/5\e[0m"
+
+    MSG_PT[ferramenta_testeemail_host_pergunta]="\e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[ferramenta_testeemail_host_pergunta]="\e[33mEnter the SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[ferramenta_testeemail_host_pergunta]="\e[33mIngrese el Host SMTP (ej: smtp.hostinger.com): \e[0m"
+
+    MSG_PT[ferramenta_testeemail_passo5]="\e[97mPasso%s 5/5\e[0m"
+    MSG_EN[ferramenta_testeemail_passo5]="\e[97mStep%s 5/5\e[0m"
+    MSG_ES[ferramenta_testeemail_passo5]="\e[97mPaso%s 5/5\e[0m"
+
+    MSG_PT[ferramenta_testeemail_porta_pergunta]="\e[33mDigite a Porta SMTP (ex: 465): \e[0m"
+    MSG_EN[ferramenta_testeemail_porta_pergunta]="\e[33mEnter the SMTP Port (e.g. 465): \e[0m"
+    MSG_ES[ferramenta_testeemail_porta_pergunta]="\e[33mIngrese el Puerto SMTP (ej: 465): \e[0m"
+
+    MSG_PT[ferramenta_testeemail_email_label]="\e[33mEmail SMTP: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_testeemail_email_label]="\e[33mSMTP Email: \e[97m%s\e[0m"
+    MSG_ES[ferramenta_testeemail_email_label]="\e[33mEmail SMTP: \e[97m%s\e[0m"
+
+    MSG_PT[ferramenta_testeemail_usuario_label]="\e[33mUsuário SMTP: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_testeemail_usuario_label]="\e[33mSMTP Username: \e[97m%s\e[0m"
+    MSG_ES[ferramenta_testeemail_usuario_label]="\e[33mUsuario SMTP: \e[97m%s\e[0m"
+
+    MSG_PT[ferramenta_testeemail_senha_label]="\e[33mSenha SMTP: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_testeemail_senha_label]="\e[33mSMTP Password: \e[97m%s\e[0m"
+    MSG_ES[ferramenta_testeemail_senha_label]="\e[33mContraseña SMTP: \e[97m%s\e[0m"
+
+    MSG_PT[ferramenta_testeemail_host_label]="\e[33mHost SMTP: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_testeemail_host_label]="\e[33mSMTP Host: \e[97m%s\e[0m"
+    MSG_ES[ferramenta_testeemail_host_label]="\e[33mHost SMTP: \e[97m%s\e[0m"
+
+    MSG_PT[ferramenta_testeemail_porta_label]="\e[33mPorta SMTP: \e[97m%s\e[0m"
+    MSG_EN[ferramenta_testeemail_porta_label]="\e[33mSMTP Port: \e[97m%s\e[0m"
+    MSG_ES[ferramenta_testeemail_porta_label]="\e[33mPuerto SMTP: \e[97m%s\e[0m"
+
+    MSG_PT[ferramenta_testeemail_confirma]="As respostas estão corretas? (Y/N): "
+    MSG_EN[ferramenta_testeemail_confirma]="Are the answers correct? (Y/N): "
+    MSG_ES[ferramenta_testeemail_confirma]="¿Las respuestas están correctas? (Y/N): "
+
+    MSG_PT[ferramenta_testeemail_iniciando_verificacao]="\e[97m• INICIANDO VERIFICAÇÃO \e[33m[1/3]\e[0m"
+    MSG_EN[ferramenta_testeemail_iniciando_verificacao]="\e[97m• STARTING VERIFICATION \e[33m[1/3]\e[0m"
+    MSG_ES[ferramenta_testeemail_iniciando_verificacao]="\e[97m• INICIANDO VERIFICACIÓN \e[33m[1/3]\e[0m"
+
+    MSG_PT[ferramenta_testeemail_resultado_titulo]="\e[32m[Resultado do Teste SMTP]\e[0m"
+    MSG_EN[ferramenta_testeemail_resultado_titulo]="\e[32m[SMTP Test Result]\e[0m"
+    MSG_ES[ferramenta_testeemail_resultado_titulo]="\e[32m[Resultado de la Prueba SMTP]\e[0m"
+
+    MSG_PT[ferramenta_testeemail_resultado_sucesso]="\e[33mOs dados informados \e[92mestão funcionando corretamente\e[33m.\e[0m"
+    MSG_EN[ferramenta_testeemail_resultado_sucesso]="\e[33mThe information provided \e[92mis working correctly\e[33m.\e[0m"
+    MSG_ES[ferramenta_testeemail_resultado_sucesso]="\e[33mLos datos informados \e[92mestán funcionando correctamente\e[33m.\e[0m"
+
+    MSG_PT[ferramenta_testeemail_resultado_falha]="\e[33mOs dados informados \e[91mNÃO estão funcionando corretamente\e[33m. Por favor, verifique os dados e tente novamente.\e[0m"
+    MSG_EN[ferramenta_testeemail_resultado_falha]="\e[33mThe information provided \e[91mis NOT working correctly\e[33m. Please check the information and try again.\e[0m"
+    MSG_ES[ferramenta_testeemail_resultado_falha]="\e[33mLos datos informados \e[91mNO están funcionando correctamente\e[33m. Por favor, verifique los datos e intente de nuevo.\e[0m"
+
     while true; do
-        echo -e "\e[97mPasso${amarelo} 1/5\e[0m"
-        echo -en "\e[33mDigite o endereço de Email (ex: contato@encha.ai): \e[0m"
+        echo -e "$(t ferramenta_testeemail_passo1 "$amarelo")"
+        echo -en "$(t ferramenta_testeemail_email_pergunta)"
         read -r email_teste
         echo ""
 
-        echo -e "\e[97mPasso${amarelo} 2/5\e[0m"
-        echo -e "${amarelo}--> Caso não tiver um usuário do email, use o próprio email abaixo"
-        echo -en "\e[33mDigite o usuário de Email (ex: encha ou contato@encha.ai): \e[0m"
+        echo -e "$(t ferramenta_testeemail_passo2 "$amarelo")"
+        echo -e "$(t ferramenta_testeemail_usuario_dica "$amarelo")"
+        echo -en "$(t ferramenta_testeemail_usuario_pergunta)"
         read -r user_teste
         echo ""
 
-        echo -e "\e[97mPasso${amarelo} 3/5\e[0m"
-        echo -e "${amarelo}--> Sem caracteres especiais: !#$ | Se estiver usando Gmail, use a senha de app"
-        echo -en "\e[33mDigite a Senha do email (ex: @Senha123_): \e[0m"
+        echo -e "$(t ferramenta_testeemail_passo3 "$amarelo")"
+        echo -e "$(t ferramenta_testeemail_senha_dica "$amarelo")"
+        echo -en "$(t ferramenta_testeemail_senha_pergunta)"
         read -r senha_teste
         echo ""
 
-        echo -e "\e[97mPasso${amarelo} 4/5\e[0m"
-        echo -en "\e[33mDigite o Host SMTP (ex: smtp.hostinger.com): \e[0m"
+        echo -e "$(t ferramenta_testeemail_passo4 "$amarelo")"
+        echo -en "$(t ferramenta_testeemail_host_pergunta)"
         read -r host_teste
         echo ""
 
-        echo -e "\e[97mPasso${amarelo} 5/5\e[0m"
-        echo -en "\e[33mDigite a Porta SMTP (ex: 465): \e[0m"
+        echo -e "$(t ferramenta_testeemail_passo5 "$amarelo")"
+        echo -en "$(t ferramenta_testeemail_porta_pergunta)"
         read -r porta_teste
         echo ""
 
         clear
         msg_testeemail
 
-        echo -e "\e[33mEmail SMTP: \e[97m$email_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_email_label "$email_teste")"
         echo ""
-        echo -e "\e[33mUsuário SMTP: \e[97m$user_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_usuario_label "$user_teste")"
         echo ""
-        echo -e "\e[33mSenha SMTP: \e[97m$senha_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_senha_label "$senha_teste")"
         echo ""
-        echo -e "\e[33mHost SMTP: \e[97m$host_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_host_label "$host_teste")"
         echo ""
-        echo -e "\e[33mPorta SMTP: \e[97m$porta_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_porta_label "$porta_teste")"
         echo ""
-        read -p "As respostas estão corretas? (Y/N): " confirmacao
+        read -p "$(t ferramenta_testeemail_confirma)" confirmacao
         if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else msg_testeemail; fi
     done
 
     # Mensagem de Início
-    echo -e "\e[97m• INICIANDO VERIFICAÇÃO \e[33m[1/3]\e[0m"
+    echo -e "$(t ferramenta_testeemail_iniciando_verificacao)"
     echo ""
 
     sudo apt-get update > /dev/null 2>&1
@@ -18030,49 +23519,77 @@ By: EnchaAi"
         sleep 2
         clear
         nome_testeemail
-        echo -e "\e[32m[Resultado do Teste SMTP]\e[0m"
+        echo -e "$(t ferramenta_testeemail_resultado_titulo)"
         echo ""
-        echo -e "\e[33mOs dados informados \e[92mestão funcionando corretamente\e[33m.\e[0m"
+        echo -e "$(t ferramenta_testeemail_resultado_sucesso)"
 
     else
         sleep 2
         clear
         nome_testeemail
-        echo -e "\e[32m[Resultado do Teste SMTP]\e[0m"
+        echo -e "$(t ferramenta_testeemail_resultado_titulo)"
         echo ""
-        echo -e "\e[33mOs dados informados \e[91mNÃO estão funcionando corretamente\e[33m. Por favor, verifique os dados e tente novamente.\e[0m"
+        echo -e "$(t ferramenta_testeemail_resultado_falha)"
     fi
         echo ""
-        echo -e "\e[33mEmail SMTP: \e[97m$email_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_email_label "$email_teste")"
         echo ""
-        echo -e "\e[33mUsuário SMTP: \e[97m$user_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_usuario_label "$user_teste")"
         echo ""
-        echo -e "\e[33mSenha SMTP: \e[97m$senha_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_senha_label "$senha_teste")"
         echo ""
-        echo -e "\e[33mHost SMTP: \e[97m$host_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_host_label "$host_teste")"
         echo ""
-        echo -e "\e[33mPorta SMTP: \e[97m$porta_teste\e[0m"
+        echo -e "$(t ferramenta_testeemail_porta_label "$porta_teste")"
 
     msg_retorno_menu
 
 }
 
 verificar_status_servicos() {
+    MSG_PT[verificar_status_servicos_titulo]="%s[📊] Status dos Serviços:%s"
+    MSG_EN[verificar_status_servicos_titulo]="%s[📊] Services Status:%s"
+    MSG_ES[verificar_status_servicos_titulo]="%s[📊] Estado de los Servicios:%s"
+
+    MSG_PT[verificar_status_servicos_swarm_ativo]="%s✅ Docker Swarm: Ativo%s"
+    MSG_EN[verificar_status_servicos_swarm_ativo]="%s✅ Docker Swarm: Active%s"
+    MSG_ES[verificar_status_servicos_swarm_ativo]="%s✅ Docker Swarm: Activo%s"
+
+    MSG_PT[verificar_status_servicos_stacks_instaladas]="%sStacks instaladas:%s"
+    MSG_EN[verificar_status_servicos_stacks_instaladas]="%sInstalled stacks:%s"
+    MSG_ES[verificar_status_servicos_stacks_instaladas]="%sStacks instaladas:%s"
+
+    MSG_PT[verificar_status_servicos_nenhuma_stack]="%sNenhuma stack encontrada%s"
+    MSG_EN[verificar_status_servicos_nenhuma_stack]="%sNo stack found%s"
+    MSG_ES[verificar_status_servicos_nenhuma_stack]="%sNinguna stack encontrada%s"
+
+    MSG_PT[verificar_status_servicos_em_execucao]="%sServiços em execução:%s"
+    MSG_EN[verificar_status_servicos_em_execucao]="%sRunning services:%s"
+    MSG_ES[verificar_status_servicos_em_execucao]="%sServicios en ejecución:%s"
+
+    MSG_PT[verificar_status_servicos_nenhum_servico]="%sNenhum serviço encontrado%s"
+    MSG_EN[verificar_status_servicos_nenhum_servico]="%sNo service found%s"
+    MSG_ES[verificar_status_servicos_nenhum_servico]="%sNingún servicio encontrado%s"
+
+    MSG_PT[verificar_status_servicos_swarm_inativo]="%s❌ Docker Swarm: Inativo%s"
+    MSG_EN[verificar_status_servicos_swarm_inativo]="%s❌ Docker Swarm: Inactive%s"
+    MSG_ES[verificar_status_servicos_swarm_inativo]="%s❌ Docker Swarm: Inactivo%s"
+
     msg_status
-    echo -e "${azul}[📊] Status dos Serviços:${reset}"
+    echo -e "$(t verificar_status_servicos_titulo "$azul" "$reset")"
     echo ""
-    
+
     if docker info 2>/dev/null | grep -q "Swarm: active"; then
-        echo -e "${verde}✅ Docker Swarm: Ativo${reset}"
-        
-        echo -e "${branco}Stacks instaladas:${reset}"
-        docker stack ls 2>/dev/null || echo -e "${amarelo}Nenhuma stack encontrada${reset}"
-        
+        echo -e "$(t verificar_status_servicos_swarm_ativo "$verde" "$reset")"
+
+        echo -e "$(t verificar_status_servicos_stacks_instaladas "$branco" "$reset")"
+        docker stack ls 2>/dev/null || echo -e "$(t verificar_status_servicos_nenhuma_stack "$amarelo" "$reset")"
+
         echo ""
-        echo -e "${branco}Serviços em execução:${reset}"
-        docker service ls 2>/dev/null || echo -e "${amarelo}Nenhum serviço encontrado${reset}"
+        echo -e "$(t verificar_status_servicos_em_execucao "$branco" "$reset")"
+        docker service ls 2>/dev/null || echo -e "$(t verificar_status_servicos_nenhum_servico "$amarelo" "$reset")"
     else
-        echo -e "${vermelho}❌ Docker Swarm: Inativo${reset}"
+        echo -e "$(t verificar_status_servicos_swarm_inativo "$vermelho" "$reset")"
     fi
 }
 
@@ -18119,15 +23636,31 @@ instalar_traefik_e_portainer() {
   local nome_rede_interna="$5"
   local email_ssl="$6"
 
+  MSG_PT[instalar_traefik_e_portainer_erro_parametros]="\e[41m❌ ERRO: Parâmetros insuficientes.\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_erro_parametros]="\e[41m❌ ERROR: Insufficient parameters.\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_erro_parametros]="\e[41m❌ ERROR: Parámetros insuficientes.\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_uso]="Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+  MSG_EN[instalar_traefik_e_portainer_uso]="Usage: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+  MSG_ES[instalar_traefik_e_portainer_uso]="Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+
+  MSG_PT[instalar_traefik_e_portainer_titulo]="--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
+  MSG_EN[instalar_traefik_e_portainer_titulo]="--- TRAEFIK & PORTAINER (AUTOMATED) ---"
+  MSG_ES[instalar_traefik_e_portainer_titulo]="--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
+
+  MSG_PT[instalar_traefik_e_portainer_dados_recebidos]="Dados recebidos para: \e[33m%s\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_dados_recebidos]="Data received for: \e[33m%s\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_dados_recebidos]="Datos recibidos para: \e[33m%s\e[0m"
+
   # Validação simples para garantir que os parâmetros chegaram
   if [ -z "$url_portainer" ] || [ -z "$pass_portainer" ] || [ -z "$email_ssl" ]; then
-    echo -e "\e[41m❌ ERRO: Parâmetros insuficientes.\e[0m"
-    echo "Uso: ferramenta_traefik_e_portainer [URL] [USER] [PASS] [SERVER_NAME] [NETWORK] [EMAIL]"
+    echo -e "$(t instalar_traefik_e_portainer_erro_parametros)"
+    echo "$(t instalar_traefik_e_portainer_uso)"
     return 1
   fi
 
-  echo -e "--- TRAEFIK & PORTAINER (AUTOMATIZADO) ---"
-  echo -e "Dados recebidos para: \e[33m$url_portainer\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_titulo)"
+  echo -e "$(t instalar_traefik_e_portainer_dados_recebidos "$url_portainer")"
 
   # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
@@ -18135,12 +23668,20 @@ instalar_traefik_e_portainer() {
   # (limitação do --admin-password-file). Aplicado depois por renomeação.
   local user_portainer_alvo="$user_portainer"
   local PORTAINER_JA_INICIALIZADO=false
+  MSG_PT[instalar_traefik_e_portainer_volume_existente]="\e[33m⚠️  'portainer_data' já existe — o admin de uma instalação anterior será preservado.\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_volume_existente]="\e[33m⚠️  'portainer_data' already exists — the admin from a previous installation will be preserved.\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_volume_existente]="\e[33m⚠️  'portainer_data' ya existe — el admin de una instalación anterior será preservado.\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_preparando_ambiente]="\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_preparando_ambiente]="\e[97m• PREPARING ENVIRONMENT \e[33m[1/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_preparando_ambiente]="\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+
   if sudo docker volume inspect portainer_data >/dev/null 2>&1; then
     PORTAINER_JA_INICIALIZADO=true
-    echo -e "\e[33m⚠️  'portainer_data' já existe — o admin de uma instalação anterior será preservado.\e[0m"
+    echo -e "$(t instalar_traefik_e_portainer_volume_existente)"
   fi
 
-  echo -e "\e[97m• PREPARANDO AMBIENTE \e[33m[1/9]\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_preparando_ambiente)"
 
   # Remove apenas as STACKS antigas de traefik/portainer para um redeploy limpo.
   # NÃO faz purge do Docker nem 'rm -rf /var/lib/docker': volumes externos
@@ -18159,7 +23700,11 @@ Portainer Link: $url_portainer
 EOL
   cd ~
 
-  echo -e "\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+  MSG_PT[instalar_traefik_e_portainer_configurando_sistema]="\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_configurando_sistema]="\e[97m• CONFIGURING SYSTEM \e[33m[2/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_configurando_sistema]="\e[97m• CONFIGURANDO SISTEMA \e[33m[2/9]\e[0m"
+
+  echo -e "$(t instalar_traefik_e_portainer_configurando_sistema)"
   sudo apt-get update -y > /dev/null 2>&1
   # Adicionei 'jq' aqui pois você usa no final do script para pegar o token
   sudo apt-get install -y apt-utils apparmor-utils curl ca-certificates gnupg lsb-release jq > /dev/null 2>&1
@@ -18167,19 +23712,35 @@ EOL
   sudo hostnamectl set-hostname "$nome_servidor" > /dev/null 2>&1
   sudo sed -i "s/127.0.0.1[[:space:]]localhost/127.0.0.1 $nome_servidor localhost/g" /etc/hosts > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+  MSG_PT[instalar_traefik_e_portainer_instalando_docker]="\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_instalando_docker]="\e[97m• INSTALLING DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_instalando_docker]="\e[97m• INSTALANDO DOCKER (AUTO-DETECT) \e[33m[3/9]\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_docker_ja_instalado]="✅ Docker já instalado: \e[33m%s\e[0m. Pulando instalação."
+  MSG_EN[instalar_traefik_e_portainer_docker_ja_instalado]="✅ Docker already installed: \e[33m%s\e[0m. Skipping installation."
+  MSG_ES[instalar_traefik_e_portainer_docker_ja_instalado]="✅ Docker ya instalado: \e[33m%s\e[0m. Omitiendo instalación."
+
+  MSG_PT[instalar_traefik_e_portainer_sistema_detectado]="ℹ️  Sistema detectado: \e[33m%s\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_sistema_detectado]="ℹ️  System detected: \e[33m%s\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_sistema_detectado]="ℹ️  Sistema detectado: \e[33m%s\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detectado. Aplicando correção de repositório..."
+  MSG_EN[instalar_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detected. Applying repository fix..."
+  MSG_ES[instalar_traefik_e_portainer_debian_testing]="⚠️  Debian Testing detectado. Aplicando corrección de repositorio..."
+
+  echo -e "$(t instalar_traefik_e_portainer_instalando_docker)"
 
   if command -v docker &> /dev/null; then
-  echo -e "✅ Docker já instalado: \e[33m$(docker --version 2>/dev/null)\e[0m. Pulando instalação."
+  echo -e "$(t instalar_traefik_e_portainer_docker_ja_instalado "$(docker --version 2>/dev/null)")"
   else
   # --- LÓGICA DE DETECÇÃO DE SISTEMA ---
   OS_CODENAME=$(lsb_release -cs)
-  echo -e "ℹ️  Sistema detectado: \e[33m$OS_CODENAME\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_sistema_detectado "$OS_CODENAME")"
 
   if [[ "$OS_CODENAME" == "trixie" ]] || [[ "$OS_CODENAME" == "sid" ]] || [[ "$OS_CODENAME" == "n/a" ]]; then
       # --- CASO PROBLEMÁTICO (DEBIAN 13/TESTING) ---
-      echo -e "⚠️  Debian Testing detectado. Aplicando correção de repositório..."
-      
+      echo -e "$(t instalar_traefik_e_portainer_debian_testing)"
+
       sudo install -m 0755 -d /etc/apt/keyrings
       curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
       sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -18196,38 +23757,62 @@ EOL
 
   else
       # --- CASO PADRÃO (DEBIAN 11/12, UBUNTU 20/22/24) ---
-      echo -e "✅ Sistema estável detectado. Usando instalação nativa..."
-      
+      MSG_PT[instalar_traefik_e_portainer_sistema_estavel]="✅ Sistema estável detectado. Usando instalação nativa..."
+      MSG_EN[instalar_traefik_e_portainer_sistema_estavel]="✅ Stable system detected. Using native installation..."
+      MSG_ES[instalar_traefik_e_portainer_sistema_estavel]="✅ Sistema estable detectado. Usando instalación nativa..."
+
+      MSG_PT[instalar_traefik_e_portainer_fallback_apt]="⚠️ Fallback para apt repository..."
+      MSG_EN[instalar_traefik_e_portainer_fallback_apt]="⚠️ Falling back to apt repository..."
+      MSG_ES[instalar_traefik_e_portainer_fallback_apt]="⚠️ Fallback al repositorio apt..."
+
+      echo -e "$(t instalar_traefik_e_portainer_sistema_estavel)"
+
       # Tenta instalar via script oficial travando na versão 27 (compatível com todos)
       curl -fsSL https://get.docker.com -o install_docker.sh
       sudo sh install_docker.sh --version 27.3.1 > /dev/null 2>&1
-      
+
       # Se falhar (alguns sistemas não suportam o script), tenta apt padrão
       if ! command -v docker &> /dev/null; then
-         echo "⚠️ Fallback para apt repository..."
+         echo "$(t instalar_traefik_e_portainer_fallback_apt)"
          sudo apt-get update -y > /dev/null 2>&1
          sudo apt-get install -y docker.io > /dev/null 2>&1
       fi
   fi
   fi
 
+  MSG_PT[instalar_traefik_e_portainer_erro_fatal_docker]=$'\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m'
+  MSG_EN[instalar_traefik_e_portainer_erro_fatal_docker]=$'\n\e[41m❌ FATAL ERROR: Docker not installed.\e[0m'
+  MSG_ES[instalar_traefik_e_portainer_erro_fatal_docker]=$'\n\e[41m❌ ERROR FATAL: Docker no instalado.\e[0m'
+
+  MSG_PT[instalar_traefik_e_portainer_iniciando_swarm]="⚙️  Iniciando Swarm..."
+  MSG_EN[instalar_traefik_e_portainer_iniciando_swarm]="⚙️  Starting Swarm..."
+  MSG_ES[instalar_traefik_e_portainer_iniciando_swarm]="⚙️  Iniciando Swarm..."
+
+  MSG_PT[instalar_traefik_e_portainer_criando_rede]="\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_criando_rede]="\e[97m• CREATING INTERNAL NETWORK \e[33m[4/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_criando_rede]="\e[97m• CREANDO RED INTERNA \e[33m[4/9]\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALLING TRAEFIK \e[33m[5/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_instalando_traefik]="\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+
   # Verificação Final
   if ! command -v docker &> /dev/null; then
-     echo -e "\n\e[41m❌ ERRO FATAL: Docker não instalado.\e[0m"
+     echo -e "$(t instalar_traefik_e_portainer_erro_fatal_docker)"
      return 1
   fi
-  
+
   sudo systemctl enable docker > /dev/null 2>&1
   sudo systemctl start docker > /dev/null 2>&1
 
-  echo -e "⚙️  Iniciando Swarm..."
+  echo -e "$(t instalar_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
-  echo -e "\e[97m• CRIANDO REDE INTERNA \e[33m[4/9]\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_criando_rede)"
   sudo docker network create --driver=overlay --attachable "$nome_rede_interna" > /dev/null 2>&1
 
-  echo -e "\e[97m• INSTALANDO TRAEFIK \e[33m[5/9]\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_instalando_traefik)"
   
   cat > traefik.yaml << EOL
 version: "3.7"
@@ -18292,12 +23877,20 @@ networks:
     name: $nome_rede_interna
 EOL
 
+  MSG_PT[instalar_traefik_e_portainer_aguardando_traefik]="\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_aguardando_traefik]="\e[97m• WAITING FOR TRAEFIK \e[33m[7/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_aguardando_traefik]="\e[97m• ESPERANDO TRAEFIK \e[33m[7/9]\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALLING PORTAINER \e[33m[8/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_instalando_portainer]="\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+
   sudo docker stack deploy --prune --resolve-image always -c traefik.yaml traefik > /dev/null 2>&1
-  
-  echo -e "\e[97m• AGUARDANDO TRAEFIK \e[33m[7/9]\e[0m"
+
+  echo -e "$(t instalar_traefik_e_portainer_aguardando_traefik)"
   if type wait_stack &> /dev/null; then wait_stack "traefik"; else sleep 30; fi
 
-  echo -e "\e[97m• INSTALANDO PORTAINER \e[33m[8/9]\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_instalando_portainer)"
 
   # O Portainer cria o admin no próprio boot via --admin-password-file (lendo de
   # um Docker Secret). Isso evita a corrida com a janela de segurança / o
@@ -18338,7 +23931,11 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer-agent.yaml portainer > /dev/null 2>&1
 
-  echo -e "⏳ Aguardando o agent do Portainer ficar pronto..."
+  MSG_PT[instalar_traefik_e_portainer_aguardando_agent]="⏳ Aguardando o agent do Portainer ficar pronto..."
+  MSG_EN[instalar_traefik_e_portainer_aguardando_agent]="⏳ Waiting for the Portainer agent to be ready..."
+  MSG_ES[instalar_traefik_e_portainer_aguardando_agent]="⏳ Esperando que el agent de Portainer esté listo..."
+
+  echo -e "$(t instalar_traefik_e_portainer_aguardando_agent)"
   for i in $(seq 1 30); do
     rep=$(sudo docker service ls --filter "name=portainer_agent" --format "{{.Replicas}}")
     running=${rep%%/*}; total=${rep##*/}
@@ -18403,14 +24000,26 @@ EOL
 
   sudo docker stack deploy --prune --resolve-image always -c portainer.yaml portainer > /dev/null 2>&1
 
-  echo -e "\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
+  MSG_PT[instalar_traefik_e_portainer_aguardando_portainer]="\e[97m• AGUARDANDO PORTAINER \e[33m[9/9]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_aguardando_portainer]="\e[97m• WAITING FOR PORTAINER \e[33m[9/9]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_aguardando_portainer]="\e[97m• ESPERANDO PORTAINER \e[33m[9/9]\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_verificando_conta]="\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  MSG_EN[instalar_traefik_e_portainer_verificando_conta]="\e[97m• CHECKING ACCOUNT \e[33m[FINISHING]\e[0m"
+  MSG_ES[instalar_traefik_e_portainer_verificando_conta]="\e[97m• VERIFICANDO CUENTA \e[33m[FINALIZANDO]\e[0m"
+
+  MSG_PT[instalar_traefik_e_portainer_confirmando_admin]="⏳ Confirmando admin do Portainer na rede interna..."
+  MSG_EN[instalar_traefik_e_portainer_confirmando_admin]="⏳ Confirming Portainer admin on the internal network..."
+  MSG_ES[instalar_traefik_e_portainer_confirmando_admin]="⏳ Confirmando admin de Portainer en la red interna..."
+
+  echo -e "$(t instalar_traefik_e_portainer_aguardando_portainer)"
   if type wait_stack &> /dev/null; then wait_stack "portainer"; else sleep 30; fi
 
-  echo -e "\e[97m• VERIFICANDO CONTA \e[33m[FINALIZANDO]\e[0m"
+  echo -e "$(t instalar_traefik_e_portainer_verificando_conta)"
   # O admin já foi criado pelo Portainer no boot (--admin-password-file).
   # Aqui só confirmamos (admin/check=204) e pegamos o token. Sem POST de init,
   # não há corrida com a janela de segurança nem com o crash-loop do agent.
-  echo -e "⏳ Confirmando admin do Portainer na rede interna..."
+  echo -e "$(t instalar_traefik_e_portainer_confirmando_admin)"
   CONTA_CRIADA=false
   for i in $(seq 1 40); do
     chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
@@ -18419,8 +24028,12 @@ EOL
     sleep 3
   done
 
+  MSG_PT[instalar_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+  MSG_EN[instalar_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin not yet confirmed — restarting Portainer and trying again..."
+  MSG_ES[instalar_traefik_e_portainer_admin_nao_confirmado]="⚠️  Admin aún no confirmado — reiniciando Portainer y reintentando..."
+
   if [ "$CONTA_CRIADA" != true ]; then
-    echo -e "⚠️  Admin ainda não confirmado — reiniciando Portainer e tentando de novo..."
+    echo -e "$(t instalar_traefik_e_portainer_admin_nao_confirmado)"
     sudo docker service update --force portainer_portainer >/dev/null 2>&1
     for i in $(seq 1 20); do
       chk=$(sudo docker run --rm --network "$nome_rede_interna" curlimages/curl:latest \
@@ -18439,8 +24052,20 @@ EOL
       -H "Content-Type: application/json" \
       -d "$JSON_LOGIN" 2>/dev/null | jq -r .jwt)
 
+    MSG_PT[instalar_traefik_e_portainer_admin_pronto]="\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+    MSG_EN[instalar_traefik_e_portainer_admin_pronto]="\e[32m✅ Portainer admin ready (username: admin)!\e[0m"
+    MSG_ES[instalar_traefik_e_portainer_admin_pronto]="\e[32m✅ Admin de Portainer listo (usuario: admin)!\e[0m"
+
+    MSG_PT[instalar_traefik_e_portainer_admin_ja_existe]="\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
+    MSG_EN[instalar_traefik_e_portainer_admin_ja_existe]="\e[31m❌ A Portainer admin already exists, but the entered credentials did not match.\e[0m"
+    MSG_ES[instalar_traefik_e_portainer_admin_ja_existe]="\e[31m❌ Ya existe un admin en Portainer, pero las credenciales ingresadas no coincidieron.\e[0m"
+
+    MSG_PT[instalar_traefik_e_portainer_admin_use_anteriores]="\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+    MSG_EN[instalar_traefik_e_portainer_admin_use_anteriores]="\e[31m   Use the credentials from the previous installation, or remove the 'portainer_data' volume to start from scratch.\e[0m"
+    MSG_ES[instalar_traefik_e_portainer_admin_use_anteriores]="\e[31m   Use las credenciales de la instalación anterior, o elimine el volumen 'portainer_data' para empezar de cero.\e[0m"
+
     if [ -n "$token" ] && [ "$token" != "null" ]; then
-      echo -e "\e[32m✅ Admin do Portainer pronto (usuário: admin)!\e[0m"
+      echo -e "$(t instalar_traefik_e_portainer_admin_pronto)"
       CREDENCIAIS_APLICADAS=true
       if [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
         USER_PORTAINER_FINAL="admin"
@@ -18449,8 +24074,8 @@ EOL
         renomear_admin_portainer_se_necessario "$nome_rede_interna" "$user_portainer_alvo" "$pass_portainer" "$token"
       fi
     elif [ "$PORTAINER_JA_INICIALIZADO" = true ]; then
-      echo -e "\e[31m❌ Já existe um admin no Portainer, mas as credenciais digitadas não bateram.\e[0m"
-      echo -e "\e[31m   Use as credenciais da instalação anterior, ou remova o volume 'portainer_data' para recomeçar do zero.\e[0m"
+      echo -e "$(t instalar_traefik_e_portainer_admin_ja_existe)"
+      echo -e "$(t instalar_traefik_e_portainer_admin_use_anteriores)"
     fi
   fi
 
@@ -18479,7 +24104,11 @@ EOL
 
   if type wait_30_sec &> /dev/null; then wait_30_sec; fi
 
-  echo -e "\n\e[32m✅ Instalação Base Concluída!\e[0m"
+  MSG_PT[instalar_traefik_e_portainer_concluida]=$'\n\e[32m✅ Instalação Base Concluída!\e[0m'
+  MSG_EN[instalar_traefik_e_portainer_concluida]=$'\n\e[32m✅ Base Installation Complete!\e[0m'
+  MSG_ES[instalar_traefik_e_portainer_concluida]=$'\n\e[32m✅ Instalación Base Completada!\e[0m'
+
+  echo -e "$(t instalar_traefik_e_portainer_concluida)"
 
 }
 
@@ -18504,24 +24133,56 @@ instalar_ferramenta_n8n() {
   fi
         
 
+  MSG_PT[instalar_ferramenta_n8n_iniciando]="\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_iniciando]="\e[97m🚀 Starting the N8N installation...\e[33m [Step 1 of 5]\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_iniciando]="\e[97m🚀 Iniciando la instalación de N8N...\e[33m [Etapa 1 de 5]\e[0m"
+
+  MSG_PT[instalar_ferramenta_n8n_verificando_postgres]="\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_verificando_postgres]="\e[97m📦 Checking or installing Postgres...\e[33m [Step 2 of 5]\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_verificando_postgres]="\e[97m📦 Verificando o instalando Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+
+  MSG_PT[instalar_ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres já está instalado."
+  MSG_EN[instalar_ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres is already installed."
+  MSG_ES[instalar_ferramenta_n8n_postgres_ja_instalado]="✅ 1/3 - Postgres ya está instalado."
+
+  MSG_PT[instalar_ferramenta_n8n_senha_copiada]="🔐 2/3 - Senha do Postgres copiada com sucesso."
+  MSG_EN[instalar_ferramenta_n8n_senha_copiada]="🔐 2/3 - Postgres password copied successfully."
+  MSG_ES[instalar_ferramenta_n8n_senha_copiada]="🔐 2/3 - Contraseña de Postgres copiada con éxito."
+
+  MSG_PT[instalar_ferramenta_n8n_banco_criado]="🛠️  3/3 - Banco de dados 'n8n_queue' criado com sucesso."
+  MSG_EN[instalar_ferramenta_n8n_banco_criado]="🛠️  3/3 - Database 'n8n_queue' created successfully."
+  MSG_ES[instalar_ferramenta_n8n_banco_criado]="🛠️  3/3 - Base de datos 'n8n_queue' creada con éxito."
+
+  MSG_PT[instalar_ferramenta_n8n_verificando_redis]="\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_verificando_redis]="\e[97m📦 Checking or installing Redis...\e[33m [Step 3 of 5]\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_verificando_redis]="\e[97m📦 Verificando o instalando Redis...\e[33m [Etapa 3 de 5]\e[0m"
+
+  MSG_PT[instalar_ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis já está instalado."
+  MSG_EN[instalar_ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis is already installed."
+  MSG_ES[instalar_ferramenta_n8n_redis_ja_instalado]="✅ 1/1 - Redis ya está instalado."
+
+  MSG_PT[instalar_ferramenta_n8n_instalando]="\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_instalando]="\e[97m⚙️ Installing N8N...\e[33m [Step 4 of 5]\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_instalando]="\e[97m⚙️ Instalando N8N...\e[33m [Etapa 4 de 5]\e[0m"
+
   ## Mensagem de Passo
-  echo -e "\e[97m🚀 Iniciando a instalação do N8N...\e[33m [Etapa 1 de 5]\e[0m"
+  echo -e "$(t instalar_ferramenta_n8n_iniciando)"
   echo ""
   sleep 1
 
 
-  echo -e "\e[97m📦 Verificando ou instalando o Postgres...\e[33m [Etapa 2 de 5]\e[0m"
+  echo -e "$(t instalar_ferramenta_n8n_verificando_postgres)"
   echo ""
   sleep 1
 
   ## Verifica se tem postgres, se sim pega a senha e cria um banco nele, se não instala, pega a senha e cria o banco
   verificar_container_postgres
   if [ $? -eq 0 ]; then
-      echo "✅ 1/3 - Postgres já está instalado."
+      echo "$(t instalar_ferramenta_n8n_postgres_ja_instalado)"
       pegar_senha_postgres > /dev/null 2>&1
-      echo "🔐 2/3 - Senha do Postgres copiada com sucesso."
+      echo "$(t instalar_ferramenta_n8n_senha_copiada)"
       criar_banco_postgres_da_stack "n8n_queue"
-      echo "🛠️  3/3 - Banco de dados 'n8n_queue' criado com sucesso."
+      echo "$(t instalar_ferramenta_n8n_banco_criado)"
       echo ""
   else
       ferramenta_postgres
@@ -18530,21 +24191,21 @@ instalar_ferramenta_n8n() {
   fi
 
   ## Mensagem de Passo
-  echo -e "\e[97m📦 Verificando ou instalando o Redis...\e[33m [Etapa 3 de 5]\e[0m"
+  echo -e "$(t instalar_ferramenta_n8n_verificando_redis)"
   echo ""
   sleep 1
 
   ## Verifica/instala o Redis
   verificar_container_redis
   if [ $? -eq 0 ]; then
-      echo "✅ 1/1 - Redis já está instalado."
+      echo "$(t instalar_ferramenta_n8n_redis_ja_instalado)"
       echo ""
   else
       ferramenta_redis
   fi
 
   ## Mensagem de Passo
-  echo -e "\e[97m⚙️ Instalando o N8N...\e[33m [Etapa 4 de 5]\e[0m"
+  echo -e "$(t instalar_ferramenta_n8n_instalando)"
   echo ""
   sleep 1
 
@@ -18785,18 +24446,34 @@ EOL
   ## Cria o volume antes de rodar a stack
   docker volume create n8n_data > /dev/null 2>&1
 
+  MSG_PT[instalar_ferramenta_n8n_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso'
+  MSG_EN[instalar_ferramenta_n8n_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - N8N stack created successfully'
+  MSG_ES[instalar_ferramenta_n8n_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack de N8N creada con éxito'
+
+  MSG_PT[instalar_ferramenta_n8n_stack_falhou]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N'
+  MSG_EN[instalar_ferramenta_n8n_stack_falhou]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the N8N stack'
+  MSG_ES[instalar_ferramenta_n8n_stack_falhou]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Fallo al crear la stack de N8N'
+
+  MSG_PT[instalar_ferramenta_n8n_stack_falhou_aviso]="⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_stack_falhou_aviso]="⚠️ \e[33mIt was not possible to create the N8N stack.\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_stack_falhou_aviso]="⚠️ \e[33mNo fue posible crear la stack de N8N.\e[0m"
+
+  MSG_PT[instalar_ferramenta_n8n_verificando_servico]="\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+  MSG_EN[instalar_ferramenta_n8n_verificando_servico]="\e[97m🔍 Checking the service...\e[33m [Step 5 of 5]\e[0m"
+  MSG_ES[instalar_ferramenta_n8n_verificando_servico]="\e[97m🔍 Verificando el servicio...\e[33m [Etapa 5 de 5]\e[0m"
+
   if [ $? -eq 0 ]; then
-      echo -e "Passo \e[33m1/10\e[0m ✅ - Stack do N8N criada com sucesso"
+      echo -e "$(t instalar_ferramenta_n8n_stack_sucesso)"
   else
-      echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack do N8N"
-      echo -e "⚠️ \e[33mNão foi possível criar a stack do N8N.\e[0m"
+      echo -e "$(t instalar_ferramenta_n8n_stack_falhou)"
+      echo -e "$(t instalar_ferramenta_n8n_stack_falhou_aviso)"
   fi
 
   STACK_NAME="n8n"
-  stack_editavel 
+  stack_editavel
 
   ## Mensagem de Passo
-  echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 5 de 5]\e[0m"
+  echo -e "$(t instalar_ferramenta_n8n_verificando_servico)"
   echo ""
   sleep 1
 
@@ -18829,7 +24506,11 @@ EOL
 ## Espera 30 segundos
   wait_30_sec
 
-  echo -e "Instalando próxima stack..."
+  MSG_PT[instalar_ferramenta_n8n_proxima_stack]="Instalando próxima stack..."
+  MSG_EN[instalar_ferramenta_n8n_proxima_stack]="Installing next stack..."
+  MSG_ES[instalar_ferramenta_n8n_proxima_stack]="Instalando la próxima stack..."
+
+  echo -e "$(t instalar_ferramenta_n8n_proxima_stack)"
   sleep 2
 
 }
@@ -18842,8 +24523,32 @@ instalar_ferramenta_evolution() {
   local url_evolution="$1"
 
 
+MSG_PT[instalar_ferramenta_evolution_iniciando]="🚀 \e[97mIniciando a instalação da Evolution API \e[33m[1/4]\e[0m"
+MSG_EN[instalar_ferramenta_evolution_iniciando]="🚀 \e[97mStarting the Evolution API installation \e[33m[1/4]\e[0m"
+MSG_ES[instalar_ferramenta_evolution_iniciando]="🚀 \e[97mIniciando la instalación de Evolution API \e[33m[1/4]\e[0m"
+
+MSG_PT[instalar_ferramenta_evolution_verificando_postgres]="🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+MSG_EN[instalar_ferramenta_evolution_verificando_postgres]="🔍 \e[97mChecking/Installing Postgres \e[33m[2/4]\e[0m"
+MSG_ES[instalar_ferramenta_evolution_verificando_postgres]="🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+
+MSG_PT[instalar_ferramenta_evolution_postgres_ok]="🔍 Etapa 1/3: Verificando instalação do Postgres... [OK]"
+MSG_EN[instalar_ferramenta_evolution_postgres_ok]="🔍 Step 1/3: Checking Postgres installation... [OK]"
+MSG_ES[instalar_ferramenta_evolution_postgres_ok]="🔍 Etapa 1/3: Verificando instalación de Postgres... [OK]"
+
+MSG_PT[instalar_ferramenta_evolution_senha_ok]="🔐 Etapa 2/3: Copiando a senha do Postgres... [OK]"
+MSG_EN[instalar_ferramenta_evolution_senha_ok]="🔐 Step 2/3: Copying the Postgres password... [OK]"
+MSG_ES[instalar_ferramenta_evolution_senha_ok]="🔐 Etapa 2/3: Copiando la contraseña de Postgres... [OK]"
+
+MSG_PT[instalar_ferramenta_evolution_banco_ok]="🛠️ Etapa 3/3: Criando o banco de dados 'evolution'... [OK]"
+MSG_EN[instalar_ferramenta_evolution_banco_ok]="🛠️ Step 3/3: Creating the 'evolution' database... [OK]"
+MSG_ES[instalar_ferramenta_evolution_banco_ok]="🛠️ Etapa 3/3: Creando la base de datos 'evolution'... [OK]"
+
+MSG_PT[instalar_ferramenta_evolution_instalando]="\e[97m🔧 Instalando a Evolution API...\e[33m [Etapa 3 de 4]\e[0m"
+MSG_EN[instalar_ferramenta_evolution_instalando]="\e[97m🔧 Installing Evolution API...\e[33m [Step 3 of 4]\e[0m"
+MSG_ES[instalar_ferramenta_evolution_instalando]="\e[97m🔧 Instalando Evolution API...\e[33m [Etapa 3 de 4]\e[0m"
+
 ## Mensagem de Passo
-echo -e "🚀 \e[97mIniciando a instalação da Evolution API \e[33m[1/4]\e[0m"
+echo -e "$(t instalar_ferramenta_evolution_iniciando)"
 echo ""
 sleep 1
 
@@ -18853,7 +24558,7 @@ sleep 1
 ## E claro, para aparecer a mensagem do passo..
 
 ## Mensagem de Passo
-echo -e "🔍 \e[97mVerificando/Instalando Postgres \e[33m[2/4]\e[0m"
+echo -e "$(t instalar_ferramenta_evolution_verificando_postgres)"
 echo ""
 sleep 1
 
@@ -18864,11 +24569,11 @@ sleep 1
 
 verificar_container_postgres
 if [ $? -eq 0 ]; then
-    echo "🔍 Etapa 1/3: Verificando instalação do Postgres... [OK]"
+    echo "$(t instalar_ferramenta_evolution_postgres_ok)"
     pegar_senha_postgres > /dev/null 2>&1
-    echo "🔐 Etapa 2/3: Copiando a senha do Postgres... [OK]"
+    echo "$(t instalar_ferramenta_evolution_senha_ok)"
     criar_banco_postgres_da_stack "evolution"
-    echo "🛠️ Etapa 3/3: Criando o banco de dados 'evolution'... [OK]"
+    echo "$(t instalar_ferramenta_evolution_banco_ok)"
     echo ""
 else
     ferramenta_postgres
@@ -18879,7 +24584,7 @@ fi
 pegar_senha_postgres > /dev/null 2>&1
 
 ## Mensagem de Passo
-echo -e "\e[97m🔧 Instalando a Evolution API...\e[33m [Etapa 3 de 4]\e[0m"
+echo -e "$(t instalar_ferramenta_evolution_instalando)"
 echo ""
 sleep 1
 
@@ -19148,19 +24853,35 @@ networks:
     external: true
     name: $nome_rede_interna ## Nome da rede interna
 EOL
+MSG_PT[instalar_ferramenta_evolution_stack_sucesso]=$'Passo \e[33m1/10\e[0m ✅ - Stack criada com sucesso'
+MSG_EN[instalar_ferramenta_evolution_stack_sucesso]=$'Step \e[33m1/10\e[0m ✅ - Stack created successfully'
+MSG_ES[instalar_ferramenta_evolution_stack_sucesso]=$'Paso \e[33m1/10\e[0m ✅ - Stack creada con éxito'
+
+MSG_PT[instalar_ferramenta_evolution_stack_falhou]=$'Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API'
+MSG_EN[instalar_ferramenta_evolution_stack_falhou]=$'Step \e[33m1/10\e[0m ❌ [\e[31mFAILED\e[0m] - Failed to create the Evolution API stack'
+MSG_ES[instalar_ferramenta_evolution_stack_falhou]=$'Paso \e[33m1/10\e[0m ❌ [\e[31mFALLÓ\e[0m] - Fallo al crear la stack de Evolution API'
+
+MSG_PT[instalar_ferramenta_evolution_stack_falhou_aviso]="⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
+MSG_EN[instalar_ferramenta_evolution_stack_falhou_aviso]="⚠️ \e[33mIt was not possible to create the Evolution API stack.\e[0m"
+MSG_ES[instalar_ferramenta_evolution_stack_falhou_aviso]="⚠️ \e[33mNo fue posible crear la stack de Evolution API.\e[0m"
+
+MSG_PT[instalar_ferramenta_evolution_verificando_servico]="\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 4]\e[0m"
+MSG_EN[instalar_ferramenta_evolution_verificando_servico]="\e[97m🔍 Checking the service...\e[33m [Step 4 of 4]\e[0m"
+MSG_ES[instalar_ferramenta_evolution_verificando_servico]="\e[97m🔍 Verificando el servicio...\e[33m [Etapa 4 de 4]\e[0m"
+
 if [ $? -eq 0 ]; then
-    echo -e "Passo \e[33m1/10\e[0m ✅ - Stack criada com sucesso"
+    echo -e "$(t instalar_ferramenta_evolution_stack_sucesso)"
 else
-    echo -e "Passo \e[33m1/10\e[0m ❌ [\e[31mFALHOU\e[0m] - Falha ao criar a stack da Evolution API"
-    echo -e "⚠️ \e[33mNão foi possível criar a stack da Evolution API.\e[0m"
+    echo -e "$(t instalar_ferramenta_evolution_stack_falhou)"
+    echo -e "$(t instalar_ferramenta_evolution_stack_falhou_aviso)"
 fi
 STACK_NAME="evolution"
-stack_editavel 
+stack_editavel
 
 sleep 10
 
 ## Mensagem de Passo
-echo -e "\e[97m🔍 Verificando o serviço...\e[33m [Etapa 4 de 4]\e[0m"
+echo -e "$(t instalar_ferramenta_evolution_verificando_servico)"
 echo ""
 sleep 1
 
@@ -19189,14 +24910,22 @@ cd
 ## Espera 30 segundos
 wait_30_sec
 
-  echo -e "Terminando instalação..."
+  MSG_PT[instalar_ferramenta_evolution_terminando]="Terminando instalação..."
+  MSG_EN[instalar_ferramenta_evolution_terminando]="Finishing installation..."
+  MSG_ES[instalar_ferramenta_evolution_terminando]="Terminando la instalación..."
+
+  echo -e "$(t instalar_ferramenta_evolution_terminando)"
   sleep 2
 
 }
 
 ferramenta_webtop() {
+  MSG_PT[ferramenta_webtop_titulo]="--- INSTALADOR DE LINUX (WEBTOP) ---"
+  MSG_EN[ferramenta_webtop_titulo]="--- LINUX INSTALLER (WEBTOP) ---"
+  MSG_ES[ferramenta_webtop_titulo]="--- INSTALADOR DE LINUX (WEBTOP) ---"
+
   clear
-  echo -e "--- INSTALADOR DE LINUX (WEBTOP) ---"
+  echo -e "$(t ferramenta_webtop_titulo)"
 
   # --- CORREÇÃO: CARREGAR DADOS DO PORTAINER ---
   # Precisamos carregar o user/pass do Portainer para a função stack_editavel funcionar
@@ -19217,35 +24946,87 @@ ferramenta_webtop() {
   # Tenta pegar a rede global ou define um padrão
   local rede_local=${nome_rede_interna:-"enchaNet"}
 
-  while true; do 
-    echo -e "\n📍 \e[97mPasso \e[33m1/3\e[0m"
-    echo -en "🔗 \e[33mDigite o domínio para acessar o Linux (ex: linux.encha.ai): \e[0m" && read -r url_webtop
+  MSG_PT[ferramenta_webtop_passo1]=$'\n📍 \e[97mPasso \e[33m1/3\e[0m'
+  MSG_EN[ferramenta_webtop_passo1]=$'\n📍 \e[97mStep \e[33m1/3\e[0m'
+  MSG_ES[ferramenta_webtop_passo1]=$'\n📍 \e[97mPaso \e[33m1/3\e[0m'
+
+  MSG_PT[ferramenta_webtop_dominio_pergunta]="🔗 \e[33mDigite o domínio para acessar o Linux (ex: linux.encha.ai): \e[0m"
+  MSG_EN[ferramenta_webtop_dominio_pergunta]="🔗 \e[33mEnter the domain to access Linux (e.g. linux.encha.ai): \e[0m"
+  MSG_ES[ferramenta_webtop_dominio_pergunta]="🔗 \e[33mIngrese el dominio para acceder a Linux (ej: linux.encha.ai): \e[0m"
+
+  MSG_PT[ferramenta_webtop_passo2]=$'\n📍 \e[97mPasso \e[33m2/3\e[0m'
+  MSG_EN[ferramenta_webtop_passo2]=$'\n📍 \e[97mStep \e[33m2/3\e[0m'
+  MSG_ES[ferramenta_webtop_passo2]=$'\n📍 \e[97mPaso \e[33m2/3\e[0m'
+
+  MSG_PT[ferramenta_webtop_user_pergunta]="👤 \e[33mDigite o nome de usuário para o Linux (ex: admin): \e[0m"
+  MSG_EN[ferramenta_webtop_user_pergunta]="👤 \e[33mEnter the username for Linux (e.g. admin): \e[0m"
+  MSG_ES[ferramenta_webtop_user_pergunta]="👤 \e[33mIngrese el nombre de usuario para Linux (ej: admin): \e[0m"
+
+  MSG_PT[ferramenta_webtop_passo3]=$'\n📍 \e[97mPasso \e[33m3/3\e[0m'
+  MSG_EN[ferramenta_webtop_passo3]=$'\n📍 \e[97mStep \e[33m3/3\e[0m'
+  MSG_ES[ferramenta_webtop_passo3]=$'\n📍 \e[97mPaso \e[33m3/3\e[0m'
+
+  MSG_PT[ferramenta_webtop_pass_pergunta]="🔑 \e[33mDigite a senha de acesso (ex: Mudar@123): \e[0m"
+  MSG_EN[ferramenta_webtop_pass_pergunta]="🔑 \e[33mEnter the access password (e.g. Mudar@123): \e[0m"
+  MSG_ES[ferramenta_webtop_pass_pergunta]="🔑 \e[33mIngrese la contraseña de acceso (ej: Mudar@123): \e[0m"
+
+  MSG_PT[ferramenta_webtop_revise]="\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+  MSG_EN[ferramenta_webtop_revise]="\e[33m🔍 Please review the information below:\e[0m\n"
+  MSG_ES[ferramenta_webtop_revise]="\e[33m🔍 Por favor, revise la información a continuación:\e[0m\n"
+
+  MSG_PT[ferramenta_webtop_dominio_label]="🌐 \e[33mDomínio:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_dominio_label]="🌐 \e[33mDomain:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_dominio_label]="🌐 \e[33mDominio:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_user_label]="👤 \e[33mUsuário:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_user_label]="👤 \e[33mUsername:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_user_label]="👤 \e[33mUsuario:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_pass_label]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_pass_label]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_pass_label]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_rede_label]="📡 \e[33mRede:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_rede_label]="📡 \e[33mNetwork:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_rede_label]="📡 \e[33mRed:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_confirma]=$'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_EN[ferramenta_webtop_confirma]=$'\n\e[32m✅ Are the answers correct?\e[0m \e[33m(Y/N)\e[0m: '
+  MSG_ES[ferramenta_webtop_confirma]=$'\n\e[32m✅ ¿Las respuestas están correctas?\e[0m \e[33m(Y/N)\e[0m: '
+
+  MSG_PT[ferramenta_webtop_instalando]="\e[97m🚀 Iniciando a instalação do Webtop...\e[0m"
+  MSG_EN[ferramenta_webtop_instalando]="\e[97m🚀 Starting the Webtop installation...\e[0m"
+  MSG_ES[ferramenta_webtop_instalando]="\e[97m🚀 Iniciando la instalación de Webtop...\e[0m"
+
+  while true; do
+    echo -e "$(t ferramenta_webtop_passo1)"
+    echo -en "$(t ferramenta_webtop_dominio_pergunta)" && read -r url_webtop
     echo ""
 
-    echo -e "\n📍 \e[97mPasso \e[33m2/3\e[0m"
-    echo -e "👤 \e[33mDigite o nome de usuário para o Linux (ex: admin): \e[0m"
+    echo -e "$(t ferramenta_webtop_passo2)"
+    echo -e "$(t ferramenta_webtop_user_pergunta)"
     read -r user_webtop
     echo ""
 
-    echo -e "\n📍 \e[97mPasso \e[33m3/3\e[0m"
-    echo -e "🔑 \e[33mDigite a senha de acesso (ex: Mudar@123): \e[0m"
+    echo -e "$(t ferramenta_webtop_passo3)"
+    echo -e "$(t ferramenta_webtop_pass_pergunta)"
     read -r pass_webtop
     echo ""
 
     clear
-    echo -e "\e[33m🔍 Por favor, revise as informações abaixo:\e[0m\n"
+    echo -e "$(t ferramenta_webtop_revise)"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "🌐 \e[33mDomínio:\e[97m $url_webtop\e[0m"
-    echo -e "👤 \e[33mUsuário:\e[97m $user_webtop\e[0m"
-    echo -e "🔑 \e[33mSenha:\e[97m $pass_webtop\e[0m"
-    echo -e "📡 \e[33mRede:\e[97m $rede_local\e[0m"
+    echo -e "$(t ferramenta_webtop_dominio_label "$url_webtop")"
+    echo -e "$(t ferramenta_webtop_user_label "$user_webtop")"
+    echo -e "$(t ferramenta_webtop_pass_label "$pass_webtop")"
+    echo -e "$(t ferramenta_webtop_rede_label "$rede_local")"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p $'\n\e[32m✅ As respostas estão corretas?\e[0m \e[33m(Y/N)\e[0m: ' confirmacao
+    read -p "$(t ferramenta_webtop_confirma)" confirmacao
     if [[ "$confirmacao" =~ ^[Yy]$ ]]; then break; else clear; fi
   done
 
   clear
-  echo -e "\e[97m🚀 Iniciando a instalação do Webtop...\e[0m"
+  echo -e "$(t ferramenta_webtop_instalando)"
   
   cat > webtop.yaml <<EOL
 version: "3.7"
@@ -19296,14 +25077,22 @@ EOL
   STACK_NAME="webtop"
   
   # Chama a função que envia para o Portainer
+  MSG_PT[ferramenta_webtop_funcao_nao_encontrada]="\e[41mFunção 'stack_editavel' não encontrada. Fazendo deploy manual...\e[0m"
+  MSG_EN[ferramenta_webtop_funcao_nao_encontrada]="\e[41mFunction 'stack_editavel' not found. Doing manual deploy...\e[0m"
+  MSG_ES[ferramenta_webtop_funcao_nao_encontrada]="\e[41mFunción 'stack_editavel' no encontrada. Haciendo deploy manual...\e[0m"
+
+  MSG_PT[ferramenta_webtop_verificando_servico]=$'\n\e[97m• VERIFICANDO SERVIÇO...\e[0m'
+  MSG_EN[ferramenta_webtop_verificando_servico]=$'\n\e[97m• CHECKING SERVICE...\e[0m'
+  MSG_ES[ferramenta_webtop_verificando_servico]=$'\n\e[97m• VERIFICANDO SERVICIO...\e[0m'
+
   if type stack_editavel &> /dev/null; then
       stack_editavel
   else
-      echo -e "\e[41mFunção 'stack_editavel' não encontrada. Fazendo deploy manual...\e[0m"
+      echo -e "$(t ferramenta_webtop_funcao_nao_encontrada)"
       docker stack deploy -c webtop.yaml webtop
   fi
 
-  echo -e "\n\e[97m• VERIFICANDO SERVIÇO...\e[0m"
+  echo -e "$(t ferramenta_webtop_verificando_servico)"
   echo ""
 
   if type pull &> /dev/null; then pull lscr.io/linuxserver/webtop:ubuntu-xfce; fi
@@ -19318,43 +25107,127 @@ Senha: $pass_webtop
 Config: /var/lib/docker/volumes/webtop_config/_data
 EOL
 
+  MSG_PT[ferramenta_webtop_dominio_resumo]="🌐 \e[33mDomínio:\e[97m https://%s\e[0m"
+  MSG_EN[ferramenta_webtop_dominio_resumo]="🌐 \e[33mDomain:\e[97m https://%s\e[0m"
+  MSG_ES[ferramenta_webtop_dominio_resumo]="🌐 \e[33mDominio:\e[97m https://%s\e[0m"
+
+  MSG_PT[ferramenta_webtop_login_resumo]="👤 \e[33mLogin:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_login_resumo]="👤 \e[33mLogin:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_login_resumo]="👤 \e[33mLogin:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_senha_resumo]="🔑 \e[33mSenha:\e[97m %s\e[0m"
+  MSG_EN[ferramenta_webtop_senha_resumo]="🔑 \e[33mPassword:\e[97m %s\e[0m"
+  MSG_ES[ferramenta_webtop_senha_resumo]="🔑 \e[33mContraseña:\e[97m %s\e[0m"
+
+  MSG_PT[ferramenta_webtop_sair]="Enter para sair..."
+  MSG_EN[ferramenta_webtop_sair]="Enter to exit..."
+  MSG_ES[ferramenta_webtop_sair]="Enter para salir..."
+
   if type msg_resumo_informacoes &> /dev/null; then msg_resumo_informacoes; fi
   echo -e "\e[32m[ WEBTOP LINUX ]\e[0m\n"
-  echo -e "\e[33m🌐 Domínio:\e[97m https://$url_webtop\e[0m"
-  echo -e "\e[33m👤 Login:\e[97m $user_webtop\e[0m"
-  echo -e "\e[33m🔑 Senha:\e[97m $pass_webtop\e[0m"
-  
-  if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; else read -p "Enter para sair..."; fi
+  echo -e "$(t ferramenta_webtop_dominio_resumo "$url_webtop")"
+  echo -e "$(t ferramenta_webtop_login_resumo "$user_webtop")"
+  echo -e "$(t ferramenta_webtop_senha_resumo "$pass_webtop")"
+
+  if type msg_retorno_menu &> /dev/null; then msg_retorno_menu; else read -p "$(t ferramenta_webtop_sair)"; fi
 }
 
 instalar_ambiente_completo() {
   amarelo="\e[33m"
 
+  MSG_PT[instalar_ambiente_completo_passo1_6]="Passo \e[33m1/6\e[0m 📡"
+  MSG_EN[instalar_ambiente_completo_passo1_6]="Step \e[33m1/6\e[0m 📡"
+  MSG_ES[instalar_ambiente_completo_passo1_6]="Paso \e[33m1/6\e[0m 📡"
+
+  MSG_PT[instalar_ambiente_completo_portainer_dominio_pergunta]="\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m"
+  MSG_EN[instalar_ambiente_completo_portainer_dominio_pergunta]="\e[36mEnter the domain for Portainer (e.g. portainer.encha.ai): \e[0m"
+  MSG_ES[instalar_ambiente_completo_portainer_dominio_pergunta]="\e[36mIngrese el dominio para Portainer (ej: portainer.encha.ai): \e[0m"
+
+  MSG_PT[instalar_ambiente_completo_passo2_6]="\e[97mPasso\e[33m 2/6\e[0m 👤"
+  MSG_EN[instalar_ambiente_completo_passo2_6]="\e[97mStep\e[33m 2/6\e[0m 👤"
+  MSG_ES[instalar_ambiente_completo_passo2_6]="\e[97mPaso\e[33m 2/6\e[0m 👤"
+
+  MSG_PT[instalar_ambiente_completo_evite_admin]="\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+  MSG_EN[instalar_ambiente_completo_evite_admin]="\e[33m--> Avoid \"admin\": it leaves half the credential public.\e[0m"
+  MSG_ES[instalar_ambiente_completo_evite_admin]="\e[33m--> Evite \"admin\": deja la mitad de la credencial pública.\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_usuario_portainer_pergunta]="\e[36mUsuário do Portainer: \e[0m"
+  MSG_EN[instalar_ambiente_completo_usuario_portainer_pergunta]="\e[36mPortainer Username: \e[0m"
+  MSG_ES[instalar_ambiente_completo_usuario_portainer_pergunta]="\e[36mUsuario de Portainer: \e[0m"
+
+  MSG_PT[instalar_ambiente_completo_usuario_invalido]="\e[31m✖ Usuário inválido.\e[0m"
+  MSG_EN[instalar_ambiente_completo_usuario_invalido]="\e[31m✖ Invalid username.\e[0m"
+  MSG_ES[instalar_ambiente_completo_usuario_invalido]="\e[31m✖ Usuario inválido.\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_passo3_6]="Passo \e[33m3/6\e[0m 🔐"
+  MSG_EN[instalar_ambiente_completo_passo3_6]="Step \e[33m3/6\e[0m 🔐"
+  MSG_ES[instalar_ambiente_completo_passo3_6]="Paso \e[33m3/6\e[0m 🔐"
+
+  MSG_PT[instalar_ambiente_completo_senha_dica1]="\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
+  MSG_EN[instalar_ambiente_completo_senha_dica1]="\e[33m--> Minimum 12 characters. Use UPPERCASE and lowercase letters, numbers and a special character @ or _\e[0m"
+  MSG_ES[instalar_ambiente_completo_senha_dica1]="\e[33m--> Mínimo 12 caracteres. Use letras MAYÚSCULAS y minúsculas, números y un carácter especial @ o _\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_senha_dica2]="\e[33m--> Evite caracteres especiais como: \\!#\$\e[0m"
+  MSG_EN[instalar_ambiente_completo_senha_dica2]="\e[33m--> Avoid special characters like: \\!#\$\e[0m"
+  MSG_ES[instalar_ambiente_completo_senha_dica2]="\e[33m--> Evite caracteres especiales como: \\!#\$\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_senha_portainer_pergunta]="\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m"
+  MSG_EN[instalar_ambiente_completo_senha_portainer_pergunta]="\e[36mEnter a password for Portainer (e.g. Porta@12345_): \e[0m"
+  MSG_ES[instalar_ambiente_completo_senha_portainer_pergunta]="\e[36mIngrese una contraseña para Portainer (ej: Porta@12345_): \e[0m"
+
+  MSG_PT[instalar_ambiente_completo_passo4_6]="Passo \e[33m4/6\e[0m 🖥️"
+  MSG_EN[instalar_ambiente_completo_passo4_6]="Step \e[33m4/6\e[0m 🖥️"
+  MSG_ES[instalar_ambiente_completo_passo4_6]="Paso \e[33m4/6\e[0m 🖥️"
+
+  MSG_PT[instalar_ambiente_completo_sem_espacos]="\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
+  MSG_EN[instalar_ambiente_completo_sem_espacos]="\e[33m--> Cannot contain spaces and/or special characters.\e[0m"
+  MSG_ES[instalar_ambiente_completo_sem_espacos]="\e[33m--> No puede contener espacios y/o caracteres especiales.\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_nome_servidor_pergunta]="\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m"
+  MSG_EN[instalar_ambiente_completo_nome_servidor_pergunta]="\e[36mChoose a name for your server (e.g. encha): \e[0m"
+  MSG_ES[instalar_ambiente_completo_nome_servidor_pergunta]="\e[36mElija un nombre para su servidor (ej: encha): \e[0m"
+
+  MSG_PT[instalar_ambiente_completo_passo5_6]="Passo \e[33m5/6\e[0m 🌐"
+  MSG_EN[instalar_ambiente_completo_passo5_6]="Step \e[33m5/6\e[0m 🌐"
+  MSG_ES[instalar_ambiente_completo_passo5_6]="Paso \e[33m5/6\e[0m 🌐"
+
+  MSG_PT[instalar_ambiente_completo_rede_pergunta]="\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m"
+  MSG_EN[instalar_ambiente_completo_rede_pergunta]="\e[36mEnter a name for your internal network (e.g. enchaNet): \e[0m"
+  MSG_ES[instalar_ambiente_completo_rede_pergunta]="\e[36mIngrese un nombre para su red interna (ej: enchaNet): \e[0m"
+
+  MSG_PT[instalar_ambiente_completo_passo6_6]="Passo \e[33m6/6\e[0m 📧"
+  MSG_EN[instalar_ambiente_completo_passo6_6]="Step \e[33m6/6\e[0m 📧"
+  MSG_ES[instalar_ambiente_completo_passo6_6]="Paso \e[33m6/6\e[0m 📧"
+
+  MSG_PT[instalar_ambiente_completo_email_ssl_pergunta]="\e[36mDigite um endereço de email válido para o SSL (ex: instalador@encha.ai): \e[0m"
+  MSG_EN[instalar_ambiente_completo_email_ssl_pergunta]="\e[36mEnter a valid email address for SSL (e.g. instalador@encha.ai): \e[0m"
+  MSG_ES[instalar_ambiente_completo_email_ssl_pergunta]="\e[36mIngrese una dirección de email válida para el SSL (ej: instalador@encha.ai): \e[0m"
+
   while true; do
     clear
     msg_traefik_portainer
-    echo -e "Passo \e[33m1/6\e[0m 📡"
-    echo -ne "\e[36mDigite o domínio para o Portainer (ex: portainer.encha.ai): \e[0m" && read -r url_portainer
+    echo -e "$(t instalar_ambiente_completo_passo1_6)"
+    echo -ne "$(t instalar_ambiente_completo_portainer_dominio_pergunta)" && read -r url_portainer
     echo ""
 
-    echo -e "\e[97mPasso\e[33m 2/6\e[0m 👤"
-    echo -e "\e[33m--> Evite \"admin\": deixa metade da credencial pública.\e[0m"
+    echo -e "$(t instalar_ambiente_completo_passo2_6)"
+    echo -e "$(t instalar_ambiente_completo_evite_admin)"
     while true; do
-      echo -ne "\e[36mUsuário do Portainer: \e[0m" && read -r user_portainer
+      echo -ne "$(t instalar_ambiente_completo_usuario_portainer_pergunta)" && read -r user_portainer
       if type validar_usuario &> /dev/null; then
         validar_usuario "$user_portainer" && break
       else
         [[ "$user_portainer" =~ ^[a-z][a-z0-9_-]{3,39}$ ]] && [[ "${user_portainer,,}" != "admin" ]] && break
-        echo -e "\e[31m✖ Usuário inválido.\e[0m"
+        echo -e "$(t instalar_ambiente_completo_usuario_invalido)"
       fi
     done
     echo ""
 
     while true; do
-      echo -e "Passo \e[33m3/6\e[0m 🔐"
-      echo -e "\e[33m--> Mínimo 12 caracteres. Use letras MAIÚSCULAS e minúsculas, números e um caractere especial @ ou _\e[0m"
-      echo -e "\e[33m--> Evite caracteres especiais como: \\!#$\e[0m"
-      echo -ne "\e[36mDigite uma senha para o Portainer (ex: Porta@12345_): \e[0m" && read -rs pass_portainer && echo ""
+      echo -e "$(t instalar_ambiente_completo_passo3_6)"
+      echo -e "$(t instalar_ambiente_completo_senha_dica1)"
+      echo -e "$(t instalar_ambiente_completo_senha_dica2)"
+      echo -ne "$(t instalar_ambiente_completo_senha_portainer_pergunta)" && read -rs pass_portainer && echo ""
       echo ""
 
       if validar_senha "$pass_portainer" 12; then
@@ -19363,52 +25236,120 @@ instalar_ambiente_completo() {
       echo ""
     done
 
-    echo -e "Passo \e[33m4/6\e[0m 🖥️"
-    echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mEscolha um nome para o seu servidor (ex: encha): \e[0m" && read -r nome_servidor
+    echo -e "$(t instalar_ambiente_completo_passo4_6)"
+    echo -e "$(t instalar_ambiente_completo_sem_espacos)"
+    echo -ne "$(t instalar_ambiente_completo_nome_servidor_pergunta)" && read -r nome_servidor
     echo ""
 
-    echo -e "Passo \e[33m5/6\e[0m 🌐"
-    echo -e "\e[33m--> Não pode conter espaços e/ou caracteres especiais.\e[0m"
-    echo -ne "\e[36mDigite um nome para sua rede interna (ex: enchaNet): \e[0m" && read -r nome_rede_interna
+    echo -e "$(t instalar_ambiente_completo_passo5_6)"
+    echo -e "$(t instalar_ambiente_completo_sem_espacos)"
+    echo -ne "$(t instalar_ambiente_completo_rede_pergunta)" && read -r nome_rede_interna
     echo ""
 
-    echo -e "Passo \e[33m6/6\e[0m 📧"
-    echo -ne "\e[36mDigite um endereço de email válido para o SSL (ex: instalador@encha.ai): \e[0m" && read -r email_ssl
+    echo -e "$(t instalar_ambiente_completo_passo6_6)"
+    echo -ne "$(t instalar_ambiente_completo_email_ssl_pergunta)" && read -r email_ssl
     echo ""
 
     # =================================================================
     # DADOS N8N
     # =================================================================
+    MSG_PT[instalar_ambiente_completo_n8n_passo1_7]="\e[97mPasso%s 1/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo1_7]="\e[97mStep%s 1/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo1_7]="\e[97mPaso%s 1/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_dominio_pergunta]="\e[33m🌐 Informe o domínio para o N8N (ex: teste.encha.ai): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_dominio_pergunta]="\e[33m🌐 Enter the domain for N8N (e.g. teste.encha.ai): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_dominio_pergunta]="\e[33m🌐 Ingrese el dominio para N8N (ej: teste.encha.ai): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo2_7]="\e[97mPasso%s 2/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo2_7]="\e[97mStep%s 2/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo2_7]="\e[97mPaso%s 2/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_webhook_pergunta]="\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_webhook_pergunta]="\e[33m🔗 Enter the domain for the N8N Webhook (e.g. webhook.encha.ai): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_webhook_pergunta]="\e[33m🔗 Ingrese el dominio para el Webhook de N8N (ej: webhook.encha.ai): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo3_7]="\e[97mPasso%s 3/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo3_7]="\e[97mStep%s 3/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo3_7]="\e[97mPaso%s 3/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_email_pergunta]="\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_email_pergunta]="\e[33m📧 Enter the Email for SMTP (e.g. instalador@encha.ai): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_email_pergunta]="\e[33m📧 Ingrese el Email para SMTP (ej: instalador@encha.ai): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo4_7]="\e[97mPasso%s 4/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo4_7]="\e[97mStep%s 4/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo4_7]="\e[97mPaso%s 4/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_usuario_dica]="%s➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
+    MSG_EN[instalar_ambiente_completo_n8n_usuario_dica]="%s➡️ If you don't have a separate username, use the email itself below"
+    MSG_ES[instalar_ambiente_completo_n8n_usuario_dica]="%s➡️ Si no tiene un usuario separado, use el propio email a continuación"
+
+    MSG_PT[instalar_ambiente_completo_n8n_usuario_pergunta]="\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_usuario_pergunta]="\e[33m👤 Enter the Username for SMTP (e.g. encha or instalador@encha.ai): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_usuario_pergunta]="\e[33m👤 Ingrese el Usuario para SMTP (ej: encha o instalador@encha.ai): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo5_7]="\e[97mPasso%s 5/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo5_7]="\e[97mStep%s 5/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo5_7]="\e[97mPaso%s 5/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_senha_pergunta]="\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_senha_pergunta]="\e[33m🔑 Enter the Email SMTP Password (e.g. @Exemplo888_): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_senha_pergunta]="\e[33m🔑 Ingrese la Contraseña SMTP del Email (ej: @Exemplo888_): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo6_7]="\e[97mPasso%s 6/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo6_7]="\e[97mStep%s 6/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo6_7]="\e[97mPaso%s 6/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_host_pergunta]="\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_host_pergunta]="\e[33m🏠 Enter the Email SMTP Host (e.g. smtp.hostinger.com): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_host_pergunta]="\e[33m🏠 Ingrese el Host SMTP del Email (ej: smtp.hostinger.com): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_passo7_7]="\e[97mPasso%s 7/7\e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_passo7_7]="\e[97mStep%s 7/7\e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_passo7_7]="\e[97mPaso%s 7/7\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_n8n_porta_pergunta]="\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m"
+    MSG_EN[instalar_ambiente_completo_n8n_porta_pergunta]="\e[33m🔌 Enter the Email SMTP port (e.g. 465): \e[0m"
+    MSG_ES[instalar_ambiente_completo_n8n_porta_pergunta]="\e[33m🔌 Ingrese el puerto SMTP del Email (ej: 465): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_evolution_passo1_1]="\e[97mPasso%s 1/1\e[0m"
+    MSG_EN[instalar_ambiente_completo_evolution_passo1_1]="\e[97mStep%s 1/1\e[0m"
+    MSG_ES[instalar_ambiente_completo_evolution_passo1_1]="\e[97mPaso%s 1/1\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_evolution_dominio_pergunta]="\e[33m🌐 Informe o domínio para a Evolution API (ex: api.encha.ai): \e[0m"
+    MSG_EN[instalar_ambiente_completo_evolution_dominio_pergunta]="\e[33m🌐 Enter the domain for the Evolution API (e.g. api.encha.ai): \e[0m"
+    MSG_ES[instalar_ambiente_completo_evolution_dominio_pergunta]="\e[33m🌐 Ingrese el dominio para la Evolution API (ej: api.encha.ai): \e[0m"
+
     clear
     msg_n8n # Supondo que esta função exiba um banner para o N8N
-    echo -e "\e[97mPasso$amarelo 1/7\e[0m"
-    echo -ne "\e[33m🌐 Informe o domínio para o N8N (ex: teste.encha.ai): \e[0m" && read -r url_editorn8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo1_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_dominio_pergunta)" && read -r url_editorn8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 2/7\e[0m"
-    echo -ne "\e[33m🔗 Informe o domínio para o Webhook do N8N (ex: webhook.encha.ai): \e[0m" && read -r url_webhookn8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo2_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_webhook_pergunta)" && read -r url_webhookn8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 3/7\e[0m"
-    echo -ne "\e[33m📧 Informe o Email para SMTP (ex: instalador@encha.ai): \e[0m" && read -r email_smtp_n8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo3_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_email_pergunta)" && read -r email_smtp_n8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 4/7\e[0m"
-    echo -e "$amarelo➡️ Caso não tenha um usuário separado, utilize o próprio email abaixo"
-    echo -ne "\e[33m👤 Informe o Usuário para SMTP (ex: encha ou instalador@encha.ai): \e[0m" && read -r usuario_smtp_n8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo4_7 "$amarelo")"
+    echo -e "$(t instalar_ambiente_completo_n8n_usuario_dica "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_usuario_pergunta)" && read -r usuario_smtp_n8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 5/7\e[0m"
-    echo -ne "\e[33m🔑 Informe a Senha SMTP do Email (ex: @Exemplo888_): \e[0m" && read -r senha_smtp_n8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo5_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_senha_pergunta)" && read -r senha_smtp_n8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 6/7\e[0m"
-    echo -ne "\e[33m🏠 Informe o Host SMTP do Email (ex: smtp.hostinger.com): \e[0m" && read -r host_smtp_n8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo6_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_host_pergunta)" && read -r host_smtp_n8n
     echo ""
 
-    echo -e "\e[97mPasso$amarelo 7/7\e[0m"
-    echo -ne "\e[33m🔌 Informe a porta SMTP do Email (ex: 465): \e[0m" && read -r porta_smtp_n8n
+    echo -e "$(t instalar_ambiente_completo_n8n_passo7_7 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_n8n_porta_pergunta)" && read -r porta_smtp_n8n
     echo ""
 
     # =================================================================
@@ -19416,54 +25357,142 @@ instalar_ambiente_completo() {
     # =================================================================
     clear
     msg_evolution_api # Supondo que esta função exiba um banner para a Evolution
-    echo -e "\e[97mPasso$amarelo 1/1\e[0m"
-    echo -ne "\e[33m🌐 Informe o domínio para a Evolution API (ex: api.encha.ai): \e[0m" && read -r url_evolution
+    echo -e "$(t instalar_ambiente_completo_evolution_passo1_1 "$amarelo")"
+    echo -ne "$(t instalar_ambiente_completo_evolution_dominio_pergunta)" && read -r url_evolution
     echo ""
 
     # =================================================================
     # VERIFICAÇÃO FINAL DOS DADOS
     # =================================================================
+    MSG_PT[instalar_ambiente_completo_confirme_dados]="\e[36mPor favor, confirme se todos os dados estão corretos:\e[0m"
+    MSG_EN[instalar_ambiente_completo_confirme_dados]="\e[36mPlease confirm that all the information is correct:\e[0m"
+    MSG_ES[instalar_ambiente_completo_confirme_dados]="\e[36mPor favor, confirme que todos los datos están correctos:\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_config_gerais]="\e[97mConfigurações Gerais e Portainer:\e[0m"
+    MSG_EN[instalar_ambiente_completo_config_gerais]="\e[97mGeneral and Portainer Settings:\e[0m"
+    MSG_ES[instalar_ambiente_completo_config_gerais]="\e[97mConfiguraciones Generales y Portainer:\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_dominio_portainer]="  - Domínio Portainer: \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_dominio_portainer]="  - Portainer Domain: \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_dominio_portainer]="  - Dominio Portainer: \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_usuario_portainer]="  - Usuário Portainer: \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_usuario_portainer]="  - Portainer Username: \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_usuario_portainer]="  - Usuario Portainer: \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_senha_portainer_oculta]="  - Senha Portainer:   \e[32m(oculta)\e[0m"
+    MSG_EN[instalar_ambiente_completo_senha_portainer_oculta]="  - Portainer Password:   \e[32m(hidden)\e[0m"
+    MSG_ES[instalar_ambiente_completo_senha_portainer_oculta]="  - Contraseña Portainer:   \e[32m(oculta)\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_nome_servidor_label]="  - Nome do Servidor:  \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_nome_servidor_label]="  - Server Name:  \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_nome_servidor_label]="  - Nombre del Servidor:  \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_rede_interna_label]="  - Rede Interna:      \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_rede_interna_label]="  - Internal Network:      \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_rede_interna_label]="  - Red Interna:      \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_email_ssl_label]="  - Email para SSL:    \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_email_ssl_label]="  - Email for SSL:    \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_email_ssl_label]="  - Email para SSL:    \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_config_n8n]="\e[97mConfigurações do N8N:\e[0m"
+    MSG_EN[instalar_ambiente_completo_config_n8n]="\e[97mN8N Settings:\e[0m"
+    MSG_ES[instalar_ambiente_completo_config_n8n]="\e[97mConfiguraciones de N8N:\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_dominio_n8n_label]="  - Domínio N8N:         \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_dominio_n8n_label]="  - N8N Domain:         \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_dominio_n8n_label]="  - Dominio N8N:         \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_webhook_n8n_label]="  - Domínio Webhook N8N: \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_webhook_n8n_label]="  - N8N Webhook Domain: \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_webhook_n8n_label]="  - Dominio Webhook N8N: \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_smtp_email_label]="  - SMTP Email:          \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_smtp_email_label]="  - SMTP Email:          \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_smtp_email_label]="  - SMTP Email:          \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_smtp_usuario_label]="  - SMTP Usuário:        \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_smtp_usuario_label]="  - SMTP Username:        \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_smtp_usuario_label]="  - SMTP Usuario:        \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_smtp_senha_oculta]="  - SMTP Senha:          \e[32m(oculta)\e[0m"
+    MSG_EN[instalar_ambiente_completo_smtp_senha_oculta]="  - SMTP Password:          \e[32m(hidden)\e[0m"
+    MSG_ES[instalar_ambiente_completo_smtp_senha_oculta]="  - SMTP Contraseña:          \e[32m(oculta)\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_smtp_host_label]="  - SMTP Host:           \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_smtp_host_label]="  - SMTP Host:           \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_smtp_host_label]="  - SMTP Host:           \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_smtp_porta_label]="  - SMTP Porta:          \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_smtp_porta_label]="  - SMTP Port:          \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_smtp_porta_label]="  - SMTP Puerto:          \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_config_evolution]="\e[97mConfigurações da Evolution API:\e[0m"
+    MSG_EN[instalar_ambiente_completo_config_evolution]="\e[97mEvolution API Settings:\e[0m"
+    MSG_ES[instalar_ambiente_completo_config_evolution]="\e[97mConfiguraciones de la Evolution API:\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_dominio_evolution_label]="  - Domínio Evolution: \e[32m%s\e[0m"
+    MSG_EN[instalar_ambiente_completo_dominio_evolution_label]="  - Evolution Domain: \e[32m%s\e[0m"
+    MSG_ES[instalar_ambiente_completo_dominio_evolution_label]="  - Dominio Evolution: \e[32m%s\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_apikey_global_arquivo]="  - API Key Global:    \e[32mdentro do arquivo em dados_vps\e[0m"
+    MSG_EN[instalar_ambiente_completo_apikey_global_arquivo]="  - Global API Key:    \e[32minside the file in dados_vps\e[0m"
+    MSG_ES[instalar_ambiente_completo_apikey_global_arquivo]="  - API Key Global:    \e[32mdentro del archivo en dados_vps\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_confirma_iniciar]="\e[36mAs informações estão corretas? Deseja iniciar a instalação? (Y/n): \e[0m"
+    MSG_EN[instalar_ambiente_completo_confirma_iniciar]="\e[36mIs the information correct? Do you want to start the installation? (Y/n): \e[0m"
+    MSG_ES[instalar_ambiente_completo_confirma_iniciar]="\e[36m¿La información está correcta? ¿Desea iniciar la instalación? (Y/n): \e[0m"
+
+    MSG_PT[instalar_ambiente_completo_cancelada]="\e[31mInstalação cancelada. Por favor, insira os dados novamente.\e[0m"
+    MSG_EN[instalar_ambiente_completo_cancelada]="\e[31mInstallation cancelled. Please enter the information again.\e[0m"
+    MSG_ES[instalar_ambiente_completo_cancelada]="\e[31mInstalación cancelada. Por favor, ingrese los datos nuevamente.\e[0m"
+
+    MSG_PT[instalar_ambiente_completo_iniciando]="Iniciando a instalação do ambiente..."
+    MSG_EN[instalar_ambiente_completo_iniciando]="Starting the environment installation..."
+    MSG_ES[instalar_ambiente_completo_iniciando]="Iniciando la instalación del entorno..."
+
     clear
     echo -e "\e[33m================================================================\e[0m"
-    echo -e "\e[36mPor favor, confirme se todos os dados estão corretos:\e[0m"
+    echo -e "$(t instalar_ambiente_completo_confirme_dados)"
     echo -e "\e[33m================================================================\e[0m"
     echo ""
-    echo -e "\e[97mConfigurações Gerais e Portainer:\e[0m"
-    echo -e "  - Domínio Portainer: \e[32m$url_portainer\e[0m"
-    echo -e "  - Usuário Portainer: \e[32m$user_portainer\e[0m"
-    echo -e "  - Senha Portainer:   \e[32m(oculta)\e[0m"
-    echo -e "  - Nome do Servidor:  \e[32m$nome_servidor\e[0m"
-    echo -e "  - Rede Interna:      \e[32m$nome_rede_interna\e[0m"
-    echo -e "  - Email para SSL:    \e[32m$email_ssl\e[0m"
+    echo -e "$(t instalar_ambiente_completo_config_gerais)"
+    echo -e "$(t instalar_ambiente_completo_dominio_portainer "$url_portainer")"
+    echo -e "$(t instalar_ambiente_completo_usuario_portainer "$user_portainer")"
+    echo -e "$(t instalar_ambiente_completo_senha_portainer_oculta)"
+    echo -e "$(t instalar_ambiente_completo_nome_servidor_label "$nome_servidor")"
+    echo -e "$(t instalar_ambiente_completo_rede_interna_label "$nome_rede_interna")"
+    echo -e "$(t instalar_ambiente_completo_email_ssl_label "$email_ssl")"
     echo ""
-    echo -e "\e[97mConfigurações do N8N:\e[0m"
-    echo -e "  - Domínio N8N:         \e[32m$url_editorn8n\e[0m"
-    echo -e "  - Domínio Webhook N8N: \e[32m$url_webhookn8n\e[0m"
-    echo -e "  - SMTP Email:          \e[32m$email_smtp_n8n\e[0m"
-    echo -e "  - SMTP Usuário:        \e[32m$usuario_smtp_n8n\e[0m"
-    echo -e "  - SMTP Senha:          \e[32m(oculta)\e[0m"
-    echo -e "  - SMTP Host:           \e[32m$host_smtp_n8n\e[0m"
-    echo -e "  - SMTP Porta:          \e[32m$porta_smtp_n8n\e[0m"
+    echo -e "$(t instalar_ambiente_completo_config_n8n)"
+    echo -e "$(t instalar_ambiente_completo_dominio_n8n_label "$url_editorn8n")"
+    echo -e "$(t instalar_ambiente_completo_webhook_n8n_label "$url_webhookn8n")"
+    echo -e "$(t instalar_ambiente_completo_smtp_email_label "$email_smtp_n8n")"
+    echo -e "$(t instalar_ambiente_completo_smtp_usuario_label "$usuario_smtp_n8n")"
+    echo -e "$(t instalar_ambiente_completo_smtp_senha_oculta)"
+    echo -e "$(t instalar_ambiente_completo_smtp_host_label "$host_smtp_n8n")"
+    echo -e "$(t instalar_ambiente_completo_smtp_porta_label "$porta_smtp_n8n")"
     echo ""
-    echo -e "\e[97mConfigurações da Evolution API:\e[0m"
-    echo -e "  - Domínio Evolution: \e[32m$url_evolution\e[0m"
-    echo -e "  - API Key Global:    \e[32mdentro do arquivo em dados_vps\e[0m"
+    echo -e "$(t instalar_ambiente_completo_config_evolution)"
+    echo -e "$(t instalar_ambiente_completo_dominio_evolution_label "$url_evolution")"
+    echo -e "$(t instalar_ambiente_completo_apikey_global_arquivo)"
     echo ""
     echo -e "\e[33m================================================================\e[0m"
 
-    echo -ne "\e[36mAs informações estão corretas? Deseja iniciar a instalação? (Y/n): \e[0m" && read -r confirmacao
+    echo -ne "$(t instalar_ambiente_completo_confirma_iniciar)" && read -r confirmacao
 
     if [[ "$confirmacao" =~ ^[Yy]$ ]] || [[ -z "$confirmacao" ]]; then
       break
     else
       clear
-      banner 
-      echo -e "\e[31mInstalação cancelada. Por favor, insira os dados novamente.\e[0m"
+      banner
+      echo -e "$(t instalar_ambiente_completo_cancelada)"
       sleep 2
     fi
   done
 
-  echo "Iniciando a instalação do ambiente..."
+  echo "$(t instalar_ambiente_completo_iniciando)"
 
   instalar_traefik_e_portainer "$url_portainer" "$user_portainer" "$pass_portainer" "$nome_servidor" "$nome_rede_interna" "$email_ssl" 
   verificar_stack "n8n${opcao2:+_$opcao2}" && continue || echo ""
@@ -19487,32 +25516,44 @@ instalar_ambiente_completo() {
       fi
     fi
                
+  MSG_PT[instalar_ambiente_completo_ferramentas_sucesso]="\e[36mFerramentas Instaladas com Sucesso:\e[0m"
+  MSG_EN[instalar_ambiente_completo_ferramentas_sucesso]="\e[36mTools Installed Successfully:\e[0m"
+  MSG_ES[instalar_ambiente_completo_ferramentas_sucesso]="\e[36mHerramientas Instaladas con Éxito:\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_senha_portainer_label]="  - Senha Portainer:   \e[32m%s\e[0m"
+  MSG_EN[instalar_ambiente_completo_senha_portainer_label]="  - Portainer Password:   \e[32m%s\e[0m"
+  MSG_ES[instalar_ambiente_completo_senha_portainer_label]="  - Contraseña Portainer:   \e[32m%s\e[0m"
+
+  MSG_PT[instalar_ambiente_completo_smtp_senha_label]="  - SMTP Senha:          \e[32m%se[0m"
+  MSG_EN[instalar_ambiente_completo_smtp_senha_label]="  - SMTP Password:          \e[32m%se[0m"
+  MSG_ES[instalar_ambiente_completo_smtp_senha_label]="  - SMTP Contraseña:          \e[32m%se[0m"
+
   # validar informações
   clear
   echo -e "\e[33m================================================================\e[0m"
-  echo -e "\e[36mFerramentas Instaladas com Sucesso:\e[0m"
+  echo -e "$(t instalar_ambiente_completo_ferramentas_sucesso)"
   echo -e "\e[33m================================================================\e[0m"
   echo ""
-  echo -e "\e[97mConfigurações Gerais e Portainer:\e[0m"
-  echo -e "  - Domínio Portainer: \e[32m$url_portainer\e[0m"
-  echo -e "  - Usuário Portainer: \e[32m$user_portainer\e[0m"
-  echo -e "  - Senha Portainer:   \e[32m$pass_portainer\e[0m"
-  echo -e "  - Nome do Servidor:  \e[32m$nome_servidor\e[0m"
-  echo -e "  - Rede Interna:      \e[32m$nome_rede_interna\e[0m"
-  echo -e "  - Email para SSL:    \e[32m$email_ssl\e[0m"
+  echo -e "$(t instalar_ambiente_completo_config_gerais)"
+  echo -e "$(t instalar_ambiente_completo_dominio_portainer "$url_portainer")"
+  echo -e "$(t instalar_ambiente_completo_usuario_portainer "$user_portainer")"
+  echo -e "$(t instalar_ambiente_completo_senha_portainer_label "$pass_portainer")"
+  echo -e "$(t instalar_ambiente_completo_nome_servidor_label "$nome_servidor")"
+  echo -e "$(t instalar_ambiente_completo_rede_interna_label "$nome_rede_interna")"
+  echo -e "$(t instalar_ambiente_completo_email_ssl_label "$email_ssl")"
   echo ""
-  echo -e "\e[97mConfigurações do N8N:\e[0m"
-  echo -e "  - Domínio N8N:         \e[32m$url_editorn8n\e[0m"
-  echo -e "  - Domínio Webhook N8N: \e[32m$url_webhookn8n\e[0m"
-  echo -e "  - SMTP Email:          \e[32m$email_smtp_n8n\e[0m"
-  echo -e "  - SMTP Usuário:        \e[32m$usuario_smtp_n8n\e[0m"
-  echo -e "  - SMTP Senha:          \e[32m$usuario_smtp_n8ne[0m"
-  echo -e "  - SMTP Host:           \e[32m$host_smtp_n8n\e[0m"
-  echo -e "  - SMTP Porta:          \e[32m$porta_smtp_n8n\e[0m"
+  echo -e "$(t instalar_ambiente_completo_config_n8n)"
+  echo -e "$(t instalar_ambiente_completo_dominio_n8n_label "$url_editorn8n")"
+  echo -e "$(t instalar_ambiente_completo_webhook_n8n_label "$url_webhookn8n")"
+  echo -e "$(t instalar_ambiente_completo_smtp_email_label "$email_smtp_n8n")"
+  echo -e "$(t instalar_ambiente_completo_smtp_usuario_label "$usuario_smtp_n8n")"
+  echo -e "$(t instalar_ambiente_completo_smtp_senha_label "$usuario_smtp_n8n")"
+  echo -e "$(t instalar_ambiente_completo_smtp_host_label "$host_smtp_n8n")"
+  echo -e "$(t instalar_ambiente_completo_smtp_porta_label "$porta_smtp_n8n")"
   echo ""
-  echo -e "\e[97mConfigurações da Evolution API:\e[0m"
-  echo -e "  - Domínio Evolution: \e[32m$url_evolution\e[0m"
-  echo -e "  - API Key Global:    \e[32mdentro do arquivo em dados_vps\e[0m"
+  echo -e "$(t instalar_ambiente_completo_config_evolution)"
+  echo -e "$(t instalar_ambiente_completo_dominio_evolution_label "$url_evolution")"
+  echo -e "$(t instalar_ambiente_completo_apikey_global_arquivo)"
   echo ""
   echo -e "\e[33m================================================================\e[0m"
   msg_retorno_menu
@@ -19520,41 +25561,122 @@ instalar_ambiente_completo() {
   
 }
 
+# Catálogo de idioma do menu principal (Fase 4 de i18n — i18n/GLOSSARY.md).
+# Só os itens que são frase de verdade — a esmagadora maioria de OPCOES[] é
+# nome de produto de terceiro, que nunca traduz (ver glossário). "N8N
+# Formação Encha" e "EnchaT Grátis" seguem o glossário: o primeiro vira "N8N
+# Encha" nos 3 idiomas (deixa de ser frase, vira nome curto de produto); o
+# segundo vira "EnchaT Free" em en/es, mantendo "EnchaT Grátis" em pt.
+MSG_PT[menu_titulo_pag1]="--- MENU PRINCIPAL Página 1 de 2 ---"
+MSG_EN[menu_titulo_pag1]="--- MAIN MENU Page 1 of 2 ---"
+MSG_ES[menu_titulo_pag1]="--- MENÚ PRINCIPAL Página 1 de 2 ---"
+MSG_PT[menu_titulo_pag2]="--- MENU PRINCIPAL Página 2 de 2 ---"
+MSG_EN[menu_titulo_pag2]="--- MAIN MENU Page 2 of 2 ---"
+MSG_ES[menu_titulo_pag2]="--- MENÚ PRINCIPAL Página 2 de 2 ---"
+MSG_PT[menu_item_testar_smtp]="Testar SMPT"
+MSG_EN[menu_item_testar_smtp]="Test SMPT"
+MSG_ES[menu_item_testar_smtp]="Probar SMPT"
+MSG_PT[menu_item_nano]="Nano (Portainer, n8n, evolution)"
+MSG_EN[menu_item_nano]="Nano (Portainer, n8n, evolution)"
+MSG_ES[menu_item_nano]="Nano (Portainer, n8n, evolution)"
+MSG_PT[menu_item_instalar_nano]="Instalar nano (Portainer, n8n, evolution)"
+MSG_EN[menu_item_instalar_nano]="Install nano (Portainer, n8n, evolution)"
+MSG_ES[menu_item_instalar_nano]="Instalar nano (Portainer, n8n, evolution)"
+MSG_PT[menu_item_n8n_encha]="N8N Encha"
+MSG_EN[menu_item_n8n_encha]="N8N Encha"
+MSG_ES[menu_item_n8n_encha]="N8N Encha"
+MSG_PT[menu_item_enchat_free]="EnchaT Grátis"
+MSG_EN[menu_item_enchat_free]="EnchaT Free"
+MSG_ES[menu_item_enchat_free]="EnchaT Free"
+MSG_PT[menu_opcao_atualizar_painel]="Atualizar painel"
+MSG_EN[menu_opcao_atualizar_painel]="Update panel"
+MSG_ES[menu_opcao_atualizar_painel]="Actualizar panel"
+MSG_PT[menu_opcao_liberar_chatwoot]="Liberar Chatwoot"
+MSG_EN[menu_opcao_liberar_chatwoot]="Unlock Chatwoot"
+MSG_ES[menu_opcao_liberar_chatwoot]="Desbloquear Chatwoot"
+MSG_PT[menu_opcao_verificar_status]="Verificar status"
+MSG_EN[menu_opcao_verificar_status]="Check status"
+MSG_ES[menu_opcao_verificar_status]="Verificar estado"
+MSG_PT[menu_opcao_voltar]="Voltar ao Menu"
+MSG_EN[menu_opcao_voltar]="Back to Menu"
+MSG_ES[menu_opcao_voltar]="Volver al Menú"
+MSG_PT[menu_subtitulo]="Sistema de Deploy Automatizado"
+MSG_EN[menu_subtitulo]="Automated Deploy System"
+MSG_ES[menu_subtitulo]="Sistema de Despliegue Automatizado"
+MSG_PT[menu_nav_p1]="--- Digite P1 para ir para pagina 1"
+MSG_EN[menu_nav_p1]="--- Type P1 to go to page 1"
+MSG_ES[menu_nav_p1]="--- Escriba P1 para ir a la página 1"
+MSG_PT[menu_nav_p2]="Digite P2 para ir para pagina 2 ---"
+MSG_EN[menu_nav_p2]="Type P2 to go to page 2 ---"
+MSG_ES[menu_nav_p2]="Escriba P2 para ir a la página 2 ---"
+MSG_PT[menu_prompt_opcao]="Digite o NÚMERO da opção desejada ou COMANDO: "
+MSG_EN[menu_prompt_opcao]="Type the NUMBER of the option you want, or a COMMAND: "
+MSG_ES[menu_prompt_opcao]="Escriba el NÚMERO de la opción deseada o un COMANDO: "
+MSG_PT[menu_saindo]="Saindo do menu..."
+MSG_EN[menu_saindo]="Exiting the menu..."
+MSG_ES[menu_saindo]="Saliendo del menú..."
+MSG_PT[menu_voltando]="Voltando ao menu principal..."
+MSG_EN[menu_voltando]="Returning to the main menu..."
+MSG_ES[menu_voltando]="Volviendo al menú principal..."
+MSG_PT[menu_opcao_invalida]="Opção inválida! Tente novamente."
+MSG_EN[menu_opcao_invalida]="Invalid option! Try again."
+MSG_ES[menu_opcao_invalida]="¡Opción inválida! Intente de nuevo."
+
 exibir_pagina1() {
-    centralizar "--- MENU PRINCIPAL Página 1 de 2 ---"
+    centralizar "$(t menu_titulo_pag1)"
     printf "\n"
 
-    # Largura da primeira coluna definida pelo item mais longo: "Instalar nano (Portainer, n8n, evolution)" (39 caracteres)
-    local width=39
+    # Largura da primeira coluna definida pelo item mais longo — calculada
+    # dinamicamente (não fixa em 39) porque o comprimento do texto muda por
+    # idioma; antes disso era mexer no menu de todo cliente sem tradução
+    # nenhuma pra justificar (ver Fase 0 do plano). Precisa ser recalculada
+    # toda vez que exibir_pagina1 roda, porque t() só resolve o idioma atual
+    # nesse momento.
+    local rotulos_pag1=(
+        "$(t menu_item_testar_smtp)"
+        "$(t menu_item_nano)"
+        "Traefik & Portainer" "Evolution API" "N8N" "Chatwoot"
+        "$(t menu_item_n8n_encha)"
+        "Minio" "Typebot" "Directus" "Odoo" "PgAdmin" "Nocobase" "Botpress"
+        "Baserow" "MongoDB" "RabbitMQ" "UptimeKuma" "Calcom" "Mautic"
+        "Appsmith" "Qdrant"
+    )
+    local width=0
+    for rotulo in "${rotulos_pag1[@]}"; do
+        (( ${#rotulo} > width )) && width=${#rotulo}
+    done
 
     exibir_bloco_centralizado \
-        "$(printf "${amarelo_escuro}[ 00 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 22 ]${reset} - WoofedCRM${reset}" "Testar SMPT")" \
-        "$(printf "${amarelo_escuro}[ 01 ]${reset} ${cinza}- %-${width}s |" "Nano (Portainer, n8n, evolution)")" \
-        "$(printf "${amarelo_escuro}[ 02 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 23 ]${reset} - TwentyCRM${reset}" "Traefik & Portainer")" \
-        "$(printf "${amarelo_escuro}[ 03 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 24 ]${reset} - Mattermost${reset}" "Evolution API")" \
-        "$(printf "${amarelo_escuro}[ 04 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 25 ]${reset} - Outline${reset}" "N8N")" \
-        "$(printf "${amarelo_escuro}[ 05 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 26 ]${reset} - Focalboard${reset}" "Chatwoot")" \
-        "$(printf "${amarelo_escuro}[ 06 ]${reset} ${cinza}- %-${width}s   | ${amarelo_escuro}[ 27 ]${reset} - GLPI${reset}" "N8N Formação Encha")" \
-        "$(printf "${amarelo_escuro}[ 07 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 28 ]${reset} - Flowise${reset}" "Minio")" \
-        "$(printf "${amarelo_escuro}[ 08 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 29 ]${reset} - Langflow${reset}" "Typebot")" \
-        "$(printf "${amarelo_escuro}[ 09 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 30 ]${reset} - Ollama${reset}" "Directus")" \
-        "$(printf "${amarelo_escuro}[ 10 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 31 ]${reset} - AnythingLLM${reset}" "Odoo")" \
-        "$(printf "${amarelo_escuro}[ 11 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 32 ]${reset} - Nocodb${reset}" "PgAdmin")" \
-        "$(printf "${amarelo_escuro}[ 12 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 33 ]${reset} - Humhub${reset}" "Nocobase")" \
-        "$(printf "${amarelo_escuro}[ 13 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 34 ]${reset} - Wordpress${reset}" "Botpress")" \
-        "$(printf "${amarelo_escuro}[ 14 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 35 ]${reset} - Formbricks${reset}" "Baserow")" \
-        "$(printf "${amarelo_escuro}[ 15 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 36 ]${reset} - Metabase${reset}" "MongoDB")" \
-        "$(printf "${amarelo_escuro}[ 16 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 37 ]${reset} - Docuseal${reset}" "RabbitMQ")" \
-        "$(printf "${amarelo_escuro}[ 17 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 38 ]${reset} - Grafana + Prometheus + Advisor${reset}" "UptimeKuma")" \
-        "$(printf "${amarelo_escuro}[ 18 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 39 ]${reset} - Dify${reset}" "Calcom")" \
-        "$(printf "${amarelo_escuro}[ 19 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 40 ]${reset} - Affine${reset}" "Mautic")" \
-        "$(printf "${amarelo_escuro}[ 20 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 41 ]${reset} - Vaultwarden${reset}" "Appsmith")" \
-        "$(printf "${amarelo_escuro}[ 21 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 42 ]${reset} - Nextcloud${reset}" "Qdrant")"
+        "$(printf "${amarelo_escuro}[ 00 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 22 ]${reset} - WoofedCRM${reset}" "${rotulos_pag1[0]}")" \
+        "$(printf "${amarelo_escuro}[ 01 ]${reset} ${cinza}- %-${width}s |" "${rotulos_pag1[1]}")" \
+        "$(printf "${amarelo_escuro}[ 02 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 23 ]${reset} - TwentyCRM${reset}" "${rotulos_pag1[2]}")" \
+        "$(printf "${amarelo_escuro}[ 03 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 24 ]${reset} - Mattermost${reset}" "${rotulos_pag1[3]}")" \
+        "$(printf "${amarelo_escuro}[ 04 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 25 ]${reset} - Outline${reset}" "${rotulos_pag1[4]}")" \
+        "$(printf "${amarelo_escuro}[ 05 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 26 ]${reset} - Focalboard${reset}" "${rotulos_pag1[5]}")" \
+        "$(printf "${amarelo_escuro}[ 06 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 27 ]${reset} - GLPI${reset}" "${rotulos_pag1[6]}")" \
+        "$(printf "${amarelo_escuro}[ 07 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 28 ]${reset} - Flowise${reset}" "${rotulos_pag1[7]}")" \
+        "$(printf "${amarelo_escuro}[ 08 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 29 ]${reset} - Langflow${reset}" "${rotulos_pag1[8]}")" \
+        "$(printf "${amarelo_escuro}[ 09 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 30 ]${reset} - Ollama${reset}" "${rotulos_pag1[9]}")" \
+        "$(printf "${amarelo_escuro}[ 10 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 31 ]${reset} - AnythingLLM${reset}" "${rotulos_pag1[10]}")" \
+        "$(printf "${amarelo_escuro}[ 11 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 32 ]${reset} - Nocodb${reset}" "${rotulos_pag1[11]}")" \
+        "$(printf "${amarelo_escuro}[ 12 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 33 ]${reset} - Humhub${reset}" "${rotulos_pag1[12]}")" \
+        "$(printf "${amarelo_escuro}[ 13 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 34 ]${reset} - Wordpress${reset}" "${rotulos_pag1[13]}")" \
+        "$(printf "${amarelo_escuro}[ 14 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 35 ]${reset} - Formbricks${reset}" "${rotulos_pag1[14]}")" \
+        "$(printf "${amarelo_escuro}[ 15 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 36 ]${reset} - Metabase${reset}" "${rotulos_pag1[15]}")" \
+        "$(printf "${amarelo_escuro}[ 16 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 37 ]${reset} - Docuseal${reset}" "${rotulos_pag1[16]}")" \
+        "$(printf "${amarelo_escuro}[ 17 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 38 ]${reset} - Grafana + Prometheus + Advisor${reset}" "${rotulos_pag1[17]}")" \
+        "$(printf "${amarelo_escuro}[ 18 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 39 ]${reset} - Dify${reset}" "${rotulos_pag1[18]}")" \
+        "$(printf "${amarelo_escuro}[ 19 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 40 ]${reset} - Affine${reset}" "${rotulos_pag1[19]}")" \
+        "$(printf "${amarelo_escuro}[ 20 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 41 ]${reset} - Vaultwarden${reset}" "${rotulos_pag1[20]}")" \
+        "$(printf "${amarelo_escuro}[ 21 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 42 ]${reset} - Nextcloud${reset}" "${rotulos_pag1[21]}")"
 }
 
 exibir_pagina2() {
-    centralizar "--- MENU PRINCIPAL Página 2 de 2 ---"
+    centralizar "$(t menu_titulo_pag2)"
     printf "\n"
+    # Página 2 é só nome de produto de terceiro no rótulo esquerdo — nada
+    # aqui muda por idioma, então a largura fixa original continua segura
+    # (nenhuma string vai crescer/encolher traduzindo).
     local width=15
 
     exibir_bloco_centralizado \
@@ -19578,20 +25700,20 @@ exibir_pagina2() {
         "$(printf "${amarelo_escuro}[ 60 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 80 ]${reset} - Shlink${reset}" "Bolt")" \
         "$(printf "${amarelo_escuro}[ 61 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 81 ]${reset} - Duplicati${reset}" "Planka")" \
         "$(printf "${amarelo_escuro}[ 62 ]${reset} ${cinza}- %-${width}s | ${amarelo_escuro}[ 82 ]${reset} - Webtop${reset}" "WPPConnect")" \
-        "$(printf "${amarelo_escuro}[ 84 ]${reset} ${cinza}- %-${width}s |" "EnchaT Grátis")"
+        "$(printf "${amarelo_escuro}[ 84 ]${reset} ${cinza}- %-${width}s |" "$(t menu_item_enchat_free)")"
 }
 
 # --- Função Principal do Menu ---
 processar_menu_unlimited() {
     # --- Configuração do Menu ---
     declare -A OPCOES
-    OPCOES[0]="Testar SMPT"
-    OPCOES[1]="Instalar nano (Portainer, n8n, evolution)" 
+    OPCOES[0]="$(t menu_item_testar_smtp)"
+    OPCOES[1]="$(t menu_item_instalar_nano)"
     OPCOES[2]="Traefik & Portainer"
     OPCOES[3]="Evolution API"
     OPCOES[4]="N8N"
     OPCOES[5]="Chatwoot"
-    OPCOES[6]="N8N Formação Encha"
+    OPCOES[6]="$(t menu_item_n8n_encha)"
     OPCOES[7]="Minio"
     OPCOES[8]="Typebot"
     OPCOES[9]="Directus"
@@ -19668,12 +25790,12 @@ processar_menu_unlimited() {
     OPCOES[80]="Shlink"
     OPCOES[81]="Duplicati"
     OPCOES[82]="Webtop"
-    OPCOES[84]="EnchaT Grátis"
+    OPCOES[84]="$(t menu_item_enchat_free)"
     # outras opções
-    OPCOES[97]="Atualizar painel" # Ação: pull da imagem nova + redeploy
-    OPCOES[98]="Liberar Chatwoot" # Ação, não instalação
-    OPCOES[99]="Verificar status" # Ação
-    OPCOES[100]="Voltar ao Menu" # Ação
+    OPCOES[97]="$(t menu_opcao_atualizar_painel)" # Ação: pull da imagem nova + redeploy
+    OPCOES[98]="$(t menu_opcao_liberar_chatwoot)" # Ação, não instalação
+    OPCOES[99]="$(t menu_opcao_verificar_status)" # Ação
+    OPCOES[100]="$(t menu_opcao_voltar)" # Ação
 
     local pagina_atual=1
 
@@ -19682,7 +25804,7 @@ processar_menu_unlimited() {
         banner
         
         printf "\n"
-        centralizar "Sistema de Deploy Automatizado"
+        centralizar "$(t menu_subtitulo)"
         echo -e "$(printf -- '=%.0s' {1..$(tput cols)})"
         
         if [ "$pagina_atual" -eq 1 ]; then
@@ -19698,10 +25820,10 @@ processar_menu_unlimited() {
         echo -e "$(printf -- '_%.0s' {1..$(tput cols)})"
         
         # Navegação entre páginas
-        printf "%s | %s\n" "--- Digite P1 para ir para pagina 1" "Digite P2 para ir para pagina 2 ---"
+        printf "%s | %s\n" "$(t menu_nav_p1)" "$(t menu_nav_p2)"
 
         echo ""
-        read -p "$(echo -e "Digite o NÚMERO da opção desejada ou COMANDO: ")" opcao
+        read -p "$(t menu_prompt_opcao)" opcao
 
         case $opcao in
             P1|p1) pagina_atual=1; continue ;;
@@ -20269,17 +26391,22 @@ processar_menu_unlimited() {
                 sleep 2
                 ;;
             100)
-                echo -e "\n${verde}Saindo do menu...${reset}"
+                echo -e "\n${verde}$(t menu_saindo)${reset}"
                 sleep 1
                 exit 0
                 ;;
             V|v)
-                echo "Voltando ao menu principal..."
+                # Tecla fixa "V" nos 3 idiomas de propósito (Fase 4 —
+                # i18n/GLOSSARY.md): "Voltar"/"Volver" começam com V, "Back"
+                # em inglês não — mas mudar a tecla mudaria o hábito de quem
+                # já usa o menu hoje sem nenhum ganho real. Só o rótulo
+                # (menu_opcao_voltar, na tela) e esta mensagem traduzem.
+                echo "$(t menu_voltando)"
                 sleep 1
                 return
                 ;;
             *)
-                echo -e "\n${vermelho}Opção inválida! Tente novamente.${reset}"
+                echo -e "\n${vermelho}$(t menu_opcao_invalida)${reset}"
                 sleep 2
                 ;;
         esac
@@ -20292,35 +26419,79 @@ processar_menu_unlimited() {
 # imagem nova via Docker. Equivalente, no caminho SSH, ao botão "Atualizar" do
 # painel (que faz o redeploy via Portainer).
 ################################################################################
+MSG_PT[ferramenta_atualizar_painel_titulo]="\e[95m\e[1m🔄 ATUALIZANDO ENCHA SETUP\e[0m"
+MSG_EN[ferramenta_atualizar_painel_titulo]="\e[95m\e[1m🔄 UPDATING ENCHA SETUP\e[0m"
+MSG_ES[ferramenta_atualizar_painel_titulo]="\e[95m\e[1m🔄 ACTUALIZANDO ENCHA SETUP\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_passo1]="\e[97m• [1/4] Atualizando fonte (git fetch --depth 1 + reset)...\e[0m"
+MSG_EN[ferramenta_atualizar_painel_passo1]="\e[97m• [1/4] Updating source (git fetch --depth 1 + reset)...\e[0m"
+MSG_ES[ferramenta_atualizar_painel_passo1]="\e[97m• [1/4] Actualizando fuente (git fetch --depth 1 + reset)...\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_fonte_ok]="  \e[32m✔ Fonte atualizado\e[0m"
+MSG_EN[ferramenta_atualizar_painel_fonte_ok]="  \e[32m✔ Source updated\e[0m"
+MSG_ES[ferramenta_atualizar_painel_fonte_ok]="  \e[32m✔ Fuente actualizada\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_fonte_falhou]="  \e[33m↳ Não foi possível atualizar o fonte (seguindo mesmo assim)\e[0m"
+MSG_EN[ferramenta_atualizar_painel_fonte_falhou]="  \e[33m↳ Could not update the source (continuing anyway)\e[0m"
+MSG_ES[ferramenta_atualizar_painel_fonte_falhou]="  \e[33m↳ No fue posible actualizar la fuente (continuando de todos modos)\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_sem_git]="\e[97m• [1/4] Fonte git ausente — pulando refresh dos scripts\e[0m"
+MSG_EN[ferramenta_atualizar_painel_sem_git]="\e[97m• [1/4] Git source missing — skipping script refresh\e[0m"
+MSG_ES[ferramenta_atualizar_painel_sem_git]="\e[97m• [1/4] Fuente git ausente — omitiendo actualización de los scripts\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_baixando_imagem]="\e[97m• [2/4] Baixando imagem ghcr.io/enchaaluno/setup-panel:latest...\e[0m"
+MSG_EN[ferramenta_atualizar_painel_baixando_imagem]="\e[97m• [2/4] Downloading image ghcr.io/enchaaluno/setup-panel:latest...\e[0m"
+MSG_ES[ferramenta_atualizar_painel_baixando_imagem]="\e[97m• [2/4] Descargando imagen ghcr.io/enchaaluno/setup-panel:latest...\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_imagem_ok]="  \e[32m✔ Imagem atualizada\e[0m"
+MSG_EN[ferramenta_atualizar_painel_imagem_ok]="  \e[32m✔ Image updated\e[0m"
+MSG_ES[ferramenta_atualizar_painel_imagem_ok]="  \e[32m✔ Imagen actualizada\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_pull_falhou]="  \e[33m↳ Pull falhou. Buildando local...\e[0m"
+MSG_EN[ferramenta_atualizar_painel_pull_falhou]="  \e[33m↳ Pull failed. Building locally...\e[0m"
+MSG_ES[ferramenta_atualizar_painel_pull_falhou]="  \e[33m↳ Falló el pull. Generando localmente...\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_passo3]="\e[97m• [3/4] Aplicando atualização via Portainer...\e[0m"
+MSG_EN[ferramenta_atualizar_painel_passo3]="\e[97m• [3/4] Applying update via Portainer...\e[0m"
+MSG_ES[ferramenta_atualizar_painel_passo3]="\e[97m• [3/4] Aplicando actualización vía Portainer...\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_passo4]="\e[97m• [4/4] Aguardando o painel reiniciar...\e[0m"
+MSG_EN[ferramenta_atualizar_painel_passo4]="\e[97m• [4/4] Waiting for the panel to restart...\e[0m"
+MSG_ES[ferramenta_atualizar_painel_passo4]="\e[97m• [4/4] Esperando que el panel se reinicie...\e[0m"
+
+MSG_PT[ferramenta_atualizar_painel_sucesso]="\e[32m\e[1m✅ Encha Setup atualizado.\e[0m"
+MSG_EN[ferramenta_atualizar_painel_sucesso]="\e[32m\e[1m✅ Encha Setup updated.\e[0m"
+MSG_ES[ferramenta_atualizar_painel_sucesso]="\e[32m\e[1m✅ Encha Setup actualizado.\e[0m"
+
 ferramenta_atualizar_painel() {
     echo ""
-    echo -e "\e[95m\e[1m🔄 ATUALIZANDO ENCHA SETUP\e[0m"
+    echo -e "$(t ferramenta_atualizar_painel_titulo)"
     echo ""
 
     # 1/4 — Refresca o fonte (scripts + painel) no host.
     if [[ -d /root/encha-setup-panel/.git ]]; then
-        echo -e "\e[97m• [1/4] Atualizando fonte (git fetch --depth 1 + reset)...\e[0m"
+        echo -e "$(t ferramenta_atualizar_painel_passo1)"
         # fetch --depth 1 + reset FETCH_HEAD: robusto a reescrita de histórico
         # (não exige ancestral comum nem origin/main atualizado).
         if git -C /root/encha-setup-panel fetch --depth 1 origin main >/dev/null 2>&1 \
             && git -C /root/encha-setup-panel reset --hard FETCH_HEAD >/dev/null 2>&1; then
-            echo -e "  \e[32m✔ Fonte atualizado\e[0m"
+            echo -e "$(t ferramenta_atualizar_painel_fonte_ok)"
         else
-            echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo mesmo assim)\e[0m"
+            echo -e "$(t ferramenta_atualizar_painel_fonte_falhou)"
         fi
     else
-        echo -e "\e[97m• [1/4] Fonte git ausente — pulando refresh dos scripts\e[0m"
+        echo -e "$(t ferramenta_atualizar_painel_sem_git)"
     fi
 
     # 2/4 — Pull da imagem nova. Se o pull anônimo falhar (pacote virou privado
     # no GHCR, rede fora, ou versão ainda não publicada), o fallback abaixo
     # builda local a partir do fonte já atualizado no passo 1/4, e faz o
     # redeploy completo.
-    echo -e "\e[97m• [2/4] Baixando imagem ghcr.io/enchaaluno/setup-panel:latest...\e[0m"
+    echo -e "$(t ferramenta_atualizar_painel_baixando_imagem)"
     if docker pull ghcr.io/enchaaluno/setup-panel:latest >/dev/null 2>&1; then
-        echo -e "  \e[32m✔ Imagem atualizada\e[0m"
+        echo -e "$(t ferramenta_atualizar_painel_imagem_ok)"
     else
-        echo -e "  \e[33m↳ Pull falhou. Buildando local...\e[0m"
+        echo -e "$(t ferramenta_atualizar_painel_pull_falhou)"
         ferramenta_encha_panel
         return $?
     fi
@@ -20331,16 +26502,16 @@ ferramenta_atualizar_painel() {
     # `service update` por fora deixaria o compose armazenado desatualizado —
     # o próximo "Update the stack" clicado no Portainer reverteria a imagem
     # silenciosamente. ferramenta_encha_panel já faz create-or-update.
-    echo -e "\e[97m• [3/4] Aplicando atualização via Portainer...\e[0m"
+    echo -e "$(t ferramenta_atualizar_painel_passo3)"
     if ! ferramenta_encha_panel; then
         return 1
     fi
 
     # 4/4 — Confirmação.
-    echo -e "\e[97m• [4/4] Aguardando o painel reiniciar...\e[0m"
+    echo -e "$(t ferramenta_atualizar_painel_passo4)"
     sleep 5
     echo ""
-    echo -e "\e[32m\e[1m✅ Encha Setup atualizado.\e[0m"
+    echo -e "$(t ferramenta_atualizar_painel_sucesso)"
 }
 
 ################################################################################
@@ -20368,6 +26539,10 @@ ferramenta_atualizar_painel() {
 # no painel não chega à imagem buildada, mesmo com o fix já publicado. Chamar
 # sempre antes de buildar.
 ################################################################################
+MSG_PT[atualizar_fonte_painel_tag_nao_encontrada]="  \e[33m↳ Tag v%s não encontrada em setupteste — clonando main como fallback.\e[0m"
+MSG_EN[atualizar_fonte_painel_tag_nao_encontrada]="  \e[33m↳ Tag v%s not found in setupteste — cloning main as fallback.\e[0m"
+MSG_ES[atualizar_fonte_painel_tag_nao_encontrada]="  \e[33m↳ Tag v%s no encontrada en setupteste — clonando main como resguardo.\e[0m"
+
 atualizar_fonte_painel() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1
 
@@ -20383,7 +26558,7 @@ atualizar_fonte_painel() {
     if ! git clone --depth 1 --branch "v${ENCHA_VERSION}" \
         https://github.com/enchaaluno/setupteste.git \
         /tmp/_setupteste_clone >/dev/null 2>&1; then
-        echo -e "  \e[33m↳ Tag v${ENCHA_VERSION} não encontrada em setupteste — clonando main como fallback.\e[0m"
+        echo -e "$(t atualizar_fonte_painel_tag_nao_encontrada "$ENCHA_VERSION")"
         rm -rf /tmp/_setupteste_clone
         if ! git clone --depth 1 \
             https://github.com/enchaaluno/setupteste.git \
@@ -20419,6 +26594,54 @@ atualizar_fonte_painel() {
 # faltar algo pro primeiro deploy, aborta com uma mensagem clara em vez de
 # criar uma stack com admin vazio.
 ################################################################################
+MSG_PT[deploy_stack_painel_via_portainer_sem_credenciais]="  \e[31m✖ Credenciais de serviço do Portainer indisponíveis — não é possível deployar o painel via API.\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_sem_credenciais]="  \e[31m✖ Portainer service credentials unavailable — cannot deploy the panel via API.\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_sem_credenciais]="  \e[31m✖ Credenciales de servicio de Portainer no disponibles — no es posible desplegar el panel vía API.\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_aguardando_api]="  \e[97m↳ Aguardando API do Portainer...\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_aguardando_api]="  \e[97m↳ Waiting for the Portainer API...\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_aguardando_api]="  \e[97m↳ Esperando la API de Portainer...\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_sem_resposta]="  \e[31m✖ Portainer não respondeu — abortando deploy do painel via API.\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_sem_resposta]="  \e[31m✖ Portainer did not respond — aborting panel deploy via API.\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_sem_resposta]="  \e[31m✖ Portainer no respondió — abortando el despliegue del panel vía API.\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_falha_auth]="  \e[31m✖ Falha ao autenticar no Portainer (usuário: %s).\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_falha_auth]="  \e[31m✖ Failed to authenticate with Portainer (user: %s).\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_falha_auth]="  \e[31m✖ Falló la autenticación en Portainer (usuario: %s).\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_sem_endpoint]="  \e[31m✖ Não foi possível obter o Endpoint ID do Portainer.\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_sem_endpoint]="  \e[31m✖ Could not obtain the Portainer Endpoint ID.\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_sem_endpoint]="  \e[31m✖ No fue posible obtener el Endpoint ID de Portainer.\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_migrando]="  \e[33m↳ Stack 'encha-panel' existente foi criada fora do Portainer — migrando...\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_migrando]="  \e[33m↳ Existing 'encha-panel' stack was created outside Portainer — migrating...\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_migrando]="  \e[33m↳ La stack 'encha-panel' existente fue creada fuera de Portainer — migrando...\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_sem_admin]="  \e[31m✖ Sem admin do painel definido (nem em escopo, nem já gravado na stack). Rode a instalação do painel pelo wizard.\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_sem_admin]="  \e[31m✖ No panel admin defined (neither in scope nor already saved in the stack). Run the panel installation via the wizard.\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_sem_admin]="  \e[31m✖ No hay admin del panel definido (ni en el alcance, ni ya guardado en la stack). Ejecute la instalación del panel por el asistente.\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_ja_gerenciada]="  \e[97m↳ Stack já gerenciada pelo Portainer (Id %s) — atualizando...\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_ja_gerenciada]="  \e[97m↳ Stack already managed by Portainer (Id %s) — updating...\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_ja_gerenciada]="  \e[97m↳ Stack ya administrada por Portainer (Id %s) — actualizando...\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_409]="  \e[33m↳ 409 no create — stack já existe, localizando e atualizando...\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_409]="  \e[33m↳ 409 on create — stack already exists, locating and updating...\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_409]="  \e[33m↳ 409 en create — la stack ya existe, localizando y actualizando...\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_falhou]="  \e[31m✖ Deploy via API do Portainer falhou (HTTP %s).\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_falhou]="  \e[31m✖ Deploy via Portainer API failed (HTTP %s).\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_falhou]="  \e[31m✖ El despliegue vía API de Portainer falló (HTTP %s).\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_detalhe]="  \e[31m  Detalhe: %s\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_detalhe]="  \e[31m  Detail: %s\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_detalhe]="  \e[31m  Detalle: %s\e[0m"
+
+MSG_PT[deploy_stack_painel_via_portainer_sucesso]="  \e[32m✓ Stack 'encha-panel' criada/atualizada via API do Portainer.\e[0m"
+MSG_EN[deploy_stack_painel_via_portainer_sucesso]="  \e[32m✓ Stack 'encha-panel' created/updated via Portainer API.\e[0m"
+MSG_ES[deploy_stack_painel_via_portainer_sucesso]="  \e[32m✓ Stack 'encha-panel' creada/actualizada vía API de Portainer.\e[0m"
+
 deploy_stack_painel_via_portainer() {
     local stack_file="$1"
     local rede="${nome_rede_interna:-enchanet}"
@@ -20439,11 +26662,11 @@ deploy_stack_painel_via_portainer() {
         fi
     fi
     if [ -z "$user_portainer" ] || [ -z "$pass_portainer" ]; then
-        echo -e "  \e[31m✖ Credenciais de serviço do Portainer indisponíveis — não é possível deployar o painel via API.\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_sem_credenciais)"
         return 1
     fi
 
-    echo -e "  \e[97m↳ Aguardando API do Portainer...\e[0m"
+    echo -e "$(t deploy_stack_painel_via_portainer_aguardando_api)"
     local pronto=false
     for _ in $(seq 1 20); do
         code=$(docker run --rm --network "$rede" curlimages/curl:latest \
@@ -20452,7 +26675,7 @@ deploy_stack_painel_via_portainer() {
         sleep 3
     done
     if [ "$pronto" != true ]; then
-        echo -e "  \e[31m✖ Portainer não respondeu — abortando deploy do painel via API.\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_sem_resposta)"
         return 1
     fi
 
@@ -20462,7 +26685,7 @@ deploy_stack_painel_via_portainer() {
         -H "Content-Type: application/json" \
         -d "$(jq -nc --arg u "$user_portainer" --arg p "$pass_portainer" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" = "null" ]; then
-        echo -e "  \e[31m✖ Falha ao autenticar no Portainer (usuário: $user_portainer).\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_falha_auth "$user_portainer")"
         return 1
     fi
 
@@ -20470,7 +26693,7 @@ deploy_stack_painel_via_portainer() {
     endpoint_id=$(docker run --rm --network "$rede" curlimages/curl:latest \
         -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
     if [ -z "$endpoint_id" ] || [ "$endpoint_id" = "null" ]; then
-        echo -e "  \e[31m✖ Não foi possível obter o Endpoint ID do Portainer.\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_sem_endpoint)"
         return 1
     fi
 
@@ -20497,7 +26720,7 @@ deploy_stack_painel_via_portainer() {
     # aparece no Portainer como stack externa, sem registro — o create
     # retornaria 409 e não haveria stack para atualizar via PUT. Remove antes.
     if [ -z "$stack_id" ] && docker stack ls --format '{{.Name}}' 2>/dev/null | grep -qx "encha-panel"; then
-        echo -e "  \e[33m↳ Stack 'encha-panel' existente foi criada fora do Portainer — migrando...\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_migrando)"
         docker stack rm encha-panel >/dev/null 2>&1
         sleep 10
     fi
@@ -20506,7 +26729,7 @@ deploy_stack_painel_via_portainer() {
     panel_user_val="${user_painel:-$(get_env_val PANEL_ADMIN_USER)}"
     panel_pass_val="${pass_painel:-$(get_env_val PANEL_ADMIN_PASSWORD)}"
     if [ -z "$panel_user_val" ] || [ -z "$panel_pass_val" ]; then
-        echo -e "  \e[31m✖ Sem admin do painel definido (nem em escopo, nem já gravado na stack). Rode a instalação do painel pelo wizard.\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_sem_admin)"
         return 1
     fi
 
@@ -20533,7 +26756,7 @@ deploy_stack_painel_via_portainer() {
     resp=$(mktemp)
 
     if [ -n "$stack_id" ]; then
-        echo -e "  \e[97m↳ Stack já gerenciada pelo Portainer (Id $stack_id) — atualizando...\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_ja_gerenciada "$stack_id")"
         local body
         body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
             '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
@@ -20552,7 +26775,7 @@ deploy_stack_painel_via_portainer() {
             -F "file=@$stack_file" \
             http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null)
         if [ "$http_code" = "409" ]; then
-            echo -e "  \e[33m↳ 409 no create — stack já existe, localizando e atualizando...\e[0m"
+            echo -e "$(t deploy_stack_painel_via_portainer_409)"
             stack_id=$(docker run --rm --network "$rede" curlimages/curl:latest \
                 -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null \
                 | jq -r '.[] | select(.Name=="encha-panel") | .Id' | head -n1)
@@ -20569,13 +26792,13 @@ deploy_stack_painel_via_portainer() {
     fi
 
     if ! [[ "$http_code" =~ ^20[0-9]$ ]]; then
-        echo -e "  \e[31m✖ Deploy via API do Portainer falhou (HTTP $http_code).\e[0m"
-        echo -e "  \e[31m  Detalhe: $(cat "$resp" 2>/dev/null)\e[0m"
+        echo -e "$(t deploy_stack_painel_via_portainer_falhou "$http_code")"
+        echo -e "$(t deploy_stack_painel_via_portainer_detalhe "$(cat "$resp" 2>/dev/null)")"
         rm -f "$resp"
         return 1
     fi
 
-    echo -e "  \e[32m✓ Stack 'encha-panel' criada/atualizada via API do Portainer.\e[0m"
+    echo -e "$(t deploy_stack_painel_via_portainer_sucesso)"
     rm -f "$resp"
     return 0
 }
@@ -20595,38 +26818,138 @@ deploy_stack_painel_via_portainer() {
 #   - user_portainer / pass_portainer  credenciais de serviço p/ o painel
 #                                       falar com a API do Portainer
 ################################################################################
+MSG_PT[ferramenta_encha_panel_titulo]="\e[35m║              📦 INSTALANDO ENCHA SETUP PANEL                      ║\e[0m"
+MSG_EN[ferramenta_encha_panel_titulo]="\e[35m║              📦 INSTALLING ENCHA SETUP PANEL                      ║\e[0m"
+MSG_ES[ferramenta_encha_panel_titulo]="\e[35m║              📦 INSTALANDO ENCHA SETUP PANEL                      ║\e[0m"
+
+MSG_PT[ferramenta_encha_panel_sem_url]="\e[31m✖ Variável \$url_painel não definida. Abortando.\e[0m"
+MSG_EN[ferramenta_encha_panel_sem_url]="\e[31m✖ Variable \$url_painel not defined. Aborting.\e[0m"
+MSG_ES[ferramenta_encha_panel_sem_url]="\e[31m✖ Variable \$url_painel no definida. Abortando.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_instalando_gettext]="\e[33m• Instalando gettext-base (envsubst)...\e[0m"
+MSG_EN[ferramenta_encha_panel_instalando_gettext]="\e[33m• Installing gettext-base (envsubst)...\e[0m"
+MSG_ES[ferramenta_encha_panel_instalando_gettext]="\e[33m• Instalando gettext-base (envsubst)...\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo1]="\e[97m• [1/6] Criando Docker Secret encha_panel_master_key\e[0m"
+MSG_EN[ferramenta_encha_panel_passo1]="\e[97m• [1/6] Creating Docker Secret encha_panel_master_key\e[0m"
+MSG_ES[ferramenta_encha_panel_passo1]="\e[97m• [1/6] Creando Docker Secret encha_panel_master_key\e[0m"
+
+MSG_PT[ferramenta_encha_panel_secret_existe]="  \e[33m↳ Secret já existe, reutilizando.\e[0m"
+MSG_EN[ferramenta_encha_panel_secret_existe]="  \e[33m↳ Secret already exists, reusing.\e[0m"
+MSG_ES[ferramenta_encha_panel_secret_existe]="  \e[33m↳ El secret ya existe, reutilizando.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_secret_criado]="  \e[32m✓ Secret criado.\e[0m"
+MSG_EN[ferramenta_encha_panel_secret_criado]="  \e[32m✓ Secret created.\e[0m"
+MSG_ES[ferramenta_encha_panel_secret_criado]="  \e[32m✓ Secret creado.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_secret_falha]="  \e[31m✖ Falha ao criar secret.\e[0m"
+MSG_EN[ferramenta_encha_panel_secret_falha]="  \e[31m✖ Failed to create secret.\e[0m"
+MSG_ES[ferramenta_encha_panel_secret_falha]="  \e[31m✖ Falló la creación del secret.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo2]="\e[97m• [2/6] Criando volume encha_panel_data\e[0m"
+MSG_EN[ferramenta_encha_panel_passo2]="\e[97m• [2/6] Creating volume encha_panel_data\e[0m"
+MSG_ES[ferramenta_encha_panel_passo2]="\e[97m• [2/6] Creando volume encha_panel_data\e[0m"
+
+MSG_PT[ferramenta_encha_panel_volume_pronto]="  \e[32m✓ Volume pronto.\e[0m"
+MSG_EN[ferramenta_encha_panel_volume_pronto]="  \e[32m✓ Volume ready.\e[0m"
+MSG_ES[ferramenta_encha_panel_volume_pronto]="  \e[32m✓ Volume listo.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo3]="\e[97m• [3/6] Atualizando fonte do painel (git)...\e[0m"
+MSG_EN[ferramenta_encha_panel_passo3]="\e[97m• [3/6] Updating panel source (git)...\e[0m"
+MSG_ES[ferramenta_encha_panel_passo3]="\e[97m• [3/6] Actualizando fuente del panel (git)...\e[0m"
+
+MSG_PT[ferramenta_encha_panel_fonte_ok]="  \e[32m✓ Fonte na ponta do main.\e[0m"
+MSG_EN[ferramenta_encha_panel_fonte_ok]="  \e[32m✓ Source at the tip of main.\e[0m"
+MSG_ES[ferramenta_encha_panel_fonte_ok]="  \e[32m✓ Fuente en la punta de main.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_fonte_falhou]="  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
+MSG_EN[ferramenta_encha_panel_fonte_falhou]="  \e[33m↳ Could not update the source (continuing with what's on disk).\e[0m"
+MSG_ES[ferramenta_encha_panel_fonte_falhou]="  \e[33m↳ No fue posible actualizar la fuente (continuando con lo que haya en disco).\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo4]="\e[97m• [4/6] Obtendo imagem ghcr.io/enchaaluno/setup-panel:%s\e[0m"
+MSG_EN[ferramenta_encha_panel_passo4]="\e[97m• [4/6] Getting image ghcr.io/enchaaluno/setup-panel:%s\e[0m"
+MSG_ES[ferramenta_encha_panel_passo4]="\e[97m• [4/6] Obteniendo imagen ghcr.io/enchaaluno/setup-panel:%s\e[0m"
+
+MSG_PT[ferramenta_encha_panel_imagem_ghcr]="  \e[32m✓ Imagem baixada do GHCR.\e[0m"
+MSG_EN[ferramenta_encha_panel_imagem_ghcr]="  \e[32m✓ Image downloaded from GHCR.\e[0m"
+MSG_ES[ferramenta_encha_panel_imagem_ghcr]="  \e[32m✓ Imagen descargada de GHCR.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_pull_falhou]="  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
+MSG_EN[ferramenta_encha_panel_pull_falhou]="  \e[33m↳ Pull failed. Trying local build in /root/encha-setup-panel...\e[0m"
+MSG_ES[ferramenta_encha_panel_pull_falhou]="  \e[33m↳ Falló el pull. Intentando generación local en /root/encha-setup-panel...\e[0m"
+
+MSG_PT[ferramenta_encha_panel_log_completo]="  \e[97m  Log completo: /var/log/encha-build.log\e[0m"
+MSG_EN[ferramenta_encha_panel_log_completo]="  \e[97m  Full log: /var/log/encha-build.log\e[0m"
+MSG_ES[ferramenta_encha_panel_log_completo]="  \e[97m  Registro completo: /var/log/encha-build.log\e[0m"
+
+MSG_PT[ferramenta_encha_panel_buildando]="\r  \e[33m  ⏳ Buildando imagem... %ds decorridos (esperado: 120-180s)\e[0m"
+MSG_EN[ferramenta_encha_panel_buildando]="\r  \e[33m  ⏳ Building image... %ds elapsed (expected: 120-180s)\e[0m"
+MSG_ES[ferramenta_encha_panel_buildando]="\r  \e[33m  ⏳ Generando imagen... %ds transcurridos (esperado: 120-180s)\e[0m"
+
+MSG_PT[ferramenta_encha_panel_build_sucesso]="  \e[32m✓ Imagem buildada localmente em %ss.\e[0m"
+MSG_EN[ferramenta_encha_panel_build_sucesso]="  \e[32m✓ Image built locally in %ss.\e[0m"
+MSG_ES[ferramenta_encha_panel_build_sucesso]="  \e[32m✓ Imagen generada localmente en %ss.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_build_falhou]="  \e[31m✖ Build falhou (exit %s). Últimas linhas do log:\e[0m"
+MSG_EN[ferramenta_encha_panel_build_falhou]="  \e[31m✖ Build failed (exit %s). Last lines of the log:\e[0m"
+MSG_ES[ferramenta_encha_panel_build_falhou]="  \e[31m✖ Falló la generación (exit %s). Últimas líneas del registro:\e[0m"
+
+MSG_PT[ferramenta_encha_panel_sem_imagem]="  \e[31m✖ Imagem indisponível e não há fonte local em /root/encha-setup-panel/. Abortando.\e[0m"
+MSG_EN[ferramenta_encha_panel_sem_imagem]="  \e[31m✖ Image unavailable and no local source at /root/encha-setup-panel/. Aborting.\e[0m"
+MSG_ES[ferramenta_encha_panel_sem_imagem]="  \e[31m✖ Imagen no disponible y no hay fuente local en /root/encha-setup-panel/. Abortando.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo5]="\e[97m• [5/6] Gerando docker-stack.yaml dinâmico\e[0m"
+MSG_EN[ferramenta_encha_panel_passo5]="\e[97m• [5/6] Generating dynamic docker-stack.yaml\e[0m"
+MSG_ES[ferramenta_encha_panel_passo5]="\e[97m• [5/6] Generando docker-stack.yaml dinámico\e[0m"
+
+MSG_PT[ferramenta_encha_panel_passo6]="\e[97m• [6/6] Publicando a stack encha-panel no Portainer\e[0m"
+MSG_EN[ferramenta_encha_panel_passo6]="\e[97m• [6/6] Publishing the encha-panel stack to Portainer\e[0m"
+MSG_ES[ferramenta_encha_panel_passo6]="\e[97m• [6/6] Publicando la stack encha-panel en Portainer\e[0m"
+
+MSG_PT[ferramenta_encha_panel_timeout1]="\e[41m❌ A stack encha-panel foi publicada no Portainer, mas o serviço não ficou ativo a tempo.\e[0m"
+MSG_EN[ferramenta_encha_panel_timeout1]="\e[41m❌ The encha-panel stack was published to Portainer, but the service did not become active in time.\e[0m"
+MSG_ES[ferramenta_encha_panel_timeout1]="\e[41m❌ La stack encha-panel fue publicada en Portainer, pero el servicio no quedó activo a tiempo.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_timeout2]="\e[41m   Verifique 'docker service ps encha-panel_panel' e 'docker service logs encha-panel_panel'.\e[0m"
+MSG_EN[ferramenta_encha_panel_timeout2]="\e[41m   Check 'docker service ps encha-panel_panel' and 'docker service logs encha-panel_panel'.\e[0m"
+MSG_ES[ferramenta_encha_panel_timeout2]="\e[41m   Verifique 'docker service ps encha-panel_panel' y 'docker service logs encha-panel_panel'.\e[0m"
+
+MSG_PT[ferramenta_encha_panel_sucesso_titulo]="\e[32m║  ✅ Encha Setup Panel disponível em:                              ║\e[0m"
+MSG_EN[ferramenta_encha_panel_sucesso_titulo]="\e[32m║  ✅ Encha Setup Panel available at:                               ║\e[0m"
+MSG_ES[ferramenta_encha_panel_sucesso_titulo]="\e[32m║  ✅ Encha Setup Panel disponible en:                              ║\e[0m"
+
 ferramenta_encha_panel() {
     clear
     echo -e "\e[35m╔════════════════════════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[35m║              📦 INSTALANDO ENCHA SETUP PANEL                      ║\e[0m"
+    echo -e "$(t ferramenta_encha_panel_titulo)"
     echo -e "\e[35m╚════════════════════════════════════════════════════════════════════╝\e[0m"
     echo ""
 
     if [[ -z "$url_painel" ]]; then
-        echo -e "\e[31m✖ Variável \$url_painel não definida. Abortando.\e[0m"
+        echo -e "$(t ferramenta_encha_panel_sem_url)"
         return 1
     fi
 
     # Garante que envsubst está disponível (vem no pacote gettext-base)
     if ! command -v envsubst >/dev/null 2>&1; then
-        echo -e "\e[33m• Instalando gettext-base (envsubst)...\e[0m"
+        echo -e "$(t ferramenta_encha_panel_instalando_gettext)"
         DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base >/dev/null 2>&1
     fi
 
     # 1) Docker Secret idempotente (32 bytes random)
-    echo -e "\e[97m• [1/6] Criando Docker Secret encha_panel_master_key\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo1)"
     if docker secret inspect encha_panel_master_key >/dev/null 2>&1; then
-        echo -e "  \e[33m↳ Secret já existe, reutilizando.\e[0m"
+        echo -e "$(t ferramenta_encha_panel_secret_existe)"
     else
         openssl rand 32 | docker secret create encha_panel_master_key - >/dev/null \
-            && echo -e "  \e[32m✓ Secret criado.\e[0m" \
-            || { echo -e "  \e[31m✖ Falha ao criar secret.\e[0m"; return 1; }
+            && echo -e "$(t ferramenta_encha_panel_secret_criado)" \
+            || { echo -e "$(t ferramenta_encha_panel_secret_falha)"; return 1; }
     fi
 
     # 2) Volume idempotente
-    echo -e "\e[97m• [2/6] Criando volume encha_panel_data\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo2)"
     docker volume create encha_panel_data >/dev/null \
-        && echo -e "  \e[32m✓ Volume pronto.\e[0m"
+        && echo -e "$(t ferramenta_encha_panel_volume_pronto)"
 
     # 3) Diretório dados_vps (bind-mount read-only do painel)
     mkdir -p /root/dados_vps
@@ -20641,11 +26964,11 @@ ferramenta_encha_panel() {
     # precisa estar na ponta do main ANTES do build, senão fixes já
     # publicados no repo não chegam à imagem (foi exatamente o que causou o
     # n8n voltar a quebrar num reinstall).
-    echo -e "\e[97m• [3/6] Atualizando fonte do painel (git)...\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo3)"
     if atualizar_fonte_painel; then
-        echo -e "  \e[32m✓ Fonte na ponta do main.\e[0m"
+        echo -e "$(t ferramenta_encha_panel_fonte_ok)"
     else
-        echo -e "  \e[33m↳ Não foi possível atualizar o fonte (seguindo com o que houver em disco).\e[0m"
+        echo -e "$(t ferramenta_encha_panel_fonte_falhou)"
     fi
 
     # Puxa pela tag pinada ($ENCHA_VERSION), não "latest" — host-dirs.ts, no
@@ -20653,33 +26976,33 @@ ferramenta_encha_panel() {
     # um fallback do Docker Hub pra criar bind mounts; se só ":latest"
     # estivesse cacheado, essa checagem local nunca bateria (Docker não sabe
     # que duas tags apontam pro mesmo dígest sem baixar as duas).
-    echo -e "\e[97m• [4/6] Obtendo imagem ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo4 "$ENCHA_VERSION")"
     if docker pull "ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION" >/dev/null 2>&1; then
-        echo -e "  \e[32m✓ Imagem baixada do GHCR.\e[0m"
+        echo -e "$(t ferramenta_encha_panel_imagem_ghcr)"
     elif [[ -d /root/encha-setup-panel/src ]]; then
-        echo -e "  \e[33m↳ Pull falhou. Tentando build local em /root/encha-setup-panel...\e[0m"
-        echo -e "  \e[97m  Log completo: /var/log/encha-build.log\e[0m"
+        echo -e "$(t ferramenta_encha_panel_pull_falhou)"
+        echo -e "$(t ferramenta_encha_panel_log_completo)"
         docker build -t "ghcr.io/enchaaluno/setup-panel:$ENCHA_VERSION" /root/encha-setup-panel/ \
             > /var/log/encha-build.log 2>&1 &
         local build_pid=$!
         local start=$SECONDS
         while kill -0 "$build_pid" 2>/dev/null; do
             local elapsed=$((SECONDS - start))
-            printf "\r  \e[33m  ⏳ Buildando imagem... %ds decorridos (esperado: 120-180s)\e[0m" "$elapsed"
+            printf "$(t ferramenta_encha_panel_buildando)" "$elapsed"
             sleep 30
         done
         printf "\r%80s\r" " "
         wait "$build_pid"
         local build_exit=$?
         if [[ $build_exit -eq 0 ]]; then
-            echo -e "  \e[32m✓ Imagem buildada localmente em $((SECONDS - start))s.\e[0m"
+            echo -e "$(t ferramenta_encha_panel_build_sucesso "$((SECONDS - start))")"
         else
-            echo -e "  \e[31m✖ Build falhou (exit $build_exit). Últimas linhas do log:\e[0m"
+            echo -e "$(t ferramenta_encha_panel_build_falhou "$build_exit")"
             tail -20 /var/log/encha-build.log
             return 1
         fi
     else
-        echo -e "  \e[31m✖ Imagem indisponível e não há fonte local em /root/encha-setup-panel/. Abortando.\e[0m"
+        echo -e "$(t ferramenta_encha_panel_sem_imagem)"
         return 1
     fi
 
@@ -20687,7 +27010,7 @@ ferramenta_encha_panel() {
     # credenciais (PANEL_ADMIN_*, PORTAINER_*) ficam como ${VAR} no arquivo e
     # são resolvidos pelo Env da API do Portainer (deploy_stack_painel_via_portainer),
     # não por envsubst — é isso que os torna editáveis no Portainer depois.
-    echo -e "\e[97m• [5/6] Gerando docker-stack.yaml dinâmico\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo5)"
     export ENCHA_PANEL_NETWORK="${nome_rede_interna:-enchanet}"
 
     local stack_template="/root/encha-setup-panel/docker-stack.yaml"
@@ -20768,7 +27091,7 @@ TEMPLATE
 
     # 6) Deploy via API do Portainer (não `docker stack deploy` — ver
     # deploy_stack_painel_via_portainer para o porquê).
-    echo -e "\e[97m• [6/6] Publicando a stack encha-panel no Portainer\e[0m"
+    echo -e "$(t ferramenta_encha_panel_passo6)"
     if ! deploy_stack_painel_via_portainer /tmp/encha-panel.yaml; then
         return 1
     fi
@@ -20778,8 +27101,8 @@ TEMPLATE
     # painel fora do ar e o operador só descobre tentando acessar depois.
     if type wait_stack &> /dev/null; then
         if ! wait_stack "encha-panel"; then
-            echo -e "\e[41m❌ A stack encha-panel foi publicada no Portainer, mas o serviço não ficou ativo a tempo.\e[0m"
-            echo -e "\e[41m   Verifique 'docker service ps encha-panel_panel' e 'docker service logs encha-panel_panel'.\e[0m"
+            echo -e "$(t ferramenta_encha_panel_timeout1)"
+            echo -e "$(t ferramenta_encha_panel_timeout2)"
             return 1
         fi
     else
@@ -20788,7 +27111,7 @@ TEMPLATE
 
     echo ""
     echo -e "\e[32m╔════════════════════════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[32m║  ✅ Encha Setup Panel disponível em:                              ║\e[0m"
+    echo -e "$(t ferramenta_encha_panel_sucesso_titulo)"
     echo -e "\e[32m║     https://$url_painel\e[0m"
     echo -e "\e[32m╚════════════════════════════════════════════════════════════════════╝\e[0m"
     echo ""

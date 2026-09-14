@@ -147,6 +147,51 @@ agora — fora do escopo de "nada muda"):**
   `schema` de cada stack) continuam só em português — fora do escopo do
   `StackTextOverlay`.
 
+## Fase 4 — instalador (`main.sh` + `secondary.sh`)
+
+- Mesma arquitetura `t()`/`MSG_PT`/`MSG_EN`/`MSG_ES` da Fase 0/1, agora
+  aplicada a todo o conteúdo de UI dos dois scripts (~2.050 chaves de
+  catálogo). Executada em 10 lotes de agentes em paralelo, um por grupo de
+  função, com chaves prefixadas pelo nome da função para nunca colidir entre
+  lotes concorrentes editando o mesmo arquivo.
+- Tecla de atalho `V` ("Voltar") continua fixa nos 3 idiomas — só o rótulo
+  exibido ao lado dela é que traduz. Trocar o atalho por idioma quebraria
+  scripts/hábito de quem já usa o menu.
+- As larguras de coluna de `exibir_pagina1`/`exibir_pagina2` (antes fixas,
+  `width=39`/`width=15`) agora são calculadas a partir do rótulo mais longo
+  de cada idioma, recalculadas a cada render — porque `en`/`es` mudam o
+  comprimento do texto e a Fase 0 tinha adiado esse cálculo para cá de
+  propósito (ver Fase 0 do plano).
+- As ~114 chaves de exibição dos arquivos `dados_*` que a Fase 0 tinha
+  adiado (`Dominio:`, `Usuario:`, `Senha:` de ~70 stacks, `Host Mysql:`,
+  `JWT Key:`, etc. — ver seção acima) **continuam sem leitor programático,
+  logo continuam gravadas em português** nos arquivos de fio; só o texto ao
+  redor delas na tela (os `echo` que as apresentam ao usuário) foi traduzido.
+  Nenhum heredoc `dados_*` foi alterado nesta fase — confirmado via `git
+  diff`.
+- **Gaps de fronteira entre lotes, encontrados na varredura pós-hoc e
+  corrigidos**: como os lotes rodaram em paralelo sobre o mesmo arquivo,
+  limites de linha atribuídos a um lote podiam ficar desatualizados se um
+  lote anterior já tivesse inserido linhas de catálogo antes daquele ponto.
+  Achados dois casos reais: a cauda de `ferramenta_outline` (mensagem de
+  sucesso final) e a função inteira `criar_bucket.minio()`, que tinha ficado
+  fora do escopo de todos os 10 lotes. Ambos corrigidos manualmente depois.
+  Método de verificação (reaplicável em qualquer fase futura que toque
+  muitas funções em paralelo): `grep -n -E '\b(echo|printf|read)\b.*[áéíóú
+  âêôãõçÁÉÍÓÚÂÊÔÃÕÇ]'` no arquivo, e inspecionar cada acerto — só sobram
+  comentários e trechos de heredoc protegido depois de tudo tradução real
+  convertida.
+- **Bugs pré-existentes encontrados e deliberadamente preservados** (fora do
+  escopo de "só traduzir"): `ferramenta_minio` (prompt de senha rotulado
+  "Portainer"), `ferramenta_rustdesk` (`$rustdesk_config_string` vs. variável
+  real `$rustdesk_string`, e um emoji corrompido), `ferramenta_hoppscotch` /
+  `ferramenta_moodle` (checam a porta SMTP do Typebot em vez da própria),
+  `ferramenta_passbolt` ("Passo 6/7" duplicado + typo "DDigite"),
+  `instalar_ambiente_completo` (resumo final mostra usuário SMTP em vez de
+  senha, por variável/escape errados). Cada um preservado byte a byte no
+  texto traduzido — quem for mexer nessas funções por outro motivo decide se
+  conserta.
+
 ## Pendências deste glossário
 
 Nenhuma no momento. Itens anteriores (grafia da marca, `EnchaT Grátis`, `N8N
