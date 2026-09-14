@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   // Mesma fonte da verdade do /api/update — evita downgrade/no-op e garante
   // que os dois passos alvejam a mesma versão publicada no Monitor.
-  const release = await fetchLatestVersion();
+  const release = await fetchLatestVersion(locale);
   const latest = release?.latest_version;
   if (!latest) {
     return apiError(ERROS, "nenhuma_versao_disponivel", locale, 503);

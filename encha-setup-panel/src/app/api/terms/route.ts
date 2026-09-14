@@ -45,7 +45,7 @@ export async function GET() {
   const session = await readSession();
   if (!session) return unauthenticatedResponse(locale);
 
-  const terms = await fetchTerms();
+  const terms = await fetchTerms(locale);
   if (!terms) return new NextResponse(null, { status: 204 });
 
   return NextResponse.json(

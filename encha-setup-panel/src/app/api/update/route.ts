@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fonte da verdade da versão alvo é o Monitor — evita downgrade/no-op.
-  const release = await fetchLatestVersion();
+  const release = await fetchLatestVersion(locale);
   const latest = release?.latest_version;
   if (!latest) {
     return apiError(ERROS, "nenhuma_versao_disponivel", locale, 503);

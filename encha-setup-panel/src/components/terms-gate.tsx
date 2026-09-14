@@ -1,5 +1,6 @@
 import { fetchTerms } from "@/lib/monitor";
 import { hasAccepted, flushPendingAcceptances } from "@/lib/terms";
+import { resolveLocale } from "@/lib/locale";
 import { TermsDialog } from "./terms-dialog";
 
 // Server component — lê o Monitor e o SQLite local direto (sem round-trip de
@@ -11,7 +12,8 @@ import { TermsDialog } from "./terms-dialog";
 // os painéis instalados. O bloqueio só acontece quando existe uma versão de
 // termos publicada com sucesso e ela ainda não foi aceita nesta instalação.
 export async function TermsGate() {
-  const terms = await fetchTerms();
+  const locale = await resolveLocale();
+  const terms = await fetchTerms(locale);
   if (!terms) return null;
 
   if (hasAccepted(terms.version)) {

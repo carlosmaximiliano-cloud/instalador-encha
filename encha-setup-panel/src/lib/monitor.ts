@@ -1,6 +1,8 @@
 // Cliente server-side do Monitor Encha (backend central). Server-to-server, sem CORS.
 // Todas as chamadas são best-effort: timeout curto + try/catch, nunca lançam pro caller.
 
+import type { Locale } from "./locale-shared";
+
 // || (não ??) de propósito: instalações antigas têm MONITOR_BASE_URL=""
 // (string vazia) gravado no compose da stack — "Monitor descontinuado" era
 // verdade quando essa env foi zerada, mas o Monitor voltou a ser a fonte de
@@ -61,9 +63,13 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
   }
 }
 
-export async function fetchBanner(position: BannerPosition = "top"): Promise<MonitorBanner | null> {
+export async function fetchBanner(
+  position: BannerPosition = "top",
+  locale?: Locale
+): Promise<MonitorBanner | null> {
   const pos = position === "sidebar" ? "sidebar" : "top";
-  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/banner.json?position=${pos}`, {
+  const lang = locale ? `&lang=${locale}` : "";
+  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/banner.json?position=${pos}${lang}`, {
     cache: "no-store",
   });
   if (!res || res.status === 204 || !res.ok) return null;
@@ -79,33 +85,38 @@ export async function fetchBanner(position: BannerPosition = "top"): Promise<Mon
 // Memo curto em processo: TermsGate roda a cada navegação do dashboard
 // (server component, sem cache do Next entre requests distintos), então sem
 // isso cada clique pagaria os 4s de timeout do Monitor sempre que ele cair.
-let termsCache: { at: number; value: MonitorTerms | null } | null = null;
+// Indexado por locale — um hit em pt não pode esconder o conteúdo en/es.
+const termsCache = new Map<string, { at: number; value: MonitorTerms | null }>();
 const TERMS_CACHE_MS = 60_000;
 
-export async function fetchTerms(): Promise<MonitorTerms | null> {
-  if (termsCache && Date.now() - termsCache.at < TERMS_CACHE_MS) return termsCache.value;
+export async function fetchTerms(locale?: Locale): Promise<MonitorTerms | null> {
+  const key = locale ?? "pt";
+  const cached = termsCache.get(key);
+  if (cached && Date.now() - cached.at < TERMS_CACHE_MS) return cached.value;
 
-  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/terms.json`, {
+  const lang = locale ? `?lang=${locale}` : "";
+  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/setup/terms.json${lang}`, {
     cache: "no-store",
   });
   if (!res || res.status === 204 || !res.ok) {
-    termsCache = { at: Date.now(), value: null };
+    termsCache.set(key, { at: Date.now(), value: null });
     return null;
   }
   try {
     const data = (await res.json()) as MonitorTerms;
     const value = data?.version ? data : null;
-    termsCache = { at: Date.now(), value };
+    termsCache.set(key, { at: Date.now(), value });
     return value;
   } catch {
-    termsCache = { at: Date.now(), value: null };
+    termsCache.set(key, { at: Date.now(), value: null });
     return null;
   }
 }
 
 // Última release publicada do Encha Setup no Monitor. O painel compara com APP_VERSION.
-export async function fetchLatestVersion(): Promise<MonitorRelease | null> {
-  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/api/version`, {
+export async function fetchLatestVersion(locale?: Locale): Promise<MonitorRelease | null> {
+  const lang = locale ? `?lang=${locale}` : "";
+  const res = await fetchWithTimeout(`${MONITOR_BASE_URL}/api/version${lang}`, {
     cache: "no-store",
   });
   if (!res || res.status === 404 || !res.ok) return null;

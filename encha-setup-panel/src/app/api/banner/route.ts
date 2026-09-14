@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!session) return unauthenticatedResponse(locale);
 
   const position = req.nextUrl.searchParams.get("position") === "sidebar" ? "sidebar" : "top";
-  const banner = await fetchBanner(position);
+  const banner = await fetchBanner(position, locale);
   if (!banner) return new NextResponse(null, { status: 204 });
 
   return NextResponse.json(banner, {

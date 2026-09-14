@@ -15,7 +15,7 @@ export async function GET() {
   const session = await readSession();
   if (!session) return unauthenticatedResponse(locale);
 
-  const release = await fetchLatestVersion();
+  const release = await fetchLatestVersion(locale);
   const latest = release?.latest_version ?? null;
   const updateAvailable = !!latest && compareSemver(latest, APP_VERSION) > 0;
 

@@ -192,6 +192,25 @@ agora — fora do escopo de "nada muda"):**
   texto traduzido — quem for mexer nessas funções por outro motivo decide se
   conserta.
 
+## Fase 5 — Monitor (release notes, termos, banner)
+
+- Backend fica no repositório separado `Monitor Encha` (fora deste repo) —
+  ver `migrations/0019_setup_i18n.sql`, `src/app/api/version/route.ts`,
+  `src/app/setup/terms.json/route.ts`, `src/app/setup/banner.json/route.ts`
+  e os admins de releases/termos/banners lá.
+- Padrão: coluna irmã `_en`/`_es` (nullable) ao lado da coluna pt-BR
+  original, nunca tabela de tradução separada — não havia precedente disso
+  no Monitor, e o conteúdo é 1 string por idioma, não dado relacional.
+- Todo endpoint público aceita `?lang=pt|en|es` (default e fallback `pt`).
+  Ausente ou desconhecido nunca é "sem filtro" — sempre cai em pt-BR,
+  igual ao padrão que `canal`/`edicao` já usavam em `/api/version`.
+- EN/ES só aparecem no admin quando o app selecionado é `setup` — os outros
+  apps do Monitor (EnchaT, Scrify) não entram no escopo de i18n deste plano.
+- `fetchTerms()` no painel (`src/lib/monitor.ts`) tinha um cache em processo
+  de 60s pra não pagar o timeout do Monitor a cada navegação — teve que
+  virar indexado por locale, senão uma resposta pt em cache esconderia
+  en/es até o cache expirar.
+
 ## Pendências deste glossário
 
 Nenhuma no momento. Itens anteriores (grafia da marca, `EnchaT Grátis`, `N8N
