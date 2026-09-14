@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useDict } from "@/lib/i18n/use-dict";
+import { useLocale } from "./locale-provider";
 import { bannerAdText } from "./banner-ad.i18n";
 
 type Banner = {
@@ -18,20 +19,27 @@ type Props = {
 
 export function BannerAd({ variant, className }: Props) {
   const t = useDict(bannerAdText);
+  const { locale } = useLocale();
   const [banner, setBanner] = useState<Banner | null>(null);
   const [csrf, setCsrf] = useState<string>("");
 
+  // alt_text (Fase 5) é resolvido no servidor a partir do cookie de locale —
+  // locale nas deps pra não deixar o alt preso no idioma anterior depois de
+  // trocar no toggle (mesmo achado do catalog/page.tsx e update-checker.tsx).
   useEffect(() => {
     const position = variant === "sidebar" ? "sidebar" : "top";
     fetch(`/api/banner?position=${position}`)
       .then((r) => (r.ok && r.status !== 204 ? r.json() : null))
       .then((d) => (d?.id ? setBanner(d) : null))
       .catch(() => {});
+  }, [variant, locale]);
+
+  useEffect(() => {
     fetch("/api/csrf")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.token && setCsrf(d.token))
       .catch(() => {});
-  }, [variant]);
+  }, []);
 
   if (!banner) return null;
 

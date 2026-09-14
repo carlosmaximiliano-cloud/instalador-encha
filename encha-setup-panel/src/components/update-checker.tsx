@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useDict } from "@/lib/i18n/use-dict";
+import { useLocale } from "./locale-provider";
 import { updateCheckerText } from "./update-checker.i18n";
 
 type VersionInfo = {
@@ -30,6 +31,7 @@ type Phase = "idle" | "confirm" | "scripts" | "panel" | "done";
 
 export function UpdateChecker() {
   const t = useDict(updateCheckerText);
+  const { locale } = useLocale();
   const [info, setInfo] = useState<VersionInfo | null>(null);
   const [csrf, setCsrf] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -69,7 +71,6 @@ export function UpdateChecker() {
   }, []);
 
   useEffect(() => {
-    loadVersion();
     fetch("/api/csrf")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.token && setCsrf(d.token))
@@ -77,7 +78,15 @@ export function UpdateChecker() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [loadVersion]);
+  }, []);
+
+  // releaseNotesHtml (Fase 5) é resolvido no servidor a partir do cookie de
+  // locale — sem refazer o fetch aqui, trocar o idioma deixava a nota de
+  // release presa no idioma anterior até o próximo "Check for updates"
+  // manual. Mesma causa raiz do achado em catalog/page.tsx.
+  useEffect(() => {
+    loadVersion();
+  }, [locale, loadVersion]);
 
   // Só começa a contar quando a fase do painel (passo 2) inicia — do
   // contrário o passo dos scripts (que pode levar ~1min sozinho) consome

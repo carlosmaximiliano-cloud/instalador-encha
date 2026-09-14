@@ -64,13 +64,21 @@ function CatalogPageInner() {
       .catch((e) => console.error("[stacks]", e));
   }, []);
 
+  // Refaz o fetch do catálogo quando o locale muda: description/fields/notes
+  // (Fase 3) são resolvidos no servidor a partir do cookie de locale, então
+  // trocar o idioma no toggle (que só dá router.refresh(), efeito em Server
+  // Components) não invalidava sozinho este fetch client-side — achado ao
+  // vivo no teste end-to-end (descrições ficavam presas no idioma anterior
+  // até um reload manual da página).
+  useEffect(() => {
+    refetchStacks();
+  }, [locale, refetchStacks]);
+
   useEffect(() => {
     fetch("/api/csrf")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d?.token && setCsrf(d.token))
       .catch((e) => console.error("[csrf]", e));
-
-    refetchStacks();
 
     fetch("/api/vps-context")
       .then((r) => (r.ok ? r.json() : null))
@@ -89,7 +97,7 @@ function CatalogPageInner() {
         });
       })
       .catch((e) => console.error("[vps-context]", e));
-  }, [refetchStacks]);
+  }, []);
 
   useEffect(() => {
     if (!data) return;
