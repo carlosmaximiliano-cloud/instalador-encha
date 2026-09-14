@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ReleaseInfo } from "../release-info";
+import type { Locale } from "../locale-shared";
 
 export type FieldKind = "text" | "domain" | "email" | "password" | "username" | "port" | "checkbox" | "slug";
 
@@ -193,6 +194,29 @@ export type StackCategory =
   | "design"
   | "admin";
 
+/**
+ * Fase 3 de i18n (i18n/GLOSSARY.md) — conteúdo editorial (não UI chrome) de
+ * uma stack, sobreposto ao pt-BR quando o locale não é "pt". Opcional e
+ * parcial de propósito: uma stack sem `i18n`, ou com só parte dos campos
+ * preenchida, continua funcionando — o que faltar cai no pt-BR original via
+ * getStackText()/stackFieldText() (src/lib/stacks/i18n-resolve.ts). Isso é
+ * o que permite traduzir stack a stack sem travar release.
+ *
+ * `fields`/`secretLabels` são indexados pelo mesmo `name` já usado em
+ * StackField/GeneratedSecret — nunca reinvente uma chave nova.
+ * `notes` estático (array) só é aplicado se tiver o MESMO número de itens
+ * que o pt-BR resolvido — evita nota traduzida "grudando" na posição errada
+ * quando `postInstall.notes` é uma função que varia por `values` (ver
+ * enchat.ts). Notes dinâmicas por enquanto só traduzem se a função de
+ * notes for reescrita para aceitar locale — fora do escopo desta fase.
+ */
+export type StackTextOverlay = {
+  description?: string;
+  fields?: Record<string, { label?: string; placeholder?: string; helpText?: string; group?: string }>;
+  notes?: string[];
+  secretLabels?: Record<string, string>;
+};
+
 export type StackDefinition = {
   id: string;
   name: string;
@@ -287,6 +311,8 @@ export type StackDefinition = {
      */
     notes?: string[] | ((values: Record<string, unknown>) => string[]);
   };
+  /** Fase 3 de i18n — ver StackTextOverlay. Ausente = stack ainda só em pt-BR. */
+  i18n?: Partial<Record<Exclude<Locale, "pt">, StackTextOverlay>>;
 };
 
 export function expectedStackNames(def: StackDefinition): string[] {

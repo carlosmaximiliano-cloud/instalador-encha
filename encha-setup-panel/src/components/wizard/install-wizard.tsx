@@ -73,7 +73,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
     if (!open) setState({ kind: "form" });
   }, [open]);
 
-  const groups = Array.from(new Set(stack.fields.map((f) => f.group ?? "Configuração")));
+  const groups = Array.from(new Set(stack.fields.map((f) => f.group ?? t.defaultGroup)));
 
   async function onSubmit(rawValues: Record<string, unknown>) {
     setState({ kind: "installing" });
@@ -138,11 +138,11 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
             {groups.map((g) => (
               <div key={g} className="space-y-3">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{g}</div>
-                {stack.pairing && (stack.pairing.group ?? "Configuração") === g && (
+                {stack.pairing && (stack.pairing.group ?? t.defaultGroup) === g && (
                   <LicensePairing stackId={stack.id} csrfToken={csrfToken} spec={stack.pairing} form={form} />
                 )}
                 {stack.fields
-                  .filter((f) => (f.group ?? "Configuração") === g)
+                  .filter((f) => (f.group ?? t.defaultGroup) === g)
                   .map((f) => {
                     const isCheckbox = f.kind === "checkbox";
                     if (isCheckbox) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { getStack } from "@/lib/stacks/registry";
+import { stackDescription, stackFieldText } from "@/lib/stacks/i18n-resolve";
 import { resolveLocale } from "@/lib/locale";
 import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 
@@ -20,8 +21,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   return NextResponse.json({
     id: def.id,
     name: def.name,
-    description: def.description,
-    fields: def.fields,
+    // Fase 3 de i18n (i18n/GLOSSARY.md): description/fields chegam já
+    // resolvidos no locale da requisição — o cliente nunca vê `i18n`, só o
+    // texto final (mesmo padrão de apiError: resolução sempre no servidor).
+    description: stackDescription(def, locale),
+    fields: def.fields.map((f) => ({ ...f, ...stackFieldText(def, f, locale) })),
     // Só o subconjunto que a UI precisa pra saber ONDE renderizar o
     // componente de pareamento e quais campos do form ele preenche —
     // consoleBaseUrl/edicao ficam só no servidor (installer.ts e as rotas

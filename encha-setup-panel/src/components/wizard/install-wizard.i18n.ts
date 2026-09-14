@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/locale-shared";
 
 export type InstallWizardText = {
+  defaultGroup: string;
   instalarStack: (nome: string) => string;
   sensivel: string;
   esconder: string;
@@ -25,6 +26,7 @@ export type InstallWizardText = {
 
 export const installWizardText: Record<Locale, InstallWizardText> = {
   pt: {
+    defaultGroup: "Configuração",
     instalarStack: (nome) => `Instalar ${nome}`,
     sensivel: "sensível",
     esconder: "Esconder",
@@ -47,6 +49,7 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     detalheCausa: "Causa",
   },
   en: {
+    defaultGroup: "Settings",
     instalarStack: (nome) => `Install ${nome}`,
     sensivel: "sensitive",
     esconder: "Hide",
@@ -69,6 +72,7 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     detalheCausa: "Cause",
   },
   es: {
+    defaultGroup: "Configuración",
     instalarStack: (nome) => `Instalar ${nome}`,
     sensivel: "sensible",
     esconder: "Ocultar",

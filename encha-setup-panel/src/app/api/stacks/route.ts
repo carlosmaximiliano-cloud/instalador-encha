@@ -6,6 +6,7 @@ import { installStack, listInstalledStacks } from "@/lib/installer";
 import { discoverContext, listSwarmStackStatuses, type SwarmStackStatus } from "@/lib/portainer";
 import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames, isStackReady } from "@/lib/stacks/types";
+import { stackDescription, stackNotes, secretLabel } from "@/lib/stacks/i18n-resolve";
 import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { resolveLocale } from "@/lib/locale";
@@ -111,7 +112,9 @@ export async function GET() {
       return {
         id: s.id,
         name: s.name,
-        description: s.description,
+        // Fase 3 de i18n — resolvida no locale da requisição, ver
+        // src/lib/stacks/i18n-resolve.ts.
+        description: stackDescription(s, locale),
         category: s.category,
         icon: s.icon,
         dependsOn: s.dependsOn,
@@ -254,15 +257,13 @@ export async function POST(req: NextRequest) {
     accessUrl: def.postInstall?.accessUrl?.(parsed.data.values),
     // Não-bloqueante — ver checarFingerprintPosDeploy em installer.ts.
     aviso: result.aviso,
-    notes:
-      typeof def.postInstall?.notes === "function"
-        ? def.postInstall.notes(parsed.data.values)
-        : (def.postInstall?.notes ?? []),
+    // Fase 3 de i18n — resolvidas no locale da requisição.
+    notes: stackNotes(def, locale, parsed.data.values),
     // Só os segredos marcados `reveal: true` saem daqui — é a ÚNICA vez que
     // o operador consegue ver um valor como o enchat_master_key; o painel
     // guarda uma cópia criptografada para reinstalls, mas não a reexibe.
     revealSecrets: (result.generatedSecrets ?? [])
       .filter((s) => s.reveal)
-      .map((s) => ({ name: s.name, label: s.label, value: s.value })),
+      .map((s) => ({ name: s.name, label: secretLabel(def, s.name, s.label, locale), value: s.value })),
   });
 }
