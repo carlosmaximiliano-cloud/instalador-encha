@@ -143,18 +143,28 @@ status_warning() {
 }
 
 ################################################################################
-# i18n — infraestrutura de tradução (Fase 0)
+# i18n — infraestrutura de tradução (Fases 0-1)
 #
-# Nada aqui muda o que o instalador mostra hoje: as ~1.500 linhas de echo/
-# read -p existentes continuam com o texto em português embutido, sem passar
-# por t(). Essa camada existe pronta para a Fase 1 (pergunta de idioma) e a
-# Fase 4 (tradução do instalador inteiro), que migram as strings uma função
-# por vez — ver i18n/GLOSSARY.md e o plano.
+# Fase 0: a camada abaixo existe, mas as ~1.500 linhas de echo/read -p do
+# instalador continuam com o texto em português embutido, sem passar por
+# t() — isso é trabalho da Fase 4. Fase 1 (aqui): a pergunta de idioma
+# (escolher_idioma, chamada no início do script principal, antes do aviso
+# legal) e a persistência em /root/dados_vps/encha_locale.
 #
 # ENCHA_LANG: "pt" (default), "en" ou "es". Não confundir com ENCHA_SRC_BRANCH
 # acima (aquele escolhe DE ONDE baixar o código; este escolhe EM QUE IDIOMA
-# falar). Setável por env var só para teste manual antes da Fase 1 existir de
-# verdade (pergunta interativa); em produção, a Fase 1 é quem define isso.
+# falar).
+#
+# ENCHA_LANG_VEIO_DO_AMBIENTE guarda se ENCHA_LANG já chegou setado de fora
+# (export ENCHA_LANG=en antes do curl, usado pra automação/teste) ANTES do
+# "${ENCHA_LANG:-pt}" abaixo aplicar o default — sem isso não dava pra saber
+# se "pt" é escolha explícita do ambiente ou só o valor-padrão, e
+# escolher_idioma() não saberia quando pular a pergunta interativa.
+if [ -n "${ENCHA_LANG:-}" ]; then
+    ENCHA_LANG_VEIO_DO_AMBIENTE=1
+else
+    ENCHA_LANG_VEIO_DO_AMBIENTE=0
+fi
 ENCHA_LANG="${ENCHA_LANG:-pt}"
 
 # Sem "=()" de propósito: main.sh fica em memória junto com secondary.sh (é
@@ -193,6 +203,40 @@ t() {
     else
         printf '%s' "$template"
     fi
+}
+
+# escolher_idioma — pergunta o idioma ANTES de qualquer texto legal/traduzível
+# (chamada logo no início da seção EXECUÇÃO, antes de aviso_legal). Não usa
+# t() para o texto da própria pergunta: o usuário ainda não escolheu nada,
+# então ela é mostrada nos 3 idiomas ao mesmo tempo — não dá pra saber qual
+# catálogo usar antes da resposta.
+escolher_idioma() {
+    if [ "$ENCHA_LANG_VEIO_DO_AMBIENTE" = "1" ]; then
+        return
+    fi
+    echo ""
+    echo -e "${negrito}${roxo}Escolha o idioma / Choose your language / Elija su idioma:${reset}"
+    echo -e "  ${ciano}1${reset}) Português (padrão / default)"
+    echo -e "  ${ciano}2${reset}) English"
+    echo -e "  ${ciano}3${reset}) Español"
+    echo -ne "${ciano}> ${reset}"
+    read -r escolha_idioma
+    case "$escolha_idioma" in
+        2) ENCHA_LANG="en" ;;
+        3) ENCHA_LANG="es" ;;
+        *) ENCHA_LANG="pt" ;;
+    esac
+}
+
+# salvar_idioma_escolhido — grava /root/dados_vps/encha_locale, o formato de
+# fio que secondary.sh (rodando sozinho depois, via `bash /root/SetupEnchaAI`)
+# e o painel (mesmo diretório bind-montado em /app/vps-context) leem para
+# saber o idioma escolhido nesta instalação. Passo próprio — não depende de
+# coletar_inputs_so_painel, que nunca escreve em dados_vps (ver
+# i18n/GLOSSARY.md e o plano).
+salvar_idioma_escolhido() {
+    mkdir -p /root/dados_vps
+    echo "$ENCHA_LANG" > /root/dados_vps/encha_locale
 }
 
 # Logo animado do Encha AI
@@ -426,6 +470,13 @@ mostrar_recursos() {
 }
 
 # ====== INÍCIO DO SCRIPT PRINCIPAL ======
+
+# Idioma primeiro — tem que decidir antes do aviso legal e dos Termos de Uso
+# (aviso_legal, logo abaixo), senão eles aparecem em português pra quem
+# acabou de escolher outro idioma.
+escolher_idioma
+salvar_idioma_escolhido
+
 clear
 aviso_legal
 banner

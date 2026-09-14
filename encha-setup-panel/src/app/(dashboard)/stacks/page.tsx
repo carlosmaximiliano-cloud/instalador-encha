@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListChecks, Inbox, Info } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { toBcp47 } from "@/lib/locale-shared";
 
 type InstalledStack = { id: number; name: string; createdAt: number; external?: boolean };
 
 export default function StacksPage() {
+  const { locale } = useLocale();
   const [stacks, setStacks] = useState<InstalledStack[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,7 +69,7 @@ export default function StacksPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-xs text-muted-foreground">
-                  Instalada em {new Date(s.createdAt * 1000).toLocaleString("pt-BR")}
+                  Instalada em {new Date(s.createdAt * 1000).toLocaleString(toBcp47(locale))}
                 </div>
               </CardContent>
             </Card>

@@ -40,6 +40,17 @@ jobs:
       - name: paridade de tradução (MSG_PT vs MSG_EN/MSG_ES)
         run: bash i18n/check-parity.sh
 
+      - name: testes funcionais de i18n (t(), persistência de idioma)
+        run: |
+          bash i18n/test-t-function.sh
+          bash i18n/test-locale-flow.sh
+
+      # sudo só aqui: salvar_idioma_escolhido() grava em /root/dados_vps de
+      # verdade (mesmo caminho da produção) — o runner do GitHub não roda
+      # como root. Os outros testes de i18n usam diretório temporário.
+      - name: teste do prompt de idioma (função real extraída de main.sh)
+        run: sudo bash i18n/test-language-prompt.sh
+
   painel:
     if: github.repository == 'enchaaluno/setupteste'
     runs-on: ubuntu-latest

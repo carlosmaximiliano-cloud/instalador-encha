@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollText } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { toBcp47 } from "@/lib/locale-shared";
 
 type Row = {
   id: number;
@@ -16,6 +18,7 @@ type Row = {
 };
 
 export default function LogsPage() {
+  const { locale } = useLocale();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +61,7 @@ export default function LogsPage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-glass-border last:border-0 hover:bg-glass-strong/30 transition-colors">
-                    <td className="px-4 py-2.5 font-mono text-xs">{new Date(r.ts).toLocaleString("pt-BR")}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs">{new Date(r.ts).toLocaleString(toBcp47(locale))}</td>
                     <td className="px-4 py-2.5">{r.user}</td>
                     <td className="px-4 py-2.5 font-mono text-xs">{r.ip}</td>
                     <td className="px-4 py-2.5 font-mono text-xs">{r.action}</td>

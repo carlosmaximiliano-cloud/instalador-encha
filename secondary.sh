@@ -55,22 +55,31 @@ ciano="\033[1;36m"
 amarelo_escuro='\033[0;33m'
 
 ################################################################################
-# i18n — infraestrutura de tradução (Fase 0)
+# i18n — infraestrutura de tradução (Fases 0-1)
 #
 # Mesmo mecanismo de main.sh (não compartilham arquivo — cada um é baixado
-# sozinho via HTTP, então cada um carrega sua própria cópia). Nada aqui muda o
-# que o instalador mostra hoje: as strings existentes continuam em português,
-# sem passar por t(), até a Fase 4. Ver i18n/GLOSSARY.md e o plano.
+# sozinho via HTTP, então cada um carrega sua própria cópia). Fase 0: as
+# strings existentes continuam em português, sem passar por t(), até a Fase
+# 4. Ver i18n/GLOSSARY.md e o plano.
 #
-# Quando secondary.sh é `source`ado por main.sh (mesmo processo), ENCHA_LANG
-# já chega herdado sem precisar de export. Quando roda sozinho
-# (`bash /root/SetupEnchaAI`, processo novo), a Fase 1 lê
-# /root/dados_vps/encha_locale aqui embaixo; até lá, o default é pt.
+# Quando secondary.sh é `source`ado por main.sh (mesmo processo, mesmo
+# shell), ENCHA_LANG já chega herdado — o `if` abaixo não entra. Quando roda
+# sozinho (`bash /root/SetupEnchaAI`, processo novo — ex.: menu de
+# manutenção), lê /root/dados_vps/encha_locale, gravado por
+# salvar_idioma_escolhido() em main.sh. Arquivo ausente ou vazio (instalação
+# antiga, de antes da Fase 1) cai no default pt via "${ENCHA_LANG:-pt}".
+if [ -z "${ENCHA_LANG:-}" ] && [ -f /root/dados_vps/encha_locale ]; then
+    ENCHA_LANG="$(cat /root/dados_vps/encha_locale 2>/dev/null)"
+fi
 ENCHA_LANG="${ENCHA_LANG:-pt}"
 
-declare -A MSG_PT=()
-declare -A MSG_EN=()
-declare -A MSG_ES=()
+# Sem "=()" de propósito — mesmo motivo do comentário em main.sh: se
+# secondary.sh for `source`ado depois de main.sh já ter posto algo em
+# MSG_PT/EN/ES, "declare -A NOME=()" apagaria tudo. "declare -A NOME" sem
+# atribuição é idempotente.
+declare -A MSG_PT
+declare -A MSG_EN
+declare -A MSG_ES
 
 # Mesma função de main.sh — ver comentário lá para o contrato completo.
 t() {

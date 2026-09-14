@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CATEGORY_ORDER, getCategoryLabel } from "@/lib/category-labels";
 import { ThemeToggle } from "./theme-toggle";
+import { LocaleToggle } from "./locale-toggle";
 import { BannerAd } from "./banner-ad";
 import { UpdateChecker } from "./update-checker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
@@ -126,6 +127,7 @@ export function Sidebar() {
         <UpdateChecker />
         <BannerAd variant="sidebar" />
         <ThemeToggle className="w-full" />
+        <LocaleToggle className="w-full" />
         <button
           onClick={logout}
           className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-warm-700 dark:text-warm-300 hover:bg-destructive-soft hover:text-destructive transition-all"
