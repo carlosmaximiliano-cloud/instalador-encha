@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { LicensePairing } from "./license-pairing";
 import { SuportePanel } from "./suporte-panel";
+import { useDict } from "@/lib/i18n/use-dict";
+import { installWizardText } from "./install-wizard.i18n";
 
 type Field = {
   name: string;
@@ -58,6 +60,7 @@ type InstallState =
   | { kind: "suporte"; contextoErro?: string; voltarPara: { kind: "form" } | ErrorState };
 
 export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
+  const t = useDict(installWizardText);
   const [state, setState] = useState<InstallState>({ kind: "form" });
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const form = useForm<Record<string, unknown>>({
@@ -99,7 +102,14 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         // ausente só em erro de validação/dependência do próprio painel.
         // Sem isto o card mostrava só a frase crua, sem nada pra copiar
         // pro suporte ou pra bater com o que apareceu nos logs do serviço.
-        setState({ kind: "error", message: data.error ?? "Erro na instalação", reason: data.reason, httpStatus: res.status });
+        // Prefere data.message (já traduzida pelo servidor — ver
+        // src/lib/api-error.ts) a data.error (o código estável).
+        setState({
+          kind: "error",
+          message: data.message ?? data.error ?? t.falhaNaInstalacao,
+          reason: data.reason,
+          httpStatus: res.status,
+        });
         return;
       }
       setState({
@@ -119,7 +129,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Instalar {stack.name}</DialogTitle>
+          <DialogTitle>{t.instalarStack(stack.name)}</DialogTitle>
           <DialogDescription>{stack.description}</DialogDescription>
         </DialogHeader>
 
@@ -150,14 +160,14 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                         <div className="flex items-center justify-between">
                           <Label htmlFor={f.name}>
                             {f.label}
-                            {f.sensitive && <Badge variant="warning" className="ml-2">sensível</Badge>}
+                            {f.sensitive && <Badge variant="warning" className="ml-2">{t.sensivel}</Badge>}
                           </Label>
                           {isPwd && (
                             <button
                               type="button"
                               onClick={() => setShowSecrets((s) => ({ ...s, [f.name]: !s[f.name] }))}
                               className="text-muted-foreground hover:text-foreground"
-                              aria-label={show ? "Esconder" : "Mostrar"}
+                              aria-label={show ? t.esconder : t.mostrar}
                             >
                               {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
@@ -177,15 +187,15 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
               </div>
             ))}
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button type="submit">Instalar</Button>
+              <Button type="button" variant="outline" onClick={onClose}>{t.cancelar}</Button>
+              <Button type="submit">{t.instalar}</Button>
             </div>
             <button
               type="button"
               onClick={() => setState({ kind: "suporte", voltarPara: { kind: "form" } })}
               className="text-xs text-muted-foreground hover:text-foreground underline block mx-auto"
             >
-              Precisa de ajuda antes de instalar? Fale com o suporte
+              {t.ajudaAntesDeInstalar}
             </button>
           </form>
         )}
@@ -193,14 +203,14 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         {state.kind === "installing" && (
           <div className="py-12 flex flex-col items-center gap-3 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Implantando no Swarm via Portainer API...</p>
+            <p className="text-sm text-muted-foreground">{t.implantandoNoSwarm}</p>
           </div>
         )}
 
         {state.kind === "success" && (
           <div className="py-8 space-y-4 text-center">
             <CheckCircle2 className="h-14 w-14 text-emerald-400 mx-auto" />
-            <h3 className="text-xl font-semibold">Stack implantada!</h3>
+            <h3 className="text-xl font-semibold">{t.stackImplantada}</h3>
             {state.accessUrl && (
               <a
                 href={state.accessUrl}
@@ -214,7 +224,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
             {state.revealSecrets.length > 0 && (
               <div className="max-w-md mx-auto text-left space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
                 <p className="text-xs font-semibold text-amber-500">
-                  ⚠ Copie agora — não será mostrado de novo nesta tela.
+                  {t.copiarAgoraAviso}
                 </p>
                 {state.revealSecrets.map((s) => (
                   <div key={s.name} className="space-y-1">
@@ -226,7 +236,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                         variant="outline"
                         onClick={() => navigator.clipboard.writeText(s.value)}
                       >
-                        Copiar
+                        {t.copiar}
                       </Button>
                     </div>
                   </div>
@@ -257,15 +267,15 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                       já cobrem quem só quer sair. */}
                   <Button asChild>
                     <a href={state.accessUrl} target="_blank" rel="noopener noreferrer">
-                      Abrir {stack.name}
+                      {t.abrirStack(stack.name)}
                     </a>
                   </Button>
-                  <Button variant="outline" onClick={onClose}>Fechar</Button>
+                  <Button variant="outline" onClick={onClose}>{t.fechar}</Button>
                 </>
               ) : (
                 // 3 stacks (postgres/mysql/redis) não expõem accessUrl —
                 // headless, sem porta pública. Fallback pro botão único de sempre.
-                <Button onClick={onClose}>Fechar</Button>
+                <Button onClick={onClose}>{t.fechar}</Button>
               )}
             </div>
           </div>
@@ -274,7 +284,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         {state.kind === "error" && (
           <div className="py-8 space-y-4 text-center">
             <AlertCircle className="h-14 w-14 text-destructive mx-auto" />
-            <h3 className="text-xl font-semibold">Falha na instalação</h3>
+            <h3 className="text-xl font-semibold">{t.falhaNaInstalacao}</h3>
             <p className="text-sm text-muted-foreground">{state.message}</p>
             {state.reason && (
               <Badge variant="outline" className="font-mono text-xs">
@@ -288,9 +298,9 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                 onClick={() =>
                   navigator.clipboard.writeText(
                     [
-                      `Stack: ${stack.id}`,
-                      `Mensagem: ${state.message}`,
-                      state.reason ? `Causa: ${state.reason}` : null,
+                      `${t.detalheStack}: ${stack.id}`,
+                      `${t.detalheMensagem}: ${state.message}`,
+                      state.reason ? `${t.detalheCausa}: ${state.reason}` : null,
                       state.httpStatus ? `HTTP: ${state.httpStatus}` : null,
                     ]
                       .filter(Boolean)
@@ -298,18 +308,18 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                   )
                 }
               >
-                Copiar detalhes
+                {t.copiarDetalhes}
               </Button>
-              <Button variant="outline" onClick={() => setState({ kind: "form" })}>Tentar de novo</Button>
+              <Button variant="outline" onClick={() => setState({ kind: "form" })}>{t.tentarDeNovo}</Button>
               <Button
                 variant="outline"
                 onClick={() =>
                   setState({
                     kind: "suporte",
                     contextoErro: [
-                      `Stack: ${stack.id}`,
-                      `Mensagem: ${state.message}`,
-                      state.reason ? `Causa: ${state.reason}` : null,
+                      `${t.detalheStack}: ${stack.id}`,
+                      `${t.detalheMensagem}: ${state.message}`,
+                      state.reason ? `${t.detalheCausa}: ${state.reason}` : null,
                       state.httpStatus ? `HTTP: ${state.httpStatus}` : null,
                     ]
                       .filter(Boolean)
@@ -318,9 +328,9 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                   })
                 }
               >
-                Falar com o suporte
+                {t.falarComSuporte}
               </Button>
-              <Button onClick={onClose}>Fechar</Button>
+              <Button onClick={onClose}>{t.fechar}</Button>
             </div>
           </div>
         )}

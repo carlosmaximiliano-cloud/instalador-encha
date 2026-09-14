@@ -2,6 +2,8 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useDict } from "@/lib/i18n/use-dict";
+import { catalogErrorText } from "./error.i18n";
 
 export default function CatalogError({
   error,
@@ -10,6 +12,7 @@ export default function CatalogError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useDict(catalogErrorText);
   useEffect(() => {
     console.error("[Catalog Error]", {
       message: error.message,
@@ -23,17 +26,17 @@ export default function CatalogError({
       <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/10">
         <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
         <div className="flex-1">
-          <h2 className="font-semibold text-destructive">Erro ao carregar o catálogo</h2>
+          <h2 className="font-semibold text-destructive">{t.title}</h2>
           <p className="text-sm text-muted-foreground mt-1 font-mono break-all">
-            {error.message || "Erro desconhecido"}
+            {error.message || t.unknownError}
           </p>
           {error.digest && (
-            <p className="text-xs text-muted-foreground/60 mt-2">Digest: {error.digest}</p>
+            <p className="text-xs text-muted-foreground/60 mt-2">{t.digest(error.digest)}</p>
           )}
         </div>
       </div>
       <Button onClick={reset} variant="primary">
-        Tentar novamente
+        {t.retry}
       </Button>
     </div>
   );

@@ -9,6 +9,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useDict } from "@/lib/i18n/use-dict";
+import { updateCheckerText } from "./update-checker.i18n";
 
 type VersionInfo = {
   current: string;
@@ -27,6 +29,7 @@ type VersionInfo = {
 type Phase = "idle" | "confirm" | "scripts" | "panel" | "done";
 
 export function UpdateChecker() {
+  const t = useDict(updateCheckerText);
   const [info, setInfo] = useState<VersionInfo | null>(null);
   const [csrf, setCsrf] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -90,7 +93,7 @@ export function UpdateChecker() {
         setTimeout(() => window.location.reload(), 1500);
       } else if (elapsed >= 300) {
         if (pollRef.current) clearInterval(pollRef.current);
-        setError("A atualização está demorando. Recarregue a página em instantes.");
+        setError(t.timeoutError);
         setPhase("confirm");
       }
     }, 5000);
@@ -107,13 +110,15 @@ export function UpdateChecker() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Falha ao atualizar o painel");
+        // Prefere data.message (já traduzida pelo servidor — ver
+        // src/lib/api-error.ts) a data.error (o código estável).
+        setError(data.message ?? data.error ?? t.updateFailedFallback);
         setPhase("confirm");
         return;
       }
       startPolling(info.latest);
     } catch {
-      setError("Erro de rede ao atualizar o painel");
+      setError(t.networkErrorPanel);
       setPhase("confirm");
     }
   }
@@ -135,7 +140,7 @@ export function UpdateChecker() {
         // Não bloqueia mais aqui: a imagem do painel segue sozinha, e os
         // scripts ficam para trás até a atualização seguinte tentar de novo.
         setScriptsFailed(true);
-        setScriptsWarning(data.error ?? "Falha ao atualizar os scripts do servidor");
+        setScriptsWarning(data.message ?? data.error ?? t.scriptsFailedFallback);
         await updatePanelImage();
         return;
       }
@@ -143,7 +148,7 @@ export function UpdateChecker() {
       await updatePanelImage();
     } catch {
       setScriptsFailed(true);
-      setScriptsWarning("Erro de rede ao atualizar os scripts do servidor");
+      setScriptsWarning(t.networkErrorScripts);
       await updatePanelImage();
     }
   }
@@ -183,20 +188,20 @@ export function UpdateChecker() {
           className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium bg-coral-500/10 text-coral-700 dark:text-coral-300 hover:bg-coral-500/20 transition-all"
         >
           <ArrowUpCircle className="h-4 w-4 shrink-0" />
-          <span className="flex-1 text-left">Nova versão {info.latest}</span>
-          <span className="text-[10px] opacity-70">Atualizar</span>
+          <span className="flex-1 text-left">{t.newVersion(info.latest ?? "")}</span>
+          <span className="text-[10px] opacity-70">{t.updateBtn}</span>
         </button>
       ) : (
         <button
           onClick={manualCheck}
           disabled={checking}
           className="w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[10px] text-muted-foreground tabular-nums hover:bg-glass-strong transition-all disabled:opacity-60"
-          title="Verificar atualizações"
+          title={t.checkForUpdates}
         >
           <RefreshCw className={`h-3 w-3 shrink-0 ${checking ? "animate-spin" : ""}`} />
           <span>
             v{info.current}
-            {justChecked && !checking ? " — você já está na versão mais recente" : ""}
+            {justChecked && !checking ? t.alreadyLatest : ""}
           </span>
         </button>
       )}
@@ -212,27 +217,27 @@ export function UpdateChecker() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowUpCircle className="h-5 w-5 text-coral-600" />
-              Atualizar Encha Setup
+              {t.dialogTitle}
             </DialogTitle>
             <DialogDescription>
               {phase === "done"
-                ? "Atualização concluída."
+                ? t.descDone
                 : phase === "scripts"
-                  ? "Atualizando os scripts do servidor…"
+                  ? t.descScripts
                   : phase === "panel"
-                    ? "Atualizando o painel — ele vai reiniciar."
-                    : `Atualizar da versão ${info.current} para ${info.latest}?`}
+                    ? t.descPanel
+                    : t.descConfirm(info.current, info.latest ?? "")}
             </DialogDescription>
           </DialogHeader>
 
           {(phase === "scripts" || phase === "panel" || phase === "done") && (
             <div className="flex flex-col gap-1.5 text-sm">
               <StepRow
-                label="Scripts do servidor"
+                label={t.stepScripts}
                 state={scriptsDone ? "done" : scriptsFailed ? "warning" : "active"}
               />
               <StepRow
-                label="Painel"
+                label={t.stepPanel}
                 state={phase === "done" ? "done" : phase === "panel" ? "active" : "pending"}
               />
             </div>
@@ -240,11 +245,11 @@ export function UpdateChecker() {
 
           {scriptsWarning ? (
             <div className="rounded-md bg-warning-soft text-warning-foreground px-3 py-2 text-xs space-y-1">
-              <p>Scripts do servidor não atualizados: {scriptsWarning}</p>
+              <p>{t.scriptsWarning(scriptsWarning)}</p>
               <p className="opacity-80">
-                O painel segue atualizando sozinho — os scripts ficam para trás até a
-                próxima atualização. Alternativa: conecte por SSH e rode a opção 97 do
-                menu (<code>bash /root/SetupEnchaAI</code>).
+                {t.scriptsWarningHintPrefix}
+                <code>bash /root/SetupEnchaAI</code>
+                {t.scriptsWarningHintSuffix}
               </p>
             </div>
           ) : null}
@@ -266,28 +271,26 @@ export function UpdateChecker() {
           {phase === "scripts" || phase === "panel" ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {phase === "scripts"
-                ? "Baixando e instalando os scripts atualizados…"
-                : "Aplicando a atualização… aguarde o painel reiniciar."}
+              {phase === "scripts" ? t.downloadingScripts : t.applyingUpdate}
             </div>
           ) : phase === "done" ? (
             <div className="flex items-center gap-2 text-sm text-success py-2">
               <Check className="h-4 w-4" />
-              Atualizado para {info.latest}. Recarregando…
+              {t.updatedTo(info.latest ?? "")}
             </div>
           ) : (
             <div className="flex justify-end gap-2 flex-wrap">
               <Button variant="secondary" onClick={() => setPhase("idle")}>
-                Cancelar
+                {t.cancel}
               </Button>
               {scriptsFailed ? (
                 <Button variant="secondary" onClick={skipScriptsAndUpdatePanel} disabled={!csrf}>
-                  Atualizar só o painel
+                  {t.updatePanelOnly}
                 </Button>
               ) : null}
               <Button onClick={runUpdate} disabled={!csrf}>
                 <RefreshCw className="h-4 w-4 mr-1.5" />
-                {scriptsFailed ? "Tentar novamente" : "Atualizar agora"}
+                {scriptsFailed ? t.tryAgain : t.updateNow}
               </Button>
             </div>
           )}

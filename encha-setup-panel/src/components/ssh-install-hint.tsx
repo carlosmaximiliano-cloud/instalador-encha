@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Terminal, Copy, Check } from "lucide-react";
+import { useDict } from "@/lib/i18n/use-dict";
+import { sshInstallHintText } from "./ssh-install-hint.i18n";
 
 export function SshInstallHint({
   stackName,
@@ -15,9 +17,10 @@ export function SshInstallHint({
   open: boolean;
   onClose: () => void;
 }) {
+  const t = useDict(sshInstallHintText);
   const [copied, setCopied] = useState(false);
   const cmd = `ssh root@<seu-servidor>\nbash /root/secondary.sh${
-    optionNumber && optionNumber > 0 ? `\n# Escolha a opção ${optionNumber}` : ""
+    optionNumber && optionNumber > 0 ? `\n${t.chooseOptionComment(optionNumber)}` : ""
   }`;
 
   function copy() {
@@ -32,11 +35,9 @@ export function SshInstallHint({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5 text-coral-600" />
-            Instalar {stackName} via SSH
+            {t.title(stackName)}
           </DialogTitle>
-          <DialogDescription>
-            Esta stack ainda não tem instalação visual pelo painel. Conecte na VPS e rode o instalador interativo:
-          </DialogDescription>
+          <DialogDescription>{t.description}</DialogDescription>
         </DialogHeader>
 
         <div className="relative">
@@ -46,7 +47,7 @@ export function SshInstallHint({
           <button
             onClick={copy}
             className="absolute top-2 right-2 p-1.5 rounded-md bg-warm-700/50 hover:bg-warm-700 text-warm-50 transition-colors"
-            title="Copiar"
+            title={t.copy}
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </button>
@@ -54,21 +55,19 @@ export function SshInstallHint({
 
         {optionNumber && optionNumber > 0 ? (
           <p className="text-xs text-muted-foreground">
-            No menu interativo, digite <strong className="text-coral-600">{optionNumber}</strong> e siga as instruções.
+            {t.menuInstructions(optionNumber)}
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            Esta stack normalmente é instalada como dependência de outra ou diretamente no menu principal.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.fallbackInstructions}</p>
         )}
 
         <div className="rounded-md bg-info-soft text-info-foreground px-3 py-2 text-xs">
-          <strong>Em breve:</strong> instalação direta pelo painel — formulário visual sem terminal.
+          <strong>{t.comingSoonLabel}</strong> {t.comingSoonText}
         </div>
 
         <div className="flex justify-end">
           <Button variant="secondary" onClick={onClose}>
-            Entendi
+            {t.gotIt}
           </Button>
         </div>
       </DialogContent>

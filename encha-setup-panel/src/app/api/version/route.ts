@@ -3,14 +3,17 @@ import { readSession } from "@/lib/session";
 import { fetchLatestVersion } from "@/lib/monitor";
 import { APP_VERSION, compareSemver } from "@/lib/version";
 import { getLocalAdmin } from "@/lib/auth/local-admin";
+import { resolveLocale } from "@/lib/locale";
+import { unauthenticatedResponse } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
 // Versão local + última publicada no Monitor. Best-effort: se o Monitor cair,
 // retorna apenas a versão atual sem aviso de update.
 export async function GET() {
+  const locale = await resolveLocale();
   const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session) return unauthenticatedResponse(locale);
 
   const release = await fetchLatestVersion();
   const latest = release?.latest_version ?? null;

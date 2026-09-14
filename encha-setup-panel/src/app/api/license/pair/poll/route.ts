@@ -7,8 +7,23 @@ import { getStack } from "@/lib/stacks/registry";
 import { buscarPareamento, confirmarPareamento, falharPareamento } from "@/lib/pairing-store";
 import { pairPoll, PairingError } from "@/lib/license-pairing";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 
 const bodySchema = z.object({ stackId: z.string().min(1).max(60), pairingId: z.string().regex(/^[0-9a-f]{32}$/) });
+
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  corpo_invalido: { pt: "Inválido", en: "Invalid request", es: "Solicitud inválida" },
+  stack_sem_pareamento: {
+    pt: "Stack sem pareamento de licença",
+    en: "Stack has no license pairing",
+    es: "El stack no tiene emparejamiento de licencia",
+  },
+  sessao_nao_encontrada: { pt: "Sessão não encontrada", en: "Session not found", es: "Sesión no encontrada" },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
 
 // Poll de ~3s da sessão de pareamento — mesmo padrão do app Go
 // (ConsultarPareamento) e do painel.py standalone. Nunca devolve a CHAVE de
@@ -16,25 +31,26 @@ const bodySchema = z.object({ stackId: z.string().min(1).max(60), pairingId: z.s
 // server-side (pairing-store.ts); o browser só recebe a confirmação de que
 // pode seguir para o install.
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Inválido" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "corpo_invalido", locale, 400);
   const { stackId, pairingId } = parsed.data;
 
   const def = getStack(stackId);
-  if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
+  if (!def?.pairing) return apiError(ERROS, "stack_sem_pareamento", locale, 404);
 
   const ip = getClientIp(req);
   // Espelha MAX_POLLS=400 (~20min a 3s) do Console — teto generoso, só para
@@ -44,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   const row = buscarPareamento(pairingId);
   if (!row || row.stack_id !== stackId) {
-    return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
+    return apiError(ERROS, "sessao_nao_encontrada", locale, 404);
   }
   if (row.status === "consumido") return NextResponse.json({ status: "consumido" });
   if (row.status === "falhou") return NextResponse.json({ status: "recusado" });

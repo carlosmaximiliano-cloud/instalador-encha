@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle2, Loader2, MessageCircleWarning, Paperclip } from "lucide-react";
+import { useDict } from "@/lib/i18n/use-dict";
+import { suportePanelText, type SuportePanelText } from "./suporte-panel.i18n";
 
 // Painel de suporte embutido no wizard — abre um ticket ANTES de existir
 // licença (chave nunca é enviada, injetada nem pedida aqui: ver header de
@@ -25,14 +27,34 @@ import { ArrowLeft, CheckCircle2, Loader2, MessageCircleWarning, Paperclip } fro
 const MAX_IMAGEM_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
-function tamanhoOk(file: File): string | null {
+function tamanhoOk(file: File, t: SuportePanelText): string | null {
   if (file.type.startsWith("image/")) {
-    return file.size > MAX_IMAGEM_BYTES ? "Imagens têm limite de 10MB." : null;
+    return file.size > MAX_IMAGEM_BYTES ? t.limiteImagem : null;
   }
   if (file.type.startsWith("video/")) {
-    return file.size > MAX_VIDEO_BYTES ? "Vídeos têm limite de 50MB." : null;
+    return file.size > MAX_VIDEO_BYTES ? t.limiteVideo : null;
   }
-  return "Só é possível anexar imagem ou vídeo.";
+  return t.apenasImagemOuVideo;
+}
+
+// Erros de negócio que o Console pode devolver em /api/suporte/abrir e
+// /api/suporte/anexos — mapeados pra frase amigável. Qualquer código sem
+// mapeamento aqui (ou vindo de fora do formato esperado) NUNCA aparece cru
+// na tela: cai sempre no fallback genérico já existente.
+type ChaveErroSuporte = "erroCampoObrigatorio" | "erroTicketFechado" | "erroLimiteAnexos" | "erroTipoNaoPermitido";
+
+const MAPA_CODIGOS_ERRO: Record<string, ChaveErroSuporte> = {
+  campo_obrigatorio: "erroCampoObrigatorio",
+  ticket_fechado: "erroTicketFechado",
+  limite_anexos: "erroLimiteAnexos",
+  tipo_nao_permitido: "erroTipoNaoPermitido",
+};
+
+function mensagemErroSuporte(codigo: unknown, t: SuportePanelText, fallback: string): string {
+  if (typeof codigo === "string" && codigo in MAPA_CODIGOS_ERRO) {
+    return t[MAPA_CODIGOS_ERRO[codigo]];
+  }
+  return fallback;
 }
 
 type Etapa =
@@ -53,8 +75,9 @@ export function SuportePanel({
   contextoErro?: string;
   onVoltar: () => void;
 }) {
+  const t = useDict(suportePanelText);
   const [etapa, setEtapa] = useState<Etapa>({ kind: "formulario" });
-  const [assunto, setAssunto] = useState(contextoErro ? "Erro na instalação" : "");
+  const [assunto, setAssunto] = useState(contextoErro ? t.assuntoErroInstalacao : "");
   const [mensagem, setMensagem] = useState("");
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
@@ -66,7 +89,7 @@ export function SuportePanel({
     setErroArquivo(null);
     setArquivo(null);
     if (!f) return;
-    const problema = tamanhoOk(f);
+    const problema = tamanhoOk(f, t);
     if (problema) {
       setErroArquivo(problema);
       return;
@@ -76,7 +99,7 @@ export function SuportePanel({
 
   async function enviar() {
     if (!assunto.trim() || !mensagem.trim()) {
-      setEtapa({ kind: "erro", mensagem: "Preencha o assunto e a mensagem." });
+      setEtapa({ kind: "erro", mensagem: t.preencherCampos });
       return;
     }
     setEtapa({ kind: "enviando" });
@@ -88,12 +111,19 @@ export function SuportePanel({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setEtapa({ kind: "erro", mensagem: data.error ?? "Não foi possível abrir o chamado agora." });
+        // NUNCA mostrar data.error cru: só um código amigável mapeado, ou o
+        // fallback genérico — o Console pode devolver códigos internos
+        // (campo_obrigatorio, ticket_fechado, ...) que não fazem sentido
+        // pro usuário final.
+        setEtapa({ kind: "erro", mensagem: mensagemErroSuporte(data.error, t, t.naoFoiPossivelAbrirChamado) });
         return;
       }
       setEtapa({ kind: "aberto", ticketId: data.ticketId });
-    } catch (e) {
-      setEtapa({ kind: "erro", mensagem: e instanceof Error ? e.message : "Erro de rede." });
+    } catch {
+      // Mensagem de exceção do browser/JS (ex.: "Failed to fetch") é sempre
+      // em inglês e não traduzida por nós — usa o texto genérico do
+      // dicionário em vez de vazar isso na tela.
+      setEtapa({ kind: "erro", mensagem: t.erroDeRede });
     }
   }
 
@@ -113,13 +143,14 @@ export function SuportePanel({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErroAnexo(data.error ?? "Não foi possível anexar o arquivo.");
+        // Mesmo cuidado do enviar(): nunca expor o código cru do Console.
+        setErroAnexo(mensagemErroSuporte(data.error, t, t.naoFoiPossivelAnexar));
         return;
       }
       setAnexado(true);
       setArquivo(null);
-    } catch (e) {
-      setErroAnexo(e instanceof Error ? e.message : "Erro de rede.");
+    } catch {
+      setErroAnexo(t.erroDeRede);
     } finally {
       setAnexando(false);
     }
@@ -133,30 +164,30 @@ export function SuportePanel({
           onClick={onVoltar}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+          <ArrowLeft className="h-3.5 w-3.5" /> {t.voltar}
         </button>
         <div className="flex items-center gap-2">
           <MessageCircleWarning className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-semibold">Falar com o suporte</h3>
+          <h3 className="text-base font-semibold">{t.falarComSuporte}</h3>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="suporte-assunto">Assunto</Label>
+          <Label htmlFor="suporte-assunto">{t.assunto}</Label>
           <Input id="suporte-assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} maxLength={160} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="suporte-mensagem">Mensagem</Label>
+          <Label htmlFor="suporte-mensagem">{t.mensagem}</Label>
           <Textarea
             id="suporte-mensagem"
             rows={5}
             value={mensagem}
             onChange={(e) => setMensagem(e.target.value)}
             maxLength={8000}
-            placeholder="Descreva o que aconteceu..."
+            placeholder={t.descrevaOQueAconteceu}
           />
         </div>
         <Button type="button" onClick={enviar} disabled={etapa.kind === "enviando"}>
           {etapa.kind === "enviando" && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-          Enviar
+          {t.enviar}
         </Button>
       </div>
     );
@@ -167,10 +198,10 @@ export function SuportePanel({
       <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
         <p className="text-sm text-destructive">{etapa.mensagem}</p>
         <Button type="button" variant="outline" size="sm" onClick={() => setEtapa({ kind: "formulario" })}>
-          Tentar de novo
+          {t.tentarDeNovo}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onVoltar}>
-          Voltar
+          {t.voltar}
         </Button>
       </div>
     );
@@ -182,13 +213,13 @@ export function SuportePanel({
       <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
         <p className="text-sm">
-          Chamado #{etapa.ticketId} aberto — nossa equipe vai analisar e entrar em contato.
+          {t.chamadoAberto(etapa.ticketId)}
         </p>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="suporte-anexo" className="flex items-center gap-1">
-          <Paperclip className="h-3.5 w-3.5" /> Anexar imagem ou vídeo (opcional)
+          <Paperclip className="h-3.5 w-3.5" /> {t.anexarImagemOuVideo}
         </Label>
         <input
           id="suporte-anexo"
@@ -200,17 +231,17 @@ export function SuportePanel({
         />
         {erroArquivo && <p className="text-xs text-destructive">{erroArquivo}</p>}
         {erroAnexo && <p className="text-xs text-destructive">{erroAnexo}</p>}
-        {anexado && <p className="text-xs text-emerald-500">Anexo enviado.</p>}
+        {anexado && <p className="text-xs text-emerald-500">{t.anexoEnviado}</p>}
         {arquivo && !anexado && (
           <Button type="button" size="sm" variant="outline" onClick={() => anexar(etapa.ticketId)} disabled={anexando}>
             {anexando && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-            Enviar anexo
+            {t.enviarAnexo}
           </Button>
         )}
       </div>
 
       <Button type="button" onClick={onVoltar}>
-        Fechar
+        {t.fechar}
       </Button>
     </div>
   );

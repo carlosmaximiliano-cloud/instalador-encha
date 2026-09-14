@@ -5,12 +5,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { ScrollText, Check } from "lucide-react";
 import { renderMarkdown } from "@/lib/markdown";
+import { useDict } from "@/lib/i18n/use-dict";
+import { termsDialogText } from "./terms-dialog.i18n";
 
 // Gate de Termos de Uso — bloqueia o dashboard inteiro (montado em
 // (dashboard)/layout.tsx) até que ESTA versão dos termos seja aceita.
 // Propositalmente sem opção de recusar: só existe o botão "Aceitar". Sem
 // aceite, o app permanece bloqueado — não há como fechar este diálogo.
 export function TermsDialog({ version, contentMd }: { version: string; contentMd: string }) {
+  const t = useDict(termsDialogText);
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [accepting, setAccepting] = useState(false);
@@ -43,16 +46,13 @@ export function TermsDialog({ version, contentMd }: { version: string; contentMd
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(
-          (data.error ?? "Falha ao registrar o aceite") +
-            " — se o problema persistir, use a opção 97 no menu SSH."
-        );
+        setError((data.message ?? data.error ?? t.acceptFailedFallback) + t.acceptFailedHint);
         setAccepting(false);
         return;
       }
       router.refresh();
     } catch {
-      setError("Erro de rede ao registrar o aceite.");
+      setError(t.networkError);
       setAccepting(false);
     }
   }
@@ -69,12 +69,9 @@ export function TermsDialog({ version, contentMd }: { version: string; contentMd
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScrollText className="h-5 w-5 text-coral-600" />
-            Termos de Uso
+            {t.title}
           </DialogTitle>
-          <DialogDescription>
-            Os Termos de Uso do Encha Setup foram atualizados (versão {version}). É preciso aceitar
-            para continuar usando o painel.
-          </DialogDescription>
+          <DialogDescription>{t.description(version)}</DialogDescription>
         </DialogHeader>
 
         <div
@@ -92,7 +89,7 @@ export function TermsDialog({ version, contentMd }: { version: string; contentMd
         <div className="flex justify-end">
           <Button onClick={accept} disabled={!csrf || accepting}>
             <Check className="h-4 w-4 mr-1.5" />
-            {accepting ? "Registrando…" : scrolledToEnd ? "Aceitar" : "Li e aceito"}
+            {accepting ? t.registering : scrolledToEnd ? t.accept : t.readAndAccept}
           </Button>
         </div>
       </DialogContent>

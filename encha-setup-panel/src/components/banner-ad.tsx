@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useDict } from "@/lib/i18n/use-dict";
+import { bannerAdText } from "./banner-ad.i18n";
 
 type Banner = {
   id: number;
@@ -15,6 +17,7 @@ type Props = {
 };
 
 export function BannerAd({ variant, className }: Props) {
+  const t = useDict(bannerAdText);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [csrf, setCsrf] = useState<string>("");
 
@@ -53,7 +56,7 @@ export function BannerAd({ variant, className }: Props) {
         "block overflow-hidden rounded-lg border border-glass-border transition-opacity hover:opacity-90",
         className
       )}
-      aria-label={banner.alt_text || "Propaganda"}
+      aria-label={banner.alt_text || t.fallbackAlt}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

@@ -7,22 +7,63 @@ import { logAudit } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getClientIp, verifyOrigin, verifyCsrf } from "@/lib/csrf";
 import { newCsrfToken } from "@/lib/csrf";
+import { resolveLocale } from "@/lib/locale";
+import { apiError } from "@/lib/api-error";
 
 const loginSchema = z.object({
   username: z.string().min(1).max(80),
   password: z.string().min(1).max(200),
 });
 
+// "muitas_tentativas_login" carrega um placeholder "{s}" (segundos até
+// liberar de novo) — apiError() não faz interpolação, então essa mensagem é
+// montada à mão logo abaixo (ver comentário no POST).
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "Token CSRF inválido" },
+  muitas_tentativas_login: {
+    pt: "Muitas tentativas. Tente novamente em {s}s",
+    en: "Too many attempts. Try again in {s}s",
+    es: "Demasiados intentos. Vuelve a intentarlo en {s}s",
+  },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  credenciais_invalidas: { pt: "Credenciais inválidas", en: "Invalid credentials", es: "Credenciales inválidas" },
+  configuracao_incompleta: {
+    pt: "Configuração incompleta no servidor. Contate o administrador.",
+    en: "Incomplete server configuration. Contact the administrator.",
+    es: "Configuración incompleta en el servidor. Contacte al administrador.",
+  },
+  usuario_senha_incorretos: {
+    pt: "Usuário ou senha incorretos",
+    en: "Incorrect username or password",
+    es: "Usuario o contraseña incorrectos",
+  },
+  falha_conexao_portainer_servico: {
+    pt: "Falha ao conectar no Portainer com as credenciais de serviço",
+    en: "Failed to connect to Portainer with the service credentials",
+    es: "No se pudo conectar a Portainer con las credenciales de servicio",
+  },
+  falha_conexao_portainer: {
+    pt: "Falha ao conectar no Portainer",
+    en: "Failed to connect to Portainer",
+    es: "No se pudo conectar a Portainer",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
+
 export async function POST(req: NextRequest) {
+  const locale = await resolveLocale();
+
   if (!verifyOrigin(req)) {
-    return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
+    return apiError(ERROS, "origem_invalida", locale, 403);
   }
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
   if (!rl.allowed) {
+    const segundos = Math.ceil(rl.resetMs / 1000);
+    const template = ERROS.muitas_tentativas_login[locale] ?? ERROS.muitas_tentativas_login.pt;
     return NextResponse.json(
-      { error: `Muitas tentativas. Tente novamente em ${Math.ceil(rl.resetMs / 1000)}s` },
+      { error: "muitas_tentativas_login", message: template.replace("{s}", String(segundos)) },
       { status: 429 }
     );
   }
@@ -31,12 +72,12 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
 
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Credenciais inválidas" }, { status: 400 });
+    return apiError(ERROS, "credenciais_invalidas", locale, 400);
   }
 
   const { username, password } = parsed.data;
@@ -49,14 +90,11 @@ export async function POST(req: NextRequest) {
   if (localAdmin) {
     if (!hasServiceCredentials()) {
       console.error("[auth] PANEL_ADMIN_USER definido mas credenciais de serviço do Portainer ausentes");
-      return NextResponse.json(
-        { error: "Configuração incompleta no servidor. Contate o administrador." },
-        { status: 503 }
-      );
+      return apiError(ERROS, "configuracao_incompleta", locale, 503);
     }
     if (!verifyLocalAdmin(username, password)) {
       logAudit({ user: username, ip, action: "login.fail", result: "error", meta: { mode: "local" } });
-      return NextResponse.json({ error: "Usuário ou senha incorretos" }, { status: 401 });
+      return apiError(ERROS, "usuario_senha_incorretos", locale, 401);
     }
     try {
       // Falha cedo se as credenciais de serviço estiverem erradas, em vez de
@@ -65,10 +103,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("[auth] falha ao autenticar credenciais de serviço do Portainer:", e);
       logAudit({ user: username, ip, action: "login.fail", result: "error", meta: { mode: "local", serviceAuth: true } });
-      return NextResponse.json(
-        { error: "Falha ao conectar no Portainer com as credenciais de serviço" },
-        { status: 502 }
-      );
+      return apiError(ERROS, "falha_conexao_portainer_servico", locale, 502);
     }
     await createSession({ user: username, exp, mode: "local" });
     await setCsrfCookie(newCsrfToken());
@@ -95,16 +130,15 @@ export async function POST(req: NextRequest) {
       result: "error",
       meta: { status, mode: "portainer" },
     });
-    return NextResponse.json(
-      { error: status === 401 || status === 422 ? "Usuário ou senha incorretos" : "Falha ao conectar no Portainer" },
-      { status: status === 401 || status === 422 ? 401 : 502 }
-    );
+    const invalido = status === 401 || status === 422;
+    return apiError(ERROS, invalido ? "usuario_senha_incorretos" : "falha_conexao_portainer", locale, invalido ? 401 : 502);
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
   await destroySession();
   return NextResponse.json({ ok: true });
 }

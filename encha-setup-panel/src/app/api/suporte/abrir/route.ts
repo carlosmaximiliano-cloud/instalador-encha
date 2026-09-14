@@ -10,6 +10,28 @@ import { APP_VERSION } from "@/lib/version";
 import { suporteAbrir, SuporteError } from "@/lib/suporte";
 import { suporteRequesterToken, salvarSuporteRequesterToken, salvarSuporteAcessoToken } from "@/lib/suporte-store";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
+
+// "muitas_tentativas_abrir" carrega um placeholder "{s}" (segundos até
+// liberar de novo) — apiError() não faz interpolação, então essa mensagem é
+// montada à mão no POST, sem passar por apiError().
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "Token CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  invalido: { pt: "Inválido", en: "Invalid", es: "Inválido" },
+  muitas_tentativas_abrir: {
+    pt: "Muitas tentativas — aguarde {s}s",
+    en: "Too many attempts — wait {s}s",
+    es: "Demasiados intentos — espere {s}s",
+  },
+  abrir_chamado_falhou: {
+    pt: "Não foi possível abrir o chamado agora",
+    en: "Could not open the support ticket right now",
+    es: "No se pudo abrir el ticket de soporte en este momento",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
 
 const bodySchema = z.object({
   scope: z.string().min(1).max(60),
@@ -30,27 +52,34 @@ const bodySchema = z.object({
 // navegador só controla assunto/mensagem/contextoErro (texto livre, nunca
 // interpretado como JSON estruturado do lado do Console).
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Inválido" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "invalido", locale, 400);
   const { scope, assunto, mensagem, contextoErro } = parsed.data;
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`suporte.abrir:${ip}:${scope}`, 5, 15 * 60_000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` }, { status: 429 });
+    const segundos = Math.ceil(rl.resetMs / 1000);
+    const template = ERROS.muitas_tentativas_abrir[locale] ?? ERROS.muitas_tentativas_abrir.pt;
+    return NextResponse.json(
+      { error: "muitas_tentativas_abrir", message: template.replace("{s}", String(segundos)) },
+      { status: 429 }
+    );
   }
 
   const vps = getVpsContext();
@@ -89,9 +118,9 @@ export async function POST(req: NextRequest) {
       httpStatus = e.reason === "rate_limited" ? 429 : e.reason === "recusado" ? 409 : 502;
     }
     logAudit({ user: session.user, ip, action: "suporte.abrir.fail", target: scope, result: "error", meta });
-    return NextResponse.json(
-      { error: e instanceof SuporteError ? e.message : "Não foi possível abrir o chamado agora" },
-      { status: httpStatus }
-    );
+    if (e instanceof SuporteError) {
+      return NextResponse.json({ error: e.message }, { status: httpStatus });
+    }
+    return apiError(ERROS, "abrir_chamado_falhou", locale, httpStatus);
   }
 }

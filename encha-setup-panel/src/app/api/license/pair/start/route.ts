@@ -8,8 +8,38 @@ import { getOrCreateMachineId, pareamentoAtivo, criarPareamento } from "@/lib/pa
 import { pairStart, PairingError } from "@/lib/license-pairing";
 import { fetchLatestRelease, ReleaseInfoError } from "@/lib/release-info";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 
 const bodySchema = z.object({ stackId: z.string().min(1).max(60) });
+
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  corpo_invalido: { pt: "Inválido", en: "Invalid request", es: "Solicitud inválida" },
+  stack_sem_pareamento: {
+    pt: "Stack sem pareamento de licença",
+    en: "Stack has no license pairing",
+    es: "El stack no tiene emparejamiento de licencia",
+  },
+  apphostname_ausente: {
+    pt: "Stack sem appHostname configurado — bug de configuração",
+    en: "Stack has no appHostname configured — configuration bug",
+    es: "El stack no tiene appHostname configurado — error de configuración",
+  },
+  pareamento_falhou: {
+    pt: "Não foi possível iniciar o pareamento",
+    en: "Could not start pairing",
+    es: "No fue posible iniciar el emparejamiento",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
+
+const RATE_LIMIT_MSG = {
+  pt: (s: number) => `Muitas tentativas — aguarde ${s}s`,
+  en: (s: number) => `Too many attempts — wait ${s}s`,
+  es: (s: number) => `Demasiados intentos — espere ${s}s`,
+};
 
 // Abre (ou RETOMA) a sessão de pareamento self-service de licença de uma
 // stack. Nunca devolve fingerprint/machine_id/session_id do Console pro
@@ -17,27 +47,28 @@ const bodySchema = z.object({ stackId: z.string().min(1).max(60) });
 // resolvem server-side. Ver license-pairing.ts para o protocolo e
 // pairing-store.ts para a persistência.
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Inválido" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "corpo_invalido", locale, 400);
   const { stackId } = parsed.data;
 
   const def = getStack(stackId);
-  if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
+  if (!def?.pairing) return apiError(ERROS, "stack_sem_pareamento", locale, 404);
   if (!def.appHostname) {
-    return NextResponse.json({ error: "Stack sem appHostname configurado — bug de configuração" }, { status: 500 });
+    return apiError(ERROS, "apphostname_ausente", locale, 500);
   }
 
   const ip = getClientIp(req);
@@ -48,7 +79,7 @@ export async function POST(req: NextRequest) {
   const rl = checkRateLimit(`license.pair.start:${ip}:${stackId}`, 5, 15 * 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` },
+      { error: "muitas_tentativas", message: RATE_LIMIT_MSG[locale](Math.ceil(rl.resetMs / 1000)) },
       { status: 429 }
     );
   }
@@ -147,8 +178,13 @@ export async function POST(req: NextRequest) {
       meta.reason = e.reason;
     }
     logAudit({ user: session.user, ip, action: "license.pair.start.fail", target: stackId, result: "error", meta });
+    // e.message de PairingError vem de license-pairing.ts (fora do escopo
+    // desta migração) — só o fallback abaixo, hardcoded aqui, é traduzido.
     return NextResponse.json(
-      { error: e instanceof PairingError ? e.message : "Não foi possível iniciar o pareamento", reason: e instanceof PairingError ? e.reason : undefined },
+      {
+        error: e instanceof PairingError ? e.message : ERROS.pareamento_falhou[locale],
+        reason: e instanceof PairingError ? e.reason : undefined,
+      },
       { status: httpStatus }
     );
   }

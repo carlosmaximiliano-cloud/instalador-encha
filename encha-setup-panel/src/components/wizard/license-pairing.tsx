@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, MessageCircleWarning, RefreshCw, ArrowRightLeft } from "lucide-react";
+import { useDict } from "@/lib/i18n/use-dict";
+import { licensePairingText, type LicensePairingText } from "./license-pairing.i18n";
 
 // Pareamento self-service de licença — o cliente gera a própria licença
 // EnchaT de dentro do wizard, sem precisar de uma chave criada por um admin
@@ -59,33 +61,23 @@ type InstalacaoAtual = { ultimoCheck?: number; apelido?: string };
 
 const POLL_INTERVALO_MS = 3000;
 
-// Mesma taxonomia de mensagens de AtivacaoScreen.tsx (repo ENCHAT,
-// mensagemDeErro) — copiada de propósito, não importada (não há codegen
-// compartilhado entre os dois repos). Se um motivo novo aparecer lá,
-// replicar aqui também.
-function mensagemRecusa(motivo?: string): string {
-  switch (motivo) {
-    case "cpf_sem_licenca":
-    case "sem_licenca":
-    case "sem_licenca_disponivel":
-    case "licenca_nao_encontrada":
-      return "Não encontramos uma licença disponível para esta ativação.";
-    case "ja_ativada_em_outra_vps":
-      return "Esta licença já está ativada em outra VPS.";
-    case "licenca_revogada":
-      return "Esta licença foi cancelada — fale com o suporte para liberar um novo cadastro.";
-    case "ja_tem_conta_gratis":
-      return "Este CPF já tem uma conta grátis — ative pelo portal ou contate o suporte.";
-    case "cpf_ja_cadastrado":
-      return "Este CPF já tem cadastro — entre pelo portal em vez de criar uma conta nova.";
-    case "celular_ja_cadastrado":
-      return "Este celular já está em uso por outra conta.";
-    case "excesso_tentativas_cpf":
-      return "Muitas tentativas de CPF nesta sessão — gere um novo código.";
-    default:
-      return motivo ? "Não foi possível concluir agora — contate o suporte EnchaT." : "Não foi possível concluir o pareamento.";
-  }
-}
+// Motivos "conhecidos" de mensagemRecusa (os `case` do switch, não o
+// `default`) — usado só pra decidir, no catch de iniciar(), se o código de
+// erro vindo do Console tem uma tradução dedicada ou se deve cair no
+// fallback genérico (t.erroGenericoPareamento). Nunca traduzido: são
+// códigos de protocolo, iguais nos 3 idiomas de mensagemRecusa.
+const MOTIVOS_RECUSA_CONHECIDOS = new Set([
+  "cpf_sem_licenca",
+  "sem_licenca",
+  "sem_licenca_disponivel",
+  "licenca_nao_encontrada",
+  "ja_ativada_em_outra_vps",
+  "licenca_revogada",
+  "ja_tem_conta_gratis",
+  "cpf_ja_cadastrado",
+  "celular_ja_cadastrado",
+  "excesso_tentativas_cpf",
+]);
 
 // Motivos em que "Gerar outro código" reabriria uma sessão que vai recusar
 // do mesmo jeito — mostrar o botão nesses casos é um beco sem saída sem
@@ -97,13 +89,13 @@ const MOTIVOS_SEM_RETRY_UTIL = new Set(["licenca_revogada"]);
 // Descrição legível de há quanto tempo a instalação atual deu sinal —
 // alimenta o aviso antes de migrar ("ativa há 2 minutos" vs "sem sinal há
 // 6 dias"), pro cliente perceber se está prestes a derrubar algo em uso.
-function sinalHaQuanto(ultimoCheckS?: number): string {
-  if (!ultimoCheckS) return "nunca fez uma verificação de licença";
+function sinalHaQuanto(ultimoCheckS: number | undefined, t: LicensePairingText): string {
+  if (!ultimoCheckS) return t.sinalNuncaVerificou;
   const segundos = Math.max(0, Math.floor(Date.now() / 1000) - ultimoCheckS);
-  if (segundos < 120) return "ativa há menos de 2 minutos";
-  if (segundos < 3600) return `ativa há ${Math.floor(segundos / 60)} minutos`;
-  if (segundos < 86400) return `ativa há ${Math.floor(segundos / 3600)} hora(s)`;
-  return `sem sinal há ${Math.floor(segundos / 86400)} dia(s)`;
+  if (segundos < 120) return t.sinalAtivaMenos2Min;
+  if (segundos < 3600) return t.sinalAtivaMinutos(Math.floor(segundos / 60));
+  if (segundos < 86400) return t.sinalAtivaHoras(Math.floor(segundos / 3600));
+  return t.sinalSemSinalDias(Math.floor(segundos / 86400));
 }
 
 function formatarCpf(v: string): string {
@@ -120,6 +112,7 @@ function qrSrc(svg: string): string {
 }
 
 function Countdown({ expiraEm }: { expiraEm?: number }) {
+  const t = useDict(licensePairingText);
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setAgora(Date.now()), 1000);
@@ -131,7 +124,7 @@ function Countdown({ expiraEm }: { expiraEm?: number }) {
   const s = restanteS % 60;
   return (
     <span className="text-xs text-muted-foreground tabular-nums">
-      expira em {m}:{s.toString().padStart(2, "0")}
+      {t.expiraEm(String(m), s.toString().padStart(2, "0"))}
     </span>
   );
 }
@@ -147,6 +140,7 @@ export function LicensePairing({
   spec: PairingSpecUI;
   form: UseFormReturn<Record<string, unknown>>;
 }) {
+  const t = useDict(licensePairingText);
   const [etapa, setEtapa] = useState<Etapa>({ kind: "iniciando" });
   const [cpf, setCpf] = useState("");
   const [erroCpf, setErroCpf] = useState<string | null>(null);
@@ -208,7 +202,7 @@ export function LicensePairing({
       });
       iniciarPoll(d.pairingId as string);
     } catch (e) {
-      const data = (e as { data?: { legacy?: boolean } }).data;
+      const data = (e as { data?: { legacy?: boolean; error?: string } }).data;
       if (data?.legacy) {
         // Instalação anterior a este mecanismo — pareamento mudaria o
         // fingerprint de uma licença possivelmente já ativa. Cai pro
@@ -216,7 +210,13 @@ export function LicensePairing({
         setEtapa({ kind: "manual" });
         return;
       }
-      setEtapa({ kind: "erro", mensagem: e instanceof Error ? e.message : "Não foi possível iniciar o pareamento." });
+      // Nunca mostrar o código cru (ex.: "cpf_obrigatorio",
+      // "invalid_fingerprint") na tela: só usa o texto de mensagemRecusa
+      // quando o código bate com um motivo conhecido, senão cai no
+      // fallback genérico do dicionário.
+      const codigo = data?.error ?? (e instanceof Error ? e.message : undefined);
+      const mensagem = codigo && MOTIVOS_RECUSA_CONHECIDOS.has(codigo) ? t.mensagemRecusa(codigo) : t.erroGenericoPareamento;
+      setEtapa({ kind: "erro", mensagem });
     }
   }
 
@@ -279,7 +279,7 @@ export function LicensePairing({
     if (etapa.kind !== "aguardando_cpf") return;
     const digitos = cpf.replace(/\D/g, "");
     if (digitos.length !== 11) {
-      setErroCpf("Informe o CPF do titular da conta (11 dígitos).");
+      setErroCpf(t.erroCpfObrigatorio);
       return;
     }
     setErroCpf(null);
@@ -299,19 +299,19 @@ export function LicensePairing({
       if (data?.error === "cpf_nao_confere") {
         setErroCpf(
           typeof data.tentativas_restantes === "number"
-            ? `CPF não confere — resta ${data.tentativas_restantes} tentativa${data.tentativas_restantes === 1 ? "" : "s"}.`
-            : "CPF não confere."
+            ? t.cpfNaoConfereComTentativas(data.tentativas_restantes)
+            : t.cpfNaoConfere
         );
         return;
       }
-      setErroCpf(e instanceof Error ? e.message : "Não foi possível confirmar com este CPF — confira os dados e tente de novo.");
+      setErroCpf(e instanceof Error ? e.message : t.erroConfirmarCpf);
     }
   }
 
   async function confirmarCredencial() {
     if (etapa.kind !== "aguardando_credencial") return;
     if (!credEmail || !credSenha) {
-      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      setErroCredencial(t.erroCredencialObrigatoria);
       return;
     }
     setErroCredencial(null);
@@ -321,9 +321,7 @@ export function LicensePairing({
       // sucesso: o poll (que continua rodando em segundo plano) resolve
       // "confirmado" no próximo tick — mesmo padrão de confirmarCpf/escolher.
     } catch (e) {
-      setErroCredencial(
-        e instanceof Error ? e.message : "Não foi possível entrar com essas credenciais — confira e tente de novo."
-      );
+      setErroCredencial(e instanceof Error ? e.message : t.erroConfirmarCredencial);
     } finally {
       setEnviandoCredencial(false);
     }
@@ -341,7 +339,7 @@ export function LicensePairing({
   async function migrar() {
     if (etapa.kind !== "confirmar_migracao") return;
     if (!credEmail || !credSenha) {
-      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      setErroCredencial(t.erroCredencialObrigatoria);
       return;
     }
     setErroCredencial(null);
@@ -364,9 +362,7 @@ export function LicensePairing({
     } catch (e) {
       // Fica na MESMA etapa (confirmar_migracao) — credenciais erradas são
       // pra tentar de novo aqui, não pra voltar pro aviso do Dialog.
-      setErroCredencial(
-        e instanceof Error ? e.message : "Não foi possível migrar a licença — confira as credenciais e tente de novo."
-      );
+      setErroCredencial(e instanceof Error ? e.message : t.erroMigrarLicenca);
     } finally {
       setEnviandoCredencial(false);
     }
@@ -375,7 +371,7 @@ export function LicensePairing({
   async function confirmarTrocaTelefone() {
     if (etapa.kind !== "trocando_telefone") return;
     if (!credEmail || !credSenha) {
-      setErroCredencial("Informe o email e a senha do Super Admin do seu EnchaT.");
+      setErroCredencial(t.erroCredencialObrigatoria);
       return;
     }
     setErroCredencial(null);
@@ -387,9 +383,7 @@ export function LicensePairing({
       // resolvida — o próximo poll confirma sozinho (mesmo padrão de migrar).
       iniciarPoll(pairingId);
     } catch (e) {
-      setErroCredencial(
-        e instanceof Error ? e.message : "Não foi possível trocar o número — confira as credenciais e tente de novo."
-      );
+      setErroCredencial(e instanceof Error ? e.message : t.erroTrocarNumero);
     } finally {
       setEnviandoCredencial(false);
     }
@@ -407,7 +401,7 @@ export function LicensePairing({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Preparando pareamento de licença...
+        {t.preparando}
       </div>
     );
   }
@@ -418,10 +412,10 @@ export function LicensePairing({
         <p className="text-sm text-destructive">{etapa.mensagem}</p>
         <Button type="button" variant="outline" size="sm" onClick={iniciar}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-          Tentar de novo
+          {t.tentarDeNovo}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Ou informe uma chave de licença já existente no campo abaixo.
+          {t.informeChaveExistente}
         </p>
       </div>
     );
@@ -431,7 +425,7 @@ export function LicensePairing({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Migrando a licença para esta instalação...
+        {t.migrandoLicenca}
       </div>
     );
   }
@@ -440,18 +434,17 @@ export function LicensePairing({
     return (
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Confirme com o email e a senha do Super Admin da sua conta EnchaT — isso troca o celular
-          cadastrado pelo número que você acabou de confirmar aqui.
+          {t.trocarTelefoneDesc}
         </p>
-        <Label htmlFor="pairing-troca-email">Email</Label>
+        <Label htmlFor="pairing-troca-email">{t.emailLabel}</Label>
         <Input
           id="pairing-troca-email"
           type="email"
-          placeholder="voce@empresa.com"
+          placeholder={t.emailPlaceholder}
           value={credEmail}
           onChange={(e) => setCredEmail(e.target.value)}
         />
-        <Label htmlFor="pairing-troca-senha">Senha</Label>
+        <Label htmlFor="pairing-troca-senha">{t.senhaLabel}</Label>
         <Input
           id="pairing-troca-senha"
           type="password"
@@ -461,7 +454,7 @@ export function LicensePairing({
         {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
         <Button type="button" size="sm" onClick={confirmarTrocaTelefone} disabled={enviandoCredencial}>
           {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-          Trocar número
+          {t.trocarNumeroBotao}
         </Button>
       </div>
     );
@@ -471,28 +464,26 @@ export function LicensePairing({
     return (
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Confirme com o email e a senha do Super Admin da sua conta EnchaT — isso move a licença desta
-          conta pra ESTA VPS.
+          {t.migrarDesc}
         </p>
         <p className="text-xs text-muted-foreground">
-          Primeira vez migrando? Se sua conta ainda não tem uma senha cadastrada, o que você digitar aqui
-          vira a senha do Super Admin (mínimo 10 caracteres).
+          {t.migrarPrimeiraVez}
         </p>
         {etapa.instalacaoAtual && (
           <p className="text-xs text-muted-foreground">
-            Instalação anterior: {sinalHaQuanto(etapa.instalacaoAtual.ultimoCheck)}
+            {t.instalacaoAnteriorPrefixo}{sinalHaQuanto(etapa.instalacaoAtual.ultimoCheck, t)}
             {etapa.instalacaoAtual.apelido ? ` ("${etapa.instalacaoAtual.apelido}")` : ""}.
           </p>
         )}
-        <Label htmlFor="pairing-migrar-email">Email</Label>
+        <Label htmlFor="pairing-migrar-email">{t.emailLabel}</Label>
         <Input
           id="pairing-migrar-email"
           type="email"
-          placeholder="voce@empresa.com"
+          placeholder={t.emailPlaceholder}
           value={credEmail}
           onChange={(e) => setCredEmail(e.target.value)}
         />
-        <Label htmlFor="pairing-migrar-senha">Senha</Label>
+        <Label htmlFor="pairing-migrar-senha">{t.senhaLabel}</Label>
         <Input
           id="pairing-migrar-senha"
           type="password"
@@ -502,7 +493,7 @@ export function LicensePairing({
         {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
         <Button type="button" size="sm" onClick={migrar} disabled={enviandoCredencial}>
           {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-          Migrar licença
+          {t.migrarLicencaBotao}
         </Button>
       </div>
     );
@@ -516,12 +507,12 @@ export function LicensePairing({
     return (
       <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
         <p className="text-sm text-amber-600 dark:text-amber-400">
-          {etapa.kind === "expirado" ? "O tempo para confirmar o pareamento acabou." : mensagemRecusa(etapa.motivo)}
+          {etapa.kind === "expirado" ? t.expiradoMensagem : t.mensagemRecusa(etapa.motivo)}
         </p>
         {ehOutraVps ? (
           <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(true)}>
             <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
-            Esta licença é minha — migrar para esta instalação
+            {t.migrarLicencaEstaMinha}
           </Button>
         ) : ehCpfJaCadastrado ? (
           <Button
@@ -531,34 +522,33 @@ export function LicensePairing({
             onClick={() => setEtapa({ kind: "trocando_telefone", pairingId: etapa.pairingId })}
           >
             <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
-            Este CPF é meu — trocar meu número
+            {t.trocarCpfMeu}
           </Button>
         ) : (
           !semRetryUtil && (
             <Button type="button" variant="outline" size="sm" onClick={iniciar}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              Gerar outro código
+              {t.gerarOutroCodigo}
             </Button>
           )
         )}
-        <p className="text-xs text-muted-foreground">Ou informe uma chave de licença já existente no campo abaixo.</p>
+        <p className="text-xs text-muted-foreground">{t.informeChaveExistente}</p>
 
         {ehOutraVps && (
           <Dialog open={confirmandoMigracao} onOpenChange={setConfirmandoMigracao}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Migrar esta licença para esta instalação?</DialogTitle>
+                <DialogTitle>{t.migrarDialogTitle}</DialogTitle>
                 <DialogDescription>
-                  A instalação anterior está{" "}
-                  <strong>{sinalHaQuanto(etapa.instalacaoAtual?.ultimoCheck)}</strong>
-                  {etapa.instalacaoAtual?.apelido ? ` ("${etapa.instalacaoAtual.apelido}")` : ""}. Migrar vincula a
-                  licença a ESTA VPS — a instalação anterior vai parar de funcionar assim que ela verificar a
-                  licença de novo (em até algumas horas).
+                  {t.migrarDialogDescPrefix}
+                  <strong>{sinalHaQuanto(etapa.instalacaoAtual?.ultimoCheck, t)}</strong>
+                  {etapa.instalacaoAtual?.apelido ? ` ("${etapa.instalacaoAtual.apelido}")` : ""}
+                  {t.migrarDialogDescSuffix}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoMigracao(false)}>
-                  Cancelar
+                  {t.cancelar}
                 </Button>
                 <Button
                   type="button"
@@ -573,7 +563,7 @@ export function LicensePairing({
                   }}
                 >
                   <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
-                  Continuar
+                  {t.continuar}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -586,7 +576,7 @@ export function LicensePairing({
   if (etapa.kind === "confirmado") {
     return (
       <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
-        Licença pareada{etapa.cliente ? ` — ${etapa.cliente}` : ""}{etapa.plano ? ` (${etapa.plano})` : ""}. Pronto para instalar.
+        {t.licencaPareada(etapa.cliente, etapa.plano)}
       </div>
     );
   }
@@ -595,17 +585,17 @@ export function LicensePairing({
     return (
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Recebemos o código{etapa.remetenteMascarado ? ` do número ${etapa.remetenteMascarado}` : ""}. Agora informe o CPF do titular da conta EnchaT para concluir.
+          {t.recebemosCodigo(etapa.remetenteMascarado)}
         </p>
-        <Label htmlFor="pairing-cpf">CPF do titular</Label>
+        <Label htmlFor="pairing-cpf">{t.cpfTitularLabel}</Label>
         <Input
           id="pairing-cpf"
-          placeholder="000.000.000-00"
+          placeholder={t.cpfPlaceholder}
           value={formatarCpf(cpf)}
           onChange={(e) => setCpf(e.target.value)}
         />
         {erroCpf && <p className="text-xs text-destructive">{erroCpf}</p>}
-        <Button type="button" size="sm" onClick={confirmarCpf}>Continuar</Button>
+        <Button type="button" size="sm" onClick={confirmarCpf}>{t.continuar}</Button>
       </div>
     );
   }
@@ -614,17 +604,17 @@ export function LicensePairing({
     return (
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Não deu pra confirmar pelo CPF. Entre com o email e a senha do Super Admin da sua conta EnchaT pra continuar.
+          {t.naoDeuCpfDesc}
         </p>
-        <Label htmlFor="pairing-cred-email">Email</Label>
+        <Label htmlFor="pairing-cred-email">{t.emailLabel}</Label>
         <Input
           id="pairing-cred-email"
           type="email"
-          placeholder="voce@empresa.com"
+          placeholder={t.emailPlaceholder}
           value={credEmail}
           onChange={(e) => setCredEmail(e.target.value)}
         />
-        <Label htmlFor="pairing-cred-senha">Senha</Label>
+        <Label htmlFor="pairing-cred-senha">{t.senhaLabel}</Label>
         <Input
           id="pairing-cred-senha"
           type="password"
@@ -634,7 +624,7 @@ export function LicensePairing({
         {erroCredencial && <p className="text-xs text-destructive">{erroCredencial}</p>}
         <Button type="button" size="sm" onClick={confirmarCredencial} disabled={enviandoCredencial}>
           {enviandoCredencial && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-          Entrar
+          {t.entrarBotao}
         </Button>
       </div>
     );
@@ -644,7 +634,7 @@ export function LicensePairing({
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Encontramos mais de uma licença para este CPF — escolha qual ativar:</p>
+          <p className="text-sm text-muted-foreground">{t.encontramosVariasLicencas}</p>
           <Countdown expiraEm={etapa.escolhaExpiraEm} />
         </div>
         <div className="space-y-1.5">
@@ -655,11 +645,11 @@ export function LicensePairing({
               onClick={() => escolher(l.id)}
               className="w-full text-left rounded-md border border-input p-2.5 hover:bg-accent transition-colors"
             >
-              <div className="font-medium text-sm">{l.apelido ?? `Licença #${l.id}`}</div>
+              <div className="font-medium text-sm">{l.apelido ?? t.licencaFallback(l.id)}</div>
               <div className="text-xs text-muted-foreground">
                 {l.plano}
-                {l.vitalicia ? " · vitalícia" : ""}
-                {l.jaAtivadaAqui ? " · já ativada nesta VPS" : ""}
+                {l.vitalicia ? t.vitaliciaSufixo : ""}
+                {l.jaAtivadaAqui ? t.jaAtivadaAquiSufixo : ""}
               </div>
             </button>
           ))}
@@ -674,13 +664,12 @@ export function LicensePairing({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm">
-            Mande <span className="font-mono font-semibold">{etapa.codigoExibicao ?? etapa.codigo}</span> pelo WhatsApp
-            {etapa.numeroExibicao ? ` para ${etapa.numeroExibicao}` : ""}.
+            {t.mandarPrefixo}<span className="font-mono font-semibold">{etapa.codigoExibicao ?? etapa.codigo}</span>{t.mandarSufixo(etapa.numeroExibicao)}
           </p>
           {etapa.aviso && (
             <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mt-1">
               <MessageCircleWarning className="h-3.5 w-3.5" />
-              {etapa.aviso}
+              {t.mensagemAviso(etapa.aviso)}
             </p>
           )}
         </div>
@@ -688,21 +677,21 @@ export function LicensePairing({
       </div>
       {etapa.waLink && (
         <a href={etapa.waLink} target="_blank" rel="noopener noreferrer">
-          <Button type="button" size="sm" className="w-full">Abrir WhatsApp</Button>
+          <Button type="button" size="sm" className="w-full">{t.abrirWhatsappBotao}</Button>
         </a>
       )}
       {etapa.waQrSvg && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={qrSrc(etapa.waQrSvg)} alt="QR code para abrir o WhatsApp" className="mx-auto h-40 w-40" />
+        <img src={qrSrc(etapa.waQrSvg)} alt={t.qrAltText} className="mx-auto h-40 w-40" />
       )}
       <div className="flex items-center justify-between text-xs">
         {etapa.signupUrl && (
           <a href={etapa.signupUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            Ainda não tenho conta
+            {t.aindaNaoTenhoConta}
           </a>
         )}
         <button type="button" onClick={iniciar} className="text-muted-foreground hover:text-foreground ml-auto">
-          Gerar outro código
+          {t.gerarOutroCodigo}
         </button>
       </div>
     </div>

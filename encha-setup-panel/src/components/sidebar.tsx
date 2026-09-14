@@ -12,14 +12,16 @@ import { LocaleToggle } from "./locale-toggle";
 import { BannerAd } from "./banner-ad";
 import { UpdateChecker } from "./update-checker";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-
-const navLinks = [
-  { href: "/catalog", label: "Catálogo", icon: Boxes },
-  { href: "/stacks", label: "Instaladas", icon: ListChecks },
-  { href: "/logs", label: "Audit log", icon: ScrollText },
-];
+import { useDict } from "@/lib/i18n/use-dict";
+import { sidebarText } from "./sidebar.i18n";
 
 export function Sidebar() {
+  const t = useDict(sidebarText);
+  const navLinks = [
+    { href: "/catalog", label: t.catalog, icon: Boxes },
+    { href: "/stacks", label: t.installed, icon: ListChecks },
+    { href: "/logs", label: t.auditLog, icon: ScrollText },
+  ];
   const path = usePathname();
   const search = useSearchParams();
   const router = useRouter();
@@ -93,7 +95,7 @@ export function Sidebar() {
             )}
           >
             <Layers className="h-4 w-4" />
-            <span className="flex-1 text-left">Categorias</span>
+            <span className="flex-1 text-left">{t.categories}</span>
             <ChevronDown className="h-4 w-4 transition-transform group-aria-expanded:rotate-180" />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -133,7 +135,7 @@ export function Sidebar() {
           className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-warm-700 dark:text-warm-300 hover:bg-destructive-soft hover:text-destructive transition-all"
         >
           <LogOut className="h-4 w-4" />
-          Sair
+          {t.signOut}
         </button>
       </div>
     </aside>

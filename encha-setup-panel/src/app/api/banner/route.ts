@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { fetchBanner } from "@/lib/monitor";
+import { resolveLocale } from "@/lib/locale";
+import { unauthenticatedResponse } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const locale = await resolveLocale();
   const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session) return unauthenticatedResponse(locale);
 
   const position = req.nextUrl.searchParams.get("position") === "sidebar" ? "sidebar" : "top";
   const banner = await fetchBanner(position);

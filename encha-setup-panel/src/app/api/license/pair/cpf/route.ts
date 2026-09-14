@@ -7,6 +7,8 @@ import { getStack } from "@/lib/stacks/registry";
 import { buscarPareamento } from "@/lib/pairing-store";
 import { pairCpf, PairingError } from "@/lib/license-pairing";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 
 const bodySchema = z.object({
   stackId: z.string().min(1).max(60),
@@ -14,31 +16,60 @@ const bodySchema = z.object({
   cpf: z.string().min(11).max(14),
 });
 
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  cpf_invalido_formato: {
+    pt: "Informe um CPF válido (11 dígitos)",
+    en: "Enter a valid CPF (11 digits)",
+    es: "Ingrese un CPF válido (11 dígitos)",
+  },
+  stack_sem_pareamento: {
+    pt: "Stack sem pareamento de licença",
+    en: "Stack has no license pairing",
+    es: "El stack no tiene emparejamiento de licencia",
+  },
+  sessao_nao_encontrada: { pt: "Sessão não encontrada", en: "Session not found", es: "Sesión no encontrada" },
+  nao_confirmou_cpf: {
+    pt: "Não foi possível confirmar com este CPF — confira os dados e tente de novo",
+    en: "Could not confirm with this CPF — check the details and try again",
+    es: "No fue posible confirmar con este CPF — revise los datos e intente de nuevo",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
+
+const RATE_LIMIT_MSG = {
+  pt: (s: number) => `Muitas tentativas — aguarde ${s}s`,
+  en: (s: number) => `Too many attempts — wait ${s}s`,
+  es: (s: number) => `Demasiados intentos — espere ${s}s`,
+};
+
 // Informa o CPF depois do telefone já confirmado por WhatsApp (protocolo
 // "aguardando_cpf" — ver pair/poll). O CPF em si NUNCA é persistido aqui
 // nem em audit — só repassado ao Console. cpf_nao_confere/aguardando_
 // credencial (Fase 2, 2 tentativas) SÃO revelados de propósito — ver o
 // catch abaixo; os demais motivos continuam genéricos (anti-oráculo).
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Informe um CPF válido (11 dígitos)" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "cpf_invalido_formato", locale, 400);
   const { stackId, pairingId, cpf } = parsed.data;
 
   const def = getStack(stackId);
-  if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
+  if (!def?.pairing) return apiError(ERROS, "stack_sem_pareamento", locale, 404);
 
   const ip = getClientIp(req);
   // Espelha o teto de 3 tentativas de CPF POR SESSÃO que o Console já impõe
@@ -46,11 +77,14 @@ export async function POST(req: NextRequest) {
   // pra não deixar um único IP disparar CPFs contra várias sessões abertas.
   const rl = checkRateLimit(`license.pair.cpf:${ip}`, 5, 10 * 60_000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` }, { status: 429 });
+    return NextResponse.json(
+      { error: "muitas_tentativas", message: RATE_LIMIT_MSG[locale](Math.ceil(rl.resetMs / 1000)) },
+      { status: 429 }
+    );
   }
 
   const row = buscarPareamento(pairingId);
-  if (!row || row.stack_id !== stackId) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
+  if (!row || row.stack_id !== stackId) return apiError(ERROS, "sessao_nao_encontrada", locale, 404);
 
   try {
     await pairCpf(def.pairing.consoleBaseUrl, { sessionId: row.console_session_id ?? "", fingerprint: row.fingerprint, cpf });
@@ -78,9 +112,6 @@ export async function POST(req: NextRequest) {
         { status: httpStatus }
       );
     }
-    return NextResponse.json(
-      { error: "Não foi possível confirmar com este CPF — confira os dados e tente de novo" },
-      { status: httpStatus }
-    );
+    return apiError(ERROS, "nao_confirmou_cpf", locale, httpStatus);
   }
 }

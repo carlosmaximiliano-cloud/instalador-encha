@@ -7,6 +7,8 @@ import { SshInstallHint } from "@/components/ssh-install-hint";
 import { Input } from "@/components/ui/input";
 import { getCategoryLabel } from "@/lib/category-labels";
 import { Search, Boxes, X, AlertTriangle } from "lucide-react";
+import { useDict } from "@/lib/i18n/use-dict";
+import { catalogPageText } from "./page.i18n";
 
 const MAX_DEPLOY_MS = 10 * 60 * 1000;
 
@@ -27,14 +29,16 @@ type PairingSpecUI = { targetField: string; sessionField: string; group?: string
 type FullStack = CatalogEntry & { fields?: Field[]; pairing?: PairingSpecUI | null };
 
 export default function CatalogPage() {
+  const t = useDict(catalogPageText);
   return (
-    <Suspense fallback={<div className="text-center text-muted-foreground py-12">Carregando...</div>}>
+    <Suspense fallback={<div className="text-center text-muted-foreground py-12">{t.loading}</div>}>
       <CatalogPageInner />
     </Suspense>
   );
 }
 
 function CatalogPageInner() {
+  const t = useDict(catalogPageText);
   const search_params = useSearchParams();
   const router = useRouter();
   const category = search_params.get("category");
@@ -137,13 +141,15 @@ function CatalogPageInner() {
       });
       const j = await res.json().catch(() => null);
       if (!res.ok) {
-        setUpdateErrors((prev) => ({ ...prev, [id]: j?.error ?? "Falha ao atualizar" }));
+        // Prefere j.message (já traduzida pelo servidor — ver
+        // src/lib/api-error.ts) a j.error (o código estável).
+        setUpdateErrors((prev) => ({ ...prev, [id]: j?.message ?? j?.error ?? t.updateFailedDefault }));
         return;
       }
       refetchStacks();
     } catch (e) {
       console.error("[update]", e);
-      setUpdateErrors((prev) => ({ ...prev, [id]: "Falha ao atualizar — veja o console" }));
+      setUpdateErrors((prev) => ({ ...prev, [id]: t.updateFailedConsole }));
     } finally {
       setUpdatingId(null);
     }
@@ -178,7 +184,7 @@ function CatalogPageInner() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold flex items-center gap-2 flex-wrap">
           <Boxes className="h-6 w-6 text-primary" />
-          Catálogo de Stacks
+          {t.title}
           {categoryLabel && (
             <>
               <span className="text-muted-foreground/60 font-normal">·</span>
@@ -186,8 +192,8 @@ function CatalogPageInner() {
               <button
                 onClick={clearCategory}
                 className="ml-1 p-1 rounded-md hover:bg-glass-strong text-muted-foreground hover:text-foreground transition-colors"
-                title="Limpar filtro"
-                aria-label="Limpar filtro de categoria"
+                title={t.clearFilterTitle}
+                aria-label={t.clearFilterAriaLabel}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -196,8 +202,8 @@ function CatalogPageInner() {
         </h1>
         <p className="text-sm text-muted-foreground">
           {categoryLabel
-            ? `${filtered.length} stack${filtered.length !== 1 ? "s" : ""} em ${categoryLabel}.`
-            : "Escolha o que instalar no seu Swarm — tudo via Portainer API."}
+            ? t.stacksInCategory(filtered.length, categoryLabel)
+            : t.subtitle}
         </p>
       </header>
 
@@ -205,7 +211,7 @@ function CatalogPageInner() {
         <div className="flex items-start gap-2 p-3 rounded-md bg-warning-soft text-warning-foreground text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <span>
-            Portainer não responde — instalações desabilitadas até que a conexão se restabeleça.
+            {t.portainerOffline}
           </span>
         </div>
       )}
@@ -213,7 +219,7 @@ function CatalogPageInner() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar stack..."
+          placeholder={t.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -221,10 +227,10 @@ function CatalogPageInner() {
       </div>
 
       {!data ? (
-        <div className="text-center text-muted-foreground py-12">Carregando...</div>
+        <div className="text-center text-muted-foreground py-12">{t.loading}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center text-muted-foreground py-12">
-          Nenhuma stack encontrada{categoryLabel ? ` em ${categoryLabel}` : ""}.
+          {t.noStacksFound(categoryLabel)}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

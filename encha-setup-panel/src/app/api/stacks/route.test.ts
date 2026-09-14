@@ -17,6 +17,7 @@ afterEach(() => {
   vi.doUnmock("@/lib/portainer");
   vi.doUnmock("@/lib/stacks/registry");
   vi.doUnmock("@/lib/stacks/updates");
+  vi.doUnmock("@/lib/locale");
 });
 
 const FAKE_ID = "fake-catalog-stack";
@@ -39,9 +40,14 @@ function fakeDef(overrides: Partial<StackDefinition> = {}): StackDefinition {
 }
 
 async function setupCommonMocks(def: StackDefinition) {
+  // resolveLocale() usa cookies()/headers() de next/headers, que só
+  // funcionam dentro do request-scope real do Next.js — os testes chamam
+  // GET/POST direto, fora desse escopo, então precisa mockar aqui (mesmo
+  // problema do better-sqlite3 ABI: infra de teste, não lógica da rota).
   vi.doMock("@/lib/auth/require-token", () => ({
     requireSessionToken: vi.fn(async () => ({ session: { user: "tester" }, token: "tok" })),
   }));
+  vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => "pt") }));
   vi.doMock("@/lib/installer", () => ({
     listInstalledStacks: vi.fn(async () => [
       { Id: 1, Name: FAKE_ID.replace(/-/g, "_"), EndpointId: 1, Status: 1, CreationDate: 0 },

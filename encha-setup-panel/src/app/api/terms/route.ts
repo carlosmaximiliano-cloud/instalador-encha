@@ -8,12 +8,42 @@ import { getDeviceId } from "@/lib/device-id";
 import { getVpsContext } from "@/lib/vps-context";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
+import type { Locale } from "@/lib/locale-shared";
 
 export const dynamic = "force-dynamic";
 
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  invalido: { pt: "Inválido", en: "Invalid", es: "Inválido" },
+  termos_desatualizados: {
+    pt: "Versão dos termos desatualizada — recarregue a página",
+    en: "Terms version is outdated — reload the page",
+    es: "La versión de los términos está desactualizada — recargue la página",
+  },
+  falha_registrar_aceite: {
+    pt: "Falha ao registrar o aceite — tente novamente",
+    en: "Failed to record acceptance — try again",
+    es: "Fallo al registrar la aceptación — intente de nuevo",
+  },
+} satisfies Record<string, Record<Locale, string>>;
+
+function msgMuitasTentativas(segundos: number, locale: Locale): string {
+  const t = {
+    pt: `Muitas tentativas — aguarde ${segundos}s`,
+    en: `Too many attempts — wait ${segundos}s`,
+    es: `Demasiados intentos — espere ${segundos}s`,
+  };
+  return t[locale] ?? t.pt;
+}
+
 export async function GET() {
+  const locale = await resolveLocale();
   const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session) return unauthenticatedResponse(locale);
 
   const terms = await fetchTerms();
   if (!terms) return new NextResponse(null, { status: 204 });
@@ -30,17 +60,18 @@ const acceptSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const session = await readSession();
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!session) return unauthenticatedResponse(locale);
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`terms:${ip}`, 5, 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` },
+      { error: "muitas_tentativas", message: msgMuitasTentativas(Math.ceil(rl.resetMs / 1000), locale) },
       { status: 429 }
     );
   }
@@ -49,18 +80,16 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = acceptSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Inválido" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "invalido", locale, 400);
 
   // Nunca confia na versão que o cliente diz ter aceitado — reconsulta o
   // Monitor e exige que bata com a versão ativa agora (é o registro legal).
   const current = await fetchTerms();
   if (!current || current.version !== parsed.data.version) {
-    return NextResponse.json({ error: "Versão dos termos desatualizada — recarregue a página" }, {
-      status: 409,
-    });
+    return apiError(ERROS, "termos_desatualizados", locale, 409);
   }
 
   const userAgent = req.headers.get("user-agent") ?? "unknown";
@@ -82,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Prova local é a fonte autoritativa — se a gravação falhar, não pode
     // ficar em silêncio (o gate reabriria sem explicação no próximo load).
     console.error("[terms] falha ao gravar aceite local:", e);
-    return NextResponse.json({ error: "Falha ao registrar o aceite — tente novamente" }, { status: 500 });
+    return apiError(ERROS, "falha_registrar_aceite", locale, 500);
   }
 
   logAudit({

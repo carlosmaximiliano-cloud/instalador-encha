@@ -32,6 +32,7 @@ afterEach(() => {
   vi.doUnmock("@/lib/stack-update-release");
   vi.doUnmock("@/lib/portainer");
   vi.doUnmock("@/lib/stacks/updates");
+  vi.doUnmock("@/lib/locale");
 });
 
 const FAKE_ID = "fake-update-route-stack";
@@ -69,6 +70,10 @@ async function setupAuthAndCsrfMocks() {
     verifyOrigin: vi.fn(() => true),
     getClientIp: vi.fn(() => "127.0.0.1"),
   }));
+  // resolveLocale() usa cookies()/headers() de next/headers, que só
+  // funcionam dentro do request-scope real do Next.js — os testes chamam
+  // GET/POST direto, fora desse escopo, então precisa mockar aqui.
+  vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => "pt") }));
 }
 
 describe("POST /api/stacks/[id]/update — ramo updateViaRelease (Ciclo 29)", () => {
@@ -156,6 +161,7 @@ describe("GET /api/stacks/[id]/update — troca condicional pra computeReleaseBa
     vi.doMock("@/lib/auth/require-token", () => ({
       requireSessionToken: vi.fn(async () => ({ session: { user: "tester" }, token: "tok" })),
     }));
+    vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => "pt") }));
     const def = fakeDef();
     vi.doMock("@/lib/stacks/registry", () => ({ getStack: (id: string) => (id === FAKE_ID ? def : undefined) }));
     vi.doMock("@/lib/portainer", async (importOriginal) => {

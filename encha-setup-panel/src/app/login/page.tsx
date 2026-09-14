@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useDict } from "@/lib/i18n/use-dict";
+import { loginText } from "./page.i18n";
 
 export default function LoginPage() {
+  const t = useDict(loginText);
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -24,8 +27,12 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Erro desconhecido" }));
-        setError(data.error ?? "Falha ao entrar");
+        const data = await res.json().catch(() => ({ message: t.genericError }));
+        // Prefere `message` (já resolvida no idioma da requisição pelo
+        // servidor — ver src/lib/api-error.ts) a `error` (o código
+        // estável, tipo "credenciais_invalidas") — mostrar o código cru
+        // é o mesmo bug que já foi corrigido no wizard de pareamento.
+        setError(data.message ?? data.error ?? t.defaultError);
         return;
       }
       router.push("/catalog");
@@ -65,12 +72,9 @@ export default function LoginPage() {
             className="h-14 w-auto dark:brightness-0 dark:invert"
           />
           <h1 className="text-4xl font-bold tracking-tight text-warm-900">
-            Painel visual de instalação
+            {t.heroTitle}
           </h1>
-          <p className="text-lg text-warm-700">
-            Configure stacks no seu Portainer Swarm sem terminal. Tudo visual,
-            seguro e com SSL automático.
-          </p>
+          <p className="text-lg text-warm-700">{t.heroSubtitle}</p>
           <div className="flex flex-wrap gap-2 pt-2">
             {["Traefik+Portainer", "N8N", "Evolution", "Chatwoot", "Minio", "Typebot"].map((s) => (
               <span
@@ -98,15 +102,13 @@ export default function LoginPage() {
             />
           </div>
           <div className="text-center lg:text-left space-y-1">
-            <h2 className="text-2xl font-semibold text-foreground">Bem-vindo</h2>
-            <p className="text-sm text-muted-foreground">
-              Entre com o admin do painel definido na instalação
-            </p>
+            <h2 className="text-2xl font-semibold text-foreground">{t.welcome}</h2>
+            <p className="text-sm text-muted-foreground">{t.welcomeSubtitle}</p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="username">{t.username}</Label>
               <Input
                 id="username"
                 value={username}
@@ -117,7 +119,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t.password}</Label>
               <Input
                 id="password"
                 type="password"
@@ -133,7 +135,7 @@ export default function LoginPage() {
               </div>
             )}
             <Button type="submit" className="w-full" disabled={loading || !username || !password}>
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? t.entering : t.enter}
             </Button>
           </form>
         </div>

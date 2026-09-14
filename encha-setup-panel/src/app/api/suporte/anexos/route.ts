@@ -5,6 +5,40 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 import { suporteAnexar, SuporteError } from "@/lib/suporte";
 import { suporteAcessoToken } from "@/lib/suporte-store";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
+
+// "muitas_tentativas_anexo" carrega um placeholder "{s}" (segundos até
+// liberar de novo) — apiError() não faz interpolação, então essa mensagem é
+// montada à mão no POST, sem passar por apiError().
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "Token CSRF inválido" },
+  muitas_tentativas_anexo: {
+    pt: "Muitas tentativas — aguarde {s}s",
+    en: "Too many attempts — wait {s}s",
+    es: "Demasiados intentos — espere {s}s",
+  },
+  anexo_maior_que_limite: {
+    pt: "Anexo maior que o limite permitido",
+    en: "Attachment larger than the allowed limit",
+    es: "Archivo adjunto mayor que el límite permitido",
+  },
+  upload_invalido: { pt: "Upload inválido", en: "Invalid upload", es: "Carga inválida" },
+  campos_obrigatorios_ausentes: {
+    pt: "Campos obrigatórios ausentes",
+    en: "Required fields missing",
+    es: "Faltan campos obligatorios",
+  },
+  ticket_id_invalido: { pt: "ticketId inválido", en: "Invalid ticketId", es: "ticketId inválido" },
+  arquivo_vazio: { pt: "Arquivo vazio", en: "Empty file", es: "Archivo vacío" },
+  ticket_nao_encontrado: { pt: "Ticket não encontrado", en: "Ticket not found", es: "Ticket no encontrado" },
+  anexo_falhou: {
+    pt: "Não foi possível anexar o arquivo agora",
+    en: "Could not attach the file right now",
+    es: "No se pudo adjuntar el archivo en este momento",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
 
 // Imagem 10MB / vídeo 50MB — mesmo teto do Console (tickets-storage.ts) e
 // do proxy Go (maxAnexoSuporteBytes em internal/http/suporte_handlers.go).
@@ -20,17 +54,24 @@ const MAX_ANEXO_BYTES = 51 * 1024 * 1024;
 // checagem, um ticketId adivinhado de outra instalação nesta mesma máquina
 // bateria a rota.
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`suporte.anexo:${ip}`, 10, 15 * 60_000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` }, { status: 429 });
+    const segundos = Math.ceil(rl.resetMs / 1000);
+    const template = ERROS.muitas_tentativas_anexo[locale] ?? ERROS.muitas_tentativas_anexo.pt;
+    return NextResponse.json(
+      { error: "muitas_tentativas_anexo", message: template.replace("{s}", String(segundos)) },
+      { status: 429 }
+    );
   }
 
   // Content-Length ANTES de req.formData() — achado em revisão: essa rota
@@ -42,38 +83,38 @@ export async function POST(req: NextRequest) {
   // um payload realmente gigante — sem custo nenhum de leitura.
   const declaredLength = Number(req.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_ANEXO_BYTES + 64 * 1024) {
-    return NextResponse.json({ error: "Anexo maior que o limite permitido" }, { status: 413 });
+    return apiError(ERROS, "anexo_maior_que_limite", locale, 413);
   }
 
   let form: FormData;
   try {
     form = await req.formData();
   } catch {
-    return NextResponse.json({ error: "Upload inválido" }, { status: 400 });
+    return apiError(ERROS, "upload_invalido", locale, 400);
   }
 
   const scope = form.get("scope");
   const ticketIdRaw = form.get("ticketId");
   const file = form.get("file");
   if (typeof scope !== "string" || !scope || typeof ticketIdRaw !== "string" || !(file instanceof File)) {
-    return NextResponse.json({ error: "Campos obrigatórios ausentes" }, { status: 400 });
+    return apiError(ERROS, "campos_obrigatorios_ausentes", locale, 400);
   }
   const ticketId = Number(ticketIdRaw);
   if (!Number.isFinite(ticketId) || ticketId <= 0) {
-    return NextResponse.json({ error: "ticketId inválido" }, { status: 400 });
+    return apiError(ERROS, "ticket_id_invalido", locale, 400);
   }
   if (file.size === 0) {
-    return NextResponse.json({ error: "Arquivo vazio" }, { status: 400 });
+    return apiError(ERROS, "arquivo_vazio", locale, 400);
   }
   if (file.size > MAX_ANEXO_BYTES) {
-    return NextResponse.json({ error: "Anexo maior que o limite permitido" }, { status: 413 });
+    return apiError(ERROS, "anexo_maior_que_limite", locale, 413);
   }
 
   const acessoToken = suporteAcessoToken(ticketId, scope);
   if (!acessoToken) {
     // Mesmo 404 pra "não existe" e "não é seu" — ver o comentário de
     // suporteAcessoToken em suporte-store.ts.
-    return NextResponse.json({ error: "Ticket não encontrado" }, { status: 404 });
+    return apiError(ERROS, "ticket_nao_encontrado", locale, 404);
   }
 
   try {
@@ -96,9 +137,9 @@ export async function POST(req: NextRequest) {
       httpStatus = e.reason === "rate_limited" ? 429 : e.reason === "recusado" ? 409 : 502;
     }
     logAudit({ user: session.user, ip, action: "suporte.anexo.fail", target: scope, result: "error", meta });
-    return NextResponse.json(
-      { error: e instanceof SuporteError ? e.message : "Não foi possível anexar o arquivo agora" },
-      { status: httpStatus }
-    );
+    if (e instanceof SuporteError) {
+      return NextResponse.json({ error: e.message }, { status: httpStatus });
+    }
+    return apiError(ERROS, "anexo_falhou", locale, httpStatus);
   }
 }

@@ -7,6 +7,8 @@ import { getStack } from "@/lib/stacks/registry";
 import { buscarPareamento, reabrirPareamento } from "@/lib/pairing-store";
 import { pairMigrar, PairingError } from "@/lib/license-pairing";
 import { logAudit } from "@/lib/audit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 
 const bodySchema = z.object({
   stackId: z.string().min(1).max(60),
@@ -15,42 +17,84 @@ const bodySchema = z.object({
   senha: z.string().min(1).max(200),
 });
 
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF token", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  email_senha_obrigatorios: {
+    pt: "Informe email e senha",
+    en: "Enter email and password",
+    es: "Ingrese el email y la contraseña",
+  },
+  stack_sem_pareamento: {
+    pt: "Stack sem pareamento de licença",
+    en: "Stack has no license pairing",
+    es: "El stack no tiene emparejamiento de licencia",
+  },
+  sessao_nao_encontrada: { pt: "Sessão não encontrada", en: "Session not found", es: "Sesión no encontrada" },
+  migracao_falhou: {
+    pt: "Não foi possível migrar a licença — tente de novo em instantes",
+    en: "Could not migrate the license — try again shortly",
+    es: "No fue posible migrar la licencia — intente de nuevo en instantes",
+  },
+  senha_fraca: {
+    pt: "Senha muito curta — use pelo menos 10 caracteres (esta será a senha do Super Admin da sua conta).",
+    en: "Password too short — use at least 10 characters (this will be your account's Super Admin password).",
+    es: "Contraseña muy corta — use al menos 10 caracteres (esta será la contraseña del Super Admin de su cuenta).",
+  },
+  email_em_uso: {
+    pt: "Este email já está em uso por outra conta — informe o email do dono desta licença.",
+    en: "This email is already in use by another account — enter the email of this license's owner.",
+    es: "Este email ya está en uso por otra cuenta — indique el email del propietario de esta licencia.",
+  },
+} satisfies Record<string, Record<import("@/lib/locale-shared").Locale, string>>;
+
+const RATE_LIMIT_MSG = {
+  pt: (s: number) => `Muitas tentativas — aguarde ${s}s`,
+  en: (s: number) => `Too many attempts — wait ${s}s`,
+  es: (s: number) => `Demasiados intentos — espere ${s}s`,
+};
+
 // Migração self-service de VPS — o cliente clicou "esta licença é minha,
 // migrar pra esta instalação" na tela de "já ativada em outra VPS" (ver
 // LicensePairing.tsx). Só chega até aqui depois do CPF já conferido nesta
 // MESMA sessão — é essa prova de posse que autoriza o rebind no Console
 // (aplicarMigracaoDeVps, repo Console), sem precisar de admin.
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
   const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Informe email e senha" }, { status: 400 });
+  if (!parsed.success) return apiError(ERROS, "email_senha_obrigatorios", locale, 400);
   const { stackId, pairingId, email, senha } = parsed.data;
 
   const def = getStack(stackId);
-  if (!def?.pairing) return NextResponse.json({ error: "Stack sem pareamento de licença" }, { status: 404 });
+  if (!def?.pairing) return apiError(ERROS, "stack_sem_pareamento", locale, 404);
 
   const ip = getClientIp(req);
   // Mesmo teto de pair/cpf — é uma operação sensível (rebind de licença),
   // não precisa de um limite mais frouxo.
   const rl = checkRateLimit(`license.pair.migrar:${ip}`, 5, 10 * 60_000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` }, { status: 429 });
+    return NextResponse.json(
+      { error: "muitas_tentativas", message: RATE_LIMIT_MSG[locale](Math.ceil(rl.resetMs / 1000)) },
+      { status: 429 }
+    );
   }
 
   const row = buscarPareamento(pairingId);
-  if (!row || row.stack_id !== stackId) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
+  if (!row || row.stack_id !== stackId) return apiError(ERROS, "sessao_nao_encontrada", locale, 404);
 
   try {
     const result = await pairMigrar(def.pairing.consoleBaseUrl, {
@@ -82,18 +126,18 @@ export async function POST(req: NextRequest) {
     // ver verificarOuCriarCredencialDoCliente no repo Console) precisam de
     // texto específico: "tente de novo" faria o cliente repetir a MESMA
     // senha fraca / o MESMO email já usado pra sempre, sem entender por quê.
-    let mensagem = "Não foi possível migrar a licença — tente de novo em instantes";
+    let codigo: keyof typeof ERROS = "migracao_falhou";
     if (e instanceof PairingError) {
       meta.reason = e.reason;
       if (e.httpStatus !== undefined) meta.httpStatus = e.httpStatus;
       httpStatus = e.reason === "recusado" ? 409 : e.reason === "rate_limited" ? 429 : 502;
       if (e.reason === "recusado" && e.serverDetail === "senha_fraca") {
-        mensagem = "Senha muito curta — use pelo menos 10 caracteres (esta será a senha do Super Admin da sua conta).";
+        codigo = "senha_fraca";
       } else if (e.reason === "recusado" && e.serverDetail === "email_em_uso") {
-        mensagem = "Este email já está em uso por outra conta — informe o email do dono desta licença.";
+        codigo = "email_em_uso";
       }
     }
     logAudit({ user: session.user, ip, action: "license.pair.migrar.fail", target: stackId, result: "error", meta });
-    return NextResponse.json({ ok: false, error: mensagem }, { status: httpStatus });
+    return apiError(ERROS, codigo, locale, httpStatus, { ok: false });
   }
 }

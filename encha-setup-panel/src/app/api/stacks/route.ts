@@ -8,6 +8,36 @@ import { getStack, getPublicCatalog } from "@/lib/stacks/registry";
 import { expectedStackNames, isStackReady } from "@/lib/stacks/types";
 import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/stacks/updates";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
+import type { Locale } from "@/lib/locale-shared";
+
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF", es: "CSRF inválido" },
+  payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
+  payload_invalido_generico: { pt: "Inválido", en: "Invalid", es: "Inválido" },
+  stack_desconhecida: { pt: "Stack desconhecida", en: "Unknown stack", es: "Stack desconocida" },
+  stack_ja_instalada: { pt: "Stack já está instalada", en: "Stack is already installed", es: "El stack ya está instalado" },
+} satisfies Record<string, Record<Locale, string>>;
+
+function msgMuitasTentativas(segundos: number, locale: Locale): string {
+  const t = {
+    pt: `Muitas tentativas — aguarde ${segundos}s`,
+    en: `Too many attempts — wait ${segundos}s`,
+    es: `Demasiados intentos — espere ${segundos}s`,
+  };
+  return t[locale] ?? t.pt;
+}
+
+function msgDependenciaPendente(dependencia: string, alvo: string, locale: Locale): string {
+  const t = {
+    pt: `Dependência pendente: instale "${dependencia}" antes de "${alvo}".`,
+    en: `Pending dependency: install "${dependencia}" before "${alvo}".`,
+    es: `Dependencia pendiente: instale "${dependencia}" antes de "${alvo}".`,
+  };
+  return t[locale] ?? t.pt;
+}
 
 const installSchema = z.object({
   stackId: z.string().min(1).max(60),
@@ -25,8 +55,9 @@ const installSchema = z.object({
 });
 
 export async function GET() {
+  const locale = await resolveLocale();
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { token } = auth;
 
   const catalog = getPublicCatalog();
@@ -134,36 +165,38 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session, token } = auth;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    return apiError(ERROS, "payload_invalido", locale, 400);
   }
 
   const parsed = installSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "Inválido" }, { status: 400 });
+    const msg = parsed.error.errors[0]?.message ?? ERROS.payload_invalido_generico[locale];
+    return NextResponse.json({ error: "payload_invalido", message: msg }, { status: 400 });
   }
 
   const ip = getClientIp(req);
   const rl = checkRateLimit(`install:${ip}:${parsed.data.stackId}`, 3, 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` },
+      { error: "muitas_tentativas", message: msgMuitasTentativas(Math.ceil(rl.resetMs / 1000), locale) },
       { status: 429 }
     );
   }
 
   const def = getStack(parsed.data.stackId);
-  if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
+  if (!def) return apiError(ERROS, "stack_desconhecida", locale, 404);
 
   // Idempotência (já instalada?) e dependsOn (pré-requisitos prontos?) — o
   // stack-card.tsx já desabilita o botão nesses casos, mas isso é só UI:
@@ -175,10 +208,7 @@ export async function POST(req: NextRequest) {
     const present = new Set(swarmStatuses.map((s) => s.name));
     const expected = expectedStackNames(def);
     if (expected.every((n) => present.has(n))) {
-      return NextResponse.json(
-        { error: "Stack já está instalada" },
-        { status: 409 }
-      );
+      return apiError(ERROS, "stack_ja_instalada", locale, 409);
     }
 
     const statusByName = new Map(swarmStatuses.map((s) => [s.name, s]));
@@ -189,7 +219,7 @@ export async function POST(req: NextRequest) {
       if (!depDef) continue;
       if (!isStackReady(depDef, present, statusByName)) {
         return NextResponse.json(
-          { error: `Dependência pendente: instale "${depDef.name}" antes de "${def.name}".` },
+          { error: "dependencia_pendente", message: msgDependenciaPendente(depDef.name, def.name, locale) },
           { status: 409 }
         );
       }

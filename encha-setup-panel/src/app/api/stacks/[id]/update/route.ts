@@ -12,21 +12,59 @@ import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { logAudit } from "@/lib/audit";
 import { applyReleaseUpdate } from "@/lib/stack-update-release";
+import { resolveLocale } from "@/lib/locale";
+import { apiError, unauthenticatedResponse } from "@/lib/api-error";
+import type { Locale } from "@/lib/locale-shared";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+const ERROS = {
+  origem_invalida: { pt: "Origem inválida", en: "Invalid origin", es: "Origen inválido" },
+  csrf_invalido: { pt: "CSRF inválido", en: "Invalid CSRF", es: "CSRF inválido" },
+  stack_desconhecida: { pt: "Stack desconhecida", en: "Unknown stack", es: "Stack desconocida" },
+  falha_consultar_portainer: {
+    pt: "Falha ao consultar o Portainer",
+    en: "Failed to query Portainer",
+    es: "Fallo al consultar Portainer",
+  },
+  sem_atualizacao_inplace: {
+    pt: "Esta stack não suporta atualização in-place",
+    en: "This stack does not support in-place updates",
+    es: "Este stack no admite actualización in-place",
+  },
+} satisfies Record<string, Record<Locale, string>>;
+
+function msgMuitasTentativas(segundos: number, locale: Locale): string {
+  const t = {
+    pt: `Muitas tentativas — aguarde ${segundos}s`,
+    en: `Too many attempts — wait ${segundos}s`,
+    es: `Demasiados intentos — espere ${segundos}s`,
+  };
+  return t[locale] ?? t.pt;
+}
+
+function msgFalhaAtualizar(detalhe: string, locale: Locale): string {
+  const t = {
+    pt: `Falha ao atualizar: ${detalhe}`,
+    en: `Failed to update: ${detalhe}`,
+    es: `Fallo al actualizar: ${detalhe}`,
+  };
+  return t[locale] ?? t.pt;
+}
 
 /**
  * Quais serviços desta stack estão rodando uma imagem diferente da que a
  * definição manda. Usado pelo botão "Atualizar" para se mostrar ou não.
  */
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  const locale = await resolveLocale();
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { token } = auth;
 
   const { id } = await params;
   const def = getStack(id);
-  if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
+  if (!def) return apiError(ERROS, "stack_desconhecida", locale, 404);
 
   try {
     const { endpointId } = await discoverContext(token);
@@ -37,7 +75,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ updateAvailable: pending.length > 0, pending });
   } catch (e) {
     console.error(`[api/stacks/${id}/update] falha checando atualização:`, e);
-    return NextResponse.json({ error: "Falha ao consultar o Portainer" }, { status: 502 });
+    return apiError(ERROS, "falha_consultar_portainer", locale, 502);
   }
 }
 
@@ -47,11 +85,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
  * ficam intactos — é isso que preserva as instâncias pareadas da Evolution.
  */
 export async function POST(req: NextRequest, { params }: Ctx) {
-  if (!verifyOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
-  if (!(await verifyCsrf(req))) return NextResponse.json({ error: "CSRF inválido" }, { status: 403 });
+  const locale = await resolveLocale();
+  if (!verifyOrigin(req)) return apiError(ERROS, "origem_invalida", locale, 403);
+  if (!(await verifyCsrf(req))) return apiError(ERROS, "csrf_invalido", locale, 403);
 
   const auth = await requireSessionToken();
-  if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!auth) return unauthenticatedResponse(locale);
   const { session, token } = auth;
 
   const { id } = await params;
@@ -60,18 +99,15 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const rl = checkRateLimit(`update:${ip}:${id}`, 3, 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: `Muitas tentativas — aguarde ${Math.ceil(rl.resetMs / 1000)}s` },
+      { error: "muitas_tentativas", message: msgMuitasTentativas(Math.ceil(rl.resetMs / 1000), locale) },
       { status: 429 }
     );
   }
 
   const def = getStack(id);
-  if (!def) return NextResponse.json({ error: "Stack desconhecida" }, { status: 404 });
+  if (!def) return apiError(ERROS, "stack_desconhecida", locale, 404);
   if (!def.updatableImages?.length && !def.updateViaRelease) {
-    return NextResponse.json(
-      { error: "Esta stack não suporta atualização in-place" },
-      { status: 400 }
-    );
+    return apiError(ERROS, "sem_atualizacao_inplace", locale, 400);
   }
 
   // Caminho novo (Ciclo 29) — versão vinda de `release:`, pré-pull
@@ -90,7 +126,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`[api/stacks/${id}/update] falhou (updateViaRelease):`, e);
-      return NextResponse.json({ error: `Falha ao atualizar: ${msg}` }, { status: 500 });
+      return NextResponse.json(
+        { error: "falha_atualizar", message: msgFalhaAtualizar(msg, locale) },
+        { status: 500 }
+      );
     }
   }
 
@@ -134,6 +173,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       result: "error",
       meta: { error: msg },
     });
-    return NextResponse.json({ error: `Falha ao atualizar: ${msg}` }, { status: 500 });
+    return NextResponse.json(
+      { error: "falha_atualizar", message: msgFalhaAtualizar(msg, locale) },
+      { status: 500 }
+    );
   }
 }

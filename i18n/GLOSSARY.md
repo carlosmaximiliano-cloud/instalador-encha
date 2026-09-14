@@ -110,6 +110,28 @@ agora — fora do escopo de "nada muda"):**
   leitor toca essas duas, então nunca foi bug; dá pra normalizar de graça na
   Fase 4.
 
+## Fase 2 — arquitetura de tradução do painel
+
+- UI chrome: um arquivo `<componente>.i18n.ts` ao lado de cada componente
+  traduzido, exportando `Record<Locale, T>` (pt/en/es), lido via
+  `useDict()` (`src/lib/i18n/use-dict.ts`). Entrada com variável vira função
+  (`(arg: string) => string`), não string com placeholder.
+- Erros de API: `apiError(errors, code, locale, status, extra?)`
+  (`src/lib/api-error.ts`) — cada rota declara seu próprio dicionário local
+  de códigos e chama `resolveLocale()` (`src/lib/locale.ts`) no início do
+  handler. Resposta sempre `{error: <código estável>, message: <traduzida>}`
+  — o cliente mostra `data.message`, nunca `data.error` cru. 401 de "não
+  autenticado" é compartilhado (`unauthenticatedResponse()`), repetido em
+  ~24 rotas antes.
+- `middleware.ts` (Edge runtime) tem sua própria cópia simplificada da
+  mesma mensagem de 401 — não importa de `api-error.ts`/`locale.ts` porque
+  esses dependem de `next/headers`/`node:fs`, incompatíveis com Edge. Só lê
+  o cookie de locale, sem arquivo da instalação nem Accept-Language.
+- **Gap conhecido**: `src/lib/installer.ts`, `updater.ts`, `host-updater.ts`
+  ainda retornam erro como prosa em português — as rotas que os chamam
+  repassam esse texto sem traduzir. Fora do escopo desta fase (só as
+  mensagens hardcoded nos arquivos `route.ts` foram migradas).
+
 ## Pendências deste glossário
 
 Nenhuma no momento. Itens anteriores (grafia da marca, `EnchaT Grátis`, `N8N

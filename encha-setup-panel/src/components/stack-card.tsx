@@ -10,6 +10,8 @@ import {
   UsersRound, FileText, Calendar, BarChart3, KeyRound, Radio, Monitor as MonitorIcon,
   PencilRuler, Activity, Mail, Loader2, ArrowUpCircle,
 } from "lucide-react";
+import { useDict } from "@/lib/i18n/use-dict";
+import { stackCardText } from "./stack-card.i18n";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   shield: Shield,
@@ -67,6 +69,7 @@ export function StackCard({
   updating?: boolean;
   updateError?: string;
 }) {
+  const t = useDict(stackCardText);
   const Icon = ICONS[stack.icon] ?? Shield;
   const [logoOk, setLogoOk] = useState(true);
   const missingDeps = stack.dependsOn.filter((d) => !readySet.has(d));
@@ -75,11 +78,11 @@ export function StackCard({
   const isDeploying = stack.installed && !stack.ready;
   const canUpdate = Boolean(stack.updateAvailable && onUpdate) && !isDeploying;
 
-  let buttonLabel = "Instalar";
-  if (stack.installed && stack.ready) buttonLabel = "Já instalado";
-  else if (isDeploying) buttonLabel = "Instalando...";
-  else if (!canInstall) buttonLabel = "Aguardando dependências";
-  else if (isBash) buttonLabel = "Instalar via SSH";
+  let buttonLabel = t.btnInstall;
+  if (stack.installed && stack.ready) buttonLabel = t.btnAlreadyInstalled;
+  else if (isDeploying) buttonLabel = t.btnInstalling;
+  else if (!canInstall) buttonLabel = t.btnWaitingDeps;
+  else if (isBash) buttonLabel = t.btnInstallViaSsh;
 
   return (
     <Card variant="glass" className="flex flex-col h-full">
@@ -107,7 +110,7 @@ export function StackCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-coral-600 dark:hover:text-coral-400 hover:underline underline-offset-2 transition-colors"
-                  title="Abrir repositório no GitHub"
+                  title={t.repoLinkTitle}
                 >
                   {stack.name}
                   <ExternalLink className="h-3.5 w-3.5 opacity-60" />
@@ -118,24 +121,24 @@ export function StackCard({
               {stack.installed && stack.ready && (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  Instalado
+                  {t.installed}
                 </Badge>
               )}
               {isDeploying && (
                 <Badge variant="warning" className="gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Instalando...
+                  {t.installing}
                 </Badge>
               )}
               {canUpdate && (
                 <Badge variant="warning" className="gap-1">
                   <ArrowUpCircle className="h-3 w-3" />
-                  Atualização disponível
+                  {t.updateAvailable}
                 </Badge>
               )}
               {isBash && !stack.installed && (
                 <Badge variant="neutral" className="text-[10px]">
-                  Em breve
+                  {t.comingSoon}
                 </Badge>
               )}
             </CardTitle>
@@ -149,7 +152,7 @@ export function StackCard({
         <p className="text-sm text-muted-foreground line-clamp-3">{stack.description}</p>
         {missingDeps.length > 0 && !stack.installed && (
           <div className="mt-3 text-xs rounded-md bg-warning-soft text-warning-foreground px-3 py-2">
-            Instale primeiro: {missingDeps.join(", ")}
+            {t.installFirst(missingDeps.join(", "))}
           </div>
         )}
         {canUpdate && stack.pendingUpdates?.length ? (
@@ -162,7 +165,7 @@ export function StackCard({
               </div>
             ))}
             <div className="opacity-70 pt-1">
-              Atualiza só a imagem — volumes e banco de dados são preservados.
+              {t.updateImageOnly}
             </div>
           </div>
         ) : null}
@@ -186,12 +189,12 @@ export function StackCard({
             {updating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Atualizando...
+                {t.btnUpdating}
               </>
             ) : (
               <>
                 <ArrowUpCircle className="h-4 w-4 mr-2" />
-                Atualizar
+                {t.btnUpdate}
               </>
             )}
           </Button>
