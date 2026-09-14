@@ -61,6 +61,23 @@ cinza="\033[90m"
 negrito="\033[1m"
 reset="\033[0m"
 
+# Sem "=()" de propósito: main.sh fica em memória junto com secondary.sh (é
+# `source`ado no mesmo shell, main.sh:~815) — se os dois usassem "declare -A
+# MSG_PT=()", o segundo `declare` apagaria tudo que o primeiro já tivesse
+# posto no catálogo. "declare -A NOME" sem atribuição é idempotente: cria se
+# não existir, não mexe se já existir.
+#
+# PRECISA vir antes de qualquer "MSG_PT[chave]=..." no arquivo — bash cria
+# a variável como array INDEXADO na primeira atribuição desse tipo se ainda
+# não foi declarada, e depois um "declare -A" tarde demais falha em
+# silêncio ("cannot convert indexed to associative array"), corrompendo o
+# catálogo inteiro pro resto do script. Achado ao vivo numa VPS de teste:
+# um lote de tradução da Fase 4 tinha inserido chaves (banner_*,
+# loading_animation_*) acima de onde este bloco ficava antes.
+declare -A MSG_PT
+declare -A MSG_EN
+declare -A MSG_ES
+
 # Função para criar gradientes visuais
 barra_gradiente() {
     echo -e "${roxo}╔═══════════════════════════════════════════════════════════════════════════════╗${reset}"
@@ -194,15 +211,6 @@ else
     ENCHA_LANG_VEIO_DO_AMBIENTE=0
 fi
 ENCHA_LANG="${ENCHA_LANG:-pt}"
-
-# Sem "=()" de propósito: main.sh fica em memória junto com secondary.sh (é
-# `source`ado no mesmo shell, main.sh:~815) — se os dois usassem "declare -A
-# MSG_PT=()", o segundo `declare` apagaria tudo que o primeiro já tivesse
-# posto no catálogo. "declare -A NOME" sem atribuição é idempotente: cria se
-# não existir, não mexe se já existir.
-declare -A MSG_PT
-declare -A MSG_EN
-declare -A MSG_ES
 
 # t chave [args...] — resolve `chave` no catálogo de ENCHA_LANG, caindo para
 # MSG_PT e por fim para a própria chave se não encontrar em lugar nenhum
