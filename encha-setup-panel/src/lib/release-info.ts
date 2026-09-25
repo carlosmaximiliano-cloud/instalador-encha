@@ -5,6 +5,8 @@
 // e installer.ts para a orquestração; mesmo padrão de erro estruturado de
 // registry-auth.ts, para não inventar uma segunda taxonomia no mesmo fluxo.
 
+import { createHash } from "node:crypto";
+
 const RELEASE_TIMEOUT_MS = 8000;
 
 // Formato aceito para a versão/tag — nunca "latest": um Console comprometido
@@ -80,11 +82,18 @@ async function readErrorDetail(res: Response): Promise<string | undefined> {
   }
 }
 
+// `chave` (opcional) é a licença do cliente: o Console troca o `canal` pedido
+// pelo canal do PLANO dessa licença (GET /api/version, Console route.ts) — é
+// o mesmo critério que o app e o sidecar do Tracker usam ao checar
+// atualização, então instalar/atualizar pelo painel nunca diverge deles. Vai
+// no header X-License-Key, nunca na query string (URL vaza em log de proxy).
+// Sem chave, vale o `canal` pedido.
 export async function fetchLatestRelease(
   baseUrl: string,
   app: string,
   edicao: string,
-  canal: string
+  canal: string,
+  chave?: string
 ): Promise<ReleaseInfo> {
   const url = `${baseUrl.replace(/\/+$/, "")}/api/version?app=${encodeURIComponent(app)}&edicao=${encodeURIComponent(edicao)}&canal=${encodeURIComponent(canal)}`;
 
@@ -92,7 +101,11 @@ export async function fetchLatestRelease(
   const t = setTimeout(() => ctrl.abort(), RELEASE_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+    res = await fetch(url, {
+      signal: ctrl.signal,
+      cache: "no-store",
+      ...(chave ? { headers: { "X-License-Key": chave } } : {}),
+    });
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") {
       throw new ReleaseInfoError(
@@ -204,15 +217,20 @@ export async function fetchLatestRelease(
 const RELEASE_CACHE_TTL_MS = 5 * 60_000;
 const releaseCache = new Map<string, { value: ReleaseInfo; expiresAt: number }>();
 
+// A chave entra na chave do cache (por hash): o resultado depende do plano
+// da licença, então duas licenças nunca compartilham uma entrada — nem uma
+// consulta anônima reaproveita a de uma licença.
 export async function fetchLatestReleaseCached(
   spec: { baseUrl: string; app: string; edicao: string; canal: string },
-  cacheKey: string
+  cacheKey: string,
+  chave?: string
 ): Promise<ReleaseInfo> {
-  const cached = releaseCache.get(cacheKey);
+  const key = chave ? `${cacheKey}:${createHash("sha256").update(chave).digest("hex")}` : cacheKey;
+  const cached = releaseCache.get(key);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.value;
   }
-  const value = await fetchLatestRelease(spec.baseUrl, spec.app, spec.edicao, spec.canal);
-  releaseCache.set(cacheKey, { value, expiresAt: Date.now() + RELEASE_CACHE_TTL_MS });
+  const value = await fetchLatestRelease(spec.baseUrl, spec.app, spec.edicao, spec.canal, chave);
+  releaseCache.set(key, { value, expiresAt: Date.now() + RELEASE_CACHE_TTL_MS });
   return value;
 }

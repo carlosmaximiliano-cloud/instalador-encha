@@ -90,7 +90,9 @@ async function setupMocks(opts: SetupOpts = {}) {
     ordem.push("pull");
   });
   const getOrCreateMachineIdMock = vi.fn(() => ({ machineId: "mid-1", fingerprint: "fp-1", legacy: false }));
-  const fetchLatestReleaseCachedMock = vi.fn(async () => fakeRelease(opts.releaseTag ?? "1.1.0"));
+  const fetchLatestReleaseCachedMock = vi.fn(async (_spec: unknown, _cacheKey: string, _chave?: string) =>
+    fakeRelease(opts.releaseTag ?? "1.1.0")
+  );
   const logAuditMock = vi.fn();
 
   vi.doMock("./portainer", async (importOriginal) => {
@@ -187,6 +189,20 @@ describe("applyReleaseUpdate", () => {
     await applyReleaseUpdate({ token: "tok", stackId: FAKE_STACK_ID, def, user: "tester", ip: "127.0.0.1" });
 
     expect(resolveRegistryAndPullImagesMock).toHaveBeenCalledWith(expect.objectContaining({ chave: "X" }));
+  });
+
+  // Mutação — a release é consultada COM a chave lida do Env do serviço
+  // rodando: o plano dela decide o canal. Consultar anônimo (sem o 3º
+  // argumento) oferece a versão do canal padrão do painel, que pode ser um
+  // rebaixamento para quem está em outro canal.
+  it("consulta a release com a chave do Env (o plano decide o canal)", async () => {
+    const { def, fetchLatestReleaseCachedMock } = await setupMocks({ appEnv: ["FAKE_CHAVE=CHAVE-DO-PLANO"] });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    await applyReleaseUpdate({ token: "tok", stackId: FAKE_STACK_ID, def, user: "tester", ip: "127.0.0.1" });
+
+    expect(fetchLatestReleaseCachedMock).toHaveBeenCalledTimes(1);
+    expect(fetchLatestReleaseCachedMock.mock.calls[0][2]).toBe("CHAVE-DO-PLANO");
   });
 
   it("Env sem a variável de licença lança erro claro, sem chamar pull/update", async () => {

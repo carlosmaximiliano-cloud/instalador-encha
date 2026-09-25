@@ -36,6 +36,40 @@ describe("fetchLatestRelease", () => {
     expect(urlChamada).toContain("canal=beta");
   });
 
+  // Mutação (canal pelo plano) — o Console troca o `canal` pedido pelo canal
+  // do plano da licença quando a consulta leva a chave. Ela vai no header
+  // X-License-Key e NUNCA na URL (URL vaza em log de proxy). Mandar na query,
+  // ou omitir, deixa esta asserção vermelha.
+  it("com chave: vai no header X-License-Key e nunca na URL", async () => {
+    let urlChamada = "";
+    let headers: Record<string, string> | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: { headers?: Record<string, string> }) => {
+        urlChamada = url;
+        headers = init?.headers;
+        return respostaFalsa(200, { latest_version: "1.2.0", image_repo: "ghcr.io/cheiodecoisa/encha-tracker", image_tag: "1.2.0" });
+      })
+    );
+    await fetchLatestRelease("https://console.exemplo.com", "tracker", "full", "stable", "CHAVE-SECRETA-123");
+    expect(headers).toEqual({ "X-License-Key": "CHAVE-SECRETA-123" });
+    expect(urlChamada).not.toContain("CHAVE-SECRETA-123");
+    expect(urlChamada).not.toContain("chave=");
+  });
+
+  it("sem chave: nenhum header de licença é enviado", async () => {
+    let headers: Record<string, string> | undefined = { "X-License-Key": "sentinela" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { headers?: Record<string, string> }) => {
+        headers = init?.headers;
+        return respostaFalsa(200, { latest_version: "1.2.0", image_repo: "ghcr.io/cheiodecoisa/encha-tracker", image_tag: "1.2.0" });
+      })
+    );
+    await fetchLatestRelease("https://console.exemplo.com", "tracker", "full", "stable");
+    expect(headers).toBeUndefined();
+  });
+
   // Mutação M2 (Ciclo C, fechamento da instalação) — o Console distingue
   // "rota não existe" de "rota existe, ninguém publicou release ainda"
   // pelo CORPO do 404 ({error:"no_release_published"}). Sem essa
@@ -158,5 +192,36 @@ describe("fetchLatestRelease — lista de image_repo aceitos", () => {
     for (const def of comRelease) {
       expect(imageRepoPermitido(def.release!.app, def.release!.edicao, esperado[def.id])).toBe(true);
     }
+  });
+});
+
+// Mutação: cache global (chave ignorada). O resultado depende do plano da
+// licença — uma licença beta nunca pode ler a entrada de outra licença, nem
+// uma consulta anônima reaproveitar a de uma licença.
+describe("fetchLatestReleaseCached — o cache é por chave", () => {
+  it("licenças diferentes e consulta anônima não compartilham entrada", async () => {
+    const { fetchLatestReleaseCached } = await import("./release-info");
+    const chamadas: (string | undefined)[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { headers?: Record<string, string> }) => {
+        const k = init?.headers?.["X-License-Key"];
+        chamadas.push(k);
+        const tag = k === "CHAVE-BETA" ? "1.0.22" : "1.2.0";
+        return respostaFalsa(200, { latest_version: tag, image_repo: "ghcr.io/cheiodecoisa/encha-tracker", image_tag: tag });
+      })
+    );
+    const spec = { baseUrl: "https://c.x", app: "tracker", edicao: "full", canal: "stable" };
+    const beta = await fetchLatestReleaseCached(spec, "cache-test-tracker", "CHAVE-BETA");
+    const estavel = await fetchLatestReleaseCached(spec, "cache-test-tracker", "CHAVE-STABLE");
+    const anonimo = await fetchLatestReleaseCached(spec, "cache-test-tracker");
+    expect(beta.imageTag).toBe("1.0.22");
+    expect(estavel.imageTag).toBe("1.2.0");
+    expect(anonimo.imageTag).toBe("1.2.0");
+    expect(chamadas).toEqual(["CHAVE-BETA", "CHAVE-STABLE", undefined]);
+
+    // e a mesma chave, de novo, é servida do cache (não bate no Console).
+    await fetchLatestReleaseCached(spec, "cache-test-tracker", "CHAVE-BETA");
+    expect(chamadas).toHaveLength(3);
   });
 });

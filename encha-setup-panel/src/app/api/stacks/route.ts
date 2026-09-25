@@ -64,6 +64,7 @@ export async function GET() {
   const catalog = getPublicCatalog();
   let portainerOnline = true;
 
+  let endpointId: number | undefined;
   const [installed, swarmStatuses] = await Promise.all([
     listInstalledStacks(token).catch((err) => {
       portainerOnline = false;
@@ -71,7 +72,10 @@ export async function GET() {
       return [];
     }),
     discoverContext(token)
-      .then(({ endpointId }) => listSwarmStackStatuses(token, endpointId))
+      .then((ctx) => {
+        endpointId = ctx.endpointId;
+        return listSwarmStackStatuses(token, ctx.endpointId);
+      })
       .catch((err) => {
         portainerOnline = false;
         console.error("[api/stacks] Falha listando serviços Docker:", err);
@@ -106,7 +110,9 @@ export async function GET() {
       // usar, nunca soma os dois.
       const pendingUpdates = ready
         ? s.updateViaRelease
-          ? await computeReleaseBasedPendingUpdates(s, swarmStatuses)
+          ? endpointId === undefined
+            ? []
+            : await computeReleaseBasedPendingUpdates(s, swarmStatuses, { token, endpointId })
           : computePendingUpdates(s, swarmStatuses)
         : [];
       return {

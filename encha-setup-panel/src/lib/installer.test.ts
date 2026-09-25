@@ -174,6 +174,27 @@ describe("installStack — ativação por e-mail (Ciclo D)", () => {
     expect(valoresRecebidos.chave_licenca).toBe("CHAVE-INJETADA-XYZ");
   });
 
+  // Mutação — a chave que a ativação devolveu TEM que acompanhar a consulta
+  // da release: é o plano dela, no Console, que decide o canal. Omitir o
+  // argumento faz o instalador consultar anônimo e cair no canal padrão.
+  it("a consulta da release leva a chave devolvida pela ativação", async () => {
+    await setupMocks({ ativarImpl: async () => ({ chave: "CHAVE-DO-PLANO-XYZ" }) });
+    const { installStack } = await import("./installer");
+    const { fetchLatestRelease } = await import("./release-info");
+
+    await installStack({
+      stackId: FAKE_STACK_ID,
+      values: { email_ativacao: "cliente@exemplo.com" },
+      swarmCtx: swarmCtx(),
+      token: "tok",
+      user: "tester",
+      ip: "127.0.0.1",
+    });
+
+    expect(fetchLatestRelease).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetchLatestRelease).mock.calls[0][4]).toBe("CHAVE-DO-PLANO-XYZ");
+  });
+
   // Mutação M2 (a mais importante do ciclo) — se a ativação falhar (e-mail
   // não reconhecido, licença revogada), a instalação TEM que abortar antes
   // de tocar em qualquer coisa na VPS. Nunca deployar uma stack sem

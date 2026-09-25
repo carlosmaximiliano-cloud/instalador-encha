@@ -448,7 +448,11 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
           def.release.baseUrl,
           def.release.app,
           def.release.edicao,
-          def.release.canal
+          def.release.canal,
+          // Chave que a ativação por e-mail acabou de devolver: o Console
+          // resolve o canal pelo plano dela (stable × beta), igual ao que o
+          // app e o sidecar do Tracker farão ao checar atualização.
+          def.emailActivation ? String(parsed.data[def.emailActivation.targetField] ?? "") || undefined : undefined
         );
         effectiveCtx = { ...input.swarmCtx, release };
         logAudit({

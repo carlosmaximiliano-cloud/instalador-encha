@@ -2,6 +2,7 @@ import type { StackDefinition } from "./types";
 import { expectedStackNames } from "./types";
 import type { SwarmStackStatus } from "../portainer";
 import { fetchLatestReleaseCached } from "../release-info";
+import { lerChaveDaStack } from "../stack-chave";
 
 export type PendingUpdate = {
   /** Nome completo do serviço no Swarm, ex.: "evolution_evolution_api". */
@@ -69,14 +70,22 @@ export function computePendingUpdates(
  * comparação. Console fora do ar ou release não publicada -> catch, devolve
  * [] (mesma disciplina de "preferimos não oferecer atualização a oferecer
  * uma falsa" documentada acima).
+ *
+ * A consulta leva a chave da licença da stack instalada, porque é o plano
+ * dela que decide o canal (stable × beta). Se a chave não puder ser lida,
+ * NÃO oferece nada: cair no canal padrão sugeriria um rebaixamento a quem
+ * está em outro canal.
  */
 export async function computeReleaseBasedPendingUpdates(
   def: StackDefinition,
-  statuses: SwarmStackStatus[]
+  statuses: SwarmStackStatus[],
+  ctx: { token: string; endpointId: number }
 ): Promise<PendingUpdate[]> {
   if (!def.updateViaRelease || !def.release) return [];
   try {
-    const release = await fetchLatestReleaseCached(def.release, def.id);
+    const chave = await lerChaveDaStack(ctx.token, ctx.endpointId, def.id, def);
+    if (def.registryAuth?.licenseEnvVar && !chave) return [];
+    const release = await fetchLatestReleaseCached(def.release, def.id, chave);
     return pendingFromTargets(def, statuses, def.updateViaRelease(release));
   } catch {
     return [];

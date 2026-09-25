@@ -70,7 +70,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     const { endpointId } = await discoverContext(token);
     const statuses = await listSwarmStackStatuses(token, endpointId);
     const pending = def.updateViaRelease
-      ? await computeReleaseBasedPendingUpdates(def, statuses)
+      ? await computeReleaseBasedPendingUpdates(def, statuses, { token, endpointId })
       : computePendingUpdates(def, statuses);
     return NextResponse.json({ updateAvailable: pending.length > 0, pending });
   } catch (e) {

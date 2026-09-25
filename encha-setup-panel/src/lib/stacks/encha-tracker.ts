@@ -9,19 +9,21 @@ import { randomBytes } from "node:crypto";
 // isolamento de imagem é a CONTA, nunca o Console.
 const CONSOLE_BASE_URL = "https://console.enchat.pro";
 
-// Ciclo C (fechamento da instalação) — a única release do Tracker que o
-// Console conhece hoje é canal=beta (é o que o release.yml do Tracker
-// registra — casa com o plano tracker-beta da licença de teste). Uma
-// constante ÚNICA porque este valor precisa bater em TRÊS lugares
-// diferentes que não se validam entre si: a resolução de versão na
-// INSTALAÇÃO (release.canal, abaixo), e o TRACKER_CANAL de cada um dos
-// dois processos que rodam DEPOIS de instalado (app e sidecar
-// tracker-updater, generateYaml) — os dois fazem a MESMA consulta
-// GET /api/version?...&canal=... pra decidir se há atualização. Divergir
-// um dos três faria a instalação funcionar mas o autoupdate nunca achar
-// nada (achado ao investigar o ciclo: os dois TRACKER_CANAL estavam
-// hardcoded "stable" enquanto a única release publicável é beta).
-const CANAL_TRACKER = "beta";
+// Canal PADRÃO do Tracker: só vale quando o Console não consegue resolver o
+// canal pela licença. Quem decide de verdade é o PLANO da licença — o Console
+// troca o `canal` pedido pelo canal do plano sempre que a consulta leva a
+// chave (GET /api/version) — e é assim que o app e o sidecar checam
+// atualização. Por isso o painel também consulta com a chave, na instalação
+// e no botão "Atualizar" (release-info.ts, installer.ts,
+// stack-update-release.ts): as três fontes concordam e o plano `tracker`
+// recebe a estável, o `tracker-beta` recebe a beta. O padrão é "stable" para
+// que a frota nunca caia em beta por acidente (mesmo princípio do plano
+// `tracker`, Console Ciclo 18b). Era "beta" enquanto a única release do
+// Tracker no Console era beta (Ciclo C); a estável já existe (v1.2.0).
+// Uma constante ÚNICA porque o valor aparece em TRÊS lugares que não se
+// validam entre si: release.canal (instalação) e o TRACKER_CANAL do app e do
+// sidecar (generateYaml).
+const CANAL_TRACKER_PADRAO = "stable";
 
 // O hostname FIXO do serviço `app` — TEM que bater com o hostname
 // que internal/licenca/fingerprint.go lê via os.Hostname() no primeiro
@@ -120,7 +122,7 @@ export const enchaTracker: StackDefinition = {
     baseUrl: CONSOLE_BASE_URL,
     app: "tracker",
     edicao: "full", // o Tracker não tem edição grátis — plans.edicao é sempre 'full'.
-    canal: CANAL_TRACKER,
+    canal: CANAL_TRACKER_PADRAO,
   },
 
   // Ciclo D: ativação por e-mail é o ÚNICO caminho — não sobrou campo de
@@ -219,7 +221,7 @@ services:
       TRACKER_ADMIN_SENHA: "${san(v.senha_admin)}"
       TRACKER_CONSOLE_URL: "${CONSOLE_BASE_URL}"
       TRACKER_CHAVE: "${san(v.chave_licenca)}"
-      TRACKER_CANAL: "${CANAL_TRACKER}"
+      TRACKER_CANAL: "${CANAL_TRACKER_PADRAO}"
       TRACKER_MACHINE_ID: "${san(ctx.machineId ?? "")}"
       TRACKER_UPDATER_URL: "http://encha_tracker_updater:9000"
       TRACKER_UPDATER_TOKEN: "${secrets.updater_token}"
@@ -267,7 +269,7 @@ services:
       TRACKER_LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       TRACKER_LICENSE_KEY: "${san(v.chave_licenca)}"
       TRACKER_FINGERPRINT: "${san(ctx.fingerprint)}"
-      TRACKER_CANAL: "${CANAL_TRACKER}"
+      TRACKER_CANAL: "${CANAL_TRACKER_PADRAO}"
       TRACKER_IMAGEM_PADRAO: "${imageRepo}"
       TRACKER_SWARM_SERVICE: "encha_tracker_app"
       TRACKER_HEALTHZ_URL: "http://encha_tracker_app:8080/api/healthz"

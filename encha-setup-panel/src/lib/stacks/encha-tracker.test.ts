@@ -269,12 +269,14 @@ describe("encha-tracker — release (produto/edicao)", () => {
     expect(enchaTracker.release?.edicao).toBe("full");
   });
 
-  // Mutação M1 (Ciclo C, fechamento da instalação) — a única release do
-  // Tracker que o Console conhece hoje é canal=beta (release.yml do
-  // Tracker só registra nesse canal). "stable" faria GET /api/version
-  // devolver 404 pra sempre — o próprio defeito que motivou este ciclo.
-  it("canal='beta' — é a única release que o Console conhece hoje", () => {
-    expect(enchaTracker.release?.canal).toBe("beta");
+  // Mutação M1 — o canal PADRÃO é "stable": só vale quando o Console não
+  // resolve o canal pela chave da licença (o plano é quem decide). Voltar a
+  // "beta" faria toda instalação sem chave resolvida cair em beta — a frota
+  // nunca pode cair em beta por acidente (Console Ciclo 18b). Era "beta"
+  // enquanto a única release do Tracker era beta (Ciclo C); a estável já
+  // existe (v1.2.0).
+  it("canal padrão='stable' — o plano da licença decide o resto, via chave", () => {
+    expect(enchaTracker.release?.canal).toBe("stable");
   });
 
   // O canal de RESOLUÇÃO na instalação (release.canal, acima) é um valor

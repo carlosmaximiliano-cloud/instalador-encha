@@ -17,6 +17,7 @@ import {
   type DockerServiceFull,
 } from "./portainer";
 import { fetchLatestReleaseCached } from "./release-info";
+import { lerChaveDoEnv } from "./stack-chave";
 import { resolveRegistryAndPullImages } from "./registry-pull";
 import { getOrCreateMachineId } from "./pairing-store";
 import { resolverAppHostname } from "./installer";
@@ -33,16 +34,6 @@ export type ApplyReleaseUpdateInput = {
 };
 
 export type ApplyReleaseUpdateResult = { atualizados: string[] };
-
-// Lê a env var de licença (ex.: "TRACKER_CHAVE=X") do Env cru do serviço —
-// campo solto no tipo DockerServiceFull (ContainerSpec só declara `Image`),
-// por isso o cast explícito.
-function lerChaveDoEnv(svc: DockerServiceFull, envVar: string): string | undefined {
-  const env = (svc.Spec.TaskTemplate?.ContainerSpec as { Env?: string[] } | undefined)?.Env ?? [];
-  const prefix = `${envVar}=`;
-  const entry = env.find((e) => e.startsWith(prefix));
-  return entry === undefined ? undefined : entry.slice(prefix.length);
-}
 
 export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promise<ApplyReleaseUpdateResult> {
   const { token, stackId, def, user, ip } = input;
@@ -62,7 +53,22 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
     }
 
     const { endpointId } = await discoverContext(token);
-    const release = await fetchLatestReleaseCached(def.release, def.id);
+    // Chave: relida do Env do serviço que a carrega, ANTES de resolver a
+    // release — é o plano da licença, no Console, que decide o canal (stable
+    // × beta). Consultar anônimo daria sempre o canal padrão do painel e
+    // podia oferecer um rebaixamento a quem está em outro canal.
+    const licenseServiceName = swarmServiceName(stackName, registryAuth.licenseEnvService);
+    const licenseSvc = await getServiceByName(token, endpointId, licenseServiceName);
+    if (!licenseSvc) {
+      throw new Error(`Serviço "${licenseServiceName}" (licenseEnvService) não está rodando — a stack está num estado inesperado.`);
+    }
+    const chave = lerChaveDoEnv(licenseSvc, registryAuth.licenseEnvVar);
+    if (chave === undefined) {
+      throw new Error(
+        `Env var "${registryAuth.licenseEnvVar}" não encontrada no serviço "${registryAuth.licenseEnvService}" — a stack está num estado inesperado.`
+      );
+    }
+    const release = await fetchLatestReleaseCached(def.release, def.id, chave);
     const targets = def.updateViaRelease(release);
 
     // Passo 5: busca TODOS os serviços-alvo primeiro — se algum esperado
@@ -92,25 +98,6 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
     // Fingerprint: MESMA chamada que installStack já usa — nunca cunha um
     // novo se já existir.
     const { fingerprint } = getOrCreateMachineId(stackId, resolverAppHostname(def, "registryAuth"));
-
-    // Chave: acha o serviço cujo `service` (chave do compose) é o
-    // licenseEnvService entre os já buscados acima; busca de novo se não
-    // coincidir com nenhum target.
-    let licenseSvc = resolved.find((r) => r.target.service === registryAuth.licenseEnvService)?.svc;
-    if (!licenseSvc) {
-      const serviceName = swarmServiceName(stackName, registryAuth.licenseEnvService);
-      const found = await getServiceByName(token, endpointId, serviceName);
-      if (!found) {
-        throw new Error(`Serviço "${serviceName}" (licenseEnvService) não está rodando — a stack está num estado inesperado.`);
-      }
-      licenseSvc = found;
-    }
-    const chave = lerChaveDoEnv(licenseSvc, registryAuth.licenseEnvVar);
-    if (chave === undefined) {
-      throw new Error(
-        `Env var "${registryAuth.licenseEnvVar}" não encontrada no serviço "${registryAuth.licenseEnvService}" — a stack está num estado inesperado.`
-      );
-    }
 
     // Pré-pull autenticado de TODAS as imagens-alvo — ANTES de trocar
     // qualquer imagem. É a ordem que fecha o defeito que motivou este
