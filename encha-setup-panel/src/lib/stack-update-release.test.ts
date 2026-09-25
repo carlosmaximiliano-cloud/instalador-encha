@@ -126,6 +126,11 @@ async function setupMocks(opts: SetupOpts = {}) {
   };
 }
 
+// Cada teste refaz `vi.resetModules()` e re-importa módulos grandes a frio; com a
+// suíte inteira em paralelo isso passa dos 5s padrão do vitest (flake medido:
+// ~metade das rodadas na suíte cheia, antes desta linha).
+vi.setConfig({ testTimeout: 30_000 });
+
 beforeEach(() => {
   vi.resetModules();
 });
@@ -203,7 +208,7 @@ describe("applyReleaseUpdate", () => {
 
     expect(fetchLatestReleaseCachedMock).toHaveBeenCalledTimes(1);
     expect(fetchLatestReleaseCachedMock.mock.calls[0][2]).toBe("CHAVE-DO-PLANO");
-  });
+  }, 30_000);
 
   it("Env sem a variável de licença lança erro claro, sem chamar pull/update", async () => {
     const { def, resolveRegistryAndPullImagesMock, updateServiceImageMock } = await setupMocks({ appEnv: ["OUTRA_VAR=y"] });

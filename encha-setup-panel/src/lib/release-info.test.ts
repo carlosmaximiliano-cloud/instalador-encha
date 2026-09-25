@@ -223,5 +223,5 @@ describe("fetchLatestReleaseCached — o cache é por chave", () => {
     // e a mesma chave, de novo, é servida do cache (não bate no Console).
     await fetchLatestReleaseCached(spec, "cache-test-tracker", "CHAVE-BETA");
     expect(chamadas).toHaveLength(3);
-  });
+  }, 30_000);
 });

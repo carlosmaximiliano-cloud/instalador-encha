@@ -6,6 +6,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DockerServiceFull, SwarmStackStatus } from "../portainer";
 
+// import() a frio de módulos grandes estoura os 5s padrão do vitest com a
+// suíte inteira rodando em paralelo (mesma fragilidade do stack-update-release).
+vi.setConfig({ testTimeout: 30_000 });
+
 const FAKE_STACK = "encha_tracker";
 
 function servico(env: string[]): DockerServiceFull {

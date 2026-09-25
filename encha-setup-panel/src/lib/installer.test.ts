@@ -193,7 +193,7 @@ describe("installStack — ativação por e-mail (Ciclo D)", () => {
 
     expect(fetchLatestRelease).toHaveBeenCalledTimes(1);
     expect(vi.mocked(fetchLatestRelease).mock.calls[0][4]).toBe("CHAVE-DO-PLANO-XYZ");
-  });
+  }, 30_000);
 
   // Mutação M2 (a mais importante do ciclo) — se a ativação falhar (e-mail
   // não reconhecido, licença revogada), a instalação TEM que abortar antes
