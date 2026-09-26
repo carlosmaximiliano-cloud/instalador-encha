@@ -3165,7 +3165,7 @@ MSG_ES[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 ÉXITO UN
 #
 # Falha em qualquer etapa (sem docker, pull, nft) NUNCA aborta a instalação:
 # só avisa e segue — o serviço encha-guard do painel continua sendo criado
-# depois. Se o Swarm já está ativo, não faz nada (o serviço já existe/existirá).
+# depois. Nó já membro de um Swarm (active/locked/pending/error): não faz nada.
 # Uso: aplicar_guarda_pre_swarm "<ip-do-nó>"
 ################################################################################
 MSG_PT[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DO SWARM (antes do swarm init)\e[0m"
@@ -3179,12 +3179,17 @@ MSG_ES[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  No fue posible aplicar el 
 aplicar_guarda_pre_swarm() {
   local ip="${1:-}"
 
-  # Swarm já ativo: o guarda é do serviço encha-guard — nada a fazer aqui.
+  # Só age num nó FORA de qualquer Swarm ("inactive"; vazio = docker sem
+  # resposta, e aí o pull abaixo falha e só avisa). active/locked/pending/
+  # error = nó já membro de um cluster: o guarda é do serviço encha-guard, e
+  # esta tabela (só com o IP deste nó como par) descartaria o 2377/7946/4789
+  # dos outros nós até o serviço reaplicar a dele.
   local estado_swarm
   estado_swarm="$(sudo docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null || true)"
-  if [ "$estado_swarm" = "active" ]; then
-    return 0
-  fi
+  case "$estado_swarm" in
+    inactive | "") : ;;
+    *) return 0 ;;
+  esac
 
   echo -e "$(t aplicar_guarda_pre_swarm_aplicando)"
 

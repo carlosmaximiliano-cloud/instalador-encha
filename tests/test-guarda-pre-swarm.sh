@@ -103,6 +103,20 @@ else
   ok "(b) Swarm ativo: nenhum docker pull/run"
 fi
 
+# (b2) Nó já membro de um Swarm mas não "active" (locked = autolock após
+# reinício; pending = entrando; error): a tabela pré-swarm só teria o IP deste
+# nó como par e, aplicada por cima da do serviço, descartaria o 2377/7946/4789
+# dos OUTROS nós do cluster. Só "inactive" (ou docker sem resposta) age.
+for estado in locked pending error; do
+  : > "$LOG"; FAKE_SWARM="$estado"
+  aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_b2" 2>&1; rc=$?
+  if [ "$rc" -eq 0 ] && ! grep -qx "run" "$LOG" && ! grep -qx "pull" "$LOG"; then
+    ok "(b2) Swarm '$estado': nenhum docker pull/run"
+  else
+    falha "(b2) Swarm '$estado' (rc=$rc): a função agiu num nó que já é membro de um Swarm"
+  fi
+done
+
 # --- (c) pull falha: retorna 0, avisa, não roda ------------------------------
 : > "$LOG"; FAKE_SWARM=inactive; FAKE_PULL_FALHA=1
 aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_c" 2>&1; rc=$?
