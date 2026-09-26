@@ -3578,6 +3578,10 @@ ferramenta_traefik_e_portainer() {
   if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then
     echo -e "$(t ferramenta_traefik_e_portainer_noninterativo)"
     echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
+    # S3 (achado 7): --sempre porque o `clear` do topo desta função acabou de
+    # apagar o aviso que checar_dns_e_portas (main.sh) deu — sem repetir aqui,
+    # o aviso da infra completa só existia por uma fração de segundo na tela.
+    checar_dns_dominio --sempre "$url_portainer"
   else
     while true; do
       echo -e "$(t ferramenta_traefik_e_portainer_passo1)"
@@ -3635,10 +3639,6 @@ ferramenta_traefik_e_portainer() {
   # pedido é aplicado depois por renomeação (ver
   # renomear_admin_portainer_se_necessario, chamada no bloco FINALIZANDO).
   user_portainer_alvo="$user_portainer"
-
-  # S3 (achado 7): também no caminho não-interativo (sem tela de confirmação).
-  # Já avisado acima nesta execução? Fica em silêncio (cache por domínio).
-  checar_dns_dominio "$url_portainer"
 
   # Reinstalação sobre um 'portainer_data' já existente: o admin (e a senha)
   # já foram criados numa instalação anterior e sobrevivem ao 'docker stack
@@ -27981,8 +27981,9 @@ ferramenta_encha_panel() {
     fi
 
     # S3 (achado 7): só avisa (nunca bloqueia) se o DNS do painel não aponta
-    # para esta VPS. Silencioso se main.sh/o fluxo anterior já avisou.
-    checar_dns_dominio "$url_painel"
+    # para esta VPS. --sempre porque o `clear` do topo desta função apagou o
+    # aviso que main.sh deu (checar_dns_e_portas / coletar_inputs_so_painel).
+    checar_dns_dominio --sempre "$url_painel"
 
     # Knob de teste (mesma regra do ENCHA_SRC_BRANCH em main.sh): NUNCA em
     # produção — existe só pra testar uma imagem específica (ex.: uma

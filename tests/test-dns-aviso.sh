@@ -482,6 +482,28 @@ tem_chamada ferramenta_encha_panel secondary.sh 'checar_dns_dominio' checar_dns_
 tem_chamada validar_dominio secondary.sh 'checar_dns_dominio' checar_dns_dominio
 tem_chamada stack_editavel secondary.sh 'dns_checar_hosts_da_stack' dns_checar_hosts_da_stack
 tem_chamada mostrar_resumo_final main.sh 'dns_marca_resumo' dns_marca_resumo
+# Depois de um `clear`, o aviso precisa sair DE NOVO. No fluxo real de
+# main.sh, checar_dns_e_portas avisa e logo em seguida
+# ferramenta_traefik_e_portainer e ferramenta_encha_panel começam com `clear`
+# — com o "avisa uma vez só" do cache, os dois ficavam mudos e o aviso da
+# infra completa só existia por uma fração de segundo na tela.
+bloco_noninterativo="$(extrair_funcao ferramenta_traefik_e_portainer secondary.sh \
+  | awk '/if \[\[ -n "\$ENCHA_NONINTERACTIVE" \]\]; then/ {f=1; next} f && /^  else$/ {exit} f {print}')"
+if [ -z "$bloco_noninterativo" ]; then
+  falha "(g) bloco não-interativo de ferramenta_traefik_e_portainer não encontrado"
+elif printf '%s\n' "$bloco_noninterativo" | grep -v '^[[:space:]]*#' | grep -qE 'checar_dns_dominio --sempre "\$url_portainer"'; then
+  ok "(g) ferramenta_traefik_e_portainer (não-interativo, depois do clear) repete o aviso (--sempre)"
+else
+  falha "(g) ferramenta_traefik_e_portainer não-interativo não repete o aviso depois do clear"
+fi
+corpo_painel="$(extrair_funcao ferramenta_encha_panel secondary.sh | grep -v '^[[:space:]]*#')"
+lin_clear="$(printf '%s\n' "$corpo_painel" | grep -nE '^[[:space:]]*clear[[:space:]]*$' | head -1 | cut -d: -f1)"
+lin_dns="$(printf '%s\n' "$corpo_painel" | grep -nE 'checar_dns_dominio --sempre "\$url_painel"' | head -1 | cut -d: -f1)"
+if [ -n "$lin_clear" ] && [ -n "$lin_dns" ] && [ "$lin_dns" -gt "$lin_clear" ]; then
+  ok "(g) ferramenta_encha_panel repete o aviso do painel depois do clear (--sempre)"
+else
+  falha "(g) ferramenta_encha_panel não repete o aviso depois do clear (clear=$lin_clear dns=$lin_dns)"
+fi
 # o caminho de infra completa continua passando pela pré-checagem
 grep -v '^[[:space:]]*#' main.sh | grep -qE '^\s*checar_dns_e_portas\s*$' && ok "(g) fluxo de infra completa ainda chama checar_dns_e_portas" || falha "(g) checar_dns_e_portas não é mais chamada"
 
