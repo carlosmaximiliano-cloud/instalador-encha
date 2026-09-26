@@ -135,6 +135,85 @@ aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_c2" 2>&1; rc=$?
 [ "$rc" -eq 0 ] && grep -q "Não foi possível aplicar o guarda" "$BINDIR/out_c2" \
   && ok "(c2) run/nft falhou: retorna 0 e avisa" || falha "(c2) rc=$rc out=$(cat "$BINDIR/out_c2")"
 
+# --- (f) comportamento do "-c" de verdade: guarda REAL + nft falso ----------
+# O docker falso executa a string do "-c" com o script REAL do guarda
+# (encha-setup-panel/guard/encha-guard.sh no lugar de /usr/local/bin/encha-
+# guard), só com as env vars passadas por "-e" (como no contêiner), e um nft
+# falso que grava cada ruleset recebido e recusa o que contém NFT_RECUSA.
+GUARD_REAL="$PWD/encha-setup-panel/guard/encha-guard.sh"
+NFT_LOG="$BINDIR/nft.log"
+cat > "$BINDIR/docker" <<'EOF2'
+#!/bin/bash
+case "$1" in
+  info) echo inactive; exit 0 ;;
+  pull) exit 0 ;;
+  run)
+    shift
+    envs=(); script=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -e) envs+=("$2"); shift 2 ;;
+        -c) script="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    script="${script//\/usr\/local\/bin\/encha-guard/sh '$GUARD_REAL'}"
+    exec env -i PATH="$PATH" NFT_LOG="$NFT_LOG" NFT_RECUSA="$NFT_RECUSA" ${envs[@]+"${envs[@]}"} sh -c "$script"
+    ;;
+esac
+exit 0
+EOF2
+cat > "$BINDIR/nft" <<'EOF2'
+#!/bin/bash
+entrada="$(cat)"
+{ echo "=== nft $*"; printf '%s\n' "$entrada"; } >> "$NFT_LOG"
+if [ -n "$NFT_RECUSA" ] && printf '%s' "$entrada" | grep -q "$NFT_RECUSA"; then
+  echo "=== RECUSADO" >> "$NFT_LOG"; exit 1
+fi
+echo "=== ACEITO" >> "$NFT_LOG"; exit 0
+EOF2
+chmod +x "$BINDIR/docker" "$BINDIR/nft"
+export GUARD_REAL NFT_LOG NFT_RECUSA
+# Ruleset do último "nft -f -" aceito.
+ultimo_aceito() {
+  awk '/^=== nft /{b=""; next} /^=== ACEITO$/{a=b; next} /^=== RECUSADO$/{next} {b=b $0 "\n"} END{printf "%s", a}' "$NFT_LOG"
+}
+
+# (f1) kernel aceita tudo: UMA aplicação, completa, com o par.
+: > "$NFT_LOG"; NFT_RECUSA=""
+aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_f1" 2>&1; rc=$?
+n_nft="$(grep -c '^=== nft ' "$NFT_LOG")"
+aceito="$(ultimo_aceito)"
+if [ "$rc" -eq 0 ] && [ "$n_nft" -eq 1 ] \
+   && printf '%s' "$aceito" | grep -q 'elements = { 203.0.113.7 }' \
+   && printf '%s' "$aceito" | grep -q 'tcp dport { 2377, 7946 } counter drop' \
+   && ! grep -q "Não foi possível aplicar o guarda" "$BINDIR/out_f1"; then
+  ok "(f1) nft aceita: ruleset completo (par 203.0.113.7 + drops) aplicado uma vez, sem aviso"
+else
+  falha "(f1) rc=$rc n_nft=$n_nft out=$(cat "$BINDIR/out_f1") nft.log=$(cat "$NFT_LOG")"
+fi
+
+# (f2) kernel recusa o limite de SSH (set dinâmico com limit — o próprio
+# serviço encha-guard cai na versão mínima nesse caso): as portas do Swarm
+# NÃO podem ficar abertas por causa de uma mitigação de SSH.
+: > "$NFT_LOG"; NFT_RECUSA="ssh_limite"
+aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_f2" 2>&1; rc=$?
+aceito="$(ultimo_aceito)"
+if [ "$rc" -eq 0 ] \
+   && printf '%s' "$aceito" | grep -q 'tcp dport { 2377, 7946 } counter drop' \
+   && printf '%s' "$aceito" | grep -q 'udp dport { 4789, 7946 } counter drop' \
+   && ! printf '%s' "$aceito" | grep -q 'ssh_limite'; then
+  ok "(f2) nft recusa o limite de SSH: aplica a versão mínima (drops do Swarm)"
+else
+  falha "(f2) nft recusou o limite de SSH e nenhuma versão com os drops do Swarm foi aplicada — nft.log: $(cat "$NFT_LOG")"
+fi
+
+# (f3) nft recusa tudo (sem nf_tables no kernel): avisa e segue.
+: > "$NFT_LOG"; NFT_RECUSA="encha_guard"
+aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_f3" 2>&1; rc=$?
+[ "$rc" -eq 0 ] && grep -q "Não foi possível aplicar o guarda" "$BINDIR/out_f3" \
+  && ok "(f3) nft recusa tudo: retorna 0 e avisa" || falha "(f3) rc=$rc out=$(cat "$BINDIR/out_f3")"
+
 # --- (d) estático: chamada ANTES do swarm init nas duas funções -------------
 for fn in ferramenta_traefik_e_portainer instalar_traefik_e_portainer; do
   corpo="$(extrair_funcao "$fn")"

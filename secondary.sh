@@ -3172,9 +3172,9 @@ MSG_PT[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWA
 MSG_EN[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APPLYING SWARM FIREWALL GUARD (before swarm init)\e[0m"
 MSG_ES[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DEL SWARM (antes de swarm init)\e[0m"
 
-MSG_PT[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Não foi possível aplicar o guarda de firewall antes do swarm init (imagem do painel indisponível ou sem rede). A instalação continua; o serviço encha-guard do painel o aplicará assim que subir.\e[0m"
-MSG_EN[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Could not apply the firewall guard before swarm init (panel image unavailable or no network). The installation continues; the panel's encha-guard service will apply it once it is up.\e[0m"
-MSG_ES[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  No fue posible aplicar el guarda de firewall antes de swarm init (imagen del panel no disponible o sin red). La instalación continúa; el servicio encha-guard del panel lo aplicará cuando esté activo.\e[0m"
+MSG_PT[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Não foi possível aplicar o guarda de firewall antes do swarm init (imagem do painel indisponível, sem rede ou kernel sem nftables). A instalação continua; o serviço encha-guard do painel o aplicará assim que subir.\e[0m"
+MSG_EN[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Could not apply the firewall guard before swarm init (panel image unavailable, no network or kernel without nftables). The installation continues; the panel's encha-guard service will apply it once it is up.\e[0m"
+MSG_ES[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  No fue posible aplicar el guarda de firewall antes de swarm init (imagen del panel no disponible, sin red o kernel sin nftables). La instalación continúa; el servicio encha-guard del panel lo aplicará cuando esté activo.\e[0m"
 
 aplicar_guarda_pre_swarm() {
   local ip="${1:-}"
@@ -3200,11 +3200,18 @@ aplicar_guarda_pre_swarm() {
     return 0
   fi
 
+  # Falha fechada, como o próprio serviço (aplicar_se_necessario em
+  # guard/encha-guard.sh): se o kernel recusar a versão completa (o limite de
+  # SSH usa set dinâmico com "limit", que kernel antigo não aceita), aplica a
+  # mínima — sem pares e sem limite de SSH, só lo + drops do Swarm. Nunca
+  # deixar 2377/7946/4789 abertas por causa de uma mitigação de SSH. String
+  # fixa: nada de variável interpolada no -c (o IP vai só por -e, validado
+  # pelo script).
   if ! sudo docker run --rm --network host --user 0 \
        --cap-drop ALL --cap-add NET_ADMIN \
        -e ENCHA_GUARD_PEERS="$ip" \
        --entrypoint sh "$imagem" \
-       -c '/usr/local/bin/encha-guard --render | nft -f -' > /dev/null 2>&1; then
+       -c '/usr/local/bin/encha-guard --render | nft -f - || ENCHA_GUARD_PEERS= ENCHA_GUARD_SSH_PORTAS= /usr/local/bin/encha-guard --render | nft -f -' > /dev/null 2>&1; then
     echo -e "$(t aplicar_guarda_pre_swarm_falha)"
   fi
   return 0
