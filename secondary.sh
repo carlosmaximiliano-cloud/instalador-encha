@@ -1612,13 +1612,13 @@ DNS_IP_PUBLICO_VPS=""
 DNS_IPS_LOCAIS_CONSULTADO=0
 DNS_IPS_LOCAIS_VPS=""
 
-MSG_PT[dns_aviso_nao_resolve]="O DNS de '%s' ainda não resolve. O Traefik/Let's Encrypt só emite o certificado quando o domínio aponta para esta VPS — a instalação segue, e dá para criar ou corrigir o registro DNS depois."
-MSG_EN[dns_aviso_nao_resolve]="The DNS for '%s' doesn't resolve yet. Traefik/Let's Encrypt only issues the certificate once the domain points to this VPS — the installation continues, and you can create or fix the DNS record later."
-MSG_ES[dns_aviso_nao_resolve]="El DNS de '%s' aún no resuelve. Traefik/Let's Encrypt solo emite el certificado cuando el dominio apunta a esta VPS — la instalación continúa, y puede crear o corregir el registro DNS después."
+MSG_PT[dns_aviso_nao_resolve]="O DNS de '%s' ainda não resolve — se o registro acabou de ser criado, pode ser só a propagação. O Traefik/Let's Encrypt só emite o certificado quando o domínio aponta para esta VPS; a instalação segue, e dá para criar ou corrigir o registro DNS depois."
+MSG_EN[dns_aviso_nao_resolve]="The DNS for '%s' doesn't resolve yet — if the record was just created, it may just be propagation. Traefik/Let's Encrypt only issues the certificate once the domain points to this VPS; the installation continues, and you can create or fix the DNS record later."
+MSG_ES[dns_aviso_nao_resolve]="El DNS de '%s' aún no resuelve — si el registro se acaba de crear, puede ser solo la propagación. Traefik/Let's Encrypt solo emite el certificado cuando el dominio apunta a esta VPS; la instalación continúa, y puede crear o corregir el registro DNS después."
 
-MSG_PT[dns_aviso_outro_ip]="O DNS de '%s' aponta para %s, e o IP desta VPS é %s. Confira se ele aponta para este servidor (com proxy/CDN, como a Cloudflare, isso é esperado). O Let's Encrypt só emite o certificado quando aponta para cá — a instalação segue, e dá para corrigir o DNS depois."
-MSG_EN[dns_aviso_outro_ip]="The DNS for '%s' points to %s, and this VPS's IP is %s. Check that it points to this server (with a proxy/CDN, such as Cloudflare, this is expected). Let's Encrypt only issues the certificate when it points here — the installation continues, and you can fix the DNS later."
-MSG_ES[dns_aviso_outro_ip]="El DNS de '%s' apunta a %s, y la IP de esta VPS es %s. Verifique que apunte a este servidor (con proxy/CDN, como Cloudflare, esto es esperado). Let's Encrypt solo emite el certificado cuando apunta aquí — la instalación continúa, y puede corregir el DNS después."
+MSG_PT[dns_aviso_outro_ip]="O DNS de '%s' aponta para %s, e o IP desta VPS é %s. Se o domínio passa por proxy/CDN (como a Cloudflare), isso é esperado. Se não, confira o registro A: o Let's Encrypt só emite o certificado quando ele aponta para cá (se acabou de ser alterado, pode ser só a propagação). A instalação segue, e dá para corrigir o DNS depois."
+MSG_EN[dns_aviso_outro_ip]="The DNS for '%s' points to %s, and this VPS's IP is %s. If the domain goes through a proxy/CDN (such as Cloudflare), this is expected. If not, check the A record: Let's Encrypt only issues the certificate when it points here (if it was just changed, it may just be propagation). The installation continues, and you can fix the DNS later."
+MSG_ES[dns_aviso_outro_ip]="El DNS de '%s' apunta a %s, y la IP de esta VPS es %s. Si el dominio pasa por un proxy/CDN (como Cloudflare), esto es esperado. Si no, verifique el registro A: Let's Encrypt solo emite el certificado cuando apunta aquí (si se acaba de cambiar, puede ser solo la propagación). La instalación continúa, y puede corregir el DNS después."
 
 MSG_PT[dns_aviso_so_ipv6]="O DNS de '%s' só tem endereço IPv6 (registro AAAA), sem nenhum registro A (IPv4). Crie um registro A apontando para o IPv4 desta VPS (%s): sem ele, quem acessa só por IPv4 não chega no endereço e o Let's Encrypt pode não emitir o certificado — a instalação segue, e dá para criar o registro depois."
 MSG_EN[dns_aviso_so_ipv6]="The DNS for '%s' only has an IPv6 address (AAAA record), with no A record (IPv4). Create an A record pointing to this VPS's IPv4 (%s): without it, anyone connecting only over IPv4 can't reach the address and Let's Encrypt may not issue the certificate — the installation continues, and you can create the record later."
@@ -1792,7 +1792,8 @@ checar_dns_dominio() {
                 elif [ "$estado" = "so_ipv6" ]; then
                     dns_imprimir_aviso "$(t dns_aviso_so_ipv6 "$dominio" "$DNS_IP_PUBLICO_VPS")"
                 else
-                    dns_imprimir_aviso "$(t dns_aviso_outro_ip "$dominio" "${DNS_IPS_CACHE[$dominio]:-}" "$DNS_IP_PUBLICO_VPS")"
+                    local ips_legiveis="${DNS_IPS_CACHE[$dominio]:-}"
+                    dns_imprimir_aviso "$(t dns_aviso_outro_ip "$dominio" "${ips_legiveis//,/, }" "$DNS_IP_PUBLICO_VPS")"
                 fi
             fi
             ;;

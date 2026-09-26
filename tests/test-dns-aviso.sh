@@ -207,6 +207,28 @@ case "$saida" in
 esac
 case "$saida" in *"ainda não resolve"*) falha "(c) usou a mensagem de 'não resolve'" ;; *) ok "(c) mensagem diferente da de 'não resolve'" ;; esac
 case "$saida" in *"Cloudflare"*|*"proxy"*) ok "(c) texto neutro sobre proxy/CDN" ;; *) falha "(c) sem menção a proxy/CDN: $saida" ;; esac
+# Com proxy/CDN o Let's Encrypt emite normalmente (o proxy repassa o desafio):
+# o texto não pode dizer, sem ressalva, que só emite "quando aponta para cá".
+case "$saida" in
+  *"Cloudflare), isso é esperado. Se não"*) ok "(c) a exigência do Let's Encrypt vale só para quem NÃO usa proxy/CDN" ;;
+  *) falha "(c) texto contradiz o caso proxy/CDN: $saida" ;;
+esac
+# vários IPs no aviso: separados por ", " (legível), não por "," colado
+reset_dns
+printf '198.51.100.9\n198.51.100.10\n' > "$DNSDIR/rr.exemplo.com"
+saida="$(checar_dns_dominio rr.exemplo.com)"
+case "$saida" in *"198.51.100.10, 198.51.100.9"*) ok "(c) vários IPs no aviso separados por ', '" ;; *) falha "(c) lista de IPs ilegível: $saida" ;; esac
+# DNS recém-criado/alterado: o texto lembra da propagação, nos 3 idiomas
+reset_dns
+echo "198.51.100.9" > "$DNSDIR/errado.exemplo.com"
+for par in "pt:propagação" "en:propagation" "es:propagación"; do
+  ENCHA_LANG="${par%%:*}"; palavra="${par#*:}"
+  DNS_AVISADO_CACHE=()
+  s1="$(checar_dns_dominio sumiu.exemplo.com)"; s2="$(checar_dns_dominio errado.exemplo.com)"
+  case "$s1" in *"$palavra"*) ok "(b) [$ENCHA_LANG] 'não resolve' cita a $palavra" ;; *) falha "(b) [$ENCHA_LANG] sem '$palavra': $s1" ;; esac
+  case "$s2" in *"$palavra"*) ok "(c) [$ENCHA_LANG] 'outro IP' cita a $palavra" ;; *) falha "(c) [$ENCHA_LANG] sem '$palavra': $s2" ;; esac
+done
+ENCHA_LANG=pt
 [ "$rc" -eq 0 ] && ok "(c) retorna 0" || falha "(c) retorno $rc"
 # vários IPs (round-robin) e um deles é o da VPS: ok
 reset_dns
