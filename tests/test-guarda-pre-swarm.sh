@@ -59,7 +59,13 @@ cat > "$BINDIR/docker" <<'EOF2'
 #!/bin/bash
 { echo "--"; for a in "$@"; do printf '%s\n' "$a"; done; } >> "$DOCKER_LOG"
 case "$1" in
-  info) echo "${FAKE_SWARM:-inactive}"; exit 0 ;;
+  # Só responde o estado quando pedem EXATAMENTE .Swarm.LocalNodeState — ler
+  # outro campo (ex.: .Swarm.NodeID) daria um valor que nunca é "active".
+  info) case "$*" in
+          *"--format {{.Swarm.LocalNodeState}}"*) echo "${FAKE_SWARM:-inactive}" ;;
+          *) echo "campo-inesperado" ;;
+        esac
+        exit 0 ;;
   pull) [ "${FAKE_PULL_FALHA:-0}" = 1 ] && exit 1; exit 0 ;;
   run)  exit 0 ;;
 esac
@@ -215,16 +221,22 @@ aplicar_guarda_pre_swarm "203.0.113.7" > "$BINDIR/out_f3" 2>&1; rc=$?
   && ok "(f3) nft recusa tudo: retorna 0 e avisa" || falha "(f3) rc=$rc out=$(cat "$BINDIR/out_f3")"
 
 # --- (d) estático: chamada ANTES do swarm init nas duas funções -------------
+# As três linhas (ignorando comentário/linha em branco) têm de ser VIZINHAS e
+# nesta ordem: ip=$(hostname -I ...) -> aplicar_guarda_pre_swarm "$ip" ->
+# docker swarm init --advertise-addr "$ip". Assim o guarda recebe o MESMO IP
+# do init (nunca um "ip" ainda não calculado) e não fica dentro de um if/
+# desvio que o pule.
 for fn in ferramenta_traefik_e_portainer instalar_traefik_e_portainer; do
-  corpo="$(extrair_funcao "$fn")"
-  l_guarda="$(printf '%s\n' "$corpo" | grep -n '^[[:space:]]*aplicar_guarda_pre_swarm "\$ip"' | head -1 | cut -d: -f1)"
-  l_init="$(printf '%s\n' "$corpo" | grep -n 'docker swarm init' | head -1 | cut -d: -f1)"
-  if [ -z "$l_guarda" ] || [ -z "$l_init" ]; then
-    falha "(d) $fn: chamada ($l_guarda) ou swarm init ($l_init) não encontrado"
-  elif [ "$l_guarda" -lt "$l_init" ]; then
-    ok "(d) $fn: aplicar_guarda_pre_swarm (linha $l_guarda) antes do swarm init (linha $l_init)"
+  corpo="$(extrair_funcao "$fn" | grep -vE '^[[:space:]]*(#|$)')"
+  l_ip="$(printf '%s\n' "$corpo" | grep -n '^[[:space:]]*ip=\$(hostname -I' | head -1 | cut -d: -f1)"
+  l_guarda="$(printf '%s\n' "$corpo" | grep -n '^[[:space:]]*aplicar_guarda_pre_swarm "\$ip"[[:space:]]*$' | head -1 | cut -d: -f1)"
+  l_init="$(printf '%s\n' "$corpo" | grep -n '^[[:space:]]*sudo docker swarm init --advertise-addr "\$ip"' | head -1 | cut -d: -f1)"
+  if [ -z "$l_ip" ] || [ -z "$l_guarda" ] || [ -z "$l_init" ]; then
+    falha "(d) $fn: ip= ($l_ip), chamada do guarda ($l_guarda) ou swarm init --advertise-addr \"\$ip\" ($l_init) não encontrado"
+  elif [ "$l_guarda" -eq $((l_ip + 1)) ] && [ "$l_init" -eq $((l_guarda + 1)) ]; then
+    ok "(d) $fn: ip= -> aplicar_guarda_pre_swarm \"\$ip\" -> swarm init, vizinhas e nessa ordem"
   else
-    falha "(d) $fn: aplicar_guarda_pre_swarm (linha $l_guarda) NÃO vem antes do swarm init (linha $l_init)"
+    falha "(d) $fn: esperado ip= ($l_ip), guarda ($l_guarda), swarm init ($l_init) em linhas vizinhas e nessa ordem"
   fi
 done
 n_init="$(grep -v '^[[:space:]]*#' secondary.sh | grep -c 'docker swarm init')"
