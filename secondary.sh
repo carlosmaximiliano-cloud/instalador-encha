@@ -1579,11 +1579,174 @@ validar_dominio() {
     dominio=$1
 
     if [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+        # S3 (achado 7): só AVISA se o DNS não aponta para esta VPS — nunca
+        # muda o retorno (domínio válido em formato continua válido).
+        checar_dns_dominio "$dominio"
         return 0
     fi
 
     echo -e "$(t validar_dominio_invalido)"
     return 1
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S3 (achado 7 da auditoria 2): aviso de DNS em todo caminho que pede domínio.
+#
+# No teste real o operador digitou 'potainer.alunaencha.shop' (sem o "r", sem
+# registro DNS); o instalador só validava o FORMATO, instalou tudo e anunciou no
+# resumo um endereço que nunca abre nem obtém certificado. Decisão do dono do
+# produto: só AVISAR — nunca bloquear, nunca pedir confirmação extra. Por isso
+# nada aqui retorna diferente de 0 (um retorno != 0 num `&& break`/`||` de quem
+# chama, ou sob 'set -e', mudaria o fluxo).
+#
+# Silêncio é o padrão em qualquer dúvida: sem IP público da VPS, resolução
+# expirada (timeout), domínio fora do formato → nenhum aviso (nunca falso
+# alarme). Uma consulta por domínio por execução (cache abaixo). As funções que
+# preenchem o cache precisam ser chamadas DIRETO, não dentro de $( ).
+# ─────────────────────────────────────────────────────────────────────────────
+declare -gA DNS_ESTADO_CACHE   # domínio -> ok | nao_resolve | outro_ip | desconhecido
+declare -gA DNS_IPS_CACHE      # domínio -> IPs (v4) para onde aponta, separados por vírgula
+declare -gA DNS_AVISADO_CACHE  # domínio -> 1 se o aviso já foi impresso nesta execução
+DNS_IP_PUBLICO_CONSULTADO=0
+DNS_IP_PUBLICO_VPS=""
+
+MSG_PT[dns_aviso_nao_resolve]="O DNS de '%s' ainda não resolve. O Traefik/Let's Encrypt só emite o certificado quando o domínio aponta para esta VPS — a instalação segue, e dá para criar ou corrigir o registro DNS depois."
+MSG_EN[dns_aviso_nao_resolve]="The DNS for '%s' doesn't resolve yet. Traefik/Let's Encrypt only issues the certificate once the domain points to this VPS — the installation continues, and you can create or fix the DNS record later."
+MSG_ES[dns_aviso_nao_resolve]="El DNS de '%s' aún no resuelve. Traefik/Let's Encrypt solo emite el certificado cuando el dominio apunta a esta VPS — la instalación continúa, y puede crear o corregir el registro DNS después."
+
+MSG_PT[dns_aviso_outro_ip]="O DNS de '%s' aponta para %s, e o IP desta VPS é %s. Confira se ele aponta para este servidor (com proxy/CDN, como a Cloudflare, isso é esperado). O Let's Encrypt só emite o certificado quando aponta para cá — a instalação segue, e dá para corrigir o DNS depois."
+MSG_EN[dns_aviso_outro_ip]="The DNS for '%s' points to %s, and this VPS's IP is %s. Check that it points to this server (with a proxy/CDN, such as Cloudflare, this is expected). Let's Encrypt only issues the certificate when it points here — the installation continues, and you can fix the DNS later."
+MSG_ES[dns_aviso_outro_ip]="El DNS de '%s' apunta a %s, y la IP de esta VPS es %s. Verifique que apunte a este servidor (con proxy/CDN, como Cloudflare, esto es esperado). Let's Encrypt solo emite el certificado cuando apunta aquí — la instalación continúa, y puede corregir el DNS después."
+
+MSG_PT[dns_ok_linha]="DNS de '%s' já aponta para esta VPS."
+MSG_EN[dns_ok_linha]="DNS for '%s' already points to this VPS."
+MSG_ES[dns_ok_linha]="El DNS de '%s' ya apunta a esta VPS."
+
+# Preenche DNS_IP_PUBLICO_VPS (vazio se não deu para obter) — uma tentativa só
+# por execução, mesmo quando falha, para não repetir o timeout a cada domínio.
+dns_ip_publico_vps() {
+    if [ "${DNS_IP_PUBLICO_CONSULTADO:-0}" != "1" ]; then
+        DNS_IP_PUBLICO_CONSULTADO=1
+        local ip
+        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
+        if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            DNS_IP_PUBLICO_VPS="$ip"
+        fi
+    fi
+    return 0
+}
+
+# Resolve <dominio> (uma vez por execução) e grava o estado em
+# DNS_ESTADO_CACHE. --reverificar refaz a consulta só de quem já foi checado e
+# estava com problema (o resumo final usa: o DNS pode ter propagado durante a
+# instalação); domínio nunca checado continua sem consulta.
+dns_estado_dominio() {
+    local reverificar=0
+    if [ "${1:-}" = "--reverificar" ]; then reverificar=1; shift; fi
+    local dominio="${1:-}"
+    # Fora do formato de FQDN: silêncio (a validação de formato é de quem pede
+    # o domínio) — e nunca passa lixo/opção ao getent nem usa de chave.
+    [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] || return 0
+
+    local anterior="${DNS_ESTADO_CACHE[$dominio]:-}"
+    if [ -n "$anterior" ]; then
+        if [ "$reverificar" = "0" ] || { [ "$anterior" != "nao_resolve" ] && [ "$anterior" != "outro_ip" ]; }; then
+            return 0
+        fi
+    elif [ "$reverificar" = "1" ]; then
+        return 0   # nunca checado: --reverificar não inaugura consulta nova
+    fi
+
+    dns_ip_publico_vps
+    if [ -z "$DNS_IP_PUBLICO_VPS" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
+
+    # `|| rc=$?`: getent sai != 0 quando o domínio não existe (é o caso que
+    # queremos avisar), e isso não pode abortar quem roda sob 'set -e'.
+    local saida rc=0
+    if command -v timeout >/dev/null 2>&1; then
+        saida=$(timeout 5 getent ahostsv4 "$dominio" 2>/dev/null) || rc=$?
+    else
+        saida=$(getent ahostsv4 "$dominio" 2>/dev/null) || rc=$?
+    fi
+    # 124 = estourou o tempo: resolvedor lento não é "domínio sem DNS".
+    if [ "$rc" = "124" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
+
+    local ips
+    ips=$(printf '%s\n' "$saida" | awk 'NF {print $1}' | sort -u | paste -sd, -)
+    DNS_IPS_CACHE[$dominio]="$ips"
+    if [ -z "$ips" ]; then
+        DNS_ESTADO_CACHE[$dominio]="nao_resolve"
+    elif [[ ",$ips," == *",$DNS_IP_PUBLICO_VPS,"* ]]; then
+        DNS_ESTADO_CACHE[$dominio]="ok"
+    else
+        DNS_ESTADO_CACHE[$dominio]="outro_ip"
+    fi
+    return 0
+}
+
+# Uma linha de aviso (status_warning quando main.sh o define; senão texto
+# simples — secondary.sh também roda sozinho pelo menu).
+dns_imprimir_aviso() {
+    if type status_warning >/dev/null 2>&1; then
+        status_warning "$1"
+    else
+        echo -e "\e[33m⚠️  $1\e[0m"
+    fi
+}
+
+# checar_dns_dominio [--sempre] <dominio> — imprime UMA linha de aviso se o
+# domínio não resolve ou não aponta para esta VPS; nada se estiver ok, se não
+# deu para saber, ou se o aviso desse domínio já saiu nesta execução.
+# --sempre: ignora o "já avisou" e também imprime a linha "já aponta" (usado
+# pela pré-checagem informativa de checar_dns_e_portas). Retorna SEMPRE 0.
+checar_dns_dominio() {
+    local sempre=0
+    if [ "${1:-}" = "--sempre" ]; then sempre=1; shift; fi
+    local dominio="${1:-}"
+    [ -z "$dominio" ] && return 0
+
+    dns_estado_dominio "$dominio"
+    local estado="${DNS_ESTADO_CACHE[$dominio]:-desconhecido}"
+    case "$estado" in
+        nao_resolve|outro_ip)
+            if [ "$sempre" = "1" ] || [ "${DNS_AVISADO_CACHE[$dominio]:-}" != "1" ]; then
+                DNS_AVISADO_CACHE[$dominio]="1"
+                if [ "$estado" = "nao_resolve" ]; then
+                    dns_imprimir_aviso "$(t dns_aviso_nao_resolve "$dominio")"
+                else
+                    dns_imprimir_aviso "$(t dns_aviso_outro_ip "$dominio" "${DNS_IPS_CACHE[$dominio]:-}" "$DNS_IP_PUBLICO_VPS")"
+                fi
+            fi
+            ;;
+        ok)
+            if [ "$sempre" = "1" ]; then
+                if type status_ok >/dev/null 2>&1; then
+                    status_ok "$(t dns_ok_linha "$dominio")"
+                else
+                    echo -e "\e[32m✅ $(t dns_ok_linha "$dominio")\e[0m"
+                fi
+            fi
+            ;;
+    esac
+    return 0
+}
+
+# Lê os domínios Host(`...`) das labels do Traefik de um arquivo de stack e
+# checa cada um — é o ponto único que cobre as ~90 ferramentas do menu, todas
+# com o próprio prompt de domínio (stack_editavel chama antes do deploy).
+dns_checar_hosts_da_stack() {
+    local arquivo="${1:-}" host
+    [ -f "$arquivo" ] || return 0
+    while IFS= read -r host; do
+        [ -n "$host" ] && checar_dns_dominio "$host"
+    done < <(grep -oE 'Host\(`[^`]+`\)' "$arquivo" 2>/dev/null | sed -E 's/^Host\(`//; s/`\)$//' | awk '!v[$0]++')
+    return 0
 }
 
 # O Portainer só cria o admin via --admin-password-file com o username fixo
@@ -2237,6 +2400,10 @@ stack_editavel(){
         echo "$(t stack_editavel_stack_nao_definido)"
         return 1
     fi
+
+    # S3 (achado 7): antes do deploy, avisa (sem bloquear) se algum Host() da
+    # stack não aponta para esta VPS — cobre todas as ferramentas do menu.
+    dns_checar_hosts_da_stack "$(pwd)/$STACK_NAME.yaml"
 
     echo -e "$(t stack_editavel_iniciando_deploy "$STACK_NAME")"
 
@@ -3381,6 +3548,8 @@ ferramenta_traefik_e_portainer() {
       if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
       echo -e "$(t ferramenta_traefik_e_portainer_confira)"
       echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
+      # S3 (achado 7): só avisa (nunca bloqueia) se o DNS não aponta para cá.
+      checar_dns_dominio --sempre "$url_portainer"
       read -p "$(t ferramenta_traefik_e_portainer_confirma)" confirmacao
       if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
     done
@@ -3393,6 +3562,10 @@ ferramenta_traefik_e_portainer() {
   # pedido é aplicado depois por renomeação (ver
   # renomear_admin_portainer_se_necessario, chamada no bloco FINALIZANDO).
   user_portainer_alvo="$user_portainer"
+
+  # S3 (achado 7): também no caminho não-interativo (sem tela de confirmação).
+  # Já avisado acima nesta execução? Fica em silêncio (cache por domínio).
+  checar_dns_dominio "$url_portainer"
 
   # Reinstalação sobre um 'portainer_data' já existente: o admin (e a senha)
   # já foram criados numa instalação anterior e sobrevivem ao 'docker stack
@@ -24056,6 +24229,8 @@ instalar_traefik_e_portainer() {
 
   echo -e "$(t instalar_traefik_e_portainer_titulo)"
   echo -e "$(t instalar_traefik_e_portainer_dados_recebidos "$url_portainer")"
+  # S3 (achado 7): só avisa (nunca bloqueia) se o DNS não aponta para esta VPS.
+  checar_dns_dominio "$url_portainer"
 
   # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
@@ -25579,6 +25754,7 @@ instalar_ambiente_completo() {
     msg_traefik_portainer
     echo -e "$(t instalar_ambiente_completo_passo1_6)"
     echo -ne "$(t instalar_ambiente_completo_portainer_dominio_pergunta)" && read -r url_portainer
+    checar_dns_dominio "$url_portainer"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_passo2_6)"
@@ -25696,10 +25872,12 @@ instalar_ambiente_completo() {
     msg_n8n # Supondo que esta função exiba um banner para o N8N
     echo -e "$(t instalar_ambiente_completo_n8n_passo1_7 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_n8n_dominio_pergunta)" && read -r url_editorn8n
+    checar_dns_dominio "$url_editorn8n"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_n8n_passo2_7 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_n8n_webhook_pergunta)" && read -r url_webhookn8n
+    checar_dns_dominio "$url_webhookn8n"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_n8n_passo3_7 "$amarelo")"
@@ -25730,6 +25908,7 @@ instalar_ambiente_completo() {
     msg_evolution_api # Supondo que esta função exiba um banner para a Evolution
     echo -e "$(t instalar_ambiente_completo_evolution_passo1_1 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_evolution_dominio_pergunta)" && read -r url_evolution
+    checar_dns_dominio "$url_evolution"   # S3 (achado 7): só avisa
     echo ""
 
     # =================================================================
@@ -27727,6 +27906,10 @@ ferramenta_encha_panel() {
         echo -e "$(t ferramenta_encha_panel_sem_url)"
         return 1
     fi
+
+    # S3 (achado 7): só avisa (nunca bloqueia) se o DNS do painel não aponta
+    # para esta VPS. Silencioso se main.sh/o fluxo anterior já avisou.
+    checar_dns_dominio "$url_painel"
 
     # Knob de teste (mesma regra do ENCHA_SRC_BRANCH em main.sh): NUNCA em
     # produção — existe só pra testar uma imagem específica (ex.: uma
