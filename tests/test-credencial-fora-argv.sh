@@ -146,7 +146,21 @@ cat > "$BINDIR/docker" <<'EOF'
 #!/bin/bash
 { echo "CMD docker"; for a in "$@"; do printf 'ARG %s\n' "$a"; done; } >> "$ARGV_LOG"
 case "${1:-}" in
-  run) shift; exec "$(dirname "$0")/nucleo-curl" "$@" ;;
+  run)
+    shift
+    # Como o docker de verdade: sem -i/--interactive ANTES da imagem, o stdin
+    # do host NÃO chega ao processo do contêiner — o `curl -K -` leria config
+    # vazia (sem Authorization, sem corpo). Sem isto, um curl_portainer que
+    # perdesse o -i passaria em todos os cenários e quebraria na VPS.
+    interativo=false
+    for a in "$@"; do
+      [ "$a" = "$ENCHA_CURL_IMAGE" ] && break
+      case "$a" in -i|--interactive|-it|-ti) interativo=true ;; esac
+    done
+    if [ "$interativo" = true ]; then
+      exec "$(dirname "$0")/nucleo-curl" "$@"
+    fi
+    exec "$(dirname "$0")/nucleo-curl" "$@" </dev/null ;;
   image) printf '%s' "${FAKE_IMAGE_LABEL:-}"; exit 0 ;;
   secret)
     case "${2:-}" in
@@ -189,6 +203,26 @@ confere() {
   done
   # sanidade: o argv foi mesmo registrado (senão o teste passaria no vazio)
   [ -s "$ARGV_LOG" ] || falha "$cen: argv vazio — os falsos não foram chamados"
+  # todo `docker run` que lê config por stdin (-K -) precisa de -i antes da
+  # imagem — é o que faz o stdin do host chegar ao curl do contêiner.
+  local sem_i
+  sem_i="$(awk -v img="$ENCHA_CURL_IMAGE" '
+    function fecha() { if (dr && k && !i) n++; dr = 0; k = 0; i = 0; pos = 0 }
+    /^CMD / { fecha(); cmd = $2; nargs = 0; next }
+    cmd == "docker" && /^ARG / {
+      a = substr($0, 5); nargs++
+      if (nargs == 1 && a == "run") dr = 1
+      if (dr && !pos && (a == "-i" || a == "--interactive" || a == "-it" || a == "-ti")) i = 1
+      if (a == img) pos = 1
+      if (pos && a == "-K") k = 1
+    }
+    END { fecha(); print n + 0 }
+  ' "$ARGV_LOG")"
+  if [ "$sem_i" -eq 0 ]; then
+    ok "$cen: todo docker run com -K - tem -i (stdin chega ao contêiner)"
+  else
+    falha "$cen: $sem_i docker run com '-K -' SEM -i — o config nunca chegaria ao curl do contêiner"
+  fi
 }
 
 rodar() {
