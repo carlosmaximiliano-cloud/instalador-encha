@@ -1058,10 +1058,13 @@ coletar_inputs_so_painel() {
     # Valida de verdade contra o Portainer, para não gerar uma stack do
     # painel com credenciais de serviço erradas.
     echo -e "$(t coletar_so_painel_validando)"
-    resp=$(sudo docker run --rm --network "$nome_rede_interna" "${ENCHA_CURL_IMAGE}" \
+    # S2: usuário/senha por env no jq e corpo por stdin (curl_portainer, de
+    # secondary.sh — já carregado por `source` antes desta função rodar):
+    # nunca na linha de comando, e o JSON agora escapa aspas/barras na senha.
+    resp=$(curl_portainer --rede "$nome_rede_interna" \
+        --body "$(portainer_json_login "$user_portainer" "$pass_portainer")" -- \
         -s -o /dev/null -w "%{http_code}" -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" 2>/dev/null)
+        -H "Content-Type: application/json" 2>/dev/null)
     if [ "$resp" != "200" ]; then
         echo -e "$(t coletar_so_painel_auth_falhou "$resp")"
         coletar_inputs_so_painel; return

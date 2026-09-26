@@ -52,10 +52,91 @@ PORTAINER_VERSION="2.45.1"
 
 # Imagem do curl usada para as chamadas HTTP internas ao Portainer
 # (autenticação, verificação de admin, renomeação de usuário, deploy de
-# stack via API). Ela recebe a senha do Portainer e o JWT como argumento de
-# linha de comando, então merece ser íntegra — nunca ":latest" nem sem tag.
+# stack via API). Ela recebe a senha do Portainer e o JWT (por stdin — ver
+# curl_portainer abaixo), então merece ser íntegra — nunca ":latest" nem sem tag.
 # Tag + digest resolvidos via `docker manifest inspect curlimages/curl:8.11.1`.
 ENCHA_CURL_IMAGE="curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69"
+
+# ── Segredos do Portainer/GHCR NUNCA na linha de comando (S2, achado 6) ──────
+# A linha de comando de qualquer processo é pública para todo usuário local
+# (`ps`, /proc/<pid>/cmdline) pelo tempo que ele vive. Um `curl -d '{"password":
+# ...}'`, um `-H "Authorization: Bearer <jwt>"` ou um `jq --arg p "$senha"`
+# expõe a credencial do Portainer (senha, JWT) e o token do GHCR nesse
+# intervalo. Regra deste arquivo: os SEGREDOS (senha, JWT, token, corpo que os
+# contém) trafegam por STDIN/variável de ambiente — só o que não é segredo
+# (método, URL, códigos, Content-Type) fica no argv.
+#
+# curl_portainer manda o cabeçalho Authorization e o corpo para o curl como
+# ARQUIVO DE CONFIGURAÇÃO lido de stdin (`curl -K -`): `header = "..."`,
+# `data-raw = "..."`, `form-string = "Env=..."`. O printf é builtin (não vira
+# processo) e o valor é escapado como o curl exige entre aspas (\\ \" \n \r
+# \t \v). Escolhido em vez de arquivo temporário porque não deixa nada em
+# disco (nem trap/limpeza), e em vez de `--data @-` porque `-K -` e `@-`
+# disputariam o mesmo stdin. Validado contra o curl 8.11.1 da imagem pinada.
+#
+#   curl_portainer [--rede REDE] [--mount ARQ] [--token JWT]
+#                  [--body JSON] [--form-env JSON] -- <args do curl sem segredo>
+#     --rede      roda dentro do contêiner ENCHA_CURL_IMAGE (docker run -i) na
+#                 rede overlay; sem ela, usa o `curl` do host.
+#     --mount     monta ARQ:ARQ:ro no contêiner (para -F "file=@ARQ").
+#     --token     vira o header "Authorization: Bearer ...".
+#     --body      corpo bruto (data-raw); precisa de -H Content-Type no argv.
+#     --form-env  campo multipart "Env" (form-string: sem interpretar ; nem @).
+# O corpo da resposta sai no stdout do curl, como antes.
+curl_portainer_escapar() {
+    local v="$1"
+    v=${v//\\/\\\\}
+    v=${v//\"/\\\"}
+    v=${v//$'\n'/\\n}
+    v=${v//$'\r'/\\r}
+    v=${v//$'\t'/\\t}
+    v=${v//$'\v'/\\v}
+    printf '%s' "$v"
+}
+
+curl_portainer() {
+    local rede="" mount="" token="" body="" form_env=""
+    local tem_body=false tem_form_env=false
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --rede) rede="$2"; shift 2 ;;
+            --mount) mount="$2"; shift 2 ;;
+            --token) token="$2"; shift 2 ;;
+            --body) body="$2"; tem_body=true; shift 2 ;;
+            --form-env) form_env="$2"; tem_form_env=true; shift 2 ;;
+            --) shift; break ;;
+            *) break ;;
+        esac
+    done
+
+    local cfg=""
+    if [ -n "$token" ]; then
+        cfg+="header = \"Authorization: Bearer $(curl_portainer_escapar "$token")\""$'\n'
+    fi
+    if [ "$tem_body" = true ]; then
+        cfg+="data-raw = \"$(curl_portainer_escapar "$body")\""$'\n'
+    fi
+    if [ "$tem_form_env" = true ]; then
+        cfg+="form-string = \"Env=$(curl_portainer_escapar "$form_env")\""$'\n'
+    fi
+
+    if [ -n "$rede" ]; then
+        local -a montar=()
+        [ -n "$mount" ] && montar=(-v "$mount:$mount:ro")
+        printf '%s' "$cfg" | docker run --rm -i --network "$rede" ${montar[@]+"${montar[@]}"} \
+            "${ENCHA_CURL_IMAGE}" -K - "$@"
+    else
+        printf '%s' "$cfg" | curl -K - "$@"
+    fi
+}
+
+# JSON do POST /api/auth do Portainer. Usuário e senha entram no jq por
+# VARIÁVEL DE AMBIENTE (prefixada ao comando: não aparece em argv) — nunca
+# `jq --arg p "$senha"`, que poria a senha na linha de comando do jq. O jq
+# também escapa aspas/barras/controle corretamente.
+portainer_json_login() {
+    U="$1" P="$2" jq -nc '{username:env.U,password:env.P}'
+}
 
 #FERRAMENTAS VISUAIS
 
@@ -1520,11 +1601,10 @@ renomear_admin_portainer_se_necessario() {
 
     local ok=false http
     for _ in 1 2 3 4 5; do
-        http=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+        http=$(curl_portainer --rede "$rede" --token "$token_admin" \
+            --body "$(jq -nc --arg u "$alvo" '{Username:$u}')" -- \
             -s -o /dev/null -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token_admin" \
             -H "Content-Type: application/json" \
-            -d "$(jq -nc --arg u "$alvo" '{Username:$u}')" \
             http://portainer_portainer:9000/api/users/1 2>/dev/null)
         [ "$http" = "200" ] && { ok=true; break; }
         sleep 3
@@ -1536,10 +1616,10 @@ renomear_admin_portainer_se_necessario() {
     fi
 
     local novo_token
-    novo_token=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+    novo_token=$(curl_portainer --rede "$rede" \
+        --body "$(portainer_json_login "$alvo" "$senha")" -- \
         -s -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "$(jq -nc --arg u "$alvo" --arg p "$senha" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+        -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
 
     if [ -n "$novo_token" ] && [ "$novo_token" != "null" ]; then
         USER_PORTAINER_FINAL="$alvo"
@@ -1631,10 +1711,10 @@ finalizar_admin_portainer() {
 
     local usuario_atual="" token="" cand
     for cand in "${candidatos[@]}"; do
-        token=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+        token=$(curl_portainer --rede "$rede" \
+            --body "$(portainer_json_login "$cand" "$senha")" -- \
             -s -X POST http://portainer_portainer:9000/api/auth \
-            -H "Content-Type: application/json" \
-            -d "$(jq -nc --arg u "$cand" --arg p "$senha" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+            -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
         if [ -n "$token" ] && [ "$token" != "null" ]; then
             usuario_atual="$cand"
             break
@@ -2088,10 +2168,12 @@ stack_editavel(){
     while [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; do
 
         # [CORREÇÃO] Usa jq para criar o JSON. Isso corrige o erro com a senha contendo "@"
-        JSON_PAYLOAD=$(jq -n --arg u "$USUARIO" --arg p "$SENHA" '{username: $u, password: $p}')
+        # (S2: usuário/senha entram no jq por env e o corpo vai por stdin —
+        # nunca na linha de comando; ver curl_portainer).
+        JSON_PAYLOAD=$(portainer_json_login "$USUARIO" "$SENHA")
 
-        TOKEN=$(curl -k -s -X POST -H "Content-Type: application/json" \
-        -d "$JSON_PAYLOAD" \
+        TOKEN=$(curl_portainer --body "$JSON_PAYLOAD" -- \
+        -k -s -X POST -H "Content-Type: application/json" \
         "https://$PORTAINER_URL/api/auth" | jq -r .jwt)
 
         if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
@@ -2110,7 +2192,7 @@ stack_editavel(){
 
     # --- 4. OBTENÇÃO DOS IDs ---
     # Pega o Endpoint ID (Geralmente é 1 ou 2)
-    ENDPOINT_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
+    ENDPOINT_ID=$(curl_portainer --token "$TOKEN" -- -k -s -X GET "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
 
     if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" == "null" ]; then
         echo "$(t stack_editavel_endpoint_erro)"
@@ -2120,7 +2202,7 @@ stack_editavel(){
     fi
 
     # Pega o Swarm ID
-    SWARM_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
+    SWARM_ID=$(curl_portainer --token "$TOKEN" -- -k -s -X GET "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
 
     if [ -z "$SWARM_ID" ] || [ "$SWARM_ID" == "null" ]; then
          # Tenta pegar sem especificar endpoint caso falhe
@@ -2140,8 +2222,8 @@ stack_editavel(){
     erro_output=$(mktemp)
     response_output=$(mktemp)
 
-    http_code=$(curl -s -o "$response_output" -w "%{http_code}" -k -X POST \
-    -H "Authorization: Bearer $TOKEN" \
+    http_code=$(curl_portainer --token "$TOKEN" -- \
+    -s -o "$response_output" -w "%{http_code}" -k -X POST \
     -F "Name=$STACK_NAME" \
     -F "file=@$(pwd)/$STACK_NAME.yaml" \
     -F "SwarmID=$SWARM_ID" \
@@ -2207,30 +2289,35 @@ registrar_registry_portainer() {
     senha=$(grep -E "^(Password|Senha): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
     portainer_url=$(grep -E "^(Domain|Dominio): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
 
+    # S2: credenciais por env/stdin, nunca no argv (ver curl_portainer).
     local json_payload
-    json_payload=$(jq -n --arg u "$usuario" --arg p "$senha" '{username: $u, password: $p}')
-    token=$(curl -k -s -X POST -H "Content-Type: application/json" \
-        -d "$json_payload" "https://$portainer_url/api/auth" | jq -r .jwt)
+    json_payload=$(portainer_json_login "$usuario" "$senha")
+    token=$(curl_portainer --body "$json_payload" -- \
+        -k -s -X POST -H "Content-Type: application/json" \
+        "https://$portainer_url/api/auth" | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" == "null" ]; then
         echo "$(t registrar_registry_portainer_falha_auth)"
         return 1
     fi
 
     local existing_id reg_payload http_code
-    existing_id=$(curl -k -s -H "Authorization: Bearer $token" "https://$portainer_url/api/registries" \
+    existing_id=$(curl_portainer --token "$token" -- -k -s "https://$portainer_url/api/registries" \
         | jq -r '.[] | select(.URL=="ghcr.io") | .Id' | head -n1)
 
-    reg_payload=$(jq -n --arg u "$GHCR_USER" --arg p "$GHCR_TOKEN" \
-        '{Name:"GHCR EnchaT", Type:3, URL:"ghcr.io", Authentication:true, Username:$u, Password:$p, TLS:true}')
+    # O token do GHCR entra no jq por env (nunca --arg) e no curl por stdin.
+    reg_payload=$(U="$GHCR_USER" P="$GHCR_TOKEN" jq -n \
+        '{Name:"GHCR EnchaT", Type:3, URL:"ghcr.io", Authentication:true, Username:env.U, Password:env.P, TLS:true}')
 
     if [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
-        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$reg_payload" "https://$portainer_url/api/registries/$existing_id")
+        http_code=$(curl_portainer --token "$token" --body "$reg_payload" -- \
+            -k -s -o /dev/null -w "%{http_code}" -X PUT \
+            -H "Content-Type: application/json" \
+            "https://$portainer_url/api/registries/$existing_id")
     else
-        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$reg_payload" "https://$portainer_url/api/registries")
+        http_code=$(curl_portainer --token "$token" --body "$reg_payload" -- \
+            -k -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            "https://$portainer_url/api/registries")
     fi
 
     if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
@@ -27295,34 +27382,34 @@ deploy_stack_painel_via_portainer() {
     fi
 
     local token
-    token=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+    token=$(curl_portainer --rede "$rede" \
+        --body "$(portainer_json_login "$user_portainer" "$pass_portainer")" -- \
         -s -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "$(jq -nc --arg u "$user_portainer" --arg p "$pass_portainer" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+        -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" = "null" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_falha_auth "$user_portainer")"
         return 1
     fi
 
     local endpoint_id
-    endpoint_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
+    endpoint_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
     if [ -z "$endpoint_id" ] || [ "$endpoint_id" = "null" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_sem_endpoint)"
         return 1
     fi
 
     local swarm_id
-    swarm_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" "http://portainer_portainer:9000/api/endpoints/$endpoint_id/docker/swarm" 2>/dev/null | jq -r .ID)
+    swarm_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s "http://portainer_portainer:9000/api/endpoints/$endpoint_id/docker/swarm" 2>/dev/null | jq -r .ID)
     if [ -z "$swarm_id" ] || [ "$swarm_id" = "null" ]; then
         swarm_id=$(docker info --format '{{.Swarm.Cluster.ID}}')
     fi
 
     # Localiza a stack já gerenciada pelo Portainer (se houver) e seu Env atual.
     local stacks_json stack_id current_env_json
-    stacks_json=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null)
+    stacks_json=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s http://portainer_portainer:9000/api/stacks 2>/dev/null)
     stack_id=$(echo "$stacks_json" | jq -r '.[] | select(.Name=="encha-panel") | .Id' 2>/dev/null | head -n1)
     if [ -n "$stack_id" ]; then
         current_env_json=$(echo "$stacks_json" | jq -c --arg id "$stack_id" '.[] | select((.Id|tostring)==$id) | (.Env // [])')
@@ -27408,26 +27495,28 @@ deploy_stack_painel_via_portainer() {
     # tag $tag_imagem estivesse cacheada localmente (ou vice-versa), o
     # ensureHostDirs de QUALQUER stack com hostDirs (ex.: EnchaT Grátis)
     # cairia no fallback alpine/git e puxaria do Hub no meio do install.
+    # S2: as duas senhas (painel e Portainer) entram no jq por VARIÁVEL DE
+    # AMBIENTE (env.PP/env.SP) — `--arg pp/sp` as poria no argv do jq.
     local env_json
-    env_json=$(jq -nc \
-        --arg host "$url_painel" \
-        --arg pu "$panel_user_val" --arg pp "$panel_pass_env_val" \
-        --arg su "$user_portainer" --arg sp "$sp_env_val" \
-        --arg tag "$tag_imagem" \
-        --arg paf "$panel_admin_password_file_val" \
-        --arg ppf "$portainer_password_file_val" \
-        --arg pasn "$panel_admin_password_secret_novo" \
-        --arg ppsn "$portainer_password_secret_novo" \
-        '[{name:"ENCHA_PANEL_HOST",value:$host},
-          {name:"PANEL_ADMIN_USER",value:$pu},
-          {name:"PANEL_ADMIN_PASSWORD",value:$pp},
-          {name:"PORTAINER_USER",value:$su},
-          {name:"PORTAINER_PASSWORD",value:$sp},
-          {name:"PANEL_IMAGE_TAG",value:$tag},
-          {name:"PANEL_ADMIN_PASSWORD_FILE",value:$paf},
-          {name:"PORTAINER_PASSWORD_FILE",value:$ppf},
-          {name:"PANEL_ADMIN_PASSWORD_SECRET_NAME",value:$pasn},
-          {name:"PORTAINER_PASSWORD_SECRET_NAME",value:$ppsn}]')
+    env_json=$(HOST="$url_painel" \
+        PU="$panel_user_val" PP="$panel_pass_env_val" \
+        SU="$user_portainer" SP="$sp_env_val" \
+        TAG="$tag_imagem" \
+        PAF="$panel_admin_password_file_val" \
+        PPF="$portainer_password_file_val" \
+        PASN="$panel_admin_password_secret_novo" \
+        PPSN="$portainer_password_secret_novo" \
+        jq -nc \
+        '[{name:"ENCHA_PANEL_HOST",value:env.HOST},
+          {name:"PANEL_ADMIN_USER",value:env.PU},
+          {name:"PANEL_ADMIN_PASSWORD",value:env.PP},
+          {name:"PORTAINER_USER",value:env.SU},
+          {name:"PORTAINER_PASSWORD",value:env.SP},
+          {name:"PANEL_IMAGE_TAG",value:env.TAG},
+          {name:"PANEL_ADMIN_PASSWORD_FILE",value:env.PAF},
+          {name:"PORTAINER_PASSWORD_FILE",value:env.PPF},
+          {name:"PANEL_ADMIN_PASSWORD_SECRET_NAME",value:env.PASN},
+          {name:"PORTAINER_PASSWORD_SECRET_NAME",value:env.PPSN}]')
 
     local resp http_code
     resp=$(mktemp)
@@ -27435,35 +27524,36 @@ deploy_stack_painel_via_portainer() {
     if [ -n "$stack_id" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_ja_gerenciada "$stack_id")"
         local body
-        body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
-            '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
-        http_code=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+        # S2: o Env (com as senhas) chega ao jq por variável de ambiente, não
+        # por `--argjson env` (argv), e o corpo segue por stdin.
+        body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
+            '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
+        http_code=$(curl_portainer --rede "$rede" --token "$token" --body "$body" -- \
             -s -o "$resp" -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+            -H "Content-Type: application/json" \
+            "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
     else
-        http_code=$(docker run --rm --network "$rede" -v "$stack_file":"$stack_file":ro "${ENCHA_CURL_IMAGE}" \
+        http_code=$(curl_portainer --rede "$rede" --mount "$stack_file" \
+            --token "$token" --form-env "$env_json" -- \
             -s -o "$resp" -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $token" \
             -F "Name=encha-panel" \
             -F "SwarmID=$swarm_id" \
             -F "endpointId=$endpoint_id" \
-            -F "Env=$env_json" \
             -F "file=@$stack_file" \
             http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null)
         if [ "$http_code" = "409" ]; then
             echo -e "$(t deploy_stack_painel_via_portainer_409)"
-            stack_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-                -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null \
+            stack_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+                -s http://portainer_portainer:9000/api/stacks 2>/dev/null \
                 | jq -r '.[] | select(.Name=="encha-panel") | .Id' | head -n1)
             if [ -n "$stack_id" ]; then
                 local body
-                body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
-                    '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
-                http_code=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+                body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
+                    '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
+                http_code=$(curl_portainer --rede "$rede" --token "$token" --body "$body" -- \
                     -s -o "$resp" -w "%{http_code}" -X PUT \
-                    -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-                    -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+                    -H "Content-Type: application/json" \
+                    "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
             fi
         fi
     fi

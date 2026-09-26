@@ -33,9 +33,18 @@ extrair_funcao() {
 
 fn_renomear="$(extrair_funcao renomear_admin_portainer_se_necessario)"
 fn_finalizar="$(extrair_funcao finalizar_admin_portainer)"
+# S2: os logins/PUTs do Portainer vão por curl_portainer (segredos por stdin);
+# sem elas o "docker" falso abaixo não recebe nem senha nem token.
+fn_curl_esc="$(extrair_funcao curl_portainer_escapar)"
+fn_curl_portainer="$(extrair_funcao curl_portainer)"
+fn_json_login="$(extrair_funcao portainer_json_login)"
 
 if [ -z "$fn_renomear" ]; then
   echo "❌ FALHOU: função renomear_admin_portainer_se_necessario não encontrada em secondary.sh"
+  exit 1
+fi
+if [ -z "$fn_curl_esc" ] || [ -z "$fn_curl_portainer" ] || [ -z "$fn_json_login" ]; then
+  echo "❌ FALHOU: helpers curl_portainer/portainer_json_login não encontrados em secondary.sh"
   exit 1
 fi
 if [ -z "$fn_finalizar" ]; then
@@ -109,42 +118,12 @@ exec "$JQ_REAL" "\$@"
 EOJQREAL
   chmod +x "$BINDIR/jq"
 else
-  # Stub mínimo — só o suficiente pra montar/ler o JSON de
-  # {username:$u,password:$p} / {Username:$u} e extrair .jwt. Usado só se
-  # este ambiente não tiver jq de verdade (produção sempre tem — é
-  # dependência do resto de secondary.sh).
-  cat > "$BINDIR/jq" <<'EOJQ'
-#!/bin/bash
-# Sem 'declare -A' de propósito (ver comentário no script principal) — usa
-# arrays indexados em paralelo (names[i]/values[i]), que funcionam até no
-# bash 3.2.
-if [ "$1" = "-nc" ] || [ "$1" = "-n" ]; then
-  shift
-  names=() values=()
-  while [ "$1" = "--arg" ]; do
-    names+=("$2"); values+=("$3"); shift 3
-  done
-  tpl="$1"
-  out="$tpl"
-  i=0
-  while [ "$i" -lt "${#names[@]}" ]; do
-    out="${out//\$${names[$i]}/\"${values[$i]}\"}"
-    i=$((i + 1))
-  done
-  out=$(printf '%s' "$out" | sed -E 's/\{([a-zA-Z]+):/{"\1":/; s/,([a-zA-Z]+):/,"\1":/g')
-  printf '%s' "$out"
-  exit 0
-fi
-if [ "$1" = "-r" ]; then
-  campo="${2#.}"
-  entrada="$(cat)"
-  valor=$(printf '%s' "$entrada" | sed -nE "s/.*\"$campo\"[[:space:]]*:[[:space:]]*\"([^\"]*)\".*/\1/p")
-  if [ -z "$valor" ]; then echo "null"; else echo "$valor"; fi
-  exit 0
-fi
-exit 1
-EOJQ
-  chmod +x "$BINDIR/jq"
+  # S2: o login monta o JSON com jq lendo env.U/env.P (nunca --arg, que poria
+  # a senha no argv). O stub de jq que existia aqui não sabia fazer isso — e
+  # um teste que "passa" com um jq de mentira não prova nada —, então sem jq
+  # real o teste aborta (jq é dependência do resto de secondary.sh).
+  echo "❌ FALHOU: este teste precisa de jq real no PATH"
+  exit 1
 fi
 
 # "docker" falso: simula um Portainer cujo admin atual (usuário+senha) é o
@@ -156,9 +135,16 @@ cat > "$BINDIR/docker" <<'EODOCKER'
 [ -n "${FAKE_LOG:-}" ] && echo "$*" >> "$FAKE_LOG"
 if [ "$1" != "run" ]; then exit 0; fi
 
+# S2: o corpo/Authorization NÃO estão mais no argv — chegam por stdin como
+# config do curl (-K -); o decodificador extrai o corpo (data-raw).
 body="" url="" metodo="POST" prev=""
+dec="$(mktemp -d)"
+# Só lê stdin quando o curl recebeu "-K -" (config por stdin); chamadas sem
+# segredo (ex.: /api/system/status) não têm stdin e travariam num cat.
+case " $* " in *" -K - "*) "$(dirname "$0")/curl-config-decode" "$dec" ;; esac
+[ -f "$dec/data" ] && body="$(cat "$dec/data")"
+rm -rf "$dec"
 for arg in "$@"; do
-  if [ "$prev" = "-d" ]; then body="$arg"; fi
   if [ "$prev" = "-X" ]; then metodo="$arg"; fi
   case "$arg" in http://*) url="$arg" ;; esac
   prev="$arg"
@@ -190,6 +176,8 @@ esac
 exit 0
 EODOCKER
 chmod +x "$BINDIR/docker"
+cp tests/lib/curl-config-decode.sh "$BINDIR/curl-config-decode"
+chmod +x "$BINDIR/curl-config-decode"
 
 FAKE_LOG="$BINDIR/docker-run.log"
 
@@ -209,6 +197,9 @@ rodar_cenario() {
     set +u
     export PATH="$BINDIR:$PATH"
     export ENCHA_CURL_IMAGE FAKE_LOG FAKE_STATE_FILE FAKE_RENAME_HTTP
+    eval "$fn_curl_esc"
+    eval "$fn_curl_portainer"
+    eval "$fn_json_login"
     eval "$fn_renomear"
     eval "${fn_finalizar//__DV__/$dv}"
     finalizar_admin_portainer "rede-teste" "$senha" "$alvo" "$ja_init"

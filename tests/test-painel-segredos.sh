@@ -34,11 +34,18 @@ fn_imagem="$(extrair_funcao imagem_painel_tem_label_credenciais_arquivo)"
 fn_garantir="$(extrair_funcao garantir_segredos_credenciais_painel)"
 fn_limpar="$(extrair_funcao limpar_segredos_antigos_painel)"
 fn_deploy="$(extrair_funcao deploy_stack_painel_via_portainer)"
+# S2: o deploy fala com o Portainer por curl_portainer (segredos por stdin).
+fn_curl_esc="$(extrair_funcao curl_portainer_escapar)"
+fn_curl_portainer="$(extrair_funcao curl_portainer)"
+fn_json_login="$(extrair_funcao portainer_json_login)"
 
 for par in "fn_imagem:imagem_painel_tem_label_credenciais_arquivo" \
            "fn_garantir:garantir_segredos_credenciais_painel" \
            "fn_limpar:limpar_segredos_antigos_painel" \
-           "fn_deploy:deploy_stack_painel_via_portainer"; do
+           "fn_deploy:deploy_stack_painel_via_portainer" \
+           "fn_curl_esc:curl_portainer_escapar" \
+           "fn_curl_portainer:curl_portainer" \
+           "fn_json_login:portainer_json_login"; do
   var="${par%%:*}"; nome="${par#*:}"
   if [ -z "${!var}" ]; then
     echo "❌ FALHOU: função $nome não encontrada em secondary.sh — rode depois de implementar o C9"
@@ -167,16 +174,19 @@ if [ "$sub" != "run" ]; then
     exit 0
 fi
 
+# S2: corpo (data-raw) e campo Env (form-string) chegam por STDIN como config
+# do curl (-K -), não mais no argv — o decodificador os recupera.
 body="" url="" out_file="" campo_env="" prev=""
+dec="$(mktemp -d)"
+# Só lê stdin quando o curl recebeu "-K -" (config por stdin); chamadas sem
+# segredo (ex.: /api/system/status) não têm stdin e travariam num cat.
+case " $* " in *" -K - "*) "$(dirname "$0")/curl-config-decode" "$dec" ;; esac
+[ -f "$dec/data" ] && body="$(cat "$dec/data")"
+[ -f "$dec/form_env" ] && campo_env="$(cat "$dec/form_env")"
+rm -rf "$dec"
 for a in "$@"; do
   case "$prev" in
-    -d) body="$a" ;;
     -o) out_file="$a" ;;
-    -F)
-      case "$a" in
-        Env=*) campo_env="${a#Env=}" ;;
-      esac
-      ;;
   esac
   case "$a" in http://*) url="$a" ;; esac
   prev="$a"
@@ -218,6 +228,8 @@ fi
 exit 0
 EODOCKER
 chmod +x "$BINDIR/docker"
+cp tests/lib/curl-config-decode.sh "$BINDIR/curl-config-decode"
+chmod +x "$BINDIR/curl-config-decode"
 
 # t() mínimo: os testes deste arquivo verificam COMPORTAMENTO (valores do
 # env_json, secrets criados/removidos), não o texto das mensagens — i18n/
@@ -256,6 +268,9 @@ rodar_deploy() {
     eval "$fn_imagem"
     eval "$fn_garantir"
     eval "$fn_limpar"
+    eval "$fn_curl_esc"
+    eval "$fn_curl_portainer"
+    eval "$fn_json_login"
     eval "$fn_deploy"
     deploy_stack_painel_via_portainer "$DUMMY_STACK" "$tag"
     echo "RC=$?"
