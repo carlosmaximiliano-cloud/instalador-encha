@@ -1609,6 +1609,8 @@ declare -gA DNS_IPS_CACHE      # domínio -> IPs (v4) para onde aponta, separado
 declare -gA DNS_AVISADO_CACHE  # domínio -> 1 se o aviso já foi impresso nesta execução
 DNS_IP_PUBLICO_CONSULTADO=0
 DNS_IP_PUBLICO_VPS=""
+DNS_IPS_LOCAIS_CONSULTADO=0
+DNS_IPS_LOCAIS_VPS=""
 
 MSG_PT[dns_aviso_nao_resolve]="O DNS de '%s' ainda não resolve. O Traefik/Let's Encrypt só emite o certificado quando o domínio aponta para esta VPS — a instalação segue, e dá para criar ou corrigir o registro DNS depois."
 MSG_EN[dns_aviso_nao_resolve]="The DNS for '%s' doesn't resolve yet. Traefik/Let's Encrypt only issues the certificate once the domain points to this VPS — the installation continues, and you can create or fix the DNS record later."
@@ -1639,6 +1641,32 @@ dns_ip_publico_vps() {
         if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
             DNS_IP_PUBLICO_VPS="$ip"
         fi
+    fi
+    return 0
+}
+
+# Preenche DNS_IPS_LOCAIS_VPS (IPv4 das interfaces desta máquina, separados por
+# espaço) uma vez por execução. Servem SÓ para reconhecer que o domínio aponta
+# para cá (IP flutuante/adicional numa interface, que o icanhazip não vê porque
+# a saída usa o IP principal) — nunca como "o IP desta VPS" num aviso nem como
+# substituto do IP público: atrás de NAT são IPs privados (o falso alarme que o
+# S3 removeu ao tirar o fallback `hostname -I`).
+dns_ips_locais_vps() {
+    if [ "${DNS_IPS_LOCAIS_CONSULTADO:-0}" != "1" ]; then
+        DNS_IPS_LOCAIS_CONSULTADO=1
+        local lista ip_x filtrados=""
+        lista=$(hostname -I 2>/dev/null) || lista=""
+        if [ -z "$lista" ] && command -v ip >/dev/null 2>&1; then
+            lista=$(ip -4 -o addr show 2>/dev/null | awk '{sub(/\/.*/, "", $4); print $4}') || lista=""
+        fi
+        # Filtro em bash, não em awk: o awk padrão do Debian é o mawk, que não
+        # entende {1,3} e não casaria nada.
+        for ip_x in $lista; do
+            if [[ "$ip_x" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "$ip_x" != 127.* ]]; then
+                filtrados="${filtrados:+$filtrados }$ip_x"
+            fi
+        done
+        DNS_IPS_LOCAIS_VPS="$filtrados"
     fi
     return 0
 }
@@ -1717,7 +1745,17 @@ dns_estado_dominio() {
     elif [[ ",$ips," == *",$DNS_IP_PUBLICO_VPS,"* ]]; then
         DNS_ESTADO_CACHE[$dominio]="ok"
     else
+        # Não bate com o IP público: ainda pode ser um IP desta máquina (IP
+        # flutuante/adicional numa interface). Bate com um deles = ok.
         DNS_ESTADO_CACHE[$dominio]="outro_ip"
+        dns_ips_locais_vps
+        local ip_local
+        for ip_local in $DNS_IPS_LOCAIS_VPS; do
+            if [[ ",$ips," == *",$ip_local,"* ]]; then
+                DNS_ESTADO_CACHE[$dominio]="ok"
+                break
+            fi
+        done
     fi
     return 0
 }

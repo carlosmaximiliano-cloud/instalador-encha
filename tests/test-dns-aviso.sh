@@ -86,6 +86,10 @@ done
 ENCHA_LANG=pt
 eval "$fn_t"
 eval "$fn_ip"
+# todo helper dns_* de secondary.sh (inclusive os que vierem depois)
+for nome_fn in $(grep -oE '^dns_[a-z0-9_]+\(\)' secondary.sh | tr -d '()'); do
+  eval "$(exigir_funcao "$nome_fn" secondary.sh)"
+done
 eval "$fn_estado"
 eval "$fn_imprimir"
 eval "$fn_checar"
@@ -143,9 +147,18 @@ cat > "$BINDIR/sshd" <<'EOF2'
 #!/bin/bash
 exit 0
 EOF2
-chmod +x "$BINDIR/getent" "$BINDIR/curl" "$BINDIR/sshd"
+# hostname falso: `hostname -I` = IPs das interfaces desta máquina (IP privado
+# atrás de NAT, bridges do Docker, IP flutuante...).
+cat > "$BINDIR/hostname" <<'EOF2'
+#!/bin/bash
+echo "$*" >> "$FAKE_LOG_HOSTNAME"
+[ "$1" = "-I" ] && echo "${FAKE_IPS_LOCAIS:-}"
+exit 0
+EOF2
+chmod +x "$BINDIR/getent" "$BINDIR/curl" "$BINDIR/sshd" "$BINDIR/hostname"
 export PATH="$BINDIR:$PATH"
 export FAKE_LOG_GETENT="$LOG_GETENT" FAKE_LOG_CURL="$LOG_CURL" FAKE_DNSDIR="$DNSDIR"
+export FAKE_LOG_HOSTNAME="$BINDIR/hostname.log" FAKE_IPS_LOCAIS="10.0.0.2 172.17.0.1"
 export FAKE_IP_VPS="203.0.113.7" FAKE_IP_VPS6="2001:db8::7" FAKE_CURL_FALHA=0
 
 # Stubs de tela usados pelo resumo (a função real chama clear/centralizar).
@@ -158,6 +171,7 @@ reset_dns() {
   DNS_IP_PUBLICO_CONSULTADO=0; DNS_IP_PUBLICO_VPS=""
   : > "$LOG_GETENT"; : > "$LOG_CURL"
   FAKE_CURL_FALHA=0; FAKE_IP_VPS="203.0.113.7"; FAKE_IP_VPS6="2001:db8::7"
+  FAKE_IPS_LOCAIS="10.0.0.2 172.17.0.1"; DNS_IPS_LOCAIS_CONSULTADO=0; DNS_IPS_LOCAIS_VPS=""
   rm -f "$DNSDIR"/*
 }
 n_getent() { grep -c '^ahostsv4 ' "$LOG_GETENT" || true; }   # resoluções (A)
@@ -283,6 +297,28 @@ reset_dns
 echo "203.0.113.7" > "$DNSDIR/tem4.exemplo.com"
 checar_dns_dominio tem4.exemplo.com >/dev/null
 grep -q '^ahostsv6 ' "$LOG_GETENT" && falha "(d) consultou AAAA de domínio que já tem A" || ok "(d) com registro A não consulta AAAA"
+
+# IP flutuante/adicional configurado numa interface desta VPS: o icanhazip vê
+# o IP principal (saída), o domínio aponta para o flutuante. É este servidor —
+# silêncio. Os IPs locais só servem para "bate"; nunca viram "o IP desta VPS"
+# no aviso (atrás de NAT o IP local é privado — o erro que o S3 removeu).
+reset_dns; FAKE_IPS_LOCAIS="203.0.113.7 198.51.100.50 172.17.0.1"
+echo "198.51.100.50" > "$DNSDIR/flutuante.exemplo.com"
+saida="$(checar_dns_dominio flutuante.exemplo.com)"
+[ -z "$saida" ] && ok "(d) domínio no IP flutuante desta VPS (em uma interface): silêncio" || falha "(d) falso alarme com IP flutuante local: $saida"
+reset_dns
+echo "198.51.100.9" > "$DNSDIR/errado.exemplo.com"
+saida="$(checar_dns_dominio errado.exemplo.com)"
+case "$saida" in
+  *10.0.0.2*|*172.17.0.1*) falha "(d) IP privado/local exibido no aviso: $saida" ;;
+  *"aponta para 198.51.100.9"*"203.0.113.7"*) ok "(d) IP local nunca aparece como 'IP desta VPS' no aviso" ;;
+  *) falha "(d) aviso de outro IP ausente com IPs locais: '$saida'" ;;
+esac
+# sem IP público, o IP local NÃO vira referência: silêncio
+reset_dns; FAKE_CURL_FALHA=1
+echo "198.51.100.9" > "$DNSDIR/errado.exemplo.com"
+saida="$(checar_dns_dominio errado.exemplo.com)"
+[ -z "$saida" ] && ok "(d) sem IP público: IP local não substitui (silêncio)" || falha "(d) usou IP local no lugar do público: $saida"
 
 # --- (e) cache: o mesmo domínio duas vezes = uma consulta -----------------------------
 reset_dns
