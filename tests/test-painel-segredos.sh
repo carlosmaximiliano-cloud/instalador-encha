@@ -38,6 +38,7 @@ fn_deploy="$(extrair_funcao deploy_stack_painel_via_portainer)"
 fn_curl_esc="$(extrair_funcao curl_portainer_escapar)"
 fn_curl_portainer="$(extrair_funcao curl_portainer)"
 fn_json_login="$(extrair_funcao portainer_json_login)"
+fn_curl_http="$(extrair_funcao curl_portainer_http)"
 
 for par in "fn_imagem:imagem_painel_tem_label_credenciais_arquivo" \
            "fn_garantir:garantir_segredos_credenciais_painel" \
@@ -45,6 +46,7 @@ for par in "fn_imagem:imagem_painel_tem_label_credenciais_arquivo" \
            "fn_deploy:deploy_stack_painel_via_portainer" \
            "fn_curl_esc:curl_portainer_escapar" \
            "fn_curl_portainer:curl_portainer" \
+           "fn_curl_http:curl_portainer_http" \
            "fn_json_login:portainer_json_login"; do
   var="${par%%:*}"; nome="${par#*:}"
   if [ -z "${!var}" ]; then
@@ -176,7 +178,7 @@ fi
 
 # S2: corpo (data-raw) e campo Env (form-string) chegam por STDIN como config
 # do curl (-K -), não mais no argv — o decodificador os recupera.
-body="" url="" out_file="" campo_env="" prev=""
+body="" url="" out_file="" campo_env="" wfmt="" prev=""
 dec="$(mktemp -d)"
 # Só lê stdin quando o curl recebeu "-K -" (config por stdin); chamadas sem
 # segredo (ex.: /api/system/status) não têm stdin e travariam num cat.
@@ -187,6 +189,7 @@ rm -rf "$dec"
 for a in "$@"; do
   case "$prev" in
     -o) out_file="$a" ;;
+    -w) wfmt="$a" ;;
   esac
   case "$a" in http://*) url="$a" ;; esac
   prev="$a"
@@ -216,12 +219,18 @@ case "$url" in
         printf '%s' "$body" | jq -c '.Env' > "$CAPTURED_ENV_FILE" 2>/dev/null
     fi
     resposta='{"Id":1}'
+    [ -n "${FAKE_PUT_BODY:-}" ] && resposta="$FAKE_PUT_BODY"
     ;;
 esac
 
 if [ -n "$out_file" ]; then
-    printf '%s' "$resposta" > "$out_file"
+    # -o: o curl em contêiner grava DENTRO do contêiner (efêmero) — nada chega
+    # ao host. Só o código sai em stdout (é o que o deploy antigo lia).
     printf '%s' "$http"
+elif [ -n "$wfmt" ]; then
+    # -w '\n%{http_code}': corpo, quebra de linha e código, tudo em stdout
+    # (S2: curl_portainer_http captura os dois no host).
+    printf '%s\n%s' "$resposta" "$http"
 else
     printf '%s' "$resposta"
 fi
@@ -236,7 +245,7 @@ chmod +x "$BINDIR/curl-config-decode"
 # check-parity.sh já cobre PT/EN/ES. Devolver a própria CHAVE (em vez do
 # template real) também dá um jeito barato de confirmar que um caminho de
 # log específico foi exercitado (grep pela chave na saída capturada).
-t() { printf '%s' "$1"; }
+t() { printf '%s' "$*"; }
 
 DUMMY_STACK="$(mktemp)"
 printf 'version: "3.7"\nservices: {}\n' > "$DUMMY_STACK"
@@ -255,7 +264,7 @@ rodar_deploy() {
   (
     export PATH="$BINDIR:$PATH"
     export ENCHA_CURL_IMAGE FAKE_LOG FAKE_IMAGE_LABEL FAKE_STACK_EXISTS \
-           FAKE_CURRENT_ENV_JSON FAKE_CREATE_HTTP FAKE_PUT_HTTP \
+           FAKE_CURRENT_ENV_JSON FAKE_CREATE_HTTP FAKE_PUT_HTTP FAKE_PUT_BODY \
            FAKE_SECRET_CREATE_FALHA FAKE_SECRETS_FILE FAKE_SECRETS_LABELS_FILE \
            FAKE_SECRETS_CONTEUDO_DIR CAPTURED_ENV_FILE \
            FAKE_SERVICE_SECRETS FAKE_SERVICE_INSPECT_FALHA \
@@ -270,6 +279,7 @@ rodar_deploy() {
     eval "$fn_limpar"
     eval "$fn_curl_esc"
     eval "$fn_curl_portainer"
+    eval "$fn_curl_http"
     eval "$fn_json_login"
     eval "$fn_deploy"
     deploy_stack_painel_via_portainer "$DUMMY_STACK" "$tag"
@@ -289,6 +299,7 @@ novo_cenario() {
   SAIDA_STDOUT="$(mktemp)"
   FAKE_CREATE_HTTP="201"
   FAKE_PUT_HTTP="200"
+  FAKE_PUT_BODY=""
   FAKE_SECRET_CREATE_FALHA="false"
   FAKE_SERVICE_SECRETS=""
   FAKE_SERVICE_INSPECT_FALHA="false"
@@ -703,6 +714,44 @@ if [ "$saida" = "RC=1" ] && grep -qxF "panel_admin_password_ANTERIOR" "$FAKE_SEC
   ok "PUT da stack falhou: a versão em uso (ANTERIOR) continua existindo"
 else
   falha "PUT da stack falhou: esperado RC=1 e ANTERIOR preservada, obtido '$saida', secrets: $(cat "$FAKE_SECRETS_FILE")"
+fi
+
+# ============================================================
+# Cenário 13 (S2): PUT da stack falha com corpo de erro -> o "detalhe" impresso
+# traz esse corpo. Antes o corpo ia para `-o "$resp"` DENTRO do contêiner do
+# curl e o `cat "$resp"` no host imprimia sempre vazio.
+# ============================================================
+novo_cenario
+FAKE_IMAGE_LABEL="guarda-swarm"
+FAKE_STACK_EXISTS=true
+FAKE_PUT_HTTP="500"
+FAKE_PUT_BODY='{"message":"ERRO-DETALHE-DO-PORTAINER","details":"secret ausente"}'
+FAKE_CURRENT_ENV_JSON='[]'
+user_painel="admin"; pass_painel="SenhaForte1"
+
+saida="$(rodar_deploy "0.3.5")"
+if [ "$saida" = "RC=1" ] && grep -qF "deploy_stack_painel_via_portainer_falhou 500" "$SAIDA_STDOUT" \
+   && grep -qF "deploy_stack_painel_via_portainer_detalhe" "$SAIDA_STDOUT" \
+   && grep -qF "ERRO-DETALHE-DO-PORTAINER" "$SAIDA_STDOUT"; then
+  ok "PUT falhou (500): o detalhe impresso traz o corpo da resposta do Portainer"
+else
+  falha "PUT falhou (500): detalhe sem o corpo da resposta, obtido '$saida' — saída: $(cat "$SAIDA_STDOUT")"
+fi
+
+# Mesma coisa no create (POST multipart): FAKE_CREATE_HTTP=500 devolve o corpo.
+novo_cenario
+FAKE_IMAGE_LABEL="guarda-swarm"
+FAKE_STACK_EXISTS=false
+FAKE_CREATE_HTTP="500"
+FAKE_CURRENT_ENV_JSON='[]'
+user_painel="admin"; pass_painel="SenhaForte1"
+
+saida="$(rodar_deploy "0.3.5")"
+if [ "$saida" = "RC=1" ] && grep -qF "deploy_stack_painel_via_portainer_falhou 500" "$SAIDA_STDOUT" \
+   && grep -qF '"Id":1' "$SAIDA_STDOUT"; then
+  ok "create falhou (500): o detalhe impresso traz o corpo da resposta do Portainer"
+else
+  falha "create falhou (500): detalhe sem o corpo da resposta, obtido '$saida' — saída: $(cat "$SAIDA_STDOUT")"
 fi
 
 [ "$falhas" -eq 0 ] || exit 1

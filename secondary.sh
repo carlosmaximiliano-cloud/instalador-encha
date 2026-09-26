@@ -130,6 +130,21 @@ curl_portainer() {
     fi
 }
 
+# curl_portainer_http: igual a curl_portainer, mas devolve o código HTTP E o
+# corpo da resposta, ambos capturados NO HOST (stdout do curl):
+#   PORTAINER_HTTP_CODE  código HTTP ("000" se a conexão falhou)
+#   PORTAINER_HTTP_BODY  corpo da resposta
+# Não use `-o <arquivo>` com o curl em contêiner: o arquivo é gravado DENTRO
+# do contêiner (efêmero, --rm) e o `cat` no host lê vazio — era por isso que
+# o "detalhe" de uma falha do deploy do painel saía sempre em branco. O código
+# vem numa última linha própria (-w '\n%{http_code}'); não passe -w/-o nos args.
+curl_portainer_http() {
+    local saida
+    saida="$(curl_portainer "$@" -w $'\n%{http_code}')"
+    PORTAINER_HTTP_CODE="${saida##*$'\n'}"
+    PORTAINER_HTTP_BODY="${saida%$'\n'*}"
+}
+
 # JSON do POST /api/auth do Portainer. Usuário e senha entram no jq por
 # VARIÁVEL DE AMBIENTE (prefixada ao comando: não aparece em argv) — nunca
 # `jq --arg p "$senha"`, que poria a senha na linha de comando do jq. O jq
@@ -27518,8 +27533,9 @@ deploy_stack_painel_via_portainer() {
           {name:"PANEL_ADMIN_PASSWORD_SECRET_NAME",value:env.PASN},
           {name:"PORTAINER_PASSWORD_SECRET_NAME",value:env.PPSN}]')
 
-    local resp http_code
-    resp=$(mktemp)
+    # Código e corpo da resposta vêm de curl_portainer_http (capturados no host,
+    # ver o comentário dela): PORTAINER_HTTP_CODE / PORTAINER_HTTP_BODY.
+    local http_code
 
     if [ -n "$stack_id" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_ja_gerenciada "$stack_id")"
@@ -27528,19 +27544,21 @@ deploy_stack_painel_via_portainer() {
         # por `--argjson env` (argv), e o corpo segue por stdin.
         body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
             '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
-        http_code=$(curl_portainer --rede "$rede" --token "$token" --body "$body" -- \
-            -s -o "$resp" -w "%{http_code}" -X PUT \
+        curl_portainer_http --rede "$rede" --token "$token" --body "$body" -- \
+            -s -X PUT \
             -H "Content-Type: application/json" \
-            "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+            "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null
+        http_code="$PORTAINER_HTTP_CODE"
     else
-        http_code=$(curl_portainer --rede "$rede" --mount "$stack_file" \
+        curl_portainer_http --rede "$rede" --mount "$stack_file" \
             --token "$token" --form-env "$env_json" -- \
-            -s -o "$resp" -w "%{http_code}" -X POST \
+            -s -X POST \
             -F "Name=encha-panel" \
             -F "SwarmID=$swarm_id" \
             -F "endpointId=$endpoint_id" \
             -F "file=@$stack_file" \
-            http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null)
+            http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null
+        http_code="$PORTAINER_HTTP_CODE"
         if [ "$http_code" = "409" ]; then
             echo -e "$(t deploy_stack_painel_via_portainer_409)"
             stack_id=$(curl_portainer --rede "$rede" --token "$token" -- \
@@ -27550,23 +27568,22 @@ deploy_stack_painel_via_portainer() {
                 local body
                 body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
                     '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
-                http_code=$(curl_portainer --rede "$rede" --token "$token" --body "$body" -- \
-                    -s -o "$resp" -w "%{http_code}" -X PUT \
+                curl_portainer_http --rede "$rede" --token "$token" --body "$body" -- \
+                    -s -X PUT \
                     -H "Content-Type: application/json" \
-                    "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+                    "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null
+                http_code="$PORTAINER_HTTP_CODE"
             fi
         fi
     fi
 
     if ! [[ "$http_code" =~ ^20[0-9]$ ]]; then
         echo -e "$(t deploy_stack_painel_via_portainer_falhou "$http_code")"
-        echo -e "$(t deploy_stack_painel_via_portainer_detalhe "$(cat "$resp" 2>/dev/null)")"
-        rm -f "$resp"
+        echo -e "$(t deploy_stack_painel_via_portainer_detalhe "$PORTAINER_HTTP_BODY")"
         return 1
     fi
 
     echo -e "$(t deploy_stack_painel_via_portainer_sucesso)"
-    rm -f "$resp"
 
     # Só limpa a versão anterior depois que a stack REALMENTE aplicou a nova
     # (acima) — nunca antes, senão uma stack que falhasse ficaria sem

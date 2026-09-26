@@ -48,7 +48,7 @@ ENCHA_CURL_IMAGE="$(grep -oE '^ENCHA_CURL_IMAGE="[^"]+"' secondary.sh | head -1 
 command -v jq >/dev/null 2>&1 || { echo "❌ FALHOU: este teste precisa de jq real no PATH"; exit 1; }
 JQ_REAL="$(command -v jq)"
 
-FUNCS="curl_portainer_escapar curl_portainer portainer_json_login \
+FUNCS="curl_portainer_escapar curl_portainer curl_portainer_http portainer_json_login \
 renomear_admin_portainer_se_necessario finalizar_admin_portainer stack_editavel \
 registrar_registry_portainer imagem_painel_tem_label_credenciais_arquivo \
 garantir_segredos_credenciais_painel limpar_segredos_antigos_painel \
@@ -138,7 +138,8 @@ if [ -n "$out" ] && [ "$out" != /dev/null ]; then
 elif [ -z "$out" ]; then
   printf '%s' "$corpo"
 fi
-[ -n "$wfmt" ] && printf '%s' "$http"
+# -w: expande %{http_code} no formato dado (o helper usa $'\n%{http_code}').
+[ -n "$wfmt" ] && printf '%s' "${wfmt//%\{http_code\}/$http}"
 exit 0
 EOF
 cat > "$BINDIR/docker" <<'EOF'
@@ -256,9 +257,15 @@ export user_portainer="svcuser" pass_portainer="$SENHA_PORTAINER" \
 zera_logs; FAKE_STACK_EXISTS=true
 rodar 'deploy_stack_painel_via_portainer "'"$DUMMY_STACK"'" 0.3.5'
 confere "deploy do painel (PUT)" "Authorization: Bearer $JWT_FAKE" "$SENHA_PAINEL" "$MARCA"
+grep -qF "deploy_stack_painel_via_portainer_sucesso" "$WORK/saida.txt" \
+  && ok "deploy do painel (PUT): terminou com sucesso (o caminho todo foi exercitado)" \
+  || falha "deploy do painel (PUT): não chegou ao sucesso: $(cat "$WORK/saida.txt")"
 zera_logs; FAKE_STACK_EXISTS=false
 rodar 'deploy_stack_painel_via_portainer "'"$DUMMY_STACK"'" 0.3.5'
 confere "deploy do painel (POST create)" "Authorization: Bearer $JWT_FAKE" "$SENHA_PAINEL" "$MARCA"
+grep -qF "deploy_stack_painel_via_portainer_sucesso" "$WORK/saida.txt" \
+  && ok "deploy do painel (POST create): terminou com sucesso (o caminho todo foi exercitado)" \
+  || falha "deploy do painel (POST create): não chegou ao sucesso: $(cat "$WORK/saida.txt")"
 unset user_portainer pass_portainer user_painel pass_painel
 
 # ============================================================
@@ -410,6 +417,19 @@ PYEOF
         falha "curl real: header/corpo não fizeram round-trip (corpo ${#corpo} bytes): $(printf '%s' "$resp" | cut -c1-200)"
       fi
     done
+    # curl_portainer_http (S2, commit 2): código e corpo capturados no host.
+    eval "$(extrair_funcao curl_portainer_http)"
+    PATH="$PATH_SEM_FALSOS" curl_portainer_http --token T1 --body '{"a":1}' -- \
+      -s -X POST -H 'Content-Type: application/json' "http://127.0.0.1:$PORTA/x"
+    if [ "$PORTAINER_HTTP_CODE" = "200" ] \
+       && [ "$(printf '%s' "$PORTAINER_HTTP_BODY" | "$JQ_REAL" -r .body)" = '{"a":1}' ]; then
+      ok "curl real: curl_portainer_http separa código (200) e corpo no host"
+    else
+      falha "curl real: curl_portainer_http: código='$PORTAINER_HTTP_CODE' corpo='$PORTAINER_HTTP_BODY'"
+    fi
+    PATH="$PATH_SEM_FALSOS" curl_portainer_http -- -s "http://127.0.0.1:1/x"
+    [ "$PORTAINER_HTTP_CODE" = "000" ] && ok "curl real: conexão recusada devolve código 000" \
+      || falha "curl real: conexão recusada deveria dar 000, deu '$PORTAINER_HTTP_CODE'"
   else
     echo "⚠️  servidor de eco não subiu — round-trip pelo curl real PULADO"
   fi
