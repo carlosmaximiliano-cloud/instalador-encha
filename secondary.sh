@@ -3150,6 +3150,61 @@ MSG_PT[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 SUCESSO U
 MSG_EN[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 UNIVERSAL SUCCESS!\e[0m Access: https://%s"
 MSG_ES[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 ÉXITO UNIVERSAL!\e[0m Acceda: https://%s"
 
+################################################################################
+# aplicar_guarda_pre_swarm — Ciclo S1 (achado 5 da auditoria 2 de segurança):
+# numa instalação nova, do "docker swarm init" até o painel subir e criar o
+# serviço encha-guard passam ~2 min em que 2377/tcp, 7946/tcp+udp e 4789/udp
+# ficam abertas à Internet. Esta função aplica UMA vez, ANTES do swarm init, a
+# mesma tabela nftables "inet encha_guard" que o serviço encha-guard mantém
+# depois (o serviço substitui a tabela de forma atômica, então não há conflito).
+#
+# Usa a imagem do painel (já traz nft + /usr/local/bin/encha-guard) numa
+# execução descartável em rede host com só CAP_NET_ADMIN. NUNCA instala o
+# pacote "nftables" no host: o nftables.service do Debian faz "flush ruleset"
+# no boot e apagaria o guarda (ver instalar_protecao_ssh).
+#
+# Falha em qualquer etapa (sem docker, pull, nft) NUNCA aborta a instalação:
+# só avisa e segue — o serviço encha-guard do painel continua sendo criado
+# depois. Se o Swarm já está ativo, não faz nada (o serviço já existe/existirá).
+# Uso: aplicar_guarda_pre_swarm "<ip-do-nó>"
+################################################################################
+MSG_PT[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DO SWARM (antes do swarm init)\e[0m"
+MSG_EN[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APPLYING SWARM FIREWALL GUARD (before swarm init)\e[0m"
+MSG_ES[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DEL SWARM (antes de swarm init)\e[0m"
+
+MSG_PT[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Não foi possível aplicar o guarda de firewall antes do swarm init (imagem do painel indisponível ou sem rede). A instalação continua; o serviço encha-guard do painel o aplicará assim que subir.\e[0m"
+MSG_EN[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Could not apply the firewall guard before swarm init (panel image unavailable or no network). The installation continues; the panel's encha-guard service will apply it once it is up.\e[0m"
+MSG_ES[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  No fue posible aplicar el guarda de firewall antes de swarm init (imagen del panel no disponible o sin red). La instalación continúa; el servicio encha-guard del panel lo aplicará cuando esté activo.\e[0m"
+
+aplicar_guarda_pre_swarm() {
+  local ip="${1:-}"
+
+  # Swarm já ativo: o guarda é do serviço encha-guard — nada a fazer aqui.
+  local estado_swarm
+  estado_swarm="$(sudo docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null || true)"
+  if [ "$estado_swarm" = "active" ]; then
+    return 0
+  fi
+
+  echo -e "$(t aplicar_guarda_pre_swarm_aplicando)"
+
+  local imagem="ghcr.io/enchaaluno/setup-panel:${ENCHA_PANEL_IMAGE_TAG:-$ENCHA_VERSION}"
+
+  if ! sudo docker pull "$imagem" > /dev/null 2>&1; then
+    echo -e "$(t aplicar_guarda_pre_swarm_falha)"
+    return 0
+  fi
+
+  if ! sudo docker run --rm --network host --user 0 \
+       --cap-drop ALL --cap-add NET_ADMIN \
+       -e ENCHA_GUARD_PEERS="$ip" \
+       --entrypoint sh "$imagem" \
+       -c '/usr/local/bin/encha-guard --render | nft -f -' > /dev/null 2>&1; then
+    echo -e "$(t aplicar_guarda_pre_swarm_falha)"
+  fi
+  return 0
+}
+
 ferramenta_traefik_e_portainer() {
 
   # Verifica recursos e limpa tela
@@ -3316,6 +3371,7 @@ EOL
 
   echo -e "$(t ferramenta_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  aplicar_guarda_pre_swarm "$ip"
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "$(t ferramenta_traefik_e_portainer_criando_rede)"
@@ -24030,6 +24086,7 @@ EOL
 
   echo -e "$(t instalar_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  aplicar_guarda_pre_swarm "$ip"
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "$(t instalar_traefik_e_portainer_criando_rede)"
