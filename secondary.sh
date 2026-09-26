@@ -74,6 +74,13 @@ ENCHA_CURL_IMAGE="curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a7
 # disco (nem trap/limpeza), e em vez de `--data @-` porque `-K -` e `@-`
 # disputariam o mesmo stdin. Validado contra o curl 8.11.1 da imagem pinada.
 #
+# LIMITE DE TAMANHO: o parser de config do curl recusa linha grande demais e
+# sai com código 26 ("cannot read config from '-'") sem mandar nada — e o
+# stderr costuma ir para /dev/null nas chamadas. Na imagem pinada (8.11.1) o
+# teto é 10 MB; no curl do HOST de um Debian 12 (7.88.1) é ~100 KB (medido:
+# data-raw de 102380 bytes passa, 102390 não). Sem --rede só mande corpo
+# pequeno (login, registry); corpo grande (StackFileContent) sempre com --rede.
+#
 #   curl_portainer [--rede REDE] [--mount ARQ] [--token JWT]
 #                  [--body JSON] [--form-env JSON] -- <args do curl sem segredo>
 #     --rede      roda dentro do contêiner ENCHA_CURL_IMAGE (docker run -i) na
