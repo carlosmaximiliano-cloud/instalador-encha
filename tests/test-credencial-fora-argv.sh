@@ -350,22 +350,59 @@ logicas() {
 varre() {
   local arq="$1" achados=""
   local linhas; linhas="$(logicas "$arq" | grep -v 'MSG_')"
-  # R1: "Bearer" em qualquer linha de código — só o helper monta esse header
-  # (ALLOWLIST: a linha `cfg+="header = ..."` dentro de curl_portainer, que
-  # escreve no stdin do curl, nunca num argv).
-  achados+="$(printf '%s\n' "$linhas" | grep 'Bearer' | grep -vF 'cfg+="header = \"Authorization: Bearer $(curl_portainer_escapar' || true)"$'\n'
-  # R2: jq --arg/--argjson com nome de credencial (p, pp, sp, senha*, pass*,
-  # token*, ghcr*, jwt) ou o Env inteiro (--argjson env). Credencial vai por
-  # variável de ambiente (env.X).
-  achados+="$(printf '%s\n' "$linhas" | grep -iE -- '--arg(json)?[[:space:]]+(p|pp|sp|pass[a-z_]*|senha[a-z_]*|token[a-z_]*|ghcr[a-z_]*|jwt|env)[[:space:]]' || true)"$'\n'
-  # R3: curl/contêiner-curl com corpo/credencial no argv: -d, --data*, -u,
-  # --user, ou -F "Env=". ALLOWLIST: `--data @-` (corpo lido de stdin, sem
-  # segredo no argv) e `tr -d` (não é curl). Chamadas por curl_portainer não
-  # entram: usam --body/--form-env, cujo valor vai para o stdin.
+  # R1: "Bearer" (sem diferenciar maiúsculas: pega também --oauth2-bearer) em
+  # qualquer linha de código, e cabeçalho de credencial de outro esquema
+  # ("Authorization: token/Basic ...", "X-API-Key:", "X-Setup-Token:") numa
+  # linha com -H/--header/curl/wget (fora disso é texto de heredoc, ex. o
+  # dados_ntfy) — só o helper monta esse header (ALLOWLIST: a linha
+  # `cfg+="header = ..."` dentro de curl_portainer, que escreve no stdin do
+  # curl, nunca num argv).
+  achados+="$(printf '%s\n' "$linhas" | grep -i 'bearer' \
+    | grep -vF 'cfg+="header = \"Authorization: Bearer $(curl_portainer_escapar' || true)"$'\n'
   achados+="$(printf '%s\n' "$linhas" \
-    | grep -E '(^|[^[:alnum:]_])curl([[:space:]]|$)|ENCHA_CURL_IMAGE' \
+    | grep -E '[[:space:]](-H|--header)[[:space:]=]|(^|[^[:alnum:]_])(curl|wget)([[:space:]]|$)|ENCHA_CURL_IMAGE' \
+    | grep -iE 'authorization[[:space:]]*:|x-api-key[[:space:]]*:|x-setup-token[[:space:]]*:' \
+    | grep -vF 'cfg+="header = \"Authorization: Bearer $(curl_portainer_escapar' || true)"$'\n'
+  # R2: jq --arg/--argjson com nome de credencial (p, pp, sp, senha*, pass*,
+  # token*, ghcr*, jwt) ou o Env inteiro (--argjson env) — OU com VALOR vindo
+  # de variável de nome de credencial (`--arg x "$pass_portainer"`) — e
+  # --args/--jsonargs (valores posicionais também vão no argv). Credencial
+  # vai por variável de ambiente (env.X).
+  achados+="$(printf '%s\n' "$linhas" | grep -iE -- '--arg(json)?[[:space:]]+(p|pp|sp|pass[a-z_]*|senha[a-z_]*|token[a-z_]*|ghcr[a-z_]*|jwt|env)[[:space:]]' || true)"$'\n'
+  achados+="$(printf '%s\n' "$linhas" | grep -iE -- '--arg(json)?[[:space:]]+[a-z_][a-z0-9_]*[[:space:]]+"?\$\{?[a-z0-9_]*(pass|senha|token|jwt|secret|segredo|pwd|chave|key)' || true)"$'\n'
+  achados+="$(printf '%s\n' "$linhas" | grep -E '(^|[^[:alnum:]_])jq[[:space:]]' | grep -E -- '--(json)?args([[:space:]]|$)' || true)"$'\n'
+  # R3: curl/wget/contêiner-curl com corpo/credencial no argv: -d, --data*,
+  # --json, -u, --user, --proxy-user, --oauth2-bearer, --form-string, -F/--form
+  # de campo com nome de credencial ou "Env", --post-data/--body-data e
+  # --password/--http-password do wget. ALLOWLIST: `--data @-` (corpo lido de
+  # stdin, sem segredo no argv) e `tr -d` (não é curl). Chamadas por
+  # curl_portainer não entram: usam --body/--form-env, cujo valor vai para o
+  # stdin.
+  achados+="$(printf '%s\n' "$linhas" \
+    | grep -E '(^|[^[:alnum:]_])(curl|wget)([[:space:]]|$)|ENCHA_CURL_IMAGE' \
     | sed -E 's/tr -d +[^ ]+//g; s/--data @-//g' \
-    | grep -E '[[:space:]](-d|-u|--user|--data[a-z-]*)[[:space:]=]|-F "Env=' || true)"$'\n'
+    | grep -iE '[[:space:]](-d|-u|--user|--proxy-user|--data[a-z-]*|--json|--oauth2-bearer|--form-string|--post-data|--body-data|--password|--http-password)[[:space:]=]|[[:space:]](-F|--form)[[:space:]]+"?[a-z_]*(env|pass|senha|token|secret|segredo|jwt|chave|key)[a-z_]*=' || true)"$'\n'
+  # R5: variável que carrega credencial do Portainer/painel/GHCR/licença
+  # (lista abaixo — acrescente aqui toda variável nova desse tipo) usada numa
+  # linha que chama comando EXTERNO (processo novo, argv público) fora das
+  # formas seguras. Formas seguras, removidas antes do teste: argumentos de
+  # portainer_json_login/curl_portainer_escapar (funções do shell), valores de
+  # --token/--body/--form-env do curl_portainer (vão ao stdin), atribuição —
+  # inclusive o prefixo `VAR="$x" cmd`, que vira AMBIENTE do processo, não
+  # argv — e `printf '...' "$x" |` / `echo "$x" |` (builtins alimentando stdin).
+  # Pega o que as outras regras não enxergam: `docker exec -e SENHA="$x"`,
+  # `docker service update --env-add "...=$x"`, `htpasswd -nb u "$x"`, etc.
+  local segredos='pass_portainer|pass_painel|SENHA|senha|GHCR_TOKEN|TOKEN|token|token_admin|novo_token|JSON_PAYLOAD|json_payload|reg_payload|env_json|body|panel_pass_val|panel_pass_env_val|sp_env_val|stacks_json|current_env_json|chave_licenca|AUTH_JSON'
+  local externos='curl|wget|docker|jq|sshpass|htpasswd|openssl|python3?|node|psql|mysql|mongosh|redis-cli|sudo|env|xargs|ssh|git|mc|nsenter|setpriv|su|runuser|bash|sh'
+  achados+="$(printf '%s\n' "$linhas" \
+    | sed -E \
+        -e 's/(portainer_json_login|curl_portainer_escapar)([[:space:]]+"[^"]*")*//g' \
+        -e 's/--(token|body|form-env)[[:space:]]+"[^"]*"//g' \
+        -e 's/\$\{[A-Za-z_][A-Za-z0-9_]*:-//g' \
+        -e 's/(^|\$\(|[;|&(]|[[:digit:]]+[[:space:]])[[:space:]]*((local|export|readonly)[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*="[^"]*"[[:space:]]*)+/\1 /g' \
+        -e "s/(printf[[:space:]]+'[^']*'|echo)([[:space:]]+-[a-zA-Z]+)?[[:space:]]+\"[^\"]*\"[[:space:]]*\\|//g" \
+    | grep -E "(^|[^[:alnum:]_./-])($externos)([[:space:]]|\$)" \
+    | grep -E "\\\$\\{?($segredos)\\}?([^A-Za-z0-9_]|\$)" || true)"$'\n'
   # R4: chave JSON "password" (literal "password" ou `{...,password:`) numa
   # linha que monta JSON via jq/curl sem ler de env.X. ALLOWLIST:
   # portainer_json_login (`password:env.P`) e o corpo do registry
