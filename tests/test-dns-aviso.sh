@@ -32,7 +32,7 @@ ok() { echo "✅ $1"; }
 extrair_funcao() {
   local nome="$1" arquivo="$2"
   awk -v alvo="$nome" '
-    $0 ~ "^" alvo "\\(\\) ?\\{$" { f = 1 }
+    $0 ~ "^" alvo "\\(\\) ?\\{[[:space:]]*$" { f = 1 }
     f { print }
     f && /^\}$/ { exit }
   ' "$arquivo"
@@ -42,22 +42,22 @@ exigir_funcao() {
   local nome="$1" arquivo="$2" corpo
   corpo="$(extrair_funcao "$nome" "$arquivo")"
   if [ -z "$corpo" ]; then
-    echo "❌ FALHOU: função $nome não encontrada em $arquivo"
+    echo "❌ FALHOU: função $nome não encontrada em $arquivo" >&2
     exit 1
   fi
   printf '%s' "$corpo"
 }
 
 # --- funções reais ------------------------------------------------------------
-fn_ip="$(exigir_funcao dns_ip_publico_vps secondary.sh)"
-fn_estado="$(exigir_funcao dns_estado_dominio secondary.sh)"
-fn_imprimir="$(exigir_funcao dns_imprimir_aviso secondary.sh)"
-fn_checar="$(exigir_funcao checar_dns_dominio secondary.sh)"
-fn_hosts="$(exigir_funcao dns_checar_hosts_da_stack secondary.sh)"
-fn_validar="$(exigir_funcao validar_dominio secondary.sh)"
-fn_marca="$(exigir_funcao dns_marca_resumo main.sh)"
-fn_resumo="$(exigir_funcao mostrar_resumo_final main.sh)"
-fn_t="$(exigir_funcao t secondary.sh)"
+fn_ip="$(exigir_funcao dns_ip_publico_vps secondary.sh)" || exit 1
+fn_estado="$(exigir_funcao dns_estado_dominio secondary.sh)" || exit 1
+fn_imprimir="$(exigir_funcao dns_imprimir_aviso secondary.sh)" || exit 1
+fn_checar="$(exigir_funcao checar_dns_dominio secondary.sh)" || exit 1
+fn_hosts="$(exigir_funcao dns_checar_hosts_da_stack secondary.sh)" || exit 1
+fn_validar="$(exigir_funcao validar_dominio secondary.sh)" || exit 1
+fn_marca="$(exigir_funcao dns_marca_resumo main.sh)" || exit 1
+fn_resumo="$(exigir_funcao mostrar_resumo_final main.sh)" || exit 1
+fn_t="$(exigir_funcao t secondary.sh)" || exit 1
 
 # Cores e catálogo REAIS (mesmas linhas dos arquivos).
 for c in roxo azul ciano amarelo verde vermelho negrito reset cinza; do
@@ -88,7 +88,8 @@ eval "$fn_t"
 eval "$fn_ip"
 # todo helper dns_* de secondary.sh (inclusive os que vierem depois)
 for nome_fn in $(grep -oE '^dns_[a-z0-9_]+\(\)' secondary.sh | tr -d '()'); do
-  eval "$(exigir_funcao "$nome_fn" secondary.sh)"
+  corpo_fn="$(exigir_funcao "$nome_fn" secondary.sh)" || exit 1
+  eval "$corpo_fn"
 done
 eval "$fn_estado"
 eval "$fn_imprimir"
@@ -117,6 +118,7 @@ arq="$FAKE_DNSDIR/$2"
 [ "$1" = ahostsv6 ] && arq="$arq.v6"
 [ -f "$arq" ] || exit 2
 if grep -qx TIMEOUT "$arq"; then exit 124; fi
+if grep -qx TRAVA "$arq"; then sleep 30; exit 0; fi   # resolvedor que nunca responde
 rc_forcado="$(sed -n 's/^RC=//p' "$arq")"
 [ -n "$rc_forcado" ] && exit "$rc_forcado"
 while read -r ip; do
@@ -355,6 +357,39 @@ reset_dns
 saida="$(dns_checar_hosts_da_stack "$BINDIR/maiusc.yaml")"
 case "$saida" in *n8n.exemplo.com*"ainda não resolve"*) ok "(d) Host() com maiúsculas na stack: avisa" ;; *) falha "(d) Host() com maiúsculas: silêncio ('$saida')" ;; esac
 
+# Resolvedor que nunca responde (o getent fica pendurado): a checagem tem teto
+# de tempo (timeout 5) e não trava a instalação.
+if command -v timeout >/dev/null 2>&1; then
+  reset_dns
+  echo TRAVA > "$DNSDIR/trava.exemplo.com"
+  inicio=$SECONDS
+  saida="$(checar_dns_dominio trava.exemplo.com)"; rc=$?
+  gasto=$((SECONDS - inicio))
+  [ "$gasto" -le 8 ] && [ -z "$saida" ] && [ "$rc" -eq 0 ] && ok "(d) getent pendurado: volta em ${gasto}s, calado, retorno 0" || falha "(d) getent pendurado: ${gasto}s, saída '$saida', rc=$rc"
+else
+  falha "(d) sem 'timeout' neste ambiente — não dá para provar o teto de tempo"
+fi
+# o curl do IP público também tem teto (o icanhazip pendurado não trava nada)
+if extrair_funcao dns_ip_publico_vps secondary.sh | grep -v '^[[:space:]]*#' | grep -qE 'curl .*--max-time [1-9]( |$)'; then
+  ok "(d) curl do IP público com --max-time de um dígito"
+else
+  falha "(d) curl do IP público sem --max-time curto"
+fi
+# --sempre num domínio ok imprime a linha "já aponta" (pré-checagem de main.sh)
+reset_dns
+echo "203.0.113.7" > "$DNSDIR/bom.exemplo.com"
+saida="$(checar_dns_dominio --sempre bom.exemplo.com)"
+case "$saida" in *"DNS de 'bom.exemplo.com' já aponta para esta VPS"*) ok "(e) --sempre com DNS ok: linha 'já aponta'" ;; *) falha "(e) --sempre com DNS ok sem a linha: '$saida'" ;; esac
+# o mesmo com os status_ok/status_warning REAIS de main.sh (o caminho da
+# instalação; acima é o fallback de quando secondary.sh roda sozinho)
+corpo_fn="$(exigir_funcao status_ok main.sh)" || exit 1; eval "$corpo_fn"
+corpo_fn="$(exigir_funcao status_warning main.sh)" || exit 1; eval "$corpo_fn"
+saida="$(checar_dns_dominio --sempre bom.exemplo.com)"
+case "$saida" in *"DNS de 'bom.exemplo.com' já aponta para esta VPS"*) ok "(e) [status_ok de main.sh] --sempre com DNS ok: linha 'já aponta'" ;; *) falha "(e) [status_ok de main.sh] sem a linha: '$saida'" ;; esac
+saida="$(checar_dns_dominio --sempre sumiu.exemplo.com)"
+case "$saida" in *WARNING*"sumiu.exemplo.com"*"ainda não resolve"*) ok "(e) [status_warning de main.sh] aviso sai pelo status_warning" ;; *) falha "(e) [status_warning de main.sh] aviso ausente: '$saida'" ;; esac
+unset -f status_ok status_warning
+
 # --- (e) cache: o mesmo domínio duas vezes = uma consulta -----------------------------
 reset_dns
 checar_dns_dominio potainer.exemplo.com > "$BINDIR/e1"
@@ -441,6 +476,19 @@ saida="$(resumo potainer.exemplo.com painel.exemplo.com)"
   && ok "(f) checagem indisponível: resumo idêntico ao de antes" || falha "(f) sem rede mas o resumo mudou"
 case "$saida" in *"DNS ainda"*) falha "(f) marca sem checagem" ;; *) ok "(f) sem checagem: nenhuma marca" ;; esac
 
+# O resumo só reconsulta quem estava com problema: um domínio ok não gera
+# consulta nova (nem espera de até 5 s), e um nunca checado também não.
+reset_dns
+echo "203.0.113.7" > "$DNSDIR/painel.exemplo.com"      # painel ok; portainer sem DNS
+url_portainer=potainer.exemplo.com; url_painel=painel.exemplo.com; user_portainer=a; user_painel=b
+checar_dns_dominio potainer.exemplo.com >/dev/null; checar_dns_dominio painel.exemplo.com >/dev/null
+antes="$(n_getent)"; mostrar_resumo_final >/dev/null; depois="$(n_getent)"
+[ $((depois - antes)) -eq 1 ] && ok "(f) resumo reconsulta só o domínio com problema (1 consulta)" || falha "(f) resumo fez $((depois - antes)) consultas (esperado 1: só o com problema)"
+reset_dns
+url_portainer=nunca.exemplo.com; url_painel=tambem.exemplo.com
+mostrar_resumo_final >/dev/null
+[ "$(n_getent_total)" -eq 0 ] && ok "(f) resumo não consulta domínio nunca checado" || falha "(f) resumo consultou domínio nunca checado ($(n_getent_total))"
+
 # DNS propagou durante a instalação: a marca some (reavaliação no resumo)
 reset_dns
 url_portainer=potainer.exemplo.com; url_painel=painel.exemplo.com
@@ -497,6 +545,15 @@ tem_chamada instalar_ambiente_completo secondary.sh 'checar_dns_dominio' checar_
 tem_chamada ferramenta_encha_panel secondary.sh 'checar_dns_dominio' checar_dns_dominio
 tem_chamada validar_dominio secondary.sh 'checar_dns_dominio' checar_dns_dominio
 tem_chamada stack_editavel secondary.sh 'dns_checar_hosts_da_stack' dns_checar_hosts_da_stack
+# ...e ANTES do deploy (depois, o aviso chega tarde e no meio do log do deploy)
+corpo_stack="$(extrair_funcao stack_editavel secondary.sh | grep -v '^[[:space:]]*#')"
+lin_dns_stack="$(printf '%s\n' "$corpo_stack" | grep -n 'dns_checar_hosts_da_stack' | head -1 | cut -d: -f1)"
+lin_deploy_stack="$(printf '%s\n' "$corpo_stack" | grep -n 'api/stacks/create' | head -1 | cut -d: -f1)"
+if [ -n "$lin_dns_stack" ] && [ -n "$lin_deploy_stack" ] && [ "$lin_dns_stack" -lt "$lin_deploy_stack" ]; then
+  ok "(g) stack_editavel checa o DNS antes do deploy"
+else
+  falha "(g) stack_editavel: checagem de DNS depois do deploy (dns=$lin_dns_stack deploy=$lin_deploy_stack)"
+fi
 tem_chamada mostrar_resumo_final main.sh 'dns_marca_resumo' dns_marca_resumo
 # Depois de um `clear`, o aviso precisa sair DE NOVO. No fluxo real de
 # main.sh, checar_dns_e_portas avisa e logo em seguida
