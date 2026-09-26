@@ -1674,8 +1674,10 @@ dns_estado_dominio() {
     else
         saida=$(getent ahostsv4 "$dominio" 2>/dev/null) || rc=$?
     fi
-    # 124 = estourou o tempo: resolvedor lento não é "domínio sem DNS".
-    if [ "$rc" = "124" ]; then
+    # Só 0 (achou) e 2 (não achou) do getent dizem algo sobre o DNS. 124 =
+    # estourou o tempo (resolvedor lento não é "domínio sem DNS"); 127/126 =
+    # getent/timeout ausente; 125 = o timeout falhou; 1/3 = uso; 137 = morto.
+    if [ "$rc" != "0" ] && [ "$rc" != "2" ]; then
         DNS_ESTADO_CACHE[$dominio]="desconhecido"
         return 0
     fi

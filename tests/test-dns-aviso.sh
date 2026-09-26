@@ -111,6 +111,8 @@ echo "$*" >> "$FAKE_LOG_GETENT"
 arq="$FAKE_DNSDIR/$2"
 [ -f "$arq" ] || exit 2
 if grep -qx TIMEOUT "$arq"; then exit 124; fi
+rc_forcado="$(sed -n 's/^RC=//p' "$arq")"
+[ -n "$rc_forcado" ] && exit "$rc_forcado"
 while read -r ip; do
   printf '%s     STREAM %s\n%s     DGRAM  \n%s     RAW    \n' "$ip" "$2" "$ip" "$ip"
 done < "$arq"
@@ -219,6 +221,16 @@ reset_dns
 echo TIMEOUT > "$DNSDIR/lento.exemplo.com"
 saida="$(checar_dns_dominio lento.exemplo.com)"
 [ -z "$saida" ] && ok "(d) resolução expirada (timeout): silêncio" || falha "(d) falso alarme por timeout: $saida"
+# getent/timeout falhando por OUTRO motivo que não "domínio não existe" (só o
+# exit 2 do getent significa isso): 127 = getent/timeout ausente, 126 = não
+# executável, 125 = o próprio timeout falhou, 1/3 = uso/enumeração, 137 = morto.
+# Nenhum é "domínio sem DNS": silêncio.
+for rc_x in 1 3 125 126 127 137; do
+  reset_dns
+  echo "RC=$rc_x" > "$DNSDIR/quebrado.exemplo.com"
+  saida="$(checar_dns_dominio quebrado.exemplo.com)"
+  [ -z "$saida" ] && ok "(d) getent/timeout saiu $rc_x (não é 'não existe'): silêncio" || falha "(d) falso alarme com getent saindo $rc_x: $saida"
+done
 # domínio fora do formato: silêncio e nem chega ao getent
 reset_dns
 saida="$(checar_dns_dominio '-x.exemplo.com'; checar_dns_dominio 'a b.com'; checar_dns_dominio '')"
