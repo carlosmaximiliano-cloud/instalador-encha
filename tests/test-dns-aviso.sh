@@ -224,6 +224,28 @@ reset_dns
 saida="$(checar_dns_dominio '-x.exemplo.com'; checar_dns_dominio 'a b.com'; checar_dns_dominio '')"
 [ -z "$saida" ] && [ "$(n_getent)" -eq 0 ] && ok "(d) domínio inválido/vazio: silêncio, sem getent" || falha "(d) reagiu a domínio inválido: '$saida' getent=$(n_getent)"
 
+# /etc/hosts com o hostname da VPS em loopback (Hostinger: "127.0.1.1
+# srv721194.hstgr.cloud", visto na VPS de teste real — e esse hostname é um
+# domínio público que muita gente usa). getent lê o /etc/hosts antes do DNS, e
+# 127.0.1.1 não diz nada sobre o DNS público: silêncio, nunca "aponta para
+# 127.0.1.1".
+reset_dns
+echo "127.0.1.1" > "$DNSDIR/srv123.hstgr.cloud"
+saida="$(checar_dns_dominio srv123.hstgr.cloud)"
+[ -z "$saida" ] && ok "(d) resolve só para loopback (/etc/hosts): silêncio" || falha "(d) falso alarme com loopback do /etc/hosts: $saida"
+[ "${DNS_ESTADO_CACHE[srv123.hstgr.cloud]:-}" != "nao_resolve" ] || falha "(d) loopback virou 'não resolve'"
+checar_dns_dominio srv123.hstgr.cloud >/dev/null
+[ "$(dns_marca_resumo srv123.hstgr.cloud)" = "" ] && ok "(d) loopback: sem marca no resumo" || falha "(d) loopback marcado no resumo"
+# loopback junto com um IP de verdade: o loopback nunca aparece no aviso
+reset_dns
+printf '127.0.1.1\n198.51.100.9\n' > "$DNSDIR/misto.exemplo.com"
+saida="$(checar_dns_dominio misto.exemplo.com)"
+case "$saida" in
+  *127.0.1.1*) falha "(d) loopback citado no aviso: $saida" ;;
+  *"aponta para 198.51.100.9"*) ok "(d) loopback + IP público: avisa só com o IP público" ;;
+  *) falha "(d) loopback + outro IP sem aviso: '$saida'" ;;
+esac
+
 # --- (e) cache: o mesmo domínio duas vezes = uma consulta -----------------------------
 reset_dns
 checar_dns_dominio potainer.exemplo.com > "$BINDIR/e1"

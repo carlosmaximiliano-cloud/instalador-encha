@@ -1680,8 +1680,17 @@ dns_estado_dominio() {
         return 0
     fi
 
-    local ips
-    ips=$(printf '%s\n' "$saida" | awk 'NF {print $1}' | sort -u | paste -sd, -)
+    # Loopback (127.0.0.0/8) sai da conta: getent lê o /etc/hosts antes do DNS,
+    # e a Hostinger grava lá "127.0.1.1 srvNNN.hstgr.cloud" — um hostname que
+    # também é domínio público apontando para a VPS. Só loopback = não dá para
+    # saber o DNS público daqui: silêncio (nunca "aponta para 127.0.1.1").
+    local todos ips
+    todos=$(printf '%s\n' "$saida" | awk 'NF {print $1}' | sort -u)
+    ips=$(printf '%s\n' "$todos" | awk 'NF && $1 !~ /^127\./' | paste -sd, -)
+    if [ -z "$ips" ] && [ -n "$todos" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
     DNS_IPS_CACHE[$dominio]="$ips"
     if [ -z "$ips" ]; then
         DNS_ESTADO_CACHE[$dominio]="nao_resolve"
