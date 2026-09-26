@@ -163,7 +163,8 @@ case "$1" in
         *) shift ;;
       esac
     done
-    script="${script//\/usr\/local\/bin\/encha-guard/sh '$GUARD_REAL'}"
+    rep="sh '$GUARD_REAL'"
+    script="${script//\/usr\/local\/bin\/encha-guard/$rep}"
     exec env -i PATH="$PATH" NFT_LOG="$NFT_LOG" NFT_RECUSA="$NFT_RECUSA" ${envs[@]+"${envs[@]}"} sh -c "$script"
     ;;
 esac
