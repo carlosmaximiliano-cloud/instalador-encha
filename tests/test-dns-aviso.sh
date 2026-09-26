@@ -76,7 +76,7 @@ carregar_msg() { # <arquivo> <chave>: eval das 3 linhas MSG_PT/EN/ES[chave]=…
     eval "$linha"
   done
 }
-for chave in dns_aviso_nao_resolve dns_aviso_outro_ip dns_ok_linha; do
+for chave in $(grep -oE '^MSG_PT\[dns_[a-z0-9_]+\]' secondary.sh | sed -E 's/^MSG_PT\[(.*)\]$/\1/'); do
   carregar_msg secondary.sh "$chave"
 done
 for chave in $(grep -oE '^MSG_PT\[mostrar_resumo_[a-z0-9_]+\]' main.sh | sed -E 's/^MSG_PT\[(.*)\]$/\1/'); do
@@ -104,11 +104,13 @@ trap 'rm -rf "$BINDIR"' EXIT
 
 # getent falso: registra a chamada; devolve o conteúdo de $DNSDIR/<dominio>
 # (formato real do `getent ahostsv4`: 3 linhas por IP) ou sai 2 (não achou).
-# Um arquivo com "TIMEOUT" simula o exit 124 do `timeout`.
+# Um arquivo com "TIMEOUT" simula o exit 124 do `timeout`. `ahostsv6` lê
+# $DNSDIR/<dominio>.v6 (registros AAAA), separado dos A.
 cat > "$BINDIR/getent" <<'EOF2'
 #!/bin/bash
 echo "$*" >> "$FAKE_LOG_GETENT"
 arq="$FAKE_DNSDIR/$2"
+[ "$1" = ahostsv6 ] && arq="$arq.v6"
 [ -f "$arq" ] || exit 2
 if grep -qx TIMEOUT "$arq"; then exit 124; fi
 rc_forcado="$(sed -n 's/^RC=//p' "$arq")"
@@ -158,7 +160,8 @@ reset_dns() {
   FAKE_CURL_FALHA=0; FAKE_IP_VPS="203.0.113.7"; FAKE_IP_VPS6="2001:db8::7"
   rm -f "$DNSDIR"/*
 }
-n_getent() { grep -c . "$LOG_GETENT" || true; }
+n_getent() { grep -c '^ahostsv4 ' "$LOG_GETENT" || true; }   # resoluções (A)
+n_getent_total() { grep -c . "$LOG_GETENT" || true; }        # qualquer consulta
 n_curl() { grep -c . "$LOG_CURL" || true; }
 sem_cor() { sed -E 's/\x1b\[[0-9;]*m//g' <<<"$1"; }
 
@@ -202,7 +205,7 @@ reset_dns; FAKE_CURL_FALHA=1
 saida="$(checar_dns_dominio potainer.exemplo.com)"; rc=$?
 [ -z "$saida" ] && [ "$rc" -eq 0 ] && ok "(d) IP público indisponível: silêncio, retorno 0" || falha "(d) saída/rc inesperados: '$saida' rc=$rc"
 # getent chamado dentro de $( ) não conta o log? conta (arquivo) — confere:
-[ "$(n_getent)" -eq 0 ] && ok "(d) sem IP público não consulta o DNS" || falha "(d) consultou o DNS sem ter o IP público"
+[ "$(n_getent_total)" -eq 0 ] && ok "(d) sem IP público não consulta o DNS" || falha "(d) consultou o DNS sem ter o IP público"
 # VPS só IPv6 (o icanhazip só responde IPv6; com -4 falha): 'indisponível'
 reset_dns; FAKE_IP_VPS=""; FAKE_IP_VPS6="2001:db8::1"
 saida="$(checar_dns_dominio potainer.exemplo.com)"
@@ -234,7 +237,7 @@ done
 # domínio fora do formato: silêncio e nem chega ao getent
 reset_dns
 saida="$(checar_dns_dominio '-x.exemplo.com'; checar_dns_dominio 'a b.com'; checar_dns_dominio '')"
-[ -z "$saida" ] && [ "$(n_getent)" -eq 0 ] && ok "(d) domínio inválido/vazio: silêncio, sem getent" || falha "(d) reagiu a domínio inválido: '$saida' getent=$(n_getent)"
+[ -z "$saida" ] && [ "$(n_getent_total)" -eq 0 ] && ok "(d) domínio inválido/vazio: silêncio, sem getent" || falha "(d) reagiu a domínio inválido: '$saida' getent=$(n_getent_total)"
 
 # /etc/hosts com o hostname da VPS em loopback (Hostinger: "127.0.1.1
 # srv721194.hstgr.cloud", visto na VPS de teste real — e esse hostname é um
@@ -257,6 +260,29 @@ case "$saida" in
   *"aponta para 198.51.100.9"*) ok "(d) loopback + IP público: avisa só com o IP público" ;;
   *) falha "(d) loopback + outro IP sem aviso: '$saida'" ;;
 esac
+
+# Domínio só com AAAA (IPv6), sem registro A: `getent ahostsv4` não acha nada,
+# mas dizer "ainda não resolve" é mentira — ele resolve, só não por IPv4. O
+# aviso tem que ser o de "sem registro A", citando o IPv4 desta VPS.
+reset_dns
+echo "2001:db8::99" > "$DNSDIR/so6.exemplo.com.v6"
+saida="$(checar_dns_dominio so6.exemplo.com)"; rc=$?
+case "$saida" in
+  *"ainda não resolve"*) falha "(d) AAAA sem A: aviso diz 'não resolve': $saida" ;;
+  *so6.exemplo.com*"registro A"*"203.0.113.7"*) ok "(d) só AAAA: aviso de 'sem registro A (IPv4)' com o IPv4 da VPS" ;;
+  *) falha "(d) só AAAA: aviso errado/ausente: '$saida'" ;;
+esac
+[ "$rc" -eq 0 ] && ok "(d) só AAAA: retorna 0" || falha "(d) só AAAA: retorno $rc"
+checar_dns_dominio so6.exemplo.com >/dev/null
+[ -n "$(dns_marca_resumo so6.exemplo.com)" ] && ok "(d) só AAAA: marcado no resumo" || falha "(d) só AAAA: sem marca no resumo"
+# sem A e sem AAAA: continua 'não resolve'; com A: nem pergunta pelo AAAA
+reset_dns
+saida="$(checar_dns_dominio nada.exemplo.com)"
+case "$saida" in *"ainda não resolve"*) ok "(d) sem A e sem AAAA: 'não resolve'" ;; *) falha "(d) sem A/AAAA: '$saida'" ;; esac
+reset_dns
+echo "203.0.113.7" > "$DNSDIR/tem4.exemplo.com"
+checar_dns_dominio tem4.exemplo.com >/dev/null
+grep -q '^ahostsv6 ' "$LOG_GETENT" && falha "(d) consultou AAAA de domínio que já tem A" || ok "(d) com registro A não consulta AAAA"
 
 # --- (e) cache: o mesmo domínio duas vezes = uma consulta -----------------------------
 reset_dns

@@ -1504,7 +1504,7 @@ dns_marca_resumo() {
     local dominio="${1:-}"
     [ -z "$dominio" ] && return 0
     case "${DNS_ESTADO_CACHE[$dominio]:-}" in
-        nao_resolve|outro_ip) t mostrar_resumo_dns_marca ;;
+        nao_resolve|outro_ip|so_ipv6) t mostrar_resumo_dns_marca ;;
     esac
     return 0
 }

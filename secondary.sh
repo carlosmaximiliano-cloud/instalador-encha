@@ -1604,7 +1604,7 @@ validar_dominio() {
 # alarme). Uma consulta por domínio por execução (cache abaixo). As funções que
 # preenchem o cache precisam ser chamadas DIRETO, não dentro de $( ).
 # ─────────────────────────────────────────────────────────────────────────────
-declare -gA DNS_ESTADO_CACHE   # domínio -> ok | nao_resolve | outro_ip | desconhecido
+declare -gA DNS_ESTADO_CACHE   # domínio -> ok | nao_resolve | outro_ip | so_ipv6 | desconhecido
 declare -gA DNS_IPS_CACHE      # domínio -> IPs (v4) para onde aponta, separados por vírgula
 declare -gA DNS_AVISADO_CACHE  # domínio -> 1 se o aviso já foi impresso nesta execução
 DNS_IP_PUBLICO_CONSULTADO=0
@@ -1617,6 +1617,10 @@ MSG_ES[dns_aviso_nao_resolve]="El DNS de '%s' aún no resuelve. Traefik/Let's En
 MSG_PT[dns_aviso_outro_ip]="O DNS de '%s' aponta para %s, e o IP desta VPS é %s. Confira se ele aponta para este servidor (com proxy/CDN, como a Cloudflare, isso é esperado). O Let's Encrypt só emite o certificado quando aponta para cá — a instalação segue, e dá para corrigir o DNS depois."
 MSG_EN[dns_aviso_outro_ip]="The DNS for '%s' points to %s, and this VPS's IP is %s. Check that it points to this server (with a proxy/CDN, such as Cloudflare, this is expected). Let's Encrypt only issues the certificate when it points here — the installation continues, and you can fix the DNS later."
 MSG_ES[dns_aviso_outro_ip]="El DNS de '%s' apunta a %s, y la IP de esta VPS es %s. Verifique que apunte a este servidor (con proxy/CDN, como Cloudflare, esto es esperado). Let's Encrypt solo emite el certificado cuando apunta aquí — la instalación continúa, y puede corregir el DNS después."
+
+MSG_PT[dns_aviso_so_ipv6]="O DNS de '%s' só tem endereço IPv6 (registro AAAA), sem nenhum registro A (IPv4). Crie um registro A apontando para o IPv4 desta VPS (%s): sem ele, quem acessa só por IPv4 não chega no endereço e o Let's Encrypt pode não emitir o certificado — a instalação segue, e dá para criar o registro depois."
+MSG_EN[dns_aviso_so_ipv6]="The DNS for '%s' only has an IPv6 address (AAAA record), with no A record (IPv4). Create an A record pointing to this VPS's IPv4 (%s): without it, anyone connecting only over IPv4 can't reach the address and Let's Encrypt may not issue the certificate — the installation continues, and you can create the record later."
+MSG_ES[dns_aviso_so_ipv6]="El DNS de '%s' solo tiene dirección IPv6 (registro AAAA), sin ningún registro A (IPv4). Cree un registro A que apunte a la IPv4 de esta VPS (%s): sin él, quien accede solo por IPv4 no llega a la dirección y Let's Encrypt puede no emitir el certificado — la instalación continúa, y puede crear el registro después."
 
 MSG_PT[dns_ok_linha]="DNS de '%s' já aponta para esta VPS."
 MSG_EN[dns_ok_linha]="DNS for '%s' already points to this VPS."
@@ -1653,7 +1657,7 @@ dns_estado_dominio() {
 
     local anterior="${DNS_ESTADO_CACHE[$dominio]:-}"
     if [ -n "$anterior" ]; then
-        if [ "$reverificar" = "0" ] || { [ "$anterior" != "nao_resolve" ] && [ "$anterior" != "outro_ip" ]; }; then
+        if [ "$reverificar" = "0" ] || { [ "$anterior" != "nao_resolve" ] && [ "$anterior" != "outro_ip" ] && [ "$anterior" != "so_ipv6" ]; }; then
             return 0
         fi
     elif [ "$reverificar" = "1" ]; then
@@ -1695,6 +1699,20 @@ dns_estado_dominio() {
     fi
     DNS_IPS_CACHE[$dominio]="$ips"
     if [ -z "$ips" ]; then
+        # Sem registro A. Antes de dizer "não resolve", confere se há AAAA: um
+        # domínio só-IPv6 resolve, só não por IPv4 — o aviso é outro (falta o
+        # registro A). `ahostsv6` devolve A mapeado (::ffff:) quando existe A,
+        # mas aqui já sabemos que não existe; loopback (::1) não conta.
+        local saida6 rc6=0
+        if command -v timeout >/dev/null 2>&1; then
+            saida6=$(timeout 5 getent ahostsv6 "$dominio" 2>/dev/null) || rc6=$?
+        else
+            saida6=$(getent ahostsv6 "$dominio" 2>/dev/null) || rc6=$?
+        fi
+        if [ "$rc6" = "0" ] && printf '%s\n' "$saida6" | awk 'NF && $1 ~ /:/ && $1 !~ /^::ffff:/ && $1 != "::1" {achou=1} END {exit !achou}'; then
+            DNS_ESTADO_CACHE[$dominio]="so_ipv6"
+            return 0
+        fi
         DNS_ESTADO_CACHE[$dominio]="nao_resolve"
     elif [[ ",$ips," == *",$DNS_IP_PUBLICO_VPS,"* ]]; then
         DNS_ESTADO_CACHE[$dominio]="ok"
@@ -1728,11 +1746,13 @@ checar_dns_dominio() {
     dns_estado_dominio "$dominio"
     local estado="${DNS_ESTADO_CACHE[$dominio]:-desconhecido}"
     case "$estado" in
-        nao_resolve|outro_ip)
+        nao_resolve|outro_ip|so_ipv6)
             if [ "$sempre" = "1" ] || [ "${DNS_AVISADO_CACHE[$dominio]:-}" != "1" ]; then
                 DNS_AVISADO_CACHE[$dominio]="1"
                 if [ "$estado" = "nao_resolve" ]; then
                     dns_imprimir_aviso "$(t dns_aviso_nao_resolve "$dominio")"
+                elif [ "$estado" = "so_ipv6" ]; then
+                    dns_imprimir_aviso "$(t dns_aviso_so_ipv6 "$dominio" "$DNS_IP_PUBLICO_VPS")"
                 else
                     dns_imprimir_aviso "$(t dns_aviso_outro_ip "$dominio" "${DNS_IPS_CACHE[$dominio]:-}" "$DNS_IP_PUBLICO_VPS")"
                 fi
