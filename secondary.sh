@@ -1624,11 +1624,14 @@ MSG_ES[dns_ok_linha]="El DNS de '%s' ya apunta a esta VPS."
 
 # Preenche DNS_IP_PUBLICO_VPS (vazio se não deu para obter) — uma tentativa só
 # por execução, mesmo quando falha, para não repetir o timeout a cada domínio.
+# `-4` é obrigatório: numa VPS dual-stack (Hostinger, Hetzner, DO... — a VPS de
+# teste real incluída) o icanhazip responde pelo IPv6, que não é IPv4, e a
+# checagem inteira ficava muda — nem o domínio sem DNS do achado 7 era avisado.
 dns_ip_publico_vps() {
     if [ "${DNS_IP_PUBLICO_CONSULTADO:-0}" != "1" ]; then
         DNS_IP_PUBLICO_CONSULTADO=1
         local ip
-        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
+        ip=$(curl -4 -s --max-time 5 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
         if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
             DNS_IP_PUBLICO_VPS="$ip"
         fi

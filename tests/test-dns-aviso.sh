@@ -117,11 +117,22 @@ done < "$arq"
 exit 0
 EOF2
 # curl falso: só o IP público da VPS (icanhazip); FAKE_CURL_FALHA=1 = sem rede.
+# Imita uma VPS dual-stack de verdade (Hostinger, Hetzner, DO...): sem -4 o
+# icanhazip responde pelo IPv6 (FAKE_IP_VPS6), como na VPS de teste real;
+# com -4 responde o IPv4 (FAKE_IP_VPS) — ou falha, se ele estiver vazio (VPS
+# só IPv6).
 cat > "$BINDIR/curl" <<'EOF2'
 #!/bin/bash
 echo "$*" >> "$FAKE_LOG_CURL"
 [ "${FAKE_CURL_FALHA:-0}" = 1 ] && exit 6
-echo "${FAKE_IP_VPS:-203.0.113.7}"
+so4=0
+for a in "$@"; do case "$a" in -4|--ipv4) so4=1 ;; esac; done
+if [ "$so4" = 1 ]; then
+  [ -n "${FAKE_IP_VPS:-}" ] || exit 7
+  echo "$FAKE_IP_VPS"
+else
+  echo "${FAKE_IP_VPS6:-$FAKE_IP_VPS}"
+fi
 EOF2
 # sshd falso: o resumo consulta `sshd -T`; sem saída = nenhum aviso de SSH.
 cat > "$BINDIR/sshd" <<'EOF2'
@@ -131,7 +142,7 @@ EOF2
 chmod +x "$BINDIR/getent" "$BINDIR/curl" "$BINDIR/sshd"
 export PATH="$BINDIR:$PATH"
 export FAKE_LOG_GETENT="$LOG_GETENT" FAKE_LOG_CURL="$LOG_CURL" FAKE_DNSDIR="$DNSDIR"
-export FAKE_IP_VPS="203.0.113.7" FAKE_CURL_FALHA=0
+export FAKE_IP_VPS="203.0.113.7" FAKE_IP_VPS6="2001:db8::7" FAKE_CURL_FALHA=0
 
 # Stubs de tela usados pelo resumo (a função real chama clear/centralizar).
 clear() { :; }
@@ -142,7 +153,7 @@ reset_dns() {
   DNS_ESTADO_CACHE=(); DNS_IPS_CACHE=(); DNS_AVISADO_CACHE=()
   DNS_IP_PUBLICO_CONSULTADO=0; DNS_IP_PUBLICO_VPS=""
   : > "$LOG_GETENT"; : > "$LOG_CURL"
-  FAKE_CURL_FALHA=0; FAKE_IP_VPS="203.0.113.7"
+  FAKE_CURL_FALHA=0; FAKE_IP_VPS="203.0.113.7"; FAKE_IP_VPS6="2001:db8::7"
   rm -f "$DNSDIR"/*
 }
 n_getent() { grep -c . "$LOG_GETENT" || true; }
@@ -190,10 +201,19 @@ saida="$(checar_dns_dominio potainer.exemplo.com)"; rc=$?
 [ -z "$saida" ] && [ "$rc" -eq 0 ] && ok "(d) IP público indisponível: silêncio, retorno 0" || falha "(d) saída/rc inesperados: '$saida' rc=$rc"
 # getent chamado dentro de $( ) não conta o log? conta (arquivo) — confere:
 [ "$(n_getent)" -eq 0 ] && ok "(d) sem IP público não consulta o DNS" || falha "(d) consultou o DNS sem ter o IP público"
-# resposta que não é IPv4 (ex.: IPv6 do icanhazip) também é 'indisponível'
-reset_dns; FAKE_IP_VPS="2001:db8::1"
+# VPS só IPv6 (o icanhazip só responde IPv6; com -4 falha): 'indisponível'
+reset_dns; FAKE_IP_VPS=""; FAKE_IP_VPS6="2001:db8::1"
 saida="$(checar_dns_dominio potainer.exemplo.com)"
-[ -z "$saida" ] && ok "(d) IP público que não é IPv4: silêncio" || falha "(d) falso alarme com IP não-IPv4: $saida"
+[ -z "$saida" ] && ok "(d) VPS sem IPv4 público: silêncio" || falha "(d) falso alarme sem IPv4 público: $saida"
+# VPS dual-stack (o caso comum — a VPS de teste real): o icanhazip sem -4
+# responde IPv6, e aí a checagem inteira ficava muda. O aviso TEM que sair.
+reset_dns
+saida="$(checar_dns_dominio potainer.exemplo.com)"
+case "$saida" in
+  *potainer.exemplo.com*"ainda não resolve"*) ok "(d) VPS dual-stack: IPv4 público obtido com -4, o aviso sai" ;;
+  *) falha "(d) VPS dual-stack: checagem muda (IP público='$DNS_IP_PUBLICO_VPS'): '$saida'" ;;
+esac
+grep -qE '(^| )(-4|--ipv4)( |$)' "$LOG_CURL" && ok "(d) o IP público é pedido só por IPv4 (-4)" || falha "(d) curl do IP público sem -4: $(cat "$LOG_CURL")"
 # resolvedor lento (timeout, exit 124): não é 'sem DNS'
 reset_dns
 echo TIMEOUT > "$DNSDIR/lento.exemplo.com"
