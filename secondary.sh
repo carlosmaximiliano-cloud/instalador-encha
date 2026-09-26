@@ -1678,7 +1678,9 @@ dns_ips_locais_vps() {
 dns_estado_dominio() {
     local reverificar=0
     if [ "${1:-}" = "--reverificar" ]; then reverificar=1; shift; fi
-    local dominio="${1:-}"
+    # DNS não diferencia maiúsculas; os prompts do menu e o Host() da stack
+    # aceitam o que foi digitado. Chave do cache sempre minúscula.
+    local dominio="${1:-}"; dominio="${dominio,,}"
     # Fora do formato de FQDN: silêncio (a validação de formato é de quem pede
     # o domínio) — e nunca passa lixo/opção ao getent nem usa de chave.
     [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] || return 0
@@ -1778,7 +1780,7 @@ dns_imprimir_aviso() {
 checar_dns_dominio() {
     local sempre=0
     if [ "${1:-}" = "--sempre" ]; then sempre=1; shift; fi
-    local dominio="${1:-}"
+    local dominio="${1:-}"; dominio="${dominio,,}"   # mesma chave (minúscula) de dns_estado_dominio
     [ -z "$dominio" ] && return 0
 
     dns_estado_dominio "$dominio"

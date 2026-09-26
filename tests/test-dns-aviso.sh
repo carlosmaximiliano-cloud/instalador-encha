@@ -342,6 +342,19 @@ echo "198.51.100.9" > "$DNSDIR/errado.exemplo.com"
 saida="$(checar_dns_dominio errado.exemplo.com)"
 [ -z "$saida" ] && ok "(d) sem IP público: IP local não substitui (silêncio)" || falha "(d) usou IP local no lugar do público: $saida"
 
+# Maiúsculas: DNS não diferencia caixa, e os prompts das ferramentas do menu
+# (e o Host() da stack) aceitam o que o operador digitou. "Potainer.Exemplo.com"
+# é o mesmo domínio sem DNS — tem que avisar, e a marca do resumo também.
+reset_dns
+saida="$(checar_dns_dominio Potainer.Exemplo.COM)"
+case "$saida" in *"ainda não resolve"*) ok "(d) domínio com maiúsculas: avisa igual" ;; *) falha "(d) domínio com maiúsculas: silêncio ('$saida')" ;; esac
+checar_dns_dominio Potainer.Exemplo.COM >/dev/null
+[ -n "$(dns_marca_resumo Potainer.Exemplo.COM)" ] && ok "(d) domínio com maiúsculas: marca no resumo" || falha "(d) domínio com maiúsculas: sem marca"
+printf '        - "traefik.http.routers.x.rule=Host(`N8N.Exemplo.com`)"\n' > "$BINDIR/maiusc.yaml"
+reset_dns
+saida="$(dns_checar_hosts_da_stack "$BINDIR/maiusc.yaml")"
+case "$saida" in *n8n.exemplo.com*"ainda não resolve"*) ok "(d) Host() com maiúsculas na stack: avisa" ;; *) falha "(d) Host() com maiúsculas: silêncio ('$saida')" ;; esac
+
 # --- (e) cache: o mesmo domínio duas vezes = uma consulta -----------------------------
 reset_dns
 checar_dns_dominio potainer.exemplo.com > "$BINDIR/e1"
@@ -377,6 +390,9 @@ saida="$(
   dns_checar_hosts_da_stack /nao/existe.yaml
   echo VIVO
 )"; rc=$?
+# sem argumento nenhum, sob set -u (o teste inteiro roda com set -u)
+saida_u="$( set -eu; checar_dns_dominio; checar_dns_dominio --sempre; dns_estado_dominio; dns_estado_dominio --reverificar; dns_marca_resumo; dns_checar_hosts_da_stack; echo VIVO-U )"
+[ "$saida_u" = "VIVO-U" ] && ok "(h) chamadas sem argumento sob 'set -eu': silêncio, sem abortar" || falha "(h) sem argumento sob set -eu: '$saida_u'"
 case "$saida" in *VIVO) ok "(h) sob 'set -e' avisos de DNS nunca abortam (rc=$rc)" ;; *) falha "(h) o script abortou sob set -e: $saida" ;; esac
 validar_dominio sumiu.exemplo.com >/dev/null; rc=$?
 [ "$rc" -eq 0 ] && ok "(h) validar_dominio continua devolvendo 0 com DNS ruim" || falha "(h) validar_dominio devolveu $rc"

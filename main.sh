@@ -1512,7 +1512,7 @@ MSG_ES[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ El DNS no tiene regist
 # este servidor" (com Cloudflare/proxy é o normal, e o cliente acharia que a
 # instalação quebrou).
 dns_marca_resumo() {
-    local dominio="${1:-}"
+    local dominio="${1:-}"; dominio="${dominio,,}"   # chave minúscula, como em dns_estado_dominio
     [ -z "$dominio" ] && return 0
     case "${DNS_ESTADO_CACHE[$dominio]:-}" in
         nao_resolve) t mostrar_resumo_dns_marca ;;
