@@ -434,6 +434,30 @@ user_portainer=a; user_painel=b
 saida="$(mostrar_resumo_final)"
 case "$saida" in *"DNS ainda"*) falha "(f) marca ficou apesar do DNS já apontar" ;; *) ok "(f) DNS que propagou até o resumo: sem marca" ;; esac
 
+# A marca diz o que a checagem viu, sem afirmar mais do que sabe: "outro IP"
+# (com Cloudflare/proxy isso é o normal — "ainda não aponta para este
+# servidor" faria o cliente achar que a instalação quebrou) e "sem registro A".
+reset_dns
+url_portainer=cf.exemplo.com; url_painel=so6b.exemplo.com; user_portainer=a; user_painel=b
+echo "104.16.1.1" > "$DNSDIR/cf.exemplo.com"
+echo "2001:db8::5" > "$DNSDIR/so6b.exemplo.com.v6"
+checar_dns_dominio cf.exemplo.com >/dev/null; checar_dns_dominio so6b.exemplo.com >/dev/null
+for idioma in pt en es; do
+  ENCHA_LANG=$idioma
+  saida="$(sem_cor "$(mostrar_resumo_final)")"
+  lp="$(linha_de "$saida" cf.exemplo.com)"; ln="$(linha_de "$saida" so6b.exemplo.com)"
+  case "$lp" in
+    *"não aponta para este servidor"*|*"not point to this server"*|*"no apunta a este servidor"*) falha "(f) [$idioma] proxy/CDN marcado como 'não aponta para este servidor': $lp" ;;
+    *"outro IP"*|*"another IP"*|*"otra IP"*) ok "(f) [$idioma] outro IP: marca 'aponta para outro IP'" ;;
+    *) falha "(f) [$idioma] outro IP sem marca: $lp" ;;
+  esac
+  case "$ln" in
+    *"registro A"*|*"A record"*) ok "(f) [$idioma] só AAAA: marca 'sem registro A'" ;;
+    *) falha "(f) [$idioma] só AAAA: marca errada/ausente: $ln" ;;
+  esac
+done
+ENCHA_LANG=pt
+
 # marca também nos 3 idiomas (paridade real já vem do check-parity.sh)
 ENCHA_LANG=en; [ -n "$(dns_marca_resumo x.exemplo.com)" ] && falha "(f) marca sem cache" || ok "(f) domínio nunca checado: sem marca"
 ENCHA_LANG=pt

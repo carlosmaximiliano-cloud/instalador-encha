@@ -1496,15 +1496,28 @@ MSG_PT[mostrar_resumo_dns_marca]="  ${amarelo}⚠ DNS ainda não aponta para est
 MSG_EN[mostrar_resumo_dns_marca]="  ${amarelo}⚠ DNS does not point to this server yet${reset}"
 MSG_ES[mostrar_resumo_dns_marca]="  ${amarelo}⚠ El DNS aún no apunta a este servidor${reset}"
 
+MSG_PT[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ DNS aponta para outro IP${reset}"
+MSG_EN[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ DNS points to another IP${reset}"
+MSG_ES[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ El DNS apunta a otra IP${reset}"
+
+MSG_PT[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ DNS sem registro A (IPv4)${reset}"
+MSG_EN[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ DNS has no A record (IPv4)${reset}"
+MSG_ES[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ El DNS no tiene registro A (IPv4)${reset}"
+
 # Marca curta ao lado do endereço no resumo final quando a última checagem de
 # DNS (secondary.sh: DNS_ESTADO_CACHE) achou que o domínio não resolve ou aponta
 # para outro IP. Vazia se está ok, se não deu para saber, ou se nunca foi
 # checado — o resumo fica idêntico ao de sempre. Só LÊ o cache (seguro em $( )).
+# A marca diz só o que a checagem viu: "outro IP" não vira "não aponta para
+# este servidor" (com Cloudflare/proxy é o normal, e o cliente acharia que a
+# instalação quebrou).
 dns_marca_resumo() {
     local dominio="${1:-}"
     [ -z "$dominio" ] && return 0
     case "${DNS_ESTADO_CACHE[$dominio]:-}" in
-        nao_resolve|outro_ip|so_ipv6) t mostrar_resumo_dns_marca ;;
+        nao_resolve) t mostrar_resumo_dns_marca ;;
+        outro_ip) t mostrar_resumo_dns_marca_outro_ip ;;
+        so_ipv6) t mostrar_resumo_dns_marca_so_ipv6 ;;
     esac
     return 0
 }
