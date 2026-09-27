@@ -278,6 +278,18 @@ while IFS= read -r linha_vetor; do
 done < "$VETOR"
 [ "$n_vetor" -gt 15 ] && [ "$falhas" -eq "$falhas_antes_vetor" ] && ok "labels: vetor de paridade com o painel ($n_vetor casos) dá a mesma decisão" || falha "vetor de paridade: divergência acima ou vetor lido pela metade ($n_vetor casos)"
 
+# 5c''. A função de UMA imagem, sozinha: inspeção que falha (inclusive só a
+# com --format, ex.: template recusado) = NÃO declara — nunca "true" na dúvida.
+# (O pré-cheque de enchat_imagens_declaram_segredos esconderia um erro aqui.)
+zera; export FALHAR_INSPECT="pinfy"
+enchat_imagem_declara_segredos_arquivo "$PINFY" && falha "inspeção que falha fez a imagem 'declarar'" || ok "labels: inspeção que falha -> a imagem não declara"
+zera
+( docker() { [ "$1 $2" = "image inspect" ] && [ "${4:-}" = "--format" ] && return 1; command docker "$@"; }
+  enchat_imagem_declara_segredos_arquivo "$APP" ) && falha "falha só no inspect --format fez a imagem 'declarar'" || ok "labels: falha só no inspect --format -> não declara"
+( docker() { [ "$1 $2" = "image inspect" ] && [ "${4:-}" = "--format" ] && return 1; command docker "$@"; }
+  enchat_portao_segredos 0.4.2 ) && falha "falha só no inspect --format abriu o portão" || ok "labels: falha só no inspect --format -> portão fechado"
+zera
+
 # 5d. falha ao ler: pull falhou / inspeção falhou / docker inexistente -> fechado, listado como "sem leitura"
 zera; export FALHAR_PULL="pinfy"
 if enchat_portao_segredos 0.4.2; then falha "pull falho deveria fechar"; else
