@@ -9,8 +9,9 @@
 #     de reescrevê-la de memória.
 #
 # Portão por versão: este contrato só vale para uma imagem que contenha o E5.
-# A 0.4.1 do EnchaT foi publicada SEM o suporte a *_FILE; o E5 sai na 0.4.2
-# (full e free). O painel só liga os segredos a partir de 0.4.2 (constante
+# A 0.4.1 e a 0.4.2 do EnchaT foram publicadas SEM o suporte a *_FILE (a 0.4.2
+# real saiu de outra sessão sem o E5); o E5/E5b saem na 0.4.3 (full e free).
+# O painel só liga os segredos a partir de 0.4.3 (constante
 # ENCHAT_VERSAO_MINIMA_SEGREDOS, fixada em enchat-segredos-contrato.test.ts).
 #
 # Uma linha por (serviço, variável). O mesmo segredo pode aparecer em dois

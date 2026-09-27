@@ -91,11 +91,11 @@ zera() {
 }
 
 # --- 1. portão por versão ---------------------------------------------------
-for v in 0.4.2 0.4.3 0.4.10 0.5.0 1.0.0; do
+for v in 0.4.3 0.4.4 0.4.10 0.5.0 1.0.0; do
   enchat_versao_usa_segredos "$v" && ok "versão $v usa segredos" || falha "versão $v deveria usar segredos"
 done
-# 0.4.1: publicada SEM *_FILE (o E5 sai na 0.4.2) — o portão tem que ficar fechado (S4b).
-for v in 0.4.0 0.4.1 0.3.9 0.0.999 "" latest stable v0.4.2 0.4.2-rc.1 0.4 abc; do
+# 0.4.1 e 0.4.2: publicadas SEM *_FILE (o E5 sai na 0.4.3) — o portão tem que ficar fechado (S4b/S4d).
+for v in 0.4.0 0.4.1 0.4.2 0.3.9 0.0.999 "" latest stable v0.4.3 0.4.3-rc.1 0.4 abc; do
   enchat_versao_usa_segredos "$v" && falha "versão '$v' não deveria usar segredos" || ok "versão '$v' fica no formato antigo"
 done
 
@@ -218,13 +218,13 @@ printf '%s\n' "$corpo" | grep -A2 -E -- 'if enchat_criar_segredos_docker; then' 
 
 
 # --- 5. S4c: portão por LABEL das imagens (com.enchat.recursos) --------------
-APP="ghcr.io/enchainterno/enchat-free:0.4.2"
-UPD="ghcr.io/enchainterno/enchat-updater:0.4.2"
-PINFY="ghcr.io/enchainterno/pinfy:0.4.2"
+APP="ghcr.io/enchainterno/enchat-free:0.4.3"
+UPD="ghcr.io/enchainterno/enchat-updater:0.4.3"
+PINFY="ghcr.io/enchainterno/pinfy:0.4.3"
 
 # 5a. as três declaram: abre; o pull e a inspeção das 3 acontecem; sem lista de faltantes
 zera
-if enchat_portao_segredos 0.4.2; then ok "labels: 3 de 3 declaram (0.4.2) -> portão aberto"; else falha "3 de 3 deveriam abrir o portão"; fi
+if enchat_portao_segredos 0.4.3; then ok "labels: 3 de 3 declaram (0.4.3) -> portão aberto"; else falha "3 de 3 deveriam abrir o portão"; fi
 [ "${#ENCHAT_IMAGENS_SEM_SUPORTE[@]}" -eq 0 ] && [ "${#ENCHAT_IMAGENS_SEM_LEITURA[@]}" -eq 0 ] || falha "listas de imagens problemáticas deveriam estar vazias"
 for img in "$APP" "$UPD" "$PINFY"; do
   grep -qx "pull $img" "$ESTADO/chamadas.log" || falha "não puxou $img antes de ler o label"
@@ -244,7 +244,7 @@ grep -qF '{{index .Config.Labels "com.enchat.recursos"}}' "$ESTADO/chamadas.log"
 for par in "LABEL_APP:$APP" "LABEL_UPD:$UPD" "LABEL_PINFY:$PINFY"; do
   var="${par%%:*}"; img="${par#*:}"
   zera; export "$var=SEM_LABEL"
-  if enchat_portao_segredos 0.4.2; then falha "$var sem label deveria fechar o portão"; else
+  if enchat_portao_segredos 0.4.3; then falha "$var sem label deveria fechar o portão"; else
     [ "$ENCHAT_PORTAO_MOTIVO" = "imagens" ] && [ "${ENCHAT_IMAGENS_SEM_SUPORTE[*]}" = "$img" ] && [ "${#ENCHAT_IMAGENS_SEM_LEITURA[@]}" -eq 0 ] \
       && ok "labels: só $img sem label -> fechado, nomeada" || falha "$var sem label: motivo='$ENCHAT_PORTAO_MOTIVO' sem_suporte='${ENCHAT_IMAGENS_SEM_SUPORTE[*]}'"
   fi
@@ -253,12 +253,12 @@ done
 # 5c. valores que NÃO valem (outro recurso, substring de outro token, caixa, glob, vazio)
 for valor in "outro-recurso" "nao-segredos-arquivo-x" "segredos-arquivo2" "x-segredos-arquivo" "SEGREDOS-ARQUIVO" "*" "segredos-*" "segredos-arquivo,x"; do
   zera; export LABEL_PINFY="$valor"
-  enchat_portao_segredos 0.4.2 && falha "label '$valor' não deveria abrir o portão" || ok "labels: '$valor' não vale (fechado)"
+  enchat_portao_segredos 0.4.3 && falha "label '$valor' não deveria abrir o portão" || ok "labels: '$valor' não vale (fechado)"
 done
 # e a lista com outras palavras, separada por espaço/tab, vale
 for valor in "segredos-arquivo outro" "outro segredos-arquivo mais" $'a\tsegredos-arquivo'; do
   zera; export LABEL_UPD="$valor"
-  enchat_portao_segredos 0.4.2 && ok "labels: lista '$valor' contém o token (aberto)" || falha "lista '$valor' com o token deveria abrir"
+  enchat_portao_segredos 0.4.3 && ok "labels: lista '$valor' contém o token (aberto)" || falha "lista '$valor' com o token deveria abrir"
 done
 
 # 5c'. Paridade com o painel: o MESMO vetor que imagens-recursos.test.ts lê
@@ -287,23 +287,23 @@ zera
 ( docker() { [ "$1 $2" = "image inspect" ] && [ "${4:-}" = "--format" ] && return 1; command docker "$@"; }
   enchat_imagem_declara_segredos_arquivo "$APP" ) && falha "falha só no inspect --format fez a imagem 'declarar'" || ok "labels: falha só no inspect --format -> não declara"
 ( docker() { [ "$1 $2" = "image inspect" ] && [ "${4:-}" = "--format" ] && return 1; command docker "$@"; }
-  enchat_portao_segredos 0.4.2 ) && falha "falha só no inspect --format abriu o portão" || ok "labels: falha só no inspect --format -> portão fechado"
+  enchat_portao_segredos 0.4.3 ) && falha "falha só no inspect --format abriu o portão" || ok "labels: falha só no inspect --format -> portão fechado"
 zera
 
 # 5d. falha ao ler: pull falhou / inspeção falhou / docker inexistente -> fechado, listado como "sem leitura"
 zera; export FALHAR_PULL="pinfy"
-if enchat_portao_segredos 0.4.2; then falha "pull falho deveria fechar"; else
+if enchat_portao_segredos 0.4.3; then falha "pull falho deveria fechar"; else
   [ "${ENCHAT_IMAGENS_SEM_LEITURA[*]}" = "$PINFY" ] && [ "$ENCHAT_PORTAO_MOTIVO" = "imagens" ] && ok "labels: falha no pull -> fechado (sem leitura: Pinfy)" || falha "pull falho: lista errada '${ENCHAT_IMAGENS_SEM_LEITURA[*]}'"
 fi
 zera; export FALHAR_INSPECT="enchat-updater"
-if enchat_portao_segredos 0.4.2; then falha "inspeção falha deveria fechar"; else
+if enchat_portao_segredos 0.4.3; then falha "inspeção falha deveria fechar"; else
   [ "${ENCHAT_IMAGENS_SEM_LEITURA[*]}" = "$UPD" ] && ok "labels: falha na inspeção -> fechado (sem leitura: updater)" || falha "inspeção falha: lista errada '${ENCHAT_IMAGENS_SEM_LEITURA[*]}'"
 fi
-( docker() { return 127; }; enchat_portao_segredos 0.4.2 ) && falha "sem docker nenhum deveria fechar" || ok "labels: docker indisponível -> fechado"
+( docker() { return 127; }; enchat_portao_segredos 0.4.3 ) && falha "sem docker nenhum deveria fechar" || ok "labels: docker indisponível -> fechado"
 zera
 
 # 5e. a versão manda também, e sem versão suficiente NEM consulta o Docker
-for v in 0.4.1 0.4.0 latest ""; do
+for v in 0.4.1 0.4.2 0.4.0 latest ""; do
   zera; : > "$ESTADO/chamadas.log"
   if enchat_portao_segredos "$v"; then falha "versão '$v' com labels OK deveria fechar"; else
     [ "$ENCHAT_PORTAO_MOTIVO" = "versao" ] && ! grep -qE '^(pull|image inspect)' "$ESTADO/chamadas.log" \
@@ -312,7 +312,7 @@ for v in 0.4.1 0.4.0 latest ""; do
 done
 
 # 5f. nenhuma credencial/segredo vai ao argv do pull/inspeção (só nomes de imagem)
-zera; enchat_portao_segredos 0.4.2
+zera; enchat_portao_segredos 0.4.3
 grep -E '^(pull|image inspect)' "$ESTADO/chamadas.log" | grep -qiE 'token|senha|password|--password' && falha "credencial no argv do pull/inspeção" || ok "labels: pull/inspeção só levam nome de imagem"
 
 # 5g. mensagens novas nos 3 idiomas

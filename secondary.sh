@@ -16636,10 +16636,11 @@ EOL
 # Pinfy 1000 (USER node); Postgres 0 (o entrypoint oficial lê *_FILE como root
 # antes de baixar o privilégio). Mesma tabela de DONO_SEGREDOS no painel.
 ################################################################################
-# 0.4.1 foi publicada sem o suporte a *_FILE; o E5 sai na 0.4.2 (full e free).
-# Uma 0.4.1 real ignora *_FILE: com segredos ela subiria sem MASTER_KEY/DATABASE_URL.
+# 0.4.1 e 0.4.2 foram publicadas sem o suporte a *_FILE (a 0.4.2 real, full e
+# free, saiu de outra sessão sem o E5); o E5/E5b saem só na 0.4.3.
+# Uma 0.4.1 ou 0.4.2 real ignora *_FILE: com segredos ela subiria sem MASTER_KEY/DATABASE_URL.
 # Espelho de ENCHAT_VERSAO_MINIMA_SEGREDOS em encha-setup-panel/src/lib/stacks/enchat-segredos.ts.
-ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.2"
+ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.3"
 # S4c: além da versão, as imagens da stack (app, Pinfy, updater) têm de declarar o
 # recurso no LABEL abaixo (lista separada por espaço; token exato). Espelho de
 # LABEL_RECURSOS_ENCHAT/RECURSO_SEGREDOS_ARQUIVO em enchat-segredos.ts.

@@ -67,7 +67,7 @@ async function preparar(host: Host, stackId: keyof typeof INSTALACOES = "enchat"
     const actual = await importOriginal<typeof import("./release-info")>();
     return {
       ...actual,
-      // < 0.4.2: formato antigo (variáveis em texto), sem segredos do Docker.
+      // < 0.4.3: formato antigo (variáveis em texto), sem segredos do Docker.
       fetchLatestRelease: vi.fn(async (_base: string, app: string) =>
         app === "tracker"
           ? { version: "1.2.0", imageRepo: "ghcr.io/cheiodecoisa/encha-tracker", imageTag: "1.2.0", obrigatoria: false }

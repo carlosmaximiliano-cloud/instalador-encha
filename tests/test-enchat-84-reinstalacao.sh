@@ -311,17 +311,17 @@ for lixo in latest "1.0" "<html>"; do
 done
 
 # ---------------------------------------------------------------------------
-# 4b) S4c: segredos do Docker só ligam se a versão >= 0.4.2 E as 3 imagens
+# 4b) S4c: segredos do Docker só ligam se a versão >= 0.4.3 E as 3 imagens
 #     declaram `segredos-arquivo` (LABEL com.enchat.recursos). Roda a
 #     ferramenta_enchat REAL contra um docker falso.
 # ---------------------------------------------------------------------------
-C="$DIR/c4s-aberto"; FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+C="$DIR/c4s-aberto"; FAKE_VERSAO=0.4.3 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
 if [ "$(cat "$C/rc")" = "0" ] && grep -q '/run/secrets/' "$C/work/enchat.yaml" && grep -q "docker secret create" "$C/chamadas.log" \
-   && grep -q "pull ghcr.io/enchainterno/enchat-free:0.4.2" "$C/chamadas.log" && grep -q "pull ghcr.io/enchainterno/pinfy:0.4.2" "$C/chamadas.log" \
-   && grep -q "pull ghcr.io/enchainterno/enchat-updater:0.4.2" "$C/chamadas.log"; then
-  ok "0.4.2 + 3 imagens com label: puxa as 3, cria segredos e o YAML usa /run/secrets"
+   && grep -q "pull ghcr.io/enchainterno/enchat-free:0.4.3" "$C/chamadas.log" && grep -q "pull ghcr.io/enchainterno/pinfy:0.4.3" "$C/chamadas.log" \
+   && grep -q "pull ghcr.io/enchainterno/enchat-updater:0.4.3" "$C/chamadas.log"; then
+  ok "0.4.3 + 3 imagens com label: puxa as 3, cria segredos e o YAML usa /run/secrets"
 else
-  falha "0.4.2 + 3 labels não abriu o portão na opção 84 (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
+  falha "0.4.3 + 3 labels não abriu o portão na opção 84 (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
 fi
 lp="$(grep -n '^docker pull ' "$C/chamadas.log" | head -1 | cut -d: -f1)"; ls_="$(grep -n '^docker login ' "$C/chamadas.log" | head -1 | cut -d: -f1)"
 lc="$(grep -n 'docker secret create' "$C/chamadas.log" | head -1 | cut -d: -f1)"
@@ -331,17 +331,17 @@ lc="$(grep -n 'docker secret create' "$C/chamadas.log" | head -1 | cut -d: -f1)"
 for par in "LABEL_APP:enchat-free" "LABEL_UPD:enchat-updater" "LABEL_PINFY:pinfy"; do
   var="${par%%:*}"; img="${par#*:}"
   C="$DIR/c4s-sem-$img"
-  ( export "$var=SEM_LABEL"; FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
+  ( export "$var=SEM_LABEL"; FAKE_VERSAO=0.4.3 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
   y="$C/work/enchat.yaml"
   if [ "$(cat "$C/rc")" = "0" ] && [ -f "$y" ] && ! grep -q '/run/secrets/' "$y" && ! grep -q "docker secret create" "$C/chamadas.log" \
-     && grep -q "ghcr.io/enchainterno/$img:0.4.2 ainda não declara suporte" "$C/saida.log" && grep -q 'POSTGRES_PASSWORD: "' "$y"; then
-    ok "0.4.2 com $img sem label: formato antigo, nenhum segredo criado, a saída nomeia a imagem"
+     && grep -q "ghcr.io/enchainterno/$img:0.4.3 ainda não declara suporte" "$C/saida.log" && grep -q 'POSTGRES_PASSWORD: "' "$y"; then
+    ok "0.4.3 com $img sem label: formato antigo, nenhum segredo criado, a saída nomeia a imagem"
   else
-    falha "0.4.2 com $img sem label não caiu no formato antigo com aviso (rc=$(cat "$C/rc"))"; tail -6 "$C/saida.log"
+    falha "0.4.3 com $img sem label não caiu no formato antigo com aviso (rc=$(cat "$C/rc"))"; tail -6 "$C/saida.log"
   fi
 done
 
-C="$DIR/c4s-pull-falha"; ( FAKE_FALHAR_PULL=1 FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
+C="$DIR/c4s-pull-falha"; ( FAKE_FALHAR_PULL=1 FAKE_VERSAO=0.4.3 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
 if [ "$(cat "$C/rc")" = "0" ] && ! grep -q '/run/secrets/' "$C/work/enchat.yaml" && ! grep -q "docker secret create" "$C/chamadas.log" \
    && grep -q "não foi possível baixar/ler a imagem" "$C/saida.log"; then
   ok "pull das imagens falhou: formato antigo com aviso (nada quebra)"
@@ -354,6 +354,15 @@ if [ "$(cat "$C/rc")" = "0" ] && ! grep -q '/run/secrets/' "$C/work/enchat.yaml"
   ok "0.4.1 com labels OK: formato antigo e NEM puxa/inspeciona imagens (a versão manda também)"
 else
   falha "0.4.1 abriu o portão ou consultou o Docker à toa"; tail -6 "$C/saida.log"
+fi
+
+# S4d: a 0.4.2 real (full e free) já foi tagueada SEM o E5 por outra sessão —
+# ela tem que cair no MESMO formato antigo que a 0.4.1, mesmo com labels OK.
+C="$DIR/c4s-042"; FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+if [ "$(cat "$C/rc")" = "0" ] && ! grep -q '/run/secrets/' "$C/work/enchat.yaml" && ! grep -qE '^docker (pull|image inspect)' "$C/chamadas.log"; then
+  ok "0.4.2 com labels OK: formato antigo e NEM puxa/inspeciona imagens (a versão manda também)"
+else
+  falha "0.4.2 abriu o portão ou consultou o Docker à toa"; tail -6 "$C/saida.log"
 fi
 
 # ---------------------------------------------------------------------------

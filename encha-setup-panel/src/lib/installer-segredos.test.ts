@@ -81,10 +81,10 @@ function aplicarDeployNoSwarm(swarm: Swarm, yaml: string) {
 }
 
 // `tagRef` permite trocar a release entre duas instalações do mesmo teste
-// (formato antigo -> segredos); sem ele vale `tagRelease` (padrão 0.4.2).
+// (formato antigo -> segredos); sem ele vale `tagRelease` (padrão 0.4.3).
 async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { atual: string } }) {
   const { swarm } = opts;
-  const tagFixa = opts.tagRelease ?? "0.4.2";
+  const tagFixa = opts.tagRelease ?? "0.4.3";
   const tagAtual = () => opts.tagRef?.atual ?? tagFixa;
 
   vi.doMock("./portainer", async (importOriginal) => {
@@ -195,7 +195,7 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
 const nomesCriados = (swarm: Swarm) => swarm.ordem.filter((o) => o.startsWith("criar:")).map((o) => o.slice(6));
 
 describe("installStack (EnchaT) — segredos do Docker: ordem criar → deploy → limpar", () => {
-  it("primeira instalação com 0.4.2: cria os 12 segredos ANTES do deploy; sem segredo antigo, nada é removido", async () => {
+  it("primeira instalação com 0.4.3: cria os 12 segredos ANTES do deploy; sem segredo antigo, nada é removido", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-26T12:00:00Z"));
     const swarm = novoSwarm();
@@ -347,7 +347,7 @@ describe("installStack (EnchaT) — segredos do Docker: ordem criar → deploy �
 });
 
 // Auditoria S4 — a migração que importa em campo: stack instalada pelo painel
-// no formato ANTIGO (release < 0.4.2, env em texto), removida e reinstalada
+// no formato ANTIGO (release < 0.4.3, env em texto), removida e reinstalada
 // com o portão aberto. O valor de cada segredo tem que ser BYTE A BYTE o que a
 // mesma variável tinha no YAML antigo: a senha do Postgres está gravada no
 // volume (o initdb não roda de novo — provado num Swarm real na auditoria: com
@@ -368,7 +368,7 @@ describe("installStack (EnchaT) — migração do formato antigo para segredos",
     return new RegExp(`^ {6}${variavel}: "(.*)"$`, "m").exec(bloco)?.[1];
   };
 
-  it("0.4.0 (env) -> remover -> 0.4.2 (segredos): cada segredo tem o valor exato da variável antiga, e nada é re-sorteado", async () => {
+  it("0.4.0 (env) -> remover -> 0.4.3 (segredos): cada segredo tem o valor exato da variável antiga, e nada é re-sorteado", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-26T12:00:00Z"));
     const swarm = novoSwarm();
@@ -382,7 +382,7 @@ describe("installStack (EnchaT) — migração do formato antigo para segredos",
     const gerados1 = geradosSalvos();
 
     swarm.servicos.clear(); // operador removeu a stack; o volume do Postgres fica
-    tagRef.atual = "0.4.2";
+    tagRef.atual = "0.4.3";
     vi.setSystemTime(new Date("2026-09-26T12:10:00Z"));
     expect((await instalar()).ok).toBe(true);
 
@@ -408,9 +408,9 @@ describe("installStack (EnchaT) — migração do formato antigo para segredos",
 // em `com.enchat.recursos`; a leitura acontece DEPOIS do pull e ANTES de gerar
 // o YAML e criar qualquer segredo.
 describe("installStack (EnchaT) — portão por label das imagens (S4c)", () => {
-  const APP = "ghcr.io/enchainterno/enchat-free:0.4.2";
-  const UPD = "ghcr.io/enchainterno/enchat-updater:0.4.2";
-  const PINFY = "ghcr.io/enchainterno/pinfy:0.4.2";
+  const APP = "ghcr.io/enchainterno/enchat-free:0.4.3";
+  const UPD = "ghcr.io/enchainterno/enchat-updater:0.4.3";
+  const PINFY = "ghcr.io/enchainterno/pinfy:0.4.3";
   const comLabel = (valor: string) => ({ Config: { Labels: { "com.enchat.recursos": valor } } });
   const semSegredos = (swarm: Swarm) => {
     expect(swarm.segredos.size).toBe(0);
@@ -527,17 +527,19 @@ describe("installStack (EnchaT) — portão por label das imagens (S4c)", () => 
     expect(auditoria("stack.secrets.gate")[0].meta.segredos).toBe(false);
   });
 
-  it("versão 0.4.1 com os 3 labels OK: fechado e NEM consulta labels (a versão manda também)", async () => {
-    const swarm = novoSwarm();
-    const { instalar, auditoria } = await preparar({ swarm, tagRelease: "0.4.1" });
-    const r = await instalar();
-    expect(r.ok, r.error).toBe(true);
-    expect(swarm.eventos.some((e) => e.startsWith("inspecionar:"))).toBe(false);
-    expect(swarm.segredos.size).toBe(0);
-    expect(swarm.yamls[0]).not.toContain("/run/secrets/");
-    expect(auditoria("stack.secrets.gate")).toHaveLength(0);
-    expect(r.aviso).toBeUndefined(); // versão antiga é esperada, não é o caso "imagem ainda não declara"
-  });
+  for (const versaoAntiga of ["0.4.1", "0.4.2"]) {
+    it(`versão ${versaoAntiga} com os 3 labels OK: fechado e NEM consulta labels (a versão manda também)`, async () => {
+      const swarm = novoSwarm();
+      const { instalar, auditoria } = await preparar({ swarm, tagRelease: versaoAntiga });
+      const r = await instalar();
+      expect(r.ok, r.error).toBe(true);
+      expect(swarm.eventos.some((e) => e.startsWith("inspecionar:"))).toBe(false);
+      expect(swarm.segredos.size).toBe(0);
+      expect(swarm.yamls[0]).not.toContain("/run/secrets/");
+      expect(auditoria("stack.secrets.gate")).toHaveLength(0);
+      expect(r.aviso).toBeUndefined(); // versão antiga é esperada, não é o caso "imagem ainda não declara"
+    });
+  }
 
   it("o aviso de segredos chega ao card final (InstallResult.aviso)", async () => {
     const swarm = novoSwarm();

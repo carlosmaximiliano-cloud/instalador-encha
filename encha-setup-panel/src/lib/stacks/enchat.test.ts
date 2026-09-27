@@ -221,7 +221,7 @@ function ctxCom(tag: string, extra: Partial<SwarmContext> = {}): SwarmContext {
     ...extra,
   };
 }
-const ctxAberto = ctxCom("0.4.2", { versaoSegredos: "1758900000" });
+const ctxAberto = ctxCom("0.4.3", { versaoSegredos: "1758900000" });
 
 const fixture = (nome: string): string => readFileSync(path.join(__dirname, "__fixtures__", nome), "utf8");
 
@@ -232,7 +232,7 @@ function blocoDeploy(yaml: string, servico: string): string {
   return b.slice(b.indexOf("    deploy:"));
 }
 
-describe("enchat — portão por versão: abaixo de 0.4.2 o YAML é o de sempre, byte a byte", () => {
+describe("enchat — portão por versão: abaixo de 0.4.3 o YAML é o de sempre, byte a byte", () => {
   it("0.3.2 com chave: idêntico ao YAML capturado antes do S4", () => {
     expect(enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.3.2"))).toBe(
       fixture("enchat-formato-antigo-com-chave-0.3.2.yaml")
@@ -248,7 +248,7 @@ describe("enchat — portão por versão: abaixo de 0.4.2 o YAML é o de sempre,
   it("tag ilegível ou indefinida também cai no formato antigo (nunca quebra)", () => {
     const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
     // A imagem muda com a tag; comparamos só o resto — nenhum `_FILE`, nenhum bloco de secrets.
-    for (const tag of ["latest", "stable", "0.4.2-rc.1", "beta"]) {
+    for (const tag of ["latest", "stable", "0.4.3-rc.1", "beta"]) {
       const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom(tag, { versaoSegredos: "1" }));
       expect(yaml).not.toContain("/run/secrets/");
       expect(yaml).not.toMatch(/^secrets:/m);
@@ -256,21 +256,24 @@ describe("enchat — portão por versão: abaixo de 0.4.2 o YAML é o de sempre,
     }
   });
 
-  // S4b: a 0.4.1 do EnchaT JÁ está publicada e NÃO lê *_FILE (foi construída
-  // antes do E5, que sai na 0.4.2). Com segredos, ela subiria sem MASTER_KEY/
-  // DATABASE_URL e a stack quebraria — este é o caso que o portão protege.
-  it("0.4.1 (publicada sem *_FILE): portão FECHADO — formato antigo, nenhum segredo, nenhum *_FILE", () => {
-    const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
-    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.1", { versaoSegredos: "1758900000" }));
-    expect(yaml).not.toContain("/run/secrets/");
-    expect(yaml).not.toMatch(/\b(?!STATE_)[A-Z_]+_FILE:/); // STATE_FILE do updater não é segredo
-    expect(yaml).not.toMatch(/^secrets:/m);
-    expect(yaml.replaceAll(":0.4.1", ":0.3.2")).toBe(antigo);
-    expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.1", { versaoSegredos: "1758900000" }))).toEqual([]);
-  });
+  // S4b/S4d: a 0.4.1 e a 0.4.2 do EnchaT JÁ estão publicadas e NÃO leem *_FILE
+  // (builds anteriores ao E5; a 0.4.2 real saiu de outra sessão sem o E5). Com
+  // segredos, elas subiriam sem MASTER_KEY/DATABASE_URL e a stack quebraria —
+  // este é o caso que o portão protege.
+  for (const versaoAntiga of ["0.4.1", "0.4.2"]) {
+    it(`${versaoAntiga} (publicada sem *_FILE): portão FECHADO — formato antigo, nenhum segredo, nenhum *_FILE`, () => {
+      const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
+      const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom(versaoAntiga, { versaoSegredos: "1758900000" }));
+      expect(yaml).not.toContain("/run/secrets/");
+      expect(yaml).not.toMatch(/\b(?!STATE_)[A-Z_]+_FILE:/); // STATE_FILE do updater não é segredo
+      expect(yaml).not.toMatch(/^secrets:/m);
+      expect(yaml.replaceAll(`:${versaoAntiga}`, ":0.3.2")).toBe(antigo);
+      expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom(versaoAntiga, { versaoSegredos: "1758900000" }))).toEqual([]);
+    });
+  }
 
-  it("0.4.2 abre o portão: /run/secrets e bloco secrets presentes", () => {
-    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.2", { versaoSegredos: "1758900000" }));
+  it("0.4.3 abre o portão: /run/secrets e bloco secrets presentes", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3", { versaoSegredos: "1758900000" }));
     expect(yaml).toContain("/run/secrets/");
     expect(yaml).toMatch(/^secrets:$/m);
   });
@@ -280,7 +283,7 @@ describe("enchat — portão por versão: abaixo de 0.4.2 o YAML é o de sempre,
     expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.0", { versaoSegredos: "1" }))).toEqual([]);
   });
 
-  it("o formato antigo continua com os valores em texto (o que as imagens < 0.4.2 exigem)", () => {
+  it("o formato antigo continua com os valores em texto (o que as imagens < 0.4.3 exigem)", () => {
     const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.3.2"));
     for (const v of todasSentinelas) expect(yaml).toContain(v);
   });
@@ -293,23 +296,23 @@ describe("enchat — portão por LABEL das imagens (S4c): a versão sozinha não
     ["imagensSuportamSegredos ausente", { imagensSuportamSegredos: undefined }],
     ["imagensSuportamSegredos false", { imagensSuportamSegredos: false }],
   ] as const) {
-    it(`0.4.2 com ${rotulo}: formato antigo byte a byte, nenhum segredo`, () => {
-      const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", ...extra });
+    it(`0.4.3 com ${rotulo}: formato antigo byte a byte, nenhum segredo`, () => {
+      const c = ctxCom("0.4.3", { versaoSegredos: "1758900000", ...extra });
       const yaml = enchat.generateYaml(valoresComChave, sentinelas, c);
       expect(yaml).not.toContain("/run/secrets/");
       expect(yaml).not.toMatch(/^secrets:/m);
-      expect(yaml.replaceAll(":0.4.2", ":0.3.2")).toBe(antigo);
+      expect(yaml.replaceAll(":0.4.3", ":0.3.2")).toBe(antigo);
       expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
     });
   }
 
   it("só o booleano estrito true abre (valor truthy não-booleano não vale)", () => {
-    const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", imagensSuportamSegredos: "true" as unknown as boolean });
+    const c = ctxCom("0.4.3", { versaoSegredos: "1758900000", imagensSuportamSegredos: "true" as unknown as boolean });
     expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
   });
 
-  it("versão < 0.4.2 fecha mesmo com os labels OK (a versão manda também)", () => {
-    const c = ctxCom("0.4.1", { versaoSegredos: "1758900000", imagensSuportamSegredos: true });
+  it("versão < 0.4.3 fecha mesmo com os labels OK (a versão manda também)", () => {
+    const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", imagensSuportamSegredos: true });
     expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
     expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
   });
@@ -317,18 +320,19 @@ describe("enchat — portão por LABEL das imagens (S4c): a versão sozinha não
   it("o gate declarado pela stack aponta para o label/recurso do contrato e para as 3 imagens", () => {
     expect(enchat.dockerSecretsGate?.label).toBe("com.enchat.recursos");
     expect(enchat.dockerSecretsGate?.recurso).toBe("segredos-arquivo");
-    expect(enchat.dockerSecretsGate?.versaoOk("0.4.2")).toBe(true);
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.3")).toBe(true);
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.2")).toBe(false);
     expect(enchat.dockerSecretsGate?.versaoOk("0.4.1")).toBe(false);
-    const imgs = enchat.registryAuth!.images({}, { version: "0.4.2", imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: "0.4.2", obrigatoria: false });
+    const imgs = enchat.registryAuth!.images({}, { version: "0.4.3", imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: "0.4.3", obrigatoria: false });
     expect(imgs).toEqual([
-      "ghcr.io/enchainterno/enchat-free:0.4.2",
-      "ghcr.io/enchainterno/enchat-updater:0.4.2",
-      "ghcr.io/enchainterno/pinfy:0.4.2",
+      "ghcr.io/enchainterno/enchat-free:0.4.3",
+      "ghcr.io/enchainterno/enchat-updater:0.4.3",
+      "ghcr.io/enchainterno/pinfy:0.4.3",
     ]);
   });
 });
 
-describe("enchat — com segredos (>= 0.4.2): nenhum valor sensível no YAML", () => {
+describe("enchat — com segredos (>= 0.4.3): nenhum valor sensível no YAML", () => {
   for (const [rotulo, valores] of [
     ["com chave de licença", valoresComChave],
     ["sem chave (pareamento)", valoresSemChave],
@@ -453,13 +457,13 @@ describe("enchat — com segredos (>= 0.4.2): nenhum valor sensível no YAML", (
         .join("\n")
         .replaceAll(`:${tag}`, ":TAG")
         .trimEnd();
-    expect(normalizar(novo, "0.4.2")).toBe(normalizar(antigo, "0.4.0"));
+    expect(normalizar(novo, "0.4.3")).toBe(normalizar(antigo, "0.4.0"));
   });
 
   it("sem versaoSegredos com o portão aberto: erro alto (bug do installer), nunca nome sem versão", () => {
-    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.2"))).toThrow(/versaoSegredos/);
-    expect(() => enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.2"))).toThrow(/versaoSegredos/);
-    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.2", { versaoSegredos: "abc" }))).toThrow(/versaoSegredos/);
+    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3"))).toThrow(/versaoSegredos/);
+    expect(() => enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.3"))).toThrow(/versaoSegredos/);
+    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3", { versaoSegredos: "abc" }))).toThrow(/versaoSegredos/);
   });
 });
 

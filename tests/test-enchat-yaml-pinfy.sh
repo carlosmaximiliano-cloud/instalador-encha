@@ -9,7 +9,7 @@
 #   - enchat_pinfy recebe SESSION_KEY, e só ele.
 #
 # S4 (segredos do Docker, achado 2):
-#   - portão FECHADO (versão < 0.4.2 — inclui a 0.4.1 publicada, que não lê *_FILE —, ilegível): o YAML é BYTE A BYTE o de antes
+#   - portão FECHADO (versão < 0.4.3 — inclui a 0.4.1 e a 0.4.2 publicadas, que não leem *_FILE —, ilegível): o YAML é BYTE A BYTE o de antes
 #     do S4 (tests/golden/enchat-84-formato-antigo.yaml, capturado do heredoc
 #     antigo);
 #   - portão ABERTO: nenhum valor de segredo em texto, *_FILE em todo valor
@@ -120,8 +120,8 @@ SENTINELAS="SENT-postgres-pw SENT-master-key SENT-pinfy-master SENT-pinfy-webhoo
 # ---------------------------------------------------------------------------
 # Portão FECHADO: byte a byte o YAML de antes do S4 (golden).
 # ---------------------------------------------------------------------------
-# 0.4.1: a release publicada SEM *_FILE (E5 sai na 0.4.2) — caso que o portão protege (S4b).
-for v in 0.4.0 0.4.1 0.3.9 0.0.1 latest stable 0.4.2-rc.1 "" abc; do
+# 0.4.1 e 0.4.2: releases publicadas SEM *_FILE (E5 sai na 0.4.3) — caso que o portão protege (S4b/S4d).
+for v in 0.4.0 0.4.1 0.4.2 0.3.9 0.0.1 latest stable 0.4.3-rc.1 "" abc; do
   renderizar "$v" "fechado-$v"
   # O golden foi capturado com a tag 0.4.0; a tag da imagem é a única diferença esperada.
   sed -E "s#^(    image: ghcr.io/enchainterno/[a-z-]+):${v//./\\.}\$#\\1:0.4.0#" "$DIR/fechado-$v/enchat.yaml" > "$DIR/fechado-$v/normalizado.yaml"
@@ -133,16 +133,16 @@ for v in 0.4.0 0.4.1 0.3.9 0.0.1 latest stable 0.4.2-rc.1 "" abc; do
   fi
 done
 
-# S4c: versão 0.4.2 (que abriria) mas UMA das três imagens sem o label
+# S4c: versão 0.4.3 (que abriria) mas UMA das três imagens sem o label
 # `com.enchat.recursos: segredos-arquivo` -> portão FECHADO, byte a byte o mesmo YAML antigo.
 for var in LABEL_APP LABEL_UPD LABEL_PINFY; do
-  v=0.4.2; d="fechado-label-$var"
+  v=0.4.3; d="fechado-label-$var"
   ( export "$var=SEM_LABEL"; renderizar "$v" "$d" )
   sed -E "s#^(    image: ghcr.io/enchainterno/[a-z-]+):${v//./\\.}\$#\\1:0.4.0#" "$DIR/$d/enchat.yaml" > "$DIR/$d/normalizado.yaml"
   if cmp -s "$DIR/$d/normalizado.yaml" tests/golden/enchat-84-formato-antigo.yaml; then
-    ok "0.4.2 com $var sem label: YAML idêntico ao formato antigo (portão fechado por label)"
+    ok "0.4.3 com $var sem label: YAML idêntico ao formato antigo (portão fechado por label)"
   else
-    falha "0.4.2 com $var sem label: o YAML abriu os segredos (ou mudou)"
+    falha "0.4.3 com $var sem label: o YAML abriu os segredos (ou mudou)"
     diff "$DIR/$d/normalizado.yaml" tests/golden/enchat-84-formato-antigo.yaml | head -10
   fi
 done
@@ -168,16 +168,16 @@ printf '%s\n' "$pinfy" | grep -q 'SESSION_KEY: "SENT-pinfy-session"' ||
   falha "enchat_pinfy sem SESSION_KEY com a chave gerada"
 
 # ---------------------------------------------------------------------------
-# Portão ABERTO (>= 0.4.2): segredos do Docker.
+# Portão ABERTO (>= 0.4.3): segredos do Docker.
 # ---------------------------------------------------------------------------
-for v in 0.4.2 0.4.3 0.5.0 1.0.0 0.4.10; do
+for v in 0.4.3 0.4.4 0.5.0 1.0.0 0.4.10; do
   renderizar "$v" "aberto-$v"
 done
-novo="$DIR/aberto-0.4.2/enchat.yaml"
+novo="$DIR/aberto-0.4.3/enchat.yaml"
 
 # S4c: as imagens que o YAML sobe (app e Pinfy; o updater não sobe na opção 84)
 # são exatamente as que o portão consulta — senão o label lido seria de outra imagem.
-imgs_portao="$( (set +u; eval "$funcoes"; enchat_imagens_da_stack 0.4.2) )"
+imgs_portao="$( (set +u; eval "$funcoes"; enchat_imagens_da_stack 0.4.3) )"
 for img in $(grep -E '^    image: ghcr.io/' "$novo" | sed -E 's/^    image: //'); do
   printf '%s\n' "$imgs_portao" | grep -qxF "$img" && ok "imagem do YAML ($img) é consultada pelo portão por label" || falha "imagem do YAML ($img) NÃO é consultada pelo portão por label"
 done
@@ -246,8 +246,8 @@ else
   diff <(normaliza "$novo") <(normaliza "$antigo") | head -20
 fi
 
-# Versões acima de 0.4.2 também abrem; a comparação é numérica, não textual (0.4.10 > 0.4.9).
-for v in 0.4.3 0.5.0 1.0.0 0.4.10; do
+# Versões acima de 0.4.3 também abrem; a comparação é numérica, não textual (0.4.10 > 0.4.9).
+for v in 0.4.4 0.5.0 1.0.0 0.4.10; do
   grep -q '^secrets:$' "$DIR/aberto-$v/enchat.yaml" || falha "versão $v deveria usar segredos"
 done
 
