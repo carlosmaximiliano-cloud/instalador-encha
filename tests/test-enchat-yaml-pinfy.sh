@@ -203,6 +203,18 @@ for v in 0.4.2 0.5.0 1.0.0 0.4.10; do
   grep -q '^secrets:$' "$DIR/aberto-$v/enchat.yaml" || falha "versão $v deveria usar segredos"
 done
 
+# Os outros dois testes da opção 84 com segredos do Docker rodam DAQUI: este é
+# o único deles que o CI (.github/workflows/test.yml) chama — sem isso a
+# criação/limpeza (docker falso) e a tabela-contrato nunca rodariam num push.
+for t in tests/test-enchat-segredos.sh tests/test-enchat-segredos-contrato.sh; do
+  if bash "$t" > "$DIR/saida-$(basename "$t").log" 2>&1; then
+    ok "$t"
+  else
+    falha "$t (saída abaixo)"
+    grep -F "FALHOU" "$DIR/saida-$(basename "$t").log" | head -20
+  fi
+done
+
 if [ "$falhas" -eq 0 ]; then
   ok "enchat.yaml: papel pinfy/SESSION_KEY nos serviços certos e segredos do Docker sem valor em texto"
 else
