@@ -16697,11 +16697,15 @@ enchat_imagens_da_stack() {
 }
 
 # Token EXATO por palavra: "segredos-arquivo" vale; "nao-segredos-arquivo-x" e
-# "segredos-arquivo2" não. `read -ra` divide por espaço/tab sem expandir glob.
+# "segredos-arquivo2" não. Separadores: só espaço, tab e quebra de linha (IFS
+# fixo aqui, não o do chamador) — o mesmo de labelTemToken no painel
+# (imagens-recursos.ts; vetor comum em stacks/label-recursos-vetor.tsv).
+# `-d ''` lê o valor INTEIRO: sem ele o `read` parava na 1ª quebra de linha e
+# um token na 2ª linha era ignorado (o painel o via). Sem expansão de glob.
 enchat_label_tem_token() {
     local valor="$1" token="$2" partes p
     [ -n "$token" ] || return 1
-    builtin read -ra partes <<< "$valor"
+    IFS=$' \t\n' builtin read -r -d '' -a partes <<< "$valor"
     for p in ${partes[@]+"${partes[@]}"}; do
         [ "$p" = "$token" ] && return 0
     done

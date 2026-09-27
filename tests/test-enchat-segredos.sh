@@ -261,6 +261,23 @@ for valor in "segredos-arquivo outro" "outro segredos-arquivo mais" $'a\tsegredo
   enchat_portao_segredos 0.4.2 && ok "labels: lista '$valor' contém o token (aberto)" || falha "lista '$valor' com o token deveria abrir"
 done
 
+# 5c'. Paridade com o painel: o MESMO vetor que imagens-recursos.test.ts lê
+# (labelTemToken). Cada valor tem de dar a mesma decisão nos dois caminhos.
+VETOR="encha-setup-panel/src/lib/stacks/label-recursos-vetor.tsv"
+n_vetor=0; falhas_antes_vetor=$falhas
+while IFS= read -r linha_vetor; do
+  case "$linha_vetor" in ''|'#'*) continue ;; esac
+  esperado="$(printf '%s' "$linha_vetor" | cut -f1)"
+  hex="$(printf '%s' "$linha_vetor" | cut -f2)"
+  descricao="$(printf '%s' "$linha_vetor" | cut -f3)"
+  valor=""
+  [ "$hex" = "-" ] || printf -v valor '%b' "$(printf '%s' "$hex" | sed 's/../\\x&/g')"
+  if enchat_label_tem_token "$valor" "segredos-arquivo"; then obtido=abre; else obtido=fecha; fi
+  [ "$obtido" = "$esperado" ] || falha "vetor de paridade: '$descricao' deu $obtido, o painel dá $esperado"
+  n_vetor=$((n_vetor + 1))
+done < "$VETOR"
+[ "$n_vetor" -gt 15 ] && [ "$falhas" -eq "$falhas_antes_vetor" ] && ok "labels: vetor de paridade com o painel ($n_vetor casos) dá a mesma decisão" || falha "vetor de paridade: divergência acima ou vetor lido pela metade ($n_vetor casos)"
+
 # 5d. falha ao ler: pull falhou / inspeção falhou / docker inexistente -> fechado, listado como "sem leitura"
 zera; export FALHAR_PULL="pinfy"
 if enchat_portao_segredos 0.4.2; then falha "pull falho deveria fechar"; else

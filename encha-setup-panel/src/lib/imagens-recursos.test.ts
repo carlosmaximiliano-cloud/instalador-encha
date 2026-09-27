@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // S4c — leitura dos labels das imagens (com.enchat.recursos). Contrato: só
@@ -35,6 +37,26 @@ describe("labelTemToken", () => {
     expect(labelTemToken(["segredos-arquivo"], "segredos-arquivo")).toBe(false);
     expect(labelTemToken("segredos-arquivo", "")).toBe(false);
   });
+});
+
+// Paridade com a opção 84 (enchat_label_tem_token, secondary.sh): o MESMO
+// vetor é lido por tests/test-enchat-segredos.sh — mesma decisão para cada valor.
+describe("labelTemToken — vetor de paridade com a opção 84", () => {
+  const linhas = readFileSync(path.join(__dirname, "stacks", "label-recursos-vetor.tsv"), "utf8")
+    .split("\n")
+    .filter((l) => l !== "" && !l.startsWith("#"));
+  it("o vetor tem casos dos dois lados", () => {
+    expect(linhas.filter((l) => l.startsWith("abre\t")).length).toBeGreaterThan(3);
+    expect(linhas.filter((l) => l.startsWith("fecha\t")).length).toBeGreaterThan(10);
+  });
+  for (const linha of linhas) {
+    const [esperado, hex, descricao] = linha.split("\t");
+    it(`${esperado}: ${descricao}`, async () => {
+      const { labelTemToken } = await carregar(async () => ({}));
+      const valor = hex === "-" ? "" : Buffer.from(hex, "hex").toString("utf8");
+      expect(labelTemToken(valor, "segredos-arquivo")).toBe(esperado === "abre");
+    });
+  }
 });
 
 describe("imagensDeclaramRecurso", () => {

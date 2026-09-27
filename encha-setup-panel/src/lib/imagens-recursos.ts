@@ -19,10 +19,14 @@ export type ResultadoLabelsImagens = {
 };
 
 // Token EXATO (por palavra): "segredos-arquivo" vale; "nao-segredos-arquivo-x"
-// ou "segredos-arquivo2" não. Espaço em branco qualquer separa os tokens.
+// ou "segredos-arquivo2" não. Separadores: SÓ espaço, tab e quebra de linha —
+// o IFS padrão do bash, que é o que enchat_label_tem_token (secondary.sh,
+// opção 84) usa. `\s` do JS aceitaria também CR, tab vertical, form feed e
+// espaços Unicode (U+00A0, U+2003...), e os dois caminhos dariam decisões
+// diferentes para o mesmo label. Vetor comum: stacks/label-recursos-vetor.tsv.
 export function labelTemToken(valor: unknown, token: string): boolean {
   if (typeof valor !== "string" || token === "") return false;
-  return valor.split(/\s+/).some((t) => t === token);
+  return valor.split(/[ \t\n]+/).some((t) => t === token);
 }
 
 // `GET /images/{name}/json` devolve os labels em `Config.Labels` (objeto
