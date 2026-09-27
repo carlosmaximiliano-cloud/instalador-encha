@@ -158,6 +158,29 @@ describe("installStack (EnchaT) — banco existente no host (S5-A)", () => {
     expect(efeitos.deploys).toHaveLength(0);
   });
 
+  // Basta UM segredo protegido sem valor salvo: a senha do Postgres nova não
+  // abre o volume mesmo com a chave-mestra certa (e vice-versa). Sem este
+  // caso, trocar o `.some` por `.every` em installer.ts passava em tudo.
+  for (const faltando of ["postgres_password", "enchat_master_key"]) {
+    it(`banco existe e stack_secrets PARCIAL (sem ${faltando}): aborta, sem deploy e sem gravar nada`, async () => {
+      const host = novoHost({ bancoExiste: true });
+      const { instalar, salvos, semear, efeitos } = await preparar(host);
+      const completos = [
+        { name: "enchat_master_key", value: "MASTER-ANTIGA-DO-BANCO" },
+        { name: "postgres_password", value: "SENHA-ANTIGA-DO-VOLUME" },
+        { name: "pinfy_session_key", value: "SESSAO-ANTIGA" },
+      ];
+      semear(completos.filter((g) => g.name !== faltando));
+
+      const r = await instalar();
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe("banco_existente_sem_chaves");
+      expect(efeitos.deploys).toHaveLength(0);
+      expect(host.caminhosChecados).toEqual(["/var/enchat/postgres/PG_VERSION"]);
+      expect(salvos()[faltando]).toBeUndefined(); // nada sorteado foi gravado por cima
+    });
+  }
+
   it("banco existe e stack_secrets TEM as chaves: reusa exatamente as salvas (nem olha o disco) e instala", async () => {
     const host = novoHost({ bancoExiste: true });
     const { instalar, salvos, semear, efeitos } = await preparar(host);
