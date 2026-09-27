@@ -51,7 +51,7 @@ for f in t versao_semver_maior versao_semver_maior_ou_igual enchat_versao_usa_se
          enchat_bloco_montagens enchat_montar_blocos_yaml enchat_limpar_segredos_antigos \
          enchat_arquivo_dados enchat_dir_postgres enchat_arquivo_pg_version enchat_ler_campo_dados \
          enchat_avaliar_credenciais_existentes enchat_definir_credenciais enchat_versao_estavel_console \
-         enchat_perguntar_versao ferramenta_enchat; do
+         enchat_perguntar_versao enchat_gravar_dados_enchat ferramenta_enchat; do
   corpo="$(extrair_funcao "$f")"
   [ -n "$corpo" ] || { echo "❌ FALHOU: função $f não encontrada em secondary.sh"; exit 1; }
   fns+="$corpo"$'\n'
@@ -128,7 +128,10 @@ rodar_84() {
     validar_dominio() { return 0; }; esconder_senha() { SENHAOCULTA="***"; }
     clear() { :; }; sleep() { :; }; msg_retorno_menu() { echo "[msg_retorno_menu]"; }
     registrar_registry_portainer() { return 0; }; stack_editavel() { :; }
-    pull() { :; }; wait_stack() { return 0; }; msg_resumo_informacoes() { :; }
+    pull() { :; }; msg_resumo_informacoes() { :; }
+    # FAKE_INTERROMPER_ESPERA=1: a sessão cai (Ctrl-C/SSH) enquanto espera os
+    # serviços — DEPOIS do deploy, quando o Postgres já pode ter inicializado.
+    wait_stack() { [ -n "${FAKE_INTERROMPER_ESPERA:-}" ] && exit 97; return 0; }
     printf '%b' "$entrada" | ferramenta_enchat
   ) > "$caso/saida.log" 2>&1
   echo $? > "$caso/rc"
@@ -235,6 +238,36 @@ if [ "$(cat "$C/rc")" = "0" ] && [ -f "$d" ]; then
   grep -q "Reaproveitando" "$C/saida.log" && falha "instalação nova não devia dizer que reaproveitou" || ok "instalação nova: não diz que reaproveitou"
 else
   falha "instalação nova não concluiu (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
+fi
+
+# ---------------------------------------------------------------------------
+# 3b) Sessão interrompida DEPOIS do deploy (esperando os serviços): as
+#     credenciais que o banco recém-criado usa já têm de estar no dados_enchat
+#     (0600). Senão elas se perdem e a próxima execução, vendo o PG_VERSION
+#     que o Postgres criou, aborta — numa instalação nova que a própria opção
+#     84 começou.
+# ---------------------------------------------------------------------------
+C="$DIR/c3i"; FAKE_INTERROMPER_ESPERA=1 FAKE_VERSAO=0.4.0 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+d="$C/root/dados_vps/dados_enchat"; y="$C/work/enchat.yaml"
+if [ "$(cat "$C/rc")" = "97" ] && [ -f "$y" ]; then
+  pg_yaml="$(sed -n 's/^ *POSTGRES_PASSWORD: "\(.*\)"$/\1/p' "$y" | head -1)"
+  if [ -f "$d" ] && [ "$(modo "$d")" = "600" ] && [ -n "$pg_yaml" ] && [ "$(campo "$d" "Senha do Postgres")" = "$pg_yaml" ] \
+     && [ -n "$(campo "$d" ENCHAT_MASTER_KEY)" ] && grep -qF "$(campo "$d" ENCHAT_MASTER_KEY)" "$y"; then
+    ok "interrompida depois do deploy: dados_enchat (600) já tem as credenciais que o YAML usou"
+    mk_antes="$(campo "$d" ENCHAT_MASTER_KEY)"
+    mkdir -p "$C/data/postgres"; echo 16 > "$C/data/postgres/PG_VERSION" # o Postgres inicializou
+    : > "$C/chamadas.log"; rm -f "$y"
+    FAKE_VERSAO=0.4.0 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+    if [ "$(cat "$C/rc")" = "0" ] && [ "$(campo "$d" ENCHAT_MASTER_KEY)" = "$mk_antes" ] && grep -qF "POSTGRES_PASSWORD: \"$pg_yaml\"" "$y"; then
+      ok "a execução seguinte reaproveita as MESMAS credenciais em vez de abortar"
+    else
+      falha "execução seguinte não reaproveitou (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
+    fi
+  else
+    falha "interrompida depois do deploy: credenciais do banco recém-criado não foram salvas (dados_enchat: $( [ -f "$d" ] && echo existe || echo ausente))"
+  fi
+else
+  falha "cenário de interrupção não chegou ao deploy (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
 fi
 
 # ---------------------------------------------------------------------------

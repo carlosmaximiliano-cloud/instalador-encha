@@ -16951,6 +16951,43 @@ enchat_perguntar_versao() {
     versao_enchat="${versao_enchat:-$sugerida}"
 }
 
+# Grava ${ENCHA_ROOT_DIR:-/root}/dados_vps/dados_enchat (0600) com as
+# credenciais da instalação. A opção 84 chama DUAS vezes (auditoria do S5):
+#   - logo ANTES do deploy: se a sessão cair (Ctrl-C, SSH) enquanto espera os
+#     serviços — com o Postgres já inicializado com estas credenciais —, elas
+#     já estão salvas, e a próxima execução as reaproveita (sem isso ela via o
+#     PG_VERSION e abortava, numa instalação nova começada por ela mesma);
+#   - no passo 5/5, com o mesmo conteúdo.
+# Subshell: não muda o diretório de quem chama.
+enchat_gravar_dados_enchat() {
+  (
+  cd "${ENCHA_ROOT_DIR:-/root}/dados_vps" || exit 1
+  # 600 ANTES de escrever: /root/dados_vps é 755 e bind-montado no contêiner
+  # do painel (uid 1001, ver o chmod de dados_portainer) — este arquivo leva a
+  # ENCHAT_MASTER_KEY e o link de primeiro acesso. O chmod vale também para
+  # um dados_enchat já existente (reinstalação), que o `cat >` manteria 644.
+  : > dados_enchat
+  chmod 600 dados_enchat
+  cat > dados_enchat <<EOL
+[ ENCHAT GRÁTIS ]
+
+Painel: https://$url_enchat
+Primeiro acesso (criar o administrador, uso único): https://$url_enchat/?setup=$enchat_setup_token
+Versão: $versao_enchat
+ENCHAT_MASTER_KEY: $enchat_master_key
+Senha do Postgres: $postgres_password
+Senha do painel Pinfy: $pinfy_panel_password
+Senha do papel Pinfy no Postgres: $pinfy_db_password
+PINFY_SESSION_KEY: $pinfy_session_key
+
+⚠️ GUARDE a ENCHAT_MASTER_KEY em local seguro! Sem ela, os segredos
+   gravados no banco são irrecuperáveis.
+⚠️ GUARDE a PINFY_SESSION_KEY também! Sem ela, toda instância do WhatsApp
+   pede QR code de novo (leads e conversas não se perdem).
+EOL
+  )
+}
+
 ferramenta_enchat(){
   msg_enchat
   dados
@@ -17240,6 +17277,9 @@ networks:
 ${ENCHAT_YAML_SEG_TOPO}
 EOL
 
+  # Credenciais no disco ANTES do deploy (ver enchat_gravar_dados_enchat).
+  enchat_gravar_dados_enchat || return 1
+
   STACK_NAME="enchat"
   stack_editavel
 
@@ -17277,30 +17317,7 @@ EOL
   echo -e "$(t ferramenta_enchat_salvando_credenciais)"
   echo ""
 
-  cd "${ENCHA_ROOT_DIR:-/root}/dados_vps" || return 1
-  # 600 ANTES de escrever: /root/dados_vps é 755 e bind-montado no contêiner
-  # do painel (uid 1001, ver o chmod de dados_portainer) — este arquivo leva a
-  # ENCHAT_MASTER_KEY e o link de primeiro acesso. O chmod vale também para
-  # um dados_enchat já existente (reinstalação), que o `cat >` manteria 644.
-  : > dados_enchat
-  chmod 600 dados_enchat
-  cat > dados_enchat <<EOL
-[ ENCHAT GRÁTIS ]
-
-Painel: https://$url_enchat
-Primeiro acesso (criar o administrador, uso único): https://$url_enchat/?setup=$enchat_setup_token
-Versão: $versao_enchat
-ENCHAT_MASTER_KEY: $enchat_master_key
-Senha do Postgres: $postgres_password
-Senha do painel Pinfy: $pinfy_panel_password
-Senha do papel Pinfy no Postgres: $pinfy_db_password
-PINFY_SESSION_KEY: $pinfy_session_key
-
-⚠️ GUARDE a ENCHAT_MASTER_KEY em local seguro! Sem ela, os segredos
-   gravados no banco são irrecuperáveis.
-⚠️ GUARDE a PINFY_SESSION_KEY também! Sem ela, toda instância do WhatsApp
-   pede QR code de novo (leads e conversas não se perdem).
-EOL
+  enchat_gravar_dados_enchat || return 1
   cd
 
   unset chave_licenca GHCR_TOKEN AUTH_JSON
