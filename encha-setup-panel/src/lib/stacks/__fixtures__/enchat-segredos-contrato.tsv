@@ -8,6 +8,11 @@
 #     arquivo, sem o "\n" final). Copie esta tabela para o teste do E5 em vez
 #     de reescrevê-la de memória.
 #
+# Portão por versão: este contrato só vale para uma imagem que contenha o E5.
+# A 0.4.1 do EnchaT foi publicada SEM o suporte a *_FILE; o E5 sai na 0.4.2
+# (full e free). O painel só liga os segredos a partir de 0.4.2 (constante
+# ENCHAT_VERSAO_MINIMA_SEGREDOS, fixada em enchat-segredos-contrato.test.ts).
+#
 # Uma linha por (serviço, variável). O mesmo segredo pode aparecer em dois
 # serviços com NOMES DE VARIÁVEL diferentes (pinfy_master_key: o app lê
 # PINFY_MASTER_KEY, o Pinfy lê MASTER_KEY) — é o ponto mais fácil de errar.

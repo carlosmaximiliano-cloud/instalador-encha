@@ -9,7 +9,7 @@
 #   - enchat_pinfy recebe SESSION_KEY, e só ele.
 #
 # S4 (segredos do Docker, achado 2):
-#   - portão FECHADO (versão < 0.4.1, ilegível): o YAML é BYTE A BYTE o de antes
+#   - portão FECHADO (versão < 0.4.2 — inclui a 0.4.1 publicada, que não lê *_FILE —, ilegível): o YAML é BYTE A BYTE o de antes
 #     do S4 (tests/golden/enchat-84-formato-antigo.yaml, capturado do heredoc
 #     antigo);
 #   - portão ABERTO: nenhum valor de segredo em texto, *_FILE em todo valor
@@ -95,7 +95,8 @@ SENTINELAS="SENT-postgres-pw SENT-master-key SENT-pinfy-master SENT-pinfy-webhoo
 # ---------------------------------------------------------------------------
 # Portão FECHADO: byte a byte o YAML de antes do S4 (golden).
 # ---------------------------------------------------------------------------
-for v in 0.4.0 0.3.9 0.0.1 latest 0.4.1-rc1 "" abc; do
+# 0.4.1: a release publicada SEM *_FILE (E5 sai na 0.4.2) — caso que o portão protege (S4b).
+for v in 0.4.0 0.4.1 0.3.9 0.0.1 latest stable 0.4.2-rc.1 "" abc; do
   renderizar "$v" "fechado-$v"
   # O golden foi capturado com a tag 0.4.0; a tag da imagem é a única diferença esperada.
   sed -E "s#^(    image: ghcr.io/enchainterno/[a-z-]+):${v//./\\.}\$#\\1:0.4.0#" "$DIR/fechado-$v/enchat.yaml" > "$DIR/fechado-$v/normalizado.yaml"
@@ -128,12 +129,12 @@ printf '%s\n' "$pinfy" | grep -q 'SESSION_KEY: "SENT-pinfy-session"' ||
   falha "enchat_pinfy sem SESSION_KEY com a chave gerada"
 
 # ---------------------------------------------------------------------------
-# Portão ABERTO (>= 0.4.1): segredos do Docker.
+# Portão ABERTO (>= 0.4.2): segredos do Docker.
 # ---------------------------------------------------------------------------
-for v in 0.4.1 0.4.2 0.5.0 1.0.0 0.4.10; do
+for v in 0.4.2 0.4.3 0.5.0 1.0.0 0.4.10; do
   renderizar "$v" "aberto-$v"
 done
-novo="$DIR/aberto-0.4.1/enchat.yaml"
+novo="$DIR/aberto-0.4.2/enchat.yaml"
 
 for s in $SENTINELAS; do
   grep -q -- "$s" "$novo" && falha "segredo em texto no YAML aberto: $s"
@@ -189,7 +190,7 @@ normaliza() {
     { pula = 0 }
     /^      (DATABASE_URL|PINFY_MASTER_KEY|PINFY_WEBHOOK_TOKEN|PINFY_DB_PASSWORD|ENCHAT_MASTER_KEY|ENCHAT_SETUP_TOKEN|MASTER_KEY|PANEL_PASSWORD|SESSION_KEY|POSTGRES_PASSWORD)(_FILE)?: / { next }
     { print }
-  ' "$1" | sed -e 's/:0\.4\.[01]$/:TAG/'
+  ' "$1" | sed -E -e 's/:0\.4\.[0-9]+$/:TAG/'
 }
 if [ "$(normaliza "$novo" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')" = "$(normaliza "$antigo" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')" ]; then
   ok "fora dos segredos, o YAML aberto é idêntico ao antigo (deploy, restart, labels)"
@@ -198,8 +199,8 @@ else
   diff <(normaliza "$novo") <(normaliza "$antigo") | head -20
 fi
 
-# Versões acima de 0.4.1 também abrem; a comparação é numérica, não textual (0.4.10 > 0.4.9).
-for v in 0.4.2 0.5.0 1.0.0 0.4.10; do
+# Versões acima de 0.4.2 também abrem; a comparação é numérica, não textual (0.4.10 > 0.4.9).
+for v in 0.4.3 0.5.0 1.0.0 0.4.10; do
   grep -q '^secrets:$' "$DIR/aberto-$v/enchat.yaml" || falha "versão $v deveria usar segredos"
 done
 

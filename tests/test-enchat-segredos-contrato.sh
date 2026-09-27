@@ -76,10 +76,10 @@ renderizar() {
     eval "$heredoc"
   )
 }
-renderizar 0.4.1 novo
+renderizar 0.4.2 novo
 renderizar 0.4.0 antigo
 NOVO="$DIR/novo/enchat.yaml"; ANTIGO="$DIR/antigo/enchat.yaml"
-grep -q '^secrets:$' "$NOVO" || { echo "❌ FALHOU: o YAML com 0.4.1 não usa segredos"; exit 1; }
+grep -q '^secrets:$' "$NOVO" || { echo "❌ FALHOU: o YAML com 0.4.2 não usa segredos"; exit 1; }
 
 # Valor que o menu manda ao `docker secret create` (stdin) para o segredo $1.
 valor_do_segredo() { ( set +u; eval "$funcoes"; definir_valores; enchat_valor_segredo "$1" ); }
@@ -154,7 +154,7 @@ chaves="$( (eval "$constantes"; printf '%s\n' "${ENCHAT_SEGREDOS_CHAVES[@]}") | 
 
 # 5. O portão olha uma versão só: app e Pinfy usam a MESMA tag informada.
 imgs="$(sed -nE 's/^    image: (ghcr\.io\/enchainterno\/[a-z-]+):(.*)$/\1 \2/p' "$NOVO" | sort)"
-[ "$imgs" = "$(printf '%s\n' 'ghcr.io/enchainterno/enchat-free 0.4.1' 'ghcr.io/enchainterno/pinfy 0.4.1')" ] \
+[ "$imgs" = "$(printf '%s\n' 'ghcr.io/enchainterno/enchat-free 0.4.2' 'ghcr.io/enchainterno/pinfy 0.4.2')" ] \
   && ok "app e Pinfy usam a versão informada (a mesma que abre o portão)" || falha "imagens do EnchaT com tag diferente da versão: $imgs"
 
 if [ "$falhas" -eq 0 ]; then

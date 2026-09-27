@@ -16636,7 +16636,10 @@ EOL
 # Pinfy 1000 (USER node); Postgres 0 (o entrypoint oficial lê *_FILE como root
 # antes de baixar o privilégio). Mesma tabela de DONO_SEGREDOS no painel.
 ################################################################################
-ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.1"
+# 0.4.1 foi publicada sem o suporte a *_FILE; o E5 sai na 0.4.2 (full e free).
+# Uma 0.4.1 real ignora *_FILE: com segredos ela subiria sem MASTER_KEY/DATABASE_URL.
+# Espelho de ENCHAT_VERSAO_MINIMA_SEGREDOS em encha-setup-panel/src/lib/stacks/enchat-segredos.ts.
+ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.2"
 ENCHAT_SEGREDOS_CHAVES=(master_key postgres_password database_url pinfy_database_url pinfy_db_password pinfy_master_key pinfy_webhook_token pinfy_panel_password pinfy_session_key setup_token)
 ENCHAT_SEGREDOS_CRIADOS=()
 

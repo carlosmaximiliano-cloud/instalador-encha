@@ -66,10 +66,11 @@ PATH="$DIR/bin:$PATH"
 zera() { rm -rf "$ESTADO"; mkdir -p "$ESTADO/servicos"; unset FALHAR_NA_CRIACAO; }
 
 # --- 1. portão por versão ---------------------------------------------------
-for v in 0.4.1 0.4.2 0.4.10 0.5.0 1.0.0; do
+for v in 0.4.2 0.4.3 0.4.10 0.5.0 1.0.0; do
   enchat_versao_usa_segredos "$v" && ok "versão $v usa segredos" || falha "versão $v deveria usar segredos"
 done
-for v in 0.4.0 0.3.9 0.0.999 "" latest v0.4.1 0.4.1-rc1 0.4 abc; do
+# 0.4.1: publicada SEM *_FILE (o E5 sai na 0.4.2) — o portão tem que ficar fechado (S4b).
+for v in 0.4.0 0.4.1 0.3.9 0.0.999 "" latest stable v0.4.2 0.4.2-rc.1 0.4 abc; do
   enchat_versao_usa_segredos "$v" && falha "versão '$v' não deveria usar segredos" || ok "versão '$v' fica no formato antigo"
 done
 

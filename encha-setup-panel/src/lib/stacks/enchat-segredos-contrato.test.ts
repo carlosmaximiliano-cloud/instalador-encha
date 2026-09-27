@@ -96,9 +96,9 @@ describe("contrato dos segredos do EnchaT — a tabela", () => {
 });
 
 describe("contrato dos segredos do EnchaT — YAML do painel com o portão aberto", () => {
-  const novo = enchat.generateYaml(valores, entradas, ctx("0.4.1", EPOCA));
+  const novo = enchat.generateYaml(valores, entradas, ctx("0.4.2", EPOCA));
   const antigo = enchat.generateYaml(valores, entradas, ctx("0.4.0"));
-  const specs = enchat.dockerSecrets!(valores, entradas, ctx("0.4.1", EPOCA));
+  const specs = enchat.dockerSecrets!(valores, entradas, ctx("0.4.2", EPOCA));
 
   for (const servico of SERVICOS) {
     const linhas = TABELA.filter((l) => l.servico === servico);
@@ -155,10 +155,29 @@ describe("contrato dos segredos do EnchaT — YAML do painel com o portão abert
     );
     for (const i of doEnchat) {
       const tag = i.slice(i.lastIndexOf(":") + 1);
-      expect(tag, i).toBe("0.4.1");
+      expect(tag, i).toBe("0.4.2");
       expect(semverMaiorOuIgual(tag, ENCHAT_VERSAO_MINIMA_SEGREDOS), i).toBe(true);
     }
     // A única imagem de fora é o Postgres oficial, que lê POSTGRES_PASSWORD_FILE desde sempre.
     expect(imagens.filter((i) => !doEnchat.includes(i))).toEqual(["pgvector/pgvector:pg16"]);
+  });
+});
+
+// S4b: a premissa "a 0.4.1 terá *_FILE" estava errada — o Console já tinha
+// publicado a 0.4.1 (build anterior ao E5, sem *_FILE). O contrato (tabela .tsv)
+// só vale para uma imagem que contenha o E5; então o valor do portão é fixado
+// AQUI, ao lado da tabela. Mudar a constante exige mudar este teste de propósito,
+// conferindo antes contra a release PUBLICADA (não contra o plano).
+describe("contrato dos segredos do EnchaT — o portão só abre numa versão que contenha o E5", () => {
+  it("a tabela .tsv existe e a constante do portão é exatamente 0.4.2 (E5 sai na 0.4.2; a 0.4.1 publicada não lê *_FILE)", () => {
+    const tsv = readFileSync(path.join(__dirname, "__fixtures__", "enchat-segredos-contrato.tsv"), "utf8");
+    expect(tsv.split("\n").filter((l) => l.trim() !== "" && !l.startsWith("#")).length).toBeGreaterThan(1);
+    expect(
+      ENCHAT_VERSAO_MINIMA_SEGREDOS,
+      "o portão só pode abrir numa versão que contenha o E5 (suporte a *_FILE): 0.4.1 foi publicada sem ele, o E5 sai na 0.4.2"
+    ).toBe("0.4.2");
+    // 0.4.1 (publicada, sem *_FILE) tem que ficar de fora; 0.4.2 (E5) tem que entrar.
+    expect(semverMaiorOuIgual("0.4.1", ENCHAT_VERSAO_MINIMA_SEGREDOS)).toBe(false);
+    expect(semverMaiorOuIgual("0.4.2", ENCHAT_VERSAO_MINIMA_SEGREDOS)).toBe(true);
   });
 });
