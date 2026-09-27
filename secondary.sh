@@ -16806,9 +16806,163 @@ enchat_limpar_segredos_antigos() {
     return 0
 }
 
+################################################################################
+# S5-B — opção 84: reaproveitar credenciais existentes e não inventar versão.
+#
+# 1) Reinstalar por cima de um banco que já tem dados NUNCA pode sortear valores
+#    novos: a senha do Postgres nova não abre o volume, a ENCHAT_MASTER_KEY nova
+#    aborta o boot pelo canário e deixa os segredos cifrados ilegíveis, a
+#    PINFY_SESSION_KEY nova invalida todas as sessões do WhatsApp. As credenciais
+#    da instalação anterior estão em /root/dados_vps/dados_enchat (0600, gravado
+#    por esta mesma função no passo 5/5).
+#      - dados_enchat legível com chave-mestra e senha do Postgres -> REUSA;
+#      - sem isso, mas /var/enchat/postgres/PG_VERSION existe        -> ABORTA
+#        (nunca oferece apagar dados);
+#      - sem banco e sem dados_enchat utilizável                     -> instalação
+#        nova, sorteia como sempre.
+# 2) A versão sugerida é a estável REAL publicada no Console; sem resposta do
+#    Console não há sugestão (o operador digita) — nunca um "1.0.0" inventado.
+#
+# Costuras de teste (produção usa os defaults): ENCHA_ROOT_DIR substitui /root,
+# ENCHA_DATA_DIR substitui /var/enchat.
+################################################################################
+MSG_PT[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ Já existe um banco do EnchaT neste servidor (%s), mas as credenciais dele não foram encontradas em %s.\e[0m\n\e[97m   Instalar de novo sortearia chaves NOVAS e tornaria os dados existentes ilegíveis (a senha do Postgres não abriria o volume e a ENCHAT_MASTER_KEY nova não decifra o que já foi gravado).\n   • Recupere as chaves da instalação anterior (arquivo dados_enchat da pasta /root/dados_vps, ou o backup dele) e coloque em %s; ou\n   • se esta for uma instalação NOVA e os dados antigos não importam, remova você mesmo o diretório %s e rode a opção de novo.\n   Nada foi alterado.\e[0m"
+MSG_EN[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ An EnchaT database already exists on this server (%s), but its credentials were not found in %s.\e[0m\n\e[97m   Installing again would generate NEW keys and make the existing data unreadable (the Postgres password would not open the volume and the new ENCHAT_MASTER_KEY cannot decrypt what was already stored).\n   • Recover the keys from the previous installation (the dados_enchat file in the /root/dados_vps folder, or its backup) and put them in %s; or\n   • if this is a NEW installation and the old data does not matter, remove the directory %s yourself and run the option again.\n   Nothing was changed.\e[0m"
+MSG_ES[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ Ya existe una base de datos de EnchaT en este servidor (%s), pero sus credenciales no se encontraron en %s.\e[0m\n\e[97m   Instalar de nuevo generaría claves NUEVAS y dejaría los datos existentes ilegibles (la contraseña de Postgres no abriría el volumen y la nueva ENCHAT_MASTER_KEY no descifra lo ya guardado).\n   • Recupere las claves de la instalación anterior (el archivo dados_enchat de la carpeta /root/dados_vps, o su respaldo) y colóquelas en %s; o\n   • si esta es una instalación NUEVA y los datos antiguos no importan, elimine usted mismo el directorio %s y ejecute la opción de nuevo.\n   No se cambió nada.\e[0m"
+
+MSG_PT[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reaproveitando as credenciais de %s — o banco existente continua legível.\e[0m"
+MSG_EN[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reusing the credentials from %s — the existing database stays readable.\e[0m"
+MSG_ES[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reutilizando las credenciales de %s — la base de datos existente sigue legible.\e[0m"
+
+MSG_PT[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mVersão do EnchaT (estável atual: %s; nunca 'latest') [%s]: \e[0m"
+MSG_EN[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mEnchaT version (current stable: %s; never 'latest') [%s]: \e[0m"
+MSG_ES[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mVersión de EnchaT (estable actual: %s; nunca 'latest') [%s]: \e[0m"
+
+MSG_PT[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mVersão do EnchaT no formato X.Y.Z (veja a versão estável no portal EnchaT; nunca 'latest'): \e[0m"
+MSG_EN[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mEnchaT version in X.Y.Z format (see the stable version on the EnchaT portal; never 'latest'): \e[0m"
+MSG_ES[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mVersión de EnchaT en formato X.Y.Z (vea la versión estable en el portal EnchaT; nunca 'latest'): \e[0m"
+
+# Caminhos (com as costuras de teste).
+enchat_arquivo_dados() {
+    printf '%s' "${ENCHA_ROOT_DIR:-/root}/dados_vps/dados_enchat"
+}
+enchat_dir_postgres() {
+    printf '%s' "${ENCHA_DATA_DIR:-/var/enchat}/postgres"
+}
+enchat_arquivo_pg_version() {
+    printf '%s/PG_VERSION' "$(enchat_dir_postgres)"
+}
+
+# Valor de "Rótulo: valor" no dados_enchat (primeira ocorrência; sem CR).
+# $1 = rótulo literal (sem regex), $2 = arquivo.
+enchat_ler_campo_dados() {
+    awk -v r="$1: " 'index($0, r) == 1 { print substr($0, length(r) + 1); exit }' "$2" 2>/dev/null | tr -d '\r'
+}
+
+# Decide o que fazer com credenciais existentes. Retorna:
+#   0 = há credenciais utilizáveis no dados_enchat -> ENCHAT_REUSAR_DADOS=true
+#   1 = instalação nova (nem banco nem credenciais)  -> sorteia
+#   2 = há banco mas NÃO há credenciais utilizáveis  -> quem chama deve ABORTAR
+enchat_avaliar_credenciais_existentes() {
+    local arq mk pg
+    ENCHAT_REUSAR_DADOS=false
+    arq="$(enchat_arquivo_dados)"
+    if [ -r "$arq" ]; then
+        mk="$(enchat_ler_campo_dados "ENCHAT_MASTER_KEY" "$arq")"
+        pg="$(enchat_ler_campo_dados "Senha do Postgres" "$arq")"
+        if [ -n "$mk" ] && [ -n "$pg" ]; then
+            ENCHAT_REUSAR_DADOS=true
+            return 0
+        fi
+    fi
+    if [ -e "$(enchat_arquivo_pg_version)" ]; then
+        return 2
+    fi
+    return 1
+}
+
+# Preenche as variáveis de credencial: valores do dados_enchat quando
+# ENCHAT_REUSAR_DADOS=true (o que faltar no arquivo — campos que versões
+# antigas não gravavam — é sorteado), tudo sorteado numa instalação nova.
+# pinfy_master_key e pinfy_webhook_token nunca foram gravados no dados_enchat
+# e não protegem dado em disco: são sempre novos (o app e o Pinfy leem o mesmo
+# valor da stack).
+enchat_definir_credenciais() {
+    local arq
+    enchat_master_key=""; postgres_password=""; pinfy_panel_password=""
+    pinfy_db_password=""; pinfy_session_key=""; enchat_setup_token=""
+    if [ "${ENCHAT_REUSAR_DADOS:-false}" = true ]; then
+        arq="$(enchat_arquivo_dados)"
+        enchat_master_key="$(enchat_ler_campo_dados "ENCHAT_MASTER_KEY" "$arq")"
+        postgres_password="$(enchat_ler_campo_dados "Senha do Postgres" "$arq")"
+        pinfy_panel_password="$(enchat_ler_campo_dados "Senha do painel Pinfy" "$arq")"
+        pinfy_db_password="$(enchat_ler_campo_dados "Senha do papel Pinfy no Postgres" "$arq")"
+        pinfy_session_key="$(enchat_ler_campo_dados "PINFY_SESSION_KEY" "$arq")"
+        enchat_setup_token="$(grep -m1 -oE '\?setup=[A-Za-z0-9_-]+' "$arq" 2>/dev/null | sed 's/^?setup=//')" || true
+    fi
+    [ -n "$enchat_master_key" ] || enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
+    [ -n "$postgres_password" ] || postgres_password=$(openssl rand -hex 24)
+    pinfy_master_key=$(openssl rand -hex 24)
+    pinfy_webhook_token=$(openssl rand -hex 24)
+    [ -n "$pinfy_panel_password" ] || pinfy_panel_password=$(openssl rand -hex 24)
+    # Senha do papel restrito "pinfy" no Postgres (S12 C1/C2, plano de
+    # segurança do EnchaT) — o app cria/mantém esse papel no boot com ela, e o
+    # Pinfy conecta com a MESMA senha (ver DATABASE_URL do enchat_pinfy
+    # abaixo). Nunca o superusuário "enchat" mais.
+    [ -n "$pinfy_db_password" ] || pinfy_db_password=$(openssl rand -hex 24)
+    # Cifra (AES-256-GCM) a sessão do WhatsApp guardada pelo Pinfy no Postgres
+    # (S12 C3). GUARDE como a ENCHAT_MASTER_KEY: perdê-la faz toda instância
+    # pedir QR code de novo.
+    [ -n "$pinfy_session_key" ] || pinfy_session_key=$(openssl rand -hex 32)
+    # Token de primeiro acesso (S-03 do plano de segurança do EnchaT): o app só
+    # cria o primeiro administrador para quem abrir https://<domínio>/?setup=<token>.
+    # Sem a env ele sorteia um e escreve só no log do contêiner. Mesmo formato
+    # do instalar.sh standalone (hex, 48 caracteres; o app exige >= 20).
+    [ -n "$enchat_setup_token" ] || enchat_setup_token=$(openssl rand -hex 24)
+}
+
+# Versão estável REAL publicada no Console (GET /api/version, o mesmo que o
+# painel usa em release-info.ts). Imprime X.Y.Z, ou nada se o Console não
+# respondeu / respondeu algo que não é X.Y.Z fixo (nunca "latest").
+enchat_versao_estavel_console() {
+    local corpo v
+    corpo="$(curl -fsS --max-time 8 \
+        "https://console.enchat.pro/api/version?app=enchat&edicao=free&canal=stable" 2>/dev/null)" || return 0
+    if command -v jq >/dev/null 2>&1; then
+        v="$(printf '%s' "$corpo" | jq -r '.latest_version // empty' 2>/dev/null)" || v=""
+    else
+        v="$(printf '%s' "$corpo" | sed -n 's/.*"latest_version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+    fi
+    [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && printf '%s' "$v"
+    return 0
+}
+
+# Pergunta a versão e deixa em $versao_enchat (possivelmente vazia/inválida —
+# quem chama valida). Enter só vale com sugestão REAL do Console.
+enchat_perguntar_versao() {
+    local sugerida
+    sugerida="$(enchat_versao_estavel_console)"
+    if [ -n "$sugerida" ]; then
+        echo -en "$(t ferramenta_enchat_versao_prompt_sugerida "$sugerida" "$sugerida")"
+    else
+        echo -en "$(t ferramenta_enchat_versao_prompt_sem_sugestao)"
+    fi
+    read -r versao_enchat
+    versao_enchat="${versao_enchat:-$sugerida}"
+}
+
 ferramenta_enchat(){
   msg_enchat
   dados
+
+  # S5-B: banco existente sem as credenciais dele -> aborta ANTES de perguntar
+  # qualquer coisa (nada é alterado, nada é sugerido apagar).
+  enchat_avaliar_credenciais_existentes
+  if [ "$?" -eq 2 ]; then
+    echo -e "$(t ferramenta_enchat_banco_sem_chaves "$(enchat_dir_postgres)" "$(enchat_arquivo_dados)" "$(enchat_arquivo_dados)" "$(enchat_dir_postgres)")"
+    msg_retorno_menu
+    return 1
+  fi
 
   while true; do
     MSG_PT[ferramenta_enchat_passo1]="\n📍 Passo 1/3"
@@ -16827,11 +16981,7 @@ ferramenta_enchat(){
     MSG_EN[ferramenta_enchat_passo2]="\n📍 Step 2/3"
     MSG_ES[ferramenta_enchat_passo2]="\n📍 Paso 2/3"
     echo -e "$(t ferramenta_enchat_passo2)"
-    MSG_PT[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
-    MSG_EN[ferramenta_enchat_versao_prompt]="🔢 \e[33mEnchaT version (EnchaT portal, never 'latest') [1.0.0]: \e[0m"
-    MSG_ES[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersión de EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
-    echo -en "$(t ferramenta_enchat_versao_prompt)" && read -r versao_enchat
-    versao_enchat="${versao_enchat:-1.0.0}"
+    enchat_perguntar_versao
     if [ "$versao_enchat" = "latest" ] || ! [[ "$versao_enchat" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
       MSG_PT[ferramenta_enchat_versao_invalida]="\e[31m❌ Use uma versão fixa no formato X.Y.Z indicada no portal EnchaT (nunca 'latest').\e[0m"
       MSG_EN[ferramenta_enchat_versao_invalida]="\e[31m❌ Use a fixed version in X.Y.Z format shown on the EnchaT portal (never 'latest').\e[0m"
@@ -16924,25 +17074,10 @@ ferramenta_enchat(){
   MSG_ES[ferramenta_enchat_gerando_segredos]="\e[97m• GENERANDO SECRETOS \e[33m[2/5]\e[0m"
   echo -e "$(t ferramenta_enchat_gerando_segredos)"
   echo ""
-  enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
-  postgres_password=$(openssl rand -hex 24)
-  pinfy_master_key=$(openssl rand -hex 24)
-  pinfy_webhook_token=$(openssl rand -hex 24)
-  pinfy_panel_password=$(openssl rand -hex 24)
-  # Senha do papel restrito "pinfy" no Postgres (S12 C1/C2, plano de
-  # segurança do EnchaT) — o app cria/mantém esse papel no boot com ela, e o
-  # Pinfy conecta com a MESMA senha (ver DATABASE_URL do enchat_pinfy
-  # abaixo). Nunca o superusuário "enchat" mais.
-  pinfy_db_password=$(openssl rand -hex 24)
-  # Cifra (AES-256-GCM) a sessão do WhatsApp guardada pelo Pinfy no Postgres
-  # (S12 C3). GUARDE como a ENCHAT_MASTER_KEY: perdê-la faz toda instância
-  # pedir QR code de novo.
-  pinfy_session_key=$(openssl rand -hex 32)
-  # Token de primeiro acesso (S-03 do plano de segurança do EnchaT): o app só
-  # cria o primeiro administrador para quem abrir https://<domínio>/?setup=<token>.
-  # Sem a env ele sorteia um e escreve só no log do contêiner. Mesmo formato
-  # do instalar.sh standalone (hex, 48 caracteres; o app exige >= 20).
-  enchat_setup_token=$(openssl rand -hex 24)
+  enchat_definir_credenciais
+  if [ "$ENCHAT_REUSAR_DADOS" = true ]; then
+    echo -e "$(t ferramenta_enchat_credenciais_reaproveitadas "$(enchat_arquivo_dados)")"
+  fi
 
   # S4 (achado 2): segredos do Docker em vez de env em texto, quando a versão
   # informada do EnchaT já lê *_FILE (portão por versão). Criados ANTES do
@@ -16961,7 +17096,7 @@ ferramenta_enchat(){
   fi
   enchat_montar_blocos_yaml
 
-  mkdir -p /var/enchat/media /var/enchat/postgres
+  mkdir -p "${ENCHA_DATA_DIR:-/var/enchat}/media" "$(enchat_dir_postgres)"
 
   MSG_PT[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
   MSG_EN[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALLING ENCHAT \e[33m[3/5]\e[0m"
@@ -17142,7 +17277,7 @@ EOL
   echo -e "$(t ferramenta_enchat_salvando_credenciais)"
   echo ""
 
-  cd /root/dados_vps
+  cd "${ENCHA_ROOT_DIR:-/root}/dados_vps" || return 1
   # 600 ANTES de escrever: /root/dados_vps é 755 e bind-montado no contêiner
   # do painel (uid 1001, ver o chmod de dados_portainer) — este arquivo leva a
   # ENCHAT_MASTER_KEY e o link de primeiro acesso. O chmod vale também para

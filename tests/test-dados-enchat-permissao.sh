@@ -20,7 +20,7 @@ modo() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 
 bloco="$(awk '
   /^ferramenta_enchat\(\)\{/ { f = 1 }
-  f && /^  cd \/root\/dados_vps$/ { p = 1 }
+  f && /^  cd "\$\{ENCHA_ROOT_DIR:-\/root\}\/dados_vps" \|\| return 1$/ { p = 1 }
   p { print }
   p && /^  cd$/ { exit }
 ' secondary.sh)"
@@ -42,7 +42,7 @@ rodar() {
     pinfy_panel_password="PINFY-DE-TESTE"
     pinfy_db_password="PINFY-DB-DE-TESTE"
     pinfy_session_key="PINFY-SESSION-DE-TESTE"
-    eval "$(printf '%s\n' "$bloco" | sed "s#/root/dados_vps#$dv#g")"
+    eval "$(printf '%s\n' "$bloco" | sed "s#\${ENCHA_ROOT_DIR:-/root}/dados_vps#$dv#g")"
   )
 }
 
