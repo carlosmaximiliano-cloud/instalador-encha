@@ -821,6 +821,16 @@ export async function imageExistsLocally(
   }
 }
 
+// Inspeção crua de uma imagem já presente no node (`GET /images/{name}/json`
+// pelo proxy do Portainer). Devolve o JSON como veio — quem interpreta é
+// imagens-recursos.ts, que trata QUALQUER forma inesperada como "sem label".
+// Lança PortainerError em 404/erro HTTP (imagem ausente, Portainer fora).
+export async function inspectImage(token: string, endpointId: number, image: string): Promise<unknown> {
+  return call<unknown>(`/api/endpoints/${endpointId}/docker/images/${encodeURIComponent(image)}/json`, {
+    token,
+  });
+}
+
 // Pull de imagem — usado tanto no fallback do updater de scripts (imagem
 // pública) quanto no pré-pull de imagens privadas antes de instalar uma
 // stack (com credencial de registry, ver pullImageWithRegistry). `POST

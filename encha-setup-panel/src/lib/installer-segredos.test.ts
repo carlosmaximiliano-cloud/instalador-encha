@@ -48,6 +48,14 @@ function novoSwarm() {
     falharDeploy: false,
     falharCriacaoDoN: 0 as number, // 0 = nunca; N = a N-ésima criação falha
     criacoes: 0,
+    // S4c: eventos de I/O de imagem, na ordem em que aconteceram (o portão por
+    // label só pode ler DEPOIS do pull e ANTES de qualquer segredo/deploy).
+    eventos: [] as string[],
+    // Devolve o JSON de `GET /images/{name}/json` (ou lança). Padrão: as três
+    // imagens declaram `segredos-arquivo`.
+    inspecao: (async (_image: string): Promise<unknown> => ({
+      Config: { Labels: { "com.enchat.recursos": "segredos-arquivo" } },
+    })) as (image: string) => Promise<unknown>,
   };
 }
 type Swarm = ReturnType<typeof novoSwarm>;
@@ -88,7 +96,12 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
       ensurePostgresExtension: vi.fn(async () => undefined),
       ensureSwarmVolume: vi.fn(async () => undefined),
       listStacks: vi.fn(async () => []),
+      inspectImage: vi.fn(async (_t: string, _e: number, image: string) => {
+        swarm.eventos.push(`inspecionar:${image}`);
+        return swarm.inspecao(image);
+      }),
       createDockerSecret: vi.fn(async (_t: string, _e: number, a: { name: string; value: string; labels?: Record<string, string> }) => {
+        swarm.eventos.push("criar-segredo");
         swarm.criacoes++;
         if (swarm.falharCriacaoDoN && swarm.criacoes === swarm.falharCriacaoDoN) {
           throw new actual.PortainerError(500, "falha simulada ao criar");
@@ -100,6 +113,7 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
       }),
       deploySwarmStack: vi.fn(async (a: { yaml: string }) => {
         swarm.ordem.push("deploy");
+        swarm.eventos.push("deploy");
         swarm.yamls.push(a.yaml);
         if (swarm.falharDeploy) throw new actual.PortainerError(500, "deploy falhou");
         aplicarDeployNoSwarm(swarm, a.yaml);
@@ -141,7 +155,11 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
       })),
     };
   });
-  vi.doMock("./registry-pull", () => ({ resolveRegistryAndPullImages: vi.fn(async () => undefined) }));
+  vi.doMock("./registry-pull", () => ({
+    resolveRegistryAndPullImages: vi.fn(async (a: { images: string[] }) => {
+      for (const img of a.images) swarm.eventos.push(`pull:${img}`);
+    }),
+  }));
   vi.doMock("./host-dirs", () => ({ ensureHostDirs: vi.fn(async () => undefined) }));
   // S5-A: estes testes são de instalação nova (sem banco no host).
   vi.doMock("./host-dados-existentes", () => ({ hostTemArquivo: vi.fn(async () => false) }));
@@ -167,7 +185,11 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
     const parsed = JSON.parse(decryptSecret(row.encrypted_envs)) as { generated: { name: string; value: string }[] };
     return Object.fromEntries(parsed.generated.map((g) => [g.name, g.value]));
   };
-  return { instalar, geradosSalvos };
+  const auditoria = (acao: string): { result: string; meta: Record<string, unknown> }[] =>
+    (getDb().prepare("SELECT result, meta FROM audit_log WHERE action = ? ORDER BY id").all(acao) as { result: string; meta: string | null }[]).map(
+      (r) => ({ result: r.result, meta: r.meta ? (JSON.parse(r.meta) as Record<string, unknown>) : {} })
+    );
+  return { instalar, geradosSalvos, auditoria };
 }
 
 const nomesCriados = (swarm: Swarm) => swarm.ordem.filter((o) => o.startsWith("criar:")).map((o) => o.slice(6));
@@ -378,5 +400,150 @@ describe("installStack (EnchaT) — migração do formato antigo para segredos",
     expect(valorDoSegredo("master_key")).toBe(gerados1.enchat_master_key);
     expect(valorDoSegredo("pinfy_session_key")).toBe(gerados1.pinfy_session_key);
     expect(valorDoSegredo("postgres_password")).toBe(gerados1.postgres_password);
+  });
+});
+
+// S4c — portão por LABEL das imagens: a versão sozinha não basta. As três
+// imagens da stack (app, updater, Pinfy) precisam declarar `segredos-arquivo`
+// em `com.enchat.recursos`; a leitura acontece DEPOIS do pull e ANTES de gerar
+// o YAML e criar qualquer segredo.
+describe("installStack (EnchaT) — portão por label das imagens (S4c)", () => {
+  const APP = "ghcr.io/enchainterno/enchat-free:0.4.2";
+  const UPD = "ghcr.io/enchainterno/enchat-updater:0.4.2";
+  const PINFY = "ghcr.io/enchainterno/pinfy:0.4.2";
+  const comLabel = (valor: string) => ({ Config: { Labels: { "com.enchat.recursos": valor } } });
+  const semSegredos = (swarm: Swarm) => {
+    expect(swarm.segredos.size).toBe(0);
+    expect(swarm.eventos).not.toContain("criar-segredo");
+    expect(swarm.yamls[0]).not.toContain("/run/secrets/");
+    expect(swarm.yamls[0]).not.toMatch(/^secrets:/m);
+    expect(swarm.yamls[0]).toContain("CHAVE-DE-TESTE-123"); // formato antigo: env em texto
+  };
+
+  it("as 3 imagens declaram: portão aberto; ordem pull -> inspecionar (3) -> criar segredos -> deploy; sem aviso", async () => {
+    const swarm = novoSwarm();
+    const { instalar, auditoria } = await preparar({ swarm });
+    const r = await instalar();
+    expect(r.ok, r.error).toBe(true);
+    expect(swarm.segredos.size).toBe(12);
+    expect(swarm.yamls[0]).toContain("/run/secrets/");
+
+    const iPull = swarm.eventos.findIndex((e) => e.startsWith("pull:"));
+    const iInsp = swarm.eventos.findIndex((e) => e.startsWith("inspecionar:"));
+    const iCria = swarm.eventos.indexOf("criar-segredo");
+    const iDeploy = swarm.eventos.indexOf("deploy");
+    expect(iPull).toBeGreaterThanOrEqual(0);
+    expect(iInsp).toBeGreaterThan(iPull);
+    expect(iCria).toBeGreaterThan(iInsp);
+    expect(iDeploy).toBeGreaterThan(iCria);
+    expect(swarm.eventos.filter((e) => e.startsWith("inspecionar:")).sort()).toEqual(
+      [`inspecionar:${APP}`, `inspecionar:${UPD}`, `inspecionar:${PINFY}`].sort()
+    );
+    expect(r.aviso).toBeUndefined();
+    const gate = auditoria("stack.secrets.gate");
+    expect(gate).toHaveLength(1);
+    expect(gate[0].meta.segredos).toBe(true);
+  });
+
+  for (const [rotulo, imagem] of [
+    ["app", APP],
+    ["updater", UPD],
+    ["Pinfy", PINFY],
+  ] as const) {
+    it(`UMA imagem sem o label (${rotulo}): portão fechado, formato antigo, aviso nomeia a imagem, auditoria sem segredo`, async () => {
+      const swarm = novoSwarm();
+      swarm.inspecao = async (img) => (img === imagem ? { Config: { Labels: null } } : comLabel("segredos-arquivo"));
+      const { instalar, auditoria } = await preparar({ swarm });
+      const r = await instalar();
+      expect(r.ok, r.error).toBe(true);
+      semSegredos(swarm);
+      expect(r.aviso).toContain("Segredos do Docker não ativados");
+      expect(r.aviso).toContain(`a imagem ${imagem} ainda não declara suporte`);
+      const gate = auditoria("stack.secrets.gate");
+      expect(gate).toHaveLength(1);
+      expect(gate[0].meta.segredos).toBe(false);
+      expect(JSON.stringify(gate[0].meta)).not.toContain("CHAVE-DE-TESTE-123");
+      expect((gate[0].meta.imagens as { image: string; estado: string }[]).filter((d) => d.estado !== "declara")).toEqual([
+        { image: imagem, estado: "sem_label" },
+      ]);
+      // Os segredos que a instalação gerou continuam sendo persistidos/usados no formato antigo.
+      expect(swarm.yamls[0]).toMatch(/DATABASE_URL: "postgresql:\/\/enchat:/);
+    });
+  }
+
+  it("label com outro recurso, ou segredos-arquivo só como pedaço de outro token: fechado", async () => {
+    for (const valor of ["outro-recurso", "nao-segredos-arquivo-x", "segredos-arquivo2", "SEGREDOS-ARQUIVO", ""]) {
+      vi.resetModules();
+      const swarm = novoSwarm();
+      swarm.inspecao = async () => comLabel(valor);
+      const { instalar } = await preparar({ swarm });
+      expect((await instalar()).ok).toBe(true);
+      semSegredos(swarm);
+    }
+  });
+
+  it("token em lista com outros recursos (separado por espaço) vale", async () => {
+    const swarm = novoSwarm();
+    swarm.inspecao = async () => comLabel("outro segredos-arquivo mais-um");
+    const { instalar } = await preparar({ swarm });
+    expect((await instalar()).ok).toBe(true);
+    expect(swarm.segredos.size).toBe(12);
+  });
+
+  it("falha ao ler (erro de rede / 404 / JSON inválido / sem Config): fechado, sem lançar, aviso de leitura", async () => {
+    const casos: [string, (img: string) => Promise<unknown>][] = [
+      ["rede", async () => { throw new Error("ECONNRESET"); }],
+      ["404", async () => { throw Object.assign(new Error("No such image"), { status: 404 }); }],
+      ["texto (JSON inválido)", async () => "<html>bad gateway</html>"],
+      ["null", async () => null],
+      ["sem Config", async () => ({ Id: "sha256:abc" })],
+      ["Labels não-objeto", async () => ({ Config: { Labels: "com.enchat.recursos=segredos-arquivo" } })],
+      ["Labels array", async () => ({ Config: { Labels: ["segredos-arquivo"] } })],
+      ["valor não-string", async () => ({ Config: { Labels: { "com.enchat.recursos": ["segredos-arquivo"] } } })],
+    ];
+    for (const [rotulo, inspecao] of casos) {
+      vi.resetModules();
+      const swarm = novoSwarm();
+      swarm.inspecao = inspecao;
+      const { instalar } = await preparar({ swarm });
+      const r = await instalar();
+      expect(r.ok, `${rotulo}: ${r.error}`).toBe(true);
+      semSegredos(swarm);
+      expect(r.aviso, rotulo).toContain("Segredos do Docker não ativados");
+    }
+  });
+
+  it("uma leitura que falha só numa imagem já fecha (2 de 3 não basta)", async () => {
+    const swarm = novoSwarm();
+    swarm.inspecao = async (img) => {
+      if (img === PINFY) throw new Error("timeout");
+      return comLabel("segredos-arquivo");
+    };
+    const { instalar, auditoria } = await preparar({ swarm });
+    const r = await instalar();
+    expect(r.ok, r.error).toBe(true);
+    semSegredos(swarm);
+    expect(r.aviso).toContain(`não foi possível ler os labels da imagem ${PINFY}`);
+    expect(auditoria("stack.secrets.gate")[0].meta.segredos).toBe(false);
+  });
+
+  it("versão 0.4.1 com os 3 labels OK: fechado e NEM consulta labels (a versão manda também)", async () => {
+    const swarm = novoSwarm();
+    const { instalar, auditoria } = await preparar({ swarm, tagRelease: "0.4.1" });
+    const r = await instalar();
+    expect(r.ok, r.error).toBe(true);
+    expect(swarm.eventos.some((e) => e.startsWith("inspecionar:"))).toBe(false);
+    expect(swarm.segredos.size).toBe(0);
+    expect(swarm.yamls[0]).not.toContain("/run/secrets/");
+    expect(auditoria("stack.secrets.gate")).toHaveLength(0);
+    expect(r.aviso).toBeUndefined(); // versão antiga é esperada, não é o caso "imagem ainda não declara"
+  });
+
+  it("o aviso de segredos chega ao card final (InstallResult.aviso)", async () => {
+    const swarm = novoSwarm();
+    swarm.inspecao = async () => ({ Config: { Labels: {} } });
+    const { instalar } = await preparar({ swarm });
+    const r = await instalar();
+    expect(r.aviso).toMatch(/^Segredos do Docker não ativados/);
   });
 });

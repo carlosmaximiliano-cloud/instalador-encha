@@ -44,16 +44,40 @@ extrair_funcao() {
 
 funcoes=""
 for f in versao_semver_maior versao_semver_maior_ou_igual enchat_versao_usa_segredos enchat_url_banco_app \
-         enchat_url_banco_pinfy enchat_linha_env enchat_bloco_montagens enchat_montar_blocos_yaml; do
+         enchat_url_banco_pinfy enchat_linha_env enchat_bloco_montagens enchat_montar_blocos_yaml \
+         enchat_imagens_da_stack enchat_label_tem_token enchat_imagem_declara_segredos_arquivo \
+         enchat_imagens_declaram_segredos enchat_portao_segredos; do
   corpo="$(extrair_funcao "$f")"
   [ -n "$corpo" ] || { echo "❌ FALHOU: função $f não encontrada em secondary.sh"; exit 1; }
   funcoes+="$corpo"$'\n'
 done
-constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=)' secondary.sh)"
-[ "$(printf '%s\n' "$constantes" | wc -l | tr -d ' ')" -eq 2 ] || { echo "❌ FALHOU: constantes dos segredos não encontradas em secondary.sh"; exit 1; }
+constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=|ENCHAT_LABEL_RECURSOS=|ENCHAT_RECURSO_SEGREDOS_ARQUIVO=)' secondary.sh)"
+[ "$(printf '%s\n' "$constantes" | wc -l | tr -d ' ')" -eq 4 ] || { echo "❌ FALHOU: constantes dos segredos não encontradas em secondary.sh"; exit 1; }
 
 DIR="$(mktemp -d)"
 trap 'rm -rf "$DIR"' EXIT
+
+# docker FALSO (S4c): `pull` sempre ok; `image inspect` devolve o label de
+# LABEL_APP/LABEL_UPD/LABEL_PINFY (padrão: declara segredos-arquivo;
+# SEM_LABEL = imagem sem o label). Nada toca num Docker de verdade.
+mkdir -p "$DIR/bin"
+cat > "$DIR/bin/docker" <<'EODOCKER'
+#!/bin/bash
+case "$1 $2" in
+  "pull "*) exit 0 ;;
+  "image inspect")
+    case "$3" in
+      *enchat-free*) v="${LABEL_APP-segredos-arquivo}" ;;
+      *enchat-updater*) v="${LABEL_UPD-segredos-arquivo}" ;;
+      *pinfy*) v="${LABEL_PINFY-segredos-arquivo}" ;;
+      *) exit 1 ;;
+    esac
+    [ "$v" = "SEM_LABEL" ] && v=""
+    printf '%s\n' "$v"; exit 0 ;;
+esac
+exit 0
+EODOCKER
+chmod +x "$DIR/bin/docker"
 
 # Renderiza o YAML: $1 = versão do EnchaT, $2 = arquivo de saída. Usa o mesmo
 # fluxo de ferramenta_enchat: decide o portão, monta os blocos, roda o heredoc.
@@ -63,6 +87,7 @@ renderizar() {
   (
     set +u
     cd "$DIR/$saida"
+    PATH="$DIR/bin:$PATH"
     eval "$constantes"
     eval "$funcoes"
     url_enchat="crm.exemplo.com"; versao_enchat="$versao"; nome_rede_interna="rede_traefik"
@@ -71,7 +96,7 @@ renderizar() {
     pinfy_session_key="SENT-pinfy-session"; enchat_setup_token="SENT-setup-token"
     ENCHAT_USA_SEGREDOS=false
     ENCHAT_EPOCA_SEGREDOS=1758900000
-    enchat_versao_usa_segredos "$versao_enchat" && ENCHAT_USA_SEGREDOS=true
+    enchat_portao_segredos "$versao_enchat" && ENCHAT_USA_SEGREDOS=true
     enchat_montar_blocos_yaml
     eval "$heredoc"
   )
@@ -108,6 +133,20 @@ for v in 0.4.0 0.4.1 0.3.9 0.0.1 latest stable 0.4.2-rc.1 "" abc; do
   fi
 done
 
+# S4c: versão 0.4.2 (que abriria) mas UMA das três imagens sem o label
+# `com.enchat.recursos: segredos-arquivo` -> portão FECHADO, byte a byte o mesmo YAML antigo.
+for var in LABEL_APP LABEL_UPD LABEL_PINFY; do
+  v=0.4.2; d="fechado-label-$var"
+  ( export "$var=SEM_LABEL"; renderizar "$v" "$d" )
+  sed -E "s#^(    image: ghcr.io/enchainterno/[a-z-]+):${v//./\\.}\$#\\1:0.4.0#" "$DIR/$d/enchat.yaml" > "$DIR/$d/normalizado.yaml"
+  if cmp -s "$DIR/$d/normalizado.yaml" tests/golden/enchat-84-formato-antigo.yaml; then
+    ok "0.4.2 com $var sem label: YAML idêntico ao formato antigo (portão fechado por label)"
+  else
+    falha "0.4.2 com $var sem label: o YAML abriu os segredos (ou mudou)"
+    diff "$DIR/$d/normalizado.yaml" tests/golden/enchat-84-formato-antigo.yaml | head -10
+  fi
+done
+
 # ---------------------------------------------------------------------------
 # Formato antigo: papel pinfy e SESSION_KEY nos serviços certos (S12).
 # ---------------------------------------------------------------------------
@@ -135,6 +174,14 @@ for v in 0.4.2 0.4.3 0.5.0 1.0.0 0.4.10; do
   renderizar "$v" "aberto-$v"
 done
 novo="$DIR/aberto-0.4.2/enchat.yaml"
+
+# S4c: as imagens que o YAML sobe (app e Pinfy; o updater não sobe na opção 84)
+# são exatamente as que o portão consulta — senão o label lido seria de outra imagem.
+imgs_portao="$( (set +u; eval "$funcoes"; enchat_imagens_da_stack 0.4.2) )"
+for img in $(grep -E '^    image: ghcr.io/' "$novo" | sed -E 's/^    image: //'); do
+  printf '%s\n' "$imgs_portao" | grep -qxF "$img" && ok "imagem do YAML ($img) é consultada pelo portão por label" || falha "imagem do YAML ($img) NÃO é consultada pelo portão por label"
+done
+[ "$(grep -cE '^    image: ghcr.io/enchainterno/(enchat-free|pinfy):' "$novo")" = "2" ] || falha "esperava as imagens enchat-free e pinfy no YAML"
 
 for s in $SENTINELAS; do
   grep -q -- "$s" "$novo" && falha "segredo em texto no YAML aberto: $s"

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { enchat } from "./enchat";
 import { ENCHAT_VERSAO_MINIMA_SEGREDOS } from "./enchat-segredos";
 import { semverMaiorOuIgual } from "../semver";
@@ -62,6 +62,7 @@ function ctx(tag: string, versaoSegredos?: string): SwarmContext {
     email: "",
     machineId: "m",
     release: { version: tag, imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: tag, obrigatoria: false },
+    imagensSuportamSegredos: true, // S4c: labels das 3 imagens já lidos e OK — este arquivo testa o contrato de conteúdo
     ...(versaoSegredos ? { versaoSegredos } : {}),
   };
 }
@@ -179,5 +180,31 @@ describe("contrato dos segredos do EnchaT — o portão só abre numa versão qu
     // 0.4.1 (publicada, sem *_FILE) tem que ficar de fora; 0.4.2 (E5) tem que entrar.
     expect(semverMaiorOuIgual("0.4.1", ENCHAT_VERSAO_MINIMA_SEGREDOS)).toBe(false);
     expect(semverMaiorOuIgual("0.4.2", ENCHAT_VERSAO_MINIMA_SEGREDOS)).toBe(true);
+  });
+});
+
+// S4c: o portão por label é decidido FORA do generateYaml (o installer lê os
+// labels depois do pull e passa o booleano no ctx). O gerador de YAML e o
+// módulo do portão continuam puros: nenhuma importação de I/O.
+describe("generateYaml continua puro (S4c)", () => {
+  it("nenhum import de portainer/imagens-recursos/fetch em enchat.ts nem em enchat-segredos.ts", () => {
+    for (const arq of ["enchat.ts", "enchat-segredos.ts"]) {
+      const src = readFileSync(path.join(__dirname, arq), "utf8");
+      const imports = src.split("\n").filter((l) => /^\s*import\b/.test(l)).join("\n");
+      expect(imports, arq).not.toMatch(/portainer|imagens-recursos|undici|node:(fs|http|https|net|child_process)/);
+      expect(src, arq).not.toMatch(/\bfetch\s*\(|inspectImage|readFileSync|execSync/);
+    }
+  });
+
+  it("gerar o YAML e a lista de segredos não faz chamada de rede", () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    try {
+      const c = ctx("0.4.2", EPOCA);
+      enchat.generateYaml(valores, entradas, c);
+      enchat.dockerSecrets!(valores, entradas, c);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

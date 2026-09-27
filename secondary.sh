@@ -16640,8 +16640,16 @@ EOL
 # Uma 0.4.1 real ignora *_FILE: com segredos ela subiria sem MASTER_KEY/DATABASE_URL.
 # Espelho de ENCHAT_VERSAO_MINIMA_SEGREDOS em encha-setup-panel/src/lib/stacks/enchat-segredos.ts.
 ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.2"
+# S4c: além da versão, as imagens da stack (app, Pinfy, updater) têm de declarar o
+# recurso no LABEL abaixo (lista separada por espaço; token exato). Espelho de
+# LABEL_RECURSOS_ENCHAT/RECURSO_SEGREDOS_ARQUIVO em enchat-segredos.ts.
+ENCHAT_LABEL_RECURSOS="com.enchat.recursos"
+ENCHAT_RECURSO_SEGREDOS_ARQUIVO="segredos-arquivo"
 ENCHAT_SEGREDOS_CHAVES=(master_key postgres_password database_url pinfy_database_url pinfy_db_password pinfy_master_key pinfy_webhook_token pinfy_panel_password pinfy_session_key setup_token)
 ENCHAT_SEGREDOS_CRIADOS=()
+ENCHAT_IMAGENS_SEM_SUPORTE=()
+ENCHAT_IMAGENS_SEM_LEITURA=()
+ENCHAT_PORTAO_MOTIVO=""
 
 MSG_PT[ferramenta_enchat_segredos_criados]="\e[32m✓ Segredos do Docker criados — as chaves e senhas do EnchaT não ficam em texto na stack.\e[0m"
 MSG_EN[ferramenta_enchat_segredos_criados]="\e[32m✓ Docker secrets created — EnchaT keys and passwords are not stored as plain text in the stack.\e[0m"
@@ -16655,6 +16663,14 @@ MSG_PT[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ A versão %s do Ench
 MSG_EN[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ EnchaT version %s does not read Docker secrets yet (from %s on) — using plain-text variables.\e[0m"
 MSG_ES[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ La versión %s de EnchaT aún no lee secretos de Docker (desde la %s) — usando variables en texto.\e[0m"
 
+MSG_PT[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Segredos do Docker não ativados: a imagem %s ainda não declara suporte (LABEL com.enchat.recursos) — usando variáveis em texto. Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Docker secrets not enabled: image %s does not declare support yet (LABEL com.enchat.recursos) — using plain-text variables. Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Secretos de Docker no activados: la imagen %s aún no declara soporte (LABEL com.enchat.recursos) — usando variables en texto. Nada se rompió.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Segredos do Docker não ativados: não foi possível baixar/ler a imagem %s — usando variáveis em texto. Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Docker secrets not enabled: could not pull/read image %s — using plain-text variables. Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Secretos de Docker no activados: no fue posible descargar/leer la imagen %s — usando variables en texto. Nada se rompió.\e[0m"
+
 # a >= b, só se as DUAS forem X.Y.Z legíveis (ilegível = falso, nunca erro).
 # Espelho de semverMaiorOuIgual em encha-setup-panel/src/lib/semver.ts.
 versao_semver_maior_ou_igual() {
@@ -16667,6 +16683,77 @@ versao_semver_maior_ou_igual() {
 # Portão por versão: true (exit 0) só se $1 >= ENCHAT_VERSAO_MINIMA_SEGREDOS.
 enchat_versao_usa_segredos() {
     versao_semver_maior_ou_igual "$1" "$ENCHAT_VERSAO_MINIMA_SEGREDOS"
+}
+
+# S4c — portão por LABEL das imagens. As três imagens da release (app, Pinfy,
+# updater; mesma tag, mesmo owner) — espelho de registryAuth.images em enchat.ts.
+# A opção 84 não sobe o updater, mas exigir o label dele mantém o mesmo veredito
+# do painel para a mesma release.
+enchat_imagens_da_stack() {
+    printf '%s\n' \
+        "ghcr.io/enchainterno/enchat-free:$1" \
+        "ghcr.io/enchainterno/enchat-updater:$1" \
+        "ghcr.io/enchainterno/pinfy:$1"
+}
+
+# Token EXATO por palavra: "segredos-arquivo" vale; "nao-segredos-arquivo-x" e
+# "segredos-arquivo2" não. `read -ra` divide por espaço/tab sem expandir glob.
+enchat_label_tem_token() {
+    local valor="$1" token="$2" partes p
+    [ -n "$token" ] || return 1
+    builtin read -ra partes <<< "$valor"
+    for p in ${partes[@]+"${partes[@]}"}; do
+        [ "$p" = "$token" ] && return 0
+    done
+    return 1
+}
+
+# true (0) só se a imagem $1 (já puxada) tem o token no label. Falha ao
+# inspecionar (imagem ausente, docker fora) = 1: nunca "true" na dúvida.
+enchat_imagem_declara_segredos_arquivo() {
+    local valor
+    valor=$(docker image inspect "$1" --format "{{index .Config.Labels \"$ENCHAT_LABEL_RECURSOS\"}}" 2>/dev/null) || return 1
+    enchat_label_tem_token "$valor" "$ENCHAT_RECURSO_SEGREDOS_ARQUIVO"
+}
+
+# Puxa as 3 imagens (a credencial do `docker login` já está na sessão; a saída
+# do pull é descartada) e confere o label de cada uma. Preenche
+# ENCHAT_IMAGENS_SEM_SUPORTE (sem label) e ENCHAT_IMAGENS_SEM_LEITURA (pull ou
+# inspeção falhou). Retorna 0 só se as TRÊS declaram.
+enchat_imagens_declaram_segredos() {
+    local img rc=0
+    ENCHAT_IMAGENS_SEM_SUPORTE=()
+    ENCHAT_IMAGENS_SEM_LEITURA=()
+    # Nomes de imagem não têm espaço nem glob: word splitting é seguro aqui.
+    for img in $(enchat_imagens_da_stack "$1"); do
+        if ! docker pull "$img" >/dev/null 2>&1; then
+            ENCHAT_IMAGENS_SEM_LEITURA+=("$img"); rc=1; continue
+        fi
+        if ! docker image inspect "$img" >/dev/null 2>&1; then
+            ENCHAT_IMAGENS_SEM_LEITURA+=("$img"); rc=1; continue
+        fi
+        if ! enchat_imagem_declara_segredos_arquivo "$img"; then
+            ENCHAT_IMAGENS_SEM_SUPORTE+=("$img"); rc=1
+        fi
+    done
+    return $rc
+}
+
+# Portão final: versão >= mínima E labels das 3 imagens. Versão abaixo do mínimo
+# nem puxa/inspeciona nada. ENCHAT_PORTAO_MOTIVO diz por que fechou (versao|imagens).
+enchat_portao_segredos() {
+    ENCHAT_PORTAO_MOTIVO=""
+    ENCHAT_IMAGENS_SEM_SUPORTE=()
+    ENCHAT_IMAGENS_SEM_LEITURA=()
+    if ! enchat_versao_usa_segredos "$1"; then
+        ENCHAT_PORTAO_MOTIVO="versao"
+        return 1
+    fi
+    if ! enchat_imagens_declaram_segredos "$1"; then
+        ENCHAT_PORTAO_MOTIVO="imagens"
+        return 1
+    fi
+    return 0
 }
 
 # URLs de conexão — fonte única: o mesmo texto vai para a env (formato antigo)
@@ -17124,13 +17211,22 @@ ferramenta_enchat(){
   # deploy; se a criação falhar cai no formato antigo, sem quebrar nada.
   ENCHAT_USA_SEGREDOS=false
   ENCHAT_EPOCA_SEGREDOS=$(date +%s)
-  if enchat_versao_usa_segredos "$versao_enchat"; then
+  if enchat_portao_segredos "$versao_enchat"; then
     if enchat_criar_segredos_docker; then
       ENCHAT_USA_SEGREDOS=true
       echo -e "$(t ferramenta_enchat_segredos_criados)"
     else
       echo -e "$(t ferramenta_enchat_segredos_falhou)"
     fi
+  elif [ "$ENCHAT_PORTAO_MOTIVO" = "imagens" ]; then
+    # S4c: versão ok, mas nem todas as imagens declaram suporte (ou não deu
+    # para lê-las) — formato antigo, dizendo QUAL imagem barrou.
+    for img_seg in ${ENCHAT_IMAGENS_SEM_SUPORTE[@]+"${ENCHAT_IMAGENS_SEM_SUPORTE[@]}"}; do
+      echo -e "$(t ferramenta_enchat_segredos_imagem_sem_suporte "$img_seg")"
+    done
+    for img_seg in ${ENCHAT_IMAGENS_SEM_LEITURA[@]+"${ENCHAT_IMAGENS_SEM_LEITURA[@]}"}; do
+      echo -e "$(t ferramenta_enchat_segredos_imagem_sem_leitura "$img_seg")"
+    done
   else
     echo -e "$(t ferramenta_enchat_segredos_versao_antiga "$versao_enchat" "$ENCHAT_VERSAO_MINIMA_SEGREDOS")"
   fi

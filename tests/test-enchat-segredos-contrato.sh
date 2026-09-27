@@ -42,15 +42,39 @@ extrair_funcao() {
 }
 funcoes=""
 for f in versao_semver_maior versao_semver_maior_ou_igual enchat_versao_usa_segredos enchat_url_banco_app \
-         enchat_url_banco_pinfy enchat_valor_segredo enchat_linha_env enchat_bloco_montagens enchat_montar_blocos_yaml; do
+         enchat_url_banco_pinfy enchat_valor_segredo enchat_linha_env enchat_bloco_montagens enchat_montar_blocos_yaml \
+         enchat_imagens_da_stack enchat_label_tem_token enchat_imagem_declara_segredos_arquivo \
+         enchat_imagens_declaram_segredos enchat_portao_segredos; do
   corpo="$(extrair_funcao "$f")"
   [ -n "$corpo" ] || { echo "❌ FALHOU: função $f não encontrada em secondary.sh"; exit 1; }
   funcoes+="$corpo"$'\n'
 done
-constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=)' secondary.sh)"
+constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=|ENCHAT_LABEL_RECURSOS=|ENCHAT_RECURSO_SEGREDOS_ARQUIVO=)' secondary.sh)"
 
 DIR="$(mktemp -d)"
 trap 'rm -rf "$DIR"' EXIT
+
+# docker FALSO (S4c): `pull` sempre ok; `image inspect` devolve o label de
+# LABEL_APP/LABEL_UPD/LABEL_PINFY (padrão: declara segredos-arquivo;
+# SEM_LABEL = imagem sem o label). Nada toca num Docker de verdade.
+mkdir -p "$DIR/bin"
+cat > "$DIR/bin/docker" <<'EODOCKER'
+#!/bin/bash
+case "$1 $2" in
+  "pull "*) exit 0 ;;
+  "image inspect")
+    case "$3" in
+      *enchat-free*) v="${LABEL_APP-segredos-arquivo}" ;;
+      *enchat-updater*) v="${LABEL_UPD-segredos-arquivo}" ;;
+      *pinfy*) v="${LABEL_PINFY-segredos-arquivo}" ;;
+      *) exit 1 ;;
+    esac
+    [ "$v" = "SEM_LABEL" ] && v=""
+    printf '%s\n' "$v"; exit 0 ;;
+esac
+exit 0
+EODOCKER
+chmod +x "$DIR/bin/docker"
 
 # Valores DISTINTOS por segredo, com caracteres que o base64 da master key
 # real tem (+ / =), para a comparação byte a byte não passar por coincidência.
@@ -67,11 +91,12 @@ renderizar() {
   (
     set +u
     cd "$DIR/$2" || exit 1
+    PATH="$DIR/bin:$PATH"
     eval "$constantes"; eval "$funcoes"; definir_valores
     versao_enchat="$1"
     ENCHAT_USA_SEGREDOS=false
     ENCHAT_EPOCA_SEGREDOS=1758900000
-    enchat_versao_usa_segredos "$versao_enchat" && ENCHAT_USA_SEGREDOS=true
+    enchat_portao_segredos "$versao_enchat" && ENCHAT_USA_SEGREDOS=true
     enchat_montar_blocos_yaml
     eval "$heredoc"
   )

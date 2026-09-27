@@ -2,7 +2,7 @@ import { z } from "zod";
 import { type DockerSecretSpec, type StackDefinition, type SwarmContext, fqdn } from "./types";
 import { randomBytes } from "node:crypto";
 import { ENCHAT_APP_HOSTNAME } from "../enchat-fingerprint";
-import { enchatUsaSegredos } from "./enchat-segredos";
+import { LABEL_RECURSOS_ENCHAT, RECURSO_SEGREDOS_ARQUIVO, enchatPortaoSegredos, enchatUsaSegredos } from "./enchat-segredos";
 
 // Imagem do Pinfy (WhatsApp não-oficial, bundled). Antes fixa em
 // "ghcr.io/enchainterno/pinfy-api:1.0.0" (uma republicação manual,
@@ -152,7 +152,7 @@ export function nomeVersionadoSegredo(c: ChaveSegredo, versao: string): string {
 }
 
 function usaSegredosNesteCtx(ctx: SwarmContext): boolean {
-  return enchatUsaSegredos(ctx.release?.imageTag);
+  return enchatPortaoSegredos(ctx.release?.imageTag, ctx.imagensSuportamSegredos);
 }
 
 function exigeVersaoSegredos(ctx: SwarmContext): string {
@@ -368,6 +368,11 @@ export const enchat: StackDefinition = {
     { name: "enchat_setup_token", value: randomBytes(24).toString("base64url") },
   ],
   dockerSecrets: segredosDockerDoEnchat,
+  dockerSecretsGate: {
+    versaoOk: enchatUsaSegredos,
+    label: LABEL_RECURSOS_ENCHAT,
+    recurso: RECURSO_SEGREDOS_ARQUIVO,
+  },
   generateYaml(values, secrets, ctx) {
     const v = values as z.infer<typeof schema>;
     if (!ctx.release) throw new Error("ctx.release ausente em generateYaml — bug no installer.");

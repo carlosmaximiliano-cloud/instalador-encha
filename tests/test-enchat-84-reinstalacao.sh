@@ -51,12 +51,14 @@ for f in t versao_semver_maior versao_semver_maior_ou_igual enchat_versao_usa_se
          enchat_bloco_montagens enchat_montar_blocos_yaml enchat_limpar_segredos_antigos \
          enchat_arquivo_dados enchat_dir_postgres enchat_arquivo_pg_version enchat_ler_campo_dados \
          enchat_avaliar_credenciais_existentes enchat_definir_credenciais enchat_versao_estavel_console \
-         enchat_perguntar_versao enchat_gravar_dados_enchat ferramenta_enchat; do
+         enchat_perguntar_versao enchat_gravar_dados_enchat ferramenta_enchat \
+         enchat_imagens_da_stack enchat_label_tem_token enchat_imagem_declara_segredos_arquivo \
+         enchat_imagens_declaram_segredos enchat_portao_segredos; do
   corpo="$(extrair_funcao "$f")"
   [ -n "$corpo" ] || { echo "❌ FALHOU: função $f não encontrada em secondary.sh"; exit 1; }
   fns+="$corpo"$'\n'
 done
-constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=|ENCHAT_SEGREDOS_CRIADOS=)' secondary.sh)"
+constantes="$(grep -E '^(ENCHAT_VERSAO_MINIMA_SEGREDOS=|ENCHAT_SEGREDOS_CHAVES=|ENCHAT_SEGREDOS_CRIADOS=|ENCHAT_LABEL_RECURSOS=|ENCHAT_RECURSO_SEGREDOS_ARQUIVO=|ENCHAT_IMAGENS_SEM_SUPORTE=|ENCHAT_IMAGENS_SEM_LEITURA=|ENCHAT_PORTAO_MOTIVO=)' secondary.sh)"
 mensagens="$(grep -E '^MSG_(PT|EN|ES)\[ferramenta_enchat_' secondary.sh)"
 [ -n "$mensagens" ] || { echo "❌ FALHOU: mensagens ferramenta_enchat_* não encontradas"; exit 1; }
 
@@ -71,6 +73,18 @@ echo "docker $*" >> "$CHAMADAS"
 case "$1 $2" in
   "stack ls") echo "enchat" ;;
   "login "*|"login ghcr.io") cat >/dev/null ;;
+  "pull "*) [ -n "${FAKE_FALHAR_PULL:-}" ] && exit 1 ;;
+  "image inspect")
+    # S4c: LABEL_APP/LABEL_UPD/LABEL_PINFY = valor do label com.enchat.recursos
+    # (padrão: declara segredos-arquivo; SEM_LABEL = imagem sem o label).
+    case "$3" in
+      *enchat-free*) v="${LABEL_APP-segredos-arquivo}" ;;
+      *enchat-updater*) v="${LABEL_UPD-segredos-arquivo}" ;;
+      *pinfy*) v="${LABEL_PINFY-segredos-arquivo}" ;;
+      *) exit 1 ;;
+    esac
+    [ "$v" = "SEM_LABEL" ] && v=""
+    printf '%s\n' "$v"; exit 0 ;;
 esac
 [ "$1" = "login" ] && cat >/dev/null
 exit 0
@@ -297,9 +311,56 @@ for lixo in latest "1.0" "<html>"; do
 done
 
 # ---------------------------------------------------------------------------
+# 4b) S4c: segredos do Docker só ligam se a versão >= 0.4.2 E as 3 imagens
+#     declaram `segredos-arquivo` (LABEL com.enchat.recursos). Roda a
+#     ferramenta_enchat REAL contra um docker falso.
+# ---------------------------------------------------------------------------
+C="$DIR/c4s-aberto"; FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+if [ "$(cat "$C/rc")" = "0" ] && grep -q '/run/secrets/' "$C/work/enchat.yaml" && grep -q "docker secret create" "$C/chamadas.log" \
+   && grep -q "pull ghcr.io/enchainterno/enchat-free:0.4.2" "$C/chamadas.log" && grep -q "pull ghcr.io/enchainterno/pinfy:0.4.2" "$C/chamadas.log" \
+   && grep -q "pull ghcr.io/enchainterno/enchat-updater:0.4.2" "$C/chamadas.log"; then
+  ok "0.4.2 + 3 imagens com label: puxa as 3, cria segredos e o YAML usa /run/secrets"
+else
+  falha "0.4.2 + 3 labels não abriu o portão na opção 84 (rc=$(cat "$C/rc"))"; tail -5 "$C/saida.log"
+fi
+lp="$(grep -n '^docker pull ' "$C/chamadas.log" | head -1 | cut -d: -f1)"; ls_="$(grep -n '^docker login ' "$C/chamadas.log" | head -1 | cut -d: -f1)"
+lc="$(grep -n 'docker secret create' "$C/chamadas.log" | head -1 | cut -d: -f1)"
+[ -n "$lp" ] && [ -n "$ls_" ] && [ -n "$lc" ] && [ "$ls_" -lt "$lp" ] && [ "$lp" -lt "$lc" ] \
+  && ok "ordem: docker login -> pull das imagens -> criação dos segredos" || falha "ordem login/pull/segredos errada (login=$ls_ pull=$lp secret=$lc)"
+
+for par in "LABEL_APP:enchat-free" "LABEL_UPD:enchat-updater" "LABEL_PINFY:pinfy"; do
+  var="${par%%:*}"; img="${par#*:}"
+  C="$DIR/c4s-sem-$img"
+  ( export "$var=SEM_LABEL"; FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
+  y="$C/work/enchat.yaml"
+  if [ "$(cat "$C/rc")" = "0" ] && [ -f "$y" ] && ! grep -q '/run/secrets/' "$y" && ! grep -q "docker secret create" "$C/chamadas.log" \
+     && grep -q "ghcr.io/enchainterno/$img:0.4.2 ainda não declara suporte" "$C/saida.log" && grep -q 'POSTGRES_PASSWORD: "' "$y"; then
+    ok "0.4.2 com $img sem label: formato antigo, nenhum segredo criado, a saída nomeia a imagem"
+  else
+    falha "0.4.2 com $img sem label não caiu no formato antigo com aviso (rc=$(cat "$C/rc"))"; tail -6 "$C/saida.log"
+  fi
+done
+
+C="$DIR/c4s-pull-falha"; ( FAKE_FALHAR_PULL=1 FAKE_VERSAO=0.4.2 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n" )
+if [ "$(cat "$C/rc")" = "0" ] && ! grep -q '/run/secrets/' "$C/work/enchat.yaml" && ! grep -q "docker secret create" "$C/chamadas.log" \
+   && grep -q "não foi possível baixar/ler a imagem" "$C/saida.log"; then
+  ok "pull das imagens falhou: formato antigo com aviso (nada quebra)"
+else
+  falha "pull falho não caiu no formato antigo com aviso"; tail -6 "$C/saida.log"
+fi
+
+C="$DIR/c4s-041"; FAKE_VERSAO=0.4.1 rodar_84 "$C" "crm.exemplo.com\n\nCHAVE\nY\n"
+if [ "$(cat "$C/rc")" = "0" ] && ! grep -q '/run/secrets/' "$C/work/enchat.yaml" && ! grep -qE '^docker (pull|image inspect)' "$C/chamadas.log"; then
+  ok "0.4.1 com labels OK: formato antigo e NEM puxa/inspeciona imagens (a versão manda também)"
+else
+  falha "0.4.1 abriu o portão ou consultou o Docker à toa"; tail -6 "$C/saida.log"
+fi
+
+# ---------------------------------------------------------------------------
 # 5) Sem chamar o Console quando o banco é abortado, i18n: mensagens nos 3 idiomas.
 # ---------------------------------------------------------------------------
-for chave in ferramenta_enchat_banco_sem_chaves ferramenta_enchat_credenciais_reaproveitadas \
+for chave in ferramenta_enchat_segredos_imagem_sem_suporte ferramenta_enchat_segredos_imagem_sem_leitura \
+             ferramenta_enchat_banco_sem_chaves ferramenta_enchat_credenciais_reaproveitadas \
              ferramenta_enchat_versao_prompt_sugerida ferramenta_enchat_versao_prompt_sem_sugestao; do
   for idioma in PT EN ES; do
     grep -qE "^MSG_$idioma\[$chave\]=" secondary.sh || falha "mensagem $chave sem $idioma"

@@ -55,6 +55,13 @@ export type SwarmContext = {
    * StackDefinition.dockerSecrets.
    */
   versaoSegredos?: string;
+  /**
+   * Portão por LABEL dos segredos do Docker (S4c): true SOMENTE se o installer
+   * leu, depois do pull, o label das imagens da stack e TODAS declaram o
+   * recurso (ver StackDefinition.dockerSecretsGate). Ausente/false = formato
+   * antigo. O generateYaml só LÊ este campo — nunca consulta imagem (é puro).
+   */
+  imagensSuportamSegredos?: boolean;
 };
 
 /**
@@ -346,6 +353,18 @@ export type StackDefinition = {
     secrets: Record<string, string>,
     ctx: SwarmContext
   ) => DockerSecretSpec[];
+  /**
+   * Portão dos segredos do Docker por LABEL das imagens (S4c). Depois do
+   * pré-pull das imagens de `registryAuth.images`, o installer lê o label
+   * `label` de CADA uma; só se todas contêm o token `recurso` (e `versaoOk`
+   * passa) é que `ctx.imagensSuportamSegredos` vira true. `versaoOk` falso =
+   * nem consulta os labels. Falha ao ler = fechado, com aviso ao operador.
+   */
+  dockerSecretsGate?: {
+    versaoOk: (imageTag: string | undefined) => boolean;
+    label: string;
+    recurso: string;
+  };
   generateYaml: (
     values: Record<string, unknown>,
     secrets: Record<string, string>,

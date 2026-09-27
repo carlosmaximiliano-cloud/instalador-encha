@@ -209,10 +209,15 @@ const todasSentinelas = [...Object.values(sentinelas), CHAVE_SENTINELA];
 const valoresComChave = { url_enchat: "crm.exemplo.com", chave_licenca: CHAVE_SENTINELA };
 const valoresSemChave = { url_enchat: "crm.exemplo.com", licenca_pareamento_id: "0".repeat(32) };
 
+// S4c: por padrão os labels das 3 imagens JÁ foram lidos e declaram
+// `segredos-arquivo` — assim os testes de versão abaixo isolam o portão por
+// versão. Os testes do portão por label passam `imagensSuportamSegredos`
+// explícito (false/undefined).
 function ctxCom(tag: string, extra: Partial<SwarmContext> = {}): SwarmContext {
   return {
     ...ctxBase,
     release: { version: tag, imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: tag, obrigatoria: false },
+    imagensSuportamSegredos: true,
     ...extra,
   };
 }
@@ -278,6 +283,48 @@ describe("enchat — portão por versão: abaixo de 0.4.2 o YAML é o de sempre,
   it("o formato antigo continua com os valores em texto (o que as imagens < 0.4.2 exigem)", () => {
     const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.3.2"));
     for (const v of todasSentinelas) expect(yaml).toContain(v);
+  });
+});
+
+describe("enchat — portão por LABEL das imagens (S4c): a versão sozinha não abre", () => {
+  const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
+
+  for (const [rotulo, extra] of [
+    ["imagensSuportamSegredos ausente", { imagensSuportamSegredos: undefined }],
+    ["imagensSuportamSegredos false", { imagensSuportamSegredos: false }],
+  ] as const) {
+    it(`0.4.2 com ${rotulo}: formato antigo byte a byte, nenhum segredo`, () => {
+      const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", ...extra });
+      const yaml = enchat.generateYaml(valoresComChave, sentinelas, c);
+      expect(yaml).not.toContain("/run/secrets/");
+      expect(yaml).not.toMatch(/^secrets:/m);
+      expect(yaml.replaceAll(":0.4.2", ":0.3.2")).toBe(antigo);
+      expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
+    });
+  }
+
+  it("só o booleano estrito true abre (valor truthy não-booleano não vale)", () => {
+    const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", imagensSuportamSegredos: "true" as unknown as boolean });
+    expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
+  });
+
+  it("versão < 0.4.2 fecha mesmo com os labels OK (a versão manda também)", () => {
+    const c = ctxCom("0.4.1", { versaoSegredos: "1758900000", imagensSuportamSegredos: true });
+    expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
+    expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
+  });
+
+  it("o gate declarado pela stack aponta para o label/recurso do contrato e para as 3 imagens", () => {
+    expect(enchat.dockerSecretsGate?.label).toBe("com.enchat.recursos");
+    expect(enchat.dockerSecretsGate?.recurso).toBe("segredos-arquivo");
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.2")).toBe(true);
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.1")).toBe(false);
+    const imgs = enchat.registryAuth!.images({}, { version: "0.4.2", imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: "0.4.2", obrigatoria: false });
+    expect(imgs).toEqual([
+      "ghcr.io/enchainterno/enchat-free:0.4.2",
+      "ghcr.io/enchainterno/enchat-updater:0.4.2",
+      "ghcr.io/enchainterno/pinfy:0.4.2",
+    ]);
   });
 });
 

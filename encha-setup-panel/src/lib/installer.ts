@@ -12,6 +12,7 @@ import {
 import { criarSegredosVersionados, limparSegredosAntigos } from "./docker-secrets";
 import { RegistryAuthError } from "./registry-auth";
 import { resolveRegistryAndPullImages } from "./registry-pull";
+import { avisoSegredosNaoAtivados, imagensDeclaramRecurso } from "./imagens-recursos";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
 import { ativarTrackerPorEmail, TrackerAtivacaoError } from "./tracker-ativacao";
 import { ensureHostDirs } from "./host-dirs";
@@ -541,8 +542,6 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     if (def.dockerSecrets) {
       effectiveCtx = { ...effectiveCtx, versaoSegredos: String(Math.floor(Date.now() / 1000)) };
     }
-    const dockerSecretSpecs = def.dockerSecrets?.(parsed.data, secretMap, effectiveCtx) ?? [];
-    const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
 
     // S5-A: nunca sortear chave nova por cima de banco existente. Só olha o
@@ -584,6 +583,39 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
         images: def.registryAuth.images(parsed.data, effectiveCtx.release),
       });
     }
+
+    // Portão por LABEL dos segredos do Docker (S4c) — DEPOIS do pull das
+    // imagens (o label só existe na imagem já puxada) e ANTES de gerar o YAML
+    // e a lista de segredos (que dependem do veredito). A versão manda
+    // também: abaixo do mínimo nem consulta. Qualquer falha de leitura =
+    // fechado (formato antigo), nunca lança e nunca vira "true" na dúvida.
+    let avisoSegredos: string | undefined;
+    const gate = def.dockerSecretsGate;
+    if (def.dockerSecrets && gate && def.registryAuth && gate.versaoOk(effectiveCtx.release?.imageTag)) {
+      const imagens = def.registryAuth.images(parsed.data, effectiveCtx.release);
+      const leitura = await imagensDeclaramRecurso({
+        token: input.token,
+        endpointId,
+        images: imagens,
+        label: gate.label,
+        recurso: gate.recurso,
+      });
+      effectiveCtx = { ...effectiveCtx, imagensSuportamSegredos: leitura.declaram };
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.gate",
+        target: input.stackId,
+        result: "ok",
+        meta: {
+          segredos: leitura.declaram,
+          imagens: leitura.detalhes.map((d) => ({ image: d.image, estado: d.estado })),
+        },
+      });
+      if (!leitura.declaram) avisoSegredos = avisoSegredosNaoAtivados(leitura.detalhes);
+    }
+    const dockerSecretSpecs = def.dockerSecrets?.(parsed.data, secretMap, effectiveCtx) ?? [];
+    const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
 
     // Diretórios de bind mount no node manager — o Swarm não os cria sozinho.
     if (def.hostDirs?.length) {
@@ -670,10 +702,11 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     // em vez de perdida junto com uma sessão já marcada como usada.
     if (pareamentoId) consumirPareamento(pareamentoId);
 
-    let aviso: string | undefined;
+    let avisoFingerprint: string | undefined;
     if (pareamentoFingerprint && def.postInstall?.accessUrl) {
-      aviso = await checarFingerprintPosDeploy(def.postInstall.accessUrl(parsed.data), pareamentoFingerprint);
+      avisoFingerprint = await checarFingerprintPosDeploy(def.postInstall.accessUrl(parsed.data), pareamentoFingerprint);
     }
+    const aviso = [avisoFingerprint, avisoSegredos].filter(Boolean).join(" ") || undefined;
 
     logAudit({
       user: input.user,
@@ -681,7 +714,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       action: "stack.install",
       target: input.stackId,
       result: "ok",
-      meta: { portainer_stack_id: stack.Id, ...(aviso ? { aviso_fingerprint: true } : {}) },
+      meta: { portainer_stack_id: stack.Id, ...(avisoFingerprint ? { aviso_fingerprint: true } : {}), ...(avisoSegredos ? { aviso_segredos: true } : {}) },
     });
 
     // Montado aqui (e não na rota) porque só aqui existe o secretMap efetivo

@@ -28,3 +28,21 @@ export const ENCHAT_VERSAO_MINIMA_SEGREDOS = "0.4.2";
 export function enchatUsaSegredos(imageTag: string | null | undefined): boolean {
   return semverMaiorOuIgual(imageTag, ENCHAT_VERSAO_MINIMA_SEGREDOS);
 }
+
+// Portão por LABEL (S4c) — além da versão. Cada imagem da stack (app, Pinfy,
+// updater) precisa declarar o recurso no LABEL abaixo (valor: lista de
+// palavras separada por espaço; nome e valor exatos, minúsculas). A leitura
+// dos labels é I/O e acontece no installer, DEPOIS do pull das três imagens
+// (imagens-recursos.ts); o resultado entra no contexto como
+// `ctx.imagensSuportamSegredos` para o generateYaml continuar PURO.
+export const LABEL_RECURSOS_ENCHAT = "com.enchat.recursos";
+export const RECURSO_SEGREDOS_ARQUIVO = "segredos-arquivo";
+
+// Portão final: versão >= mínima E as três imagens declaram o recurso. Só o
+// booleano estrito `true` abre; ausente/undefined = fechado (formato antigo).
+export function enchatPortaoSegredos(
+  imageTag: string | null | undefined,
+  imagensSuportamSegredos: boolean | undefined
+): boolean {
+  return imagensSuportamSegredos === true && enchatUsaSegredos(imageTag);
+}
