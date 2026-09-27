@@ -322,7 +322,8 @@ gerar_ruleset() {
 # "$2" IPv6, espaço-separadas e JÁ validadas). Com as duas vazias, é a versão
 # sem os pares — a primeira falha fechada (aplicar_se_necessario). "$3" =
 # "sem_ssh" omite também o limite de SSH: é a versão MÍNIMA (só lo + drops do
-# Swarm), a última falha fechada — texto fixo, que nenhuma env var altera.
+# Swarm e do LLMNR), a última falha fechada — texto fixo, que nenhuma env var
+# altera.
 montar_ruleset() {
   IPV4_VALIDOS="$1"
   IPV6_VALIDOS="$2"
@@ -383,6 +384,14 @@ montar_ruleset() {
   fi
   echo '    tcp dport { 2377, 7946 } counter drop'
   echo '    udp dport { 4789, 7946 } counter drop'
+  # LLMNR (5355/tcp+udp, do systemd-resolved): escuta em 0.0.0.0 e [::] na
+  # VPS com o resolved padrão. É defesa em profundidade: no teste de 26/09 a
+  # 5355/tcp não respondia de fora (provável filtro do provedor), o que nada
+  # garante em outra VPS. Regra estática, com counter, como os drops do Swarm.
+  # Fica depois dos accepts de lo e dos pares, e entra também nas versões de
+  # falha fechada (texto fixo, fora de qualquer "if").
+  echo '    tcp dport 5355 counter drop'
+  echo '    udp dport 5355 counter drop'
   echo '  }'
   echo '}'
 }

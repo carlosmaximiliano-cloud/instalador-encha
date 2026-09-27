@@ -1042,6 +1042,90 @@ else
   echo "ℹ️  'nft' real indisponível — pulando a validação de sintaxe real das regras de rate-limit SSH (seção 9 acima já cobre a geração)."
 fi
 
+# --- 10. LLMNR (5355/tcp e 5355/udp): drop na chain entrada ---------------
+#
+# O systemd-resolved escuta LLMNR em 0.0.0.0:5355 e [::]:5355. É defesa em
+# profundidade: no teste de 26/09 a 5355/tcp não respondia de fora (provável
+# filtro do provedor), o que nada garante em outra VPS. As duas regras são
+# estáticas, com counter, depois dos accepts (lo, pares) e dos drops do
+# Swarm, e sobrevivem às duas versões de falha fechada.
+LLMNR_TCP='    tcp dport 5355 counter drop'
+LLMNR_UDP='    udp dport 5355 counter drop'
+
+# 10a. As duas linhas, exatas e uma vez só, no ruleset sem env var nenhuma.
+if [ "$(printf '%s\n' "$saida_basica" | grep -cxF -- "$LLMNR_TCP")" -eq 1 ]; then
+  ok "LLMNR: drop de tcp 5355 presente (linha exata, uma vez)"
+else
+  falha "LLMNR: drop de tcp 5355 ausente, alterado ou repetido"
+  printf '%s\n' "$saida_basica" | grep '5355'
+fi
+if [ "$(printf '%s\n' "$saida_basica" | grep -cxF -- "$LLMNR_UDP")" -eq 1 ]; then
+  ok "LLMNR: drop de udp 5355 presente (linha exata, uma vez)"
+else
+  falha "LLMNR: drop de udp 5355 ausente, alterado ou repetido"
+  printf '%s\n' "$saida_basica" | grep '5355'
+fi
+
+# 10b. Em todas as variantes: com e sem pares, sem o limite de SSH, e nas
+# duas versões de falha fechada que o loop aplicou pelo nft falso (a "sem
+# pares" do 8e e a "mínima" do 9i).
+llmnr_variantes_ok=1
+for saida_nome_valor in "basica:$saida_basica" "ipv4:$saida_ipv4" "ipv6:$saida_ipv6" \
+    "injecao:$saida_injecao" "ssh-vazio:$saida_ssh_vazio" "ssh-pares:$saida_ssh_pares" \
+    "sem-pares:$(cat "$dir_fecha/ultimo_stdin" 2>/dev/null)" \
+    "minima:$(cat "$dir_ssh_recusado/ultimo_stdin" 2>/dev/null)"; do
+  nome="${saida_nome_valor%%:*}"
+  valor="${saida_nome_valor#*:}"
+  if [ "$(printf '%s\n' "$valor" | grep -cxF -- "$LLMNR_TCP")" -ne 1 ] \
+      || [ "$(printf '%s\n' "$valor" | grep -cxF -- "$LLMNR_UDP")" -ne 1 ]; then
+    falha "LLMNR: variante '$nome' sem os dois drops de 5355 (ou com repetição)"
+    llmnr_variantes_ok=0
+  fi
+done
+[ "$llmnr_variantes_ok" -eq 1 ] && ok "LLMNR: drops de 5355 em todas as variantes, inclusive nas duas de falha fechada"
+
+# 10c. Posição: dentro da chain entrada, depois do último accept (lo e
+# pares: o que é aceito antes nunca chega ao drop) e depois dos drops do
+# Swarm; tcp antes de udp; antes do "}" que fecha a chain.
+llmnr_n_chain="$(printf '%s\n' "$saida_ssh_pares" | grep -nxF '  chain entrada {' | head -1 | cut -d: -f1)"
+llmnr_n_accept="$(printf '%s\n' "$saida_ssh_pares" | grep -n ' accept$' | tail -1 | cut -d: -f1)"
+llmnr_n_swarm="$(printf '%s\n' "$saida_ssh_pares" | grep -nxF '    udp dport { 4789, 7946 } counter drop' | head -1 | cut -d: -f1)"
+llmnr_n_tcp="$(printf '%s\n' "$saida_ssh_pares" | grep -nxF -- "$LLMNR_TCP" | head -1 | cut -d: -f1)"
+llmnr_n_udp="$(printf '%s\n' "$saida_ssh_pares" | grep -nxF -- "$LLMNR_UDP" | head -1 | cut -d: -f1)"
+llmnr_n_fecha="$(printf '%s\n' "$saida_ssh_pares" | awk '/^  chain entrada [{]$/ { c = 1; next } c && /^  [}]$/ { print NR; exit }')"
+if [ -n "$llmnr_n_chain" ] && [ -n "$llmnr_n_accept" ] && [ -n "$llmnr_n_swarm" ] \
+    && [ -n "$llmnr_n_tcp" ] && [ -n "$llmnr_n_udp" ] && [ -n "$llmnr_n_fecha" ] \
+    && [ "$llmnr_n_chain" -lt "$llmnr_n_accept" ] && [ "$llmnr_n_accept" -lt "$llmnr_n_swarm" ] \
+    && [ "$llmnr_n_swarm" -lt "$llmnr_n_tcp" ] && [ "$llmnr_n_tcp" -lt "$llmnr_n_udp" ] \
+    && [ "$llmnr_n_udp" -lt "$llmnr_n_fecha" ]; then
+  ok "LLMNR: drops de 5355 dentro da chain entrada, depois dos accepts e dos drops do Swarm"
+else
+  falha "LLMNR: drops de 5355 fora de posição (chain=$llmnr_n_chain accept=$llmnr_n_accept swarm=$llmnr_n_swarm tcp=$llmnr_n_tcp udp=$llmnr_n_udp fecha=$llmnr_n_fecha)"
+fi
+
+# 10d. As outras portas continuam permitidas: a policy da chain segue
+# "accept", e os únicos drops fora do limite de SSH são os do Swarm e os
+# dois de 5355 — nenhum outro número de porta, nenhuma faixa, nenhum drop
+# genérico.
+llmnr_drops="$(printf '%s\n' "$saida_basica" | grep -w 'drop' | grep -vF 'ct state new')"
+llmnr_esperado="$(printf '%s\n' '    tcp dport { 2377, 7946 } counter drop' '    udp dport { 4789, 7946 } counter drop' "$LLMNR_TCP" "$LLMNR_UDP")"
+if [ "$llmnr_drops" = "$llmnr_esperado" ] \
+    && [ "$(printf '%s\n' "$saida_basica" | grep -cxF '    type filter hook input priority -5; policy accept;')" -eq 1 ]; then
+  ok "LLMNR: outras portas continuam permitidas (policy accept; drops só do Swarm e de 5355, fora o limite de SSH)"
+else
+  falha "LLMNR: drop a mais ou policy alterada — outras portas deixariam de passar"
+  printf '%s\n' "$llmnr_drops"
+fi
+
+# 10e. Sintaxe real da versão mínima de falha fechada (a que só o loop
+# produz), se o nft real estiver disponível — mesmo guard e mesma
+# "validar_sintaxe" da seção 7. As outras variantes já passam pela seção 7.
+if command -v nft >/dev/null 2>&1 && echo 'table inet encha_guard_sonda {}' | nft -c -f - >/dev/null 2>&1; then
+  validar_sintaxe "LLMNR: versão mínima de falha fechada" "$(cat "$dir_ssh_recusado/ultimo_stdin" 2>/dev/null)"
+else
+  echo "ℹ️  'nft' real indisponível — pulando a validação de sintaxe real da versão mínima com LLMNR (a seção 10 acima já cobre a geração)."
+fi
+
 echo ""
 [ "$falhas" -eq 0 ] || exit 1
 echo "✅ todos os testes de encha-guard.sh passaram"
