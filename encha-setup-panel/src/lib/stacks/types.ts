@@ -47,7 +47,23 @@ export type SwarmContext = {
    * mecanismo.
    */
   machineId?: string;
+  /**
+   * Época (segundos, só dígitos) que versiona o NOME dos segredos do Docker
+   * desta instalação (`<base>_<época>`) — preenchida pelo installer antes de
+   * generateYaml, só para stacks que declaram `dockerSecrets`. Segredo do
+   * Docker é imutável: trocar o valor = criar outro nome. Ver
+   * StackDefinition.dockerSecrets.
+   */
+  versaoSegredos?: string;
 };
+
+/**
+ * Um segredo do Swarm a criar antes do deploy (ver StackDefinition.dockerSecrets).
+ * `name` é o nome VERSIONADO (o que o YAML referencia em `external: true`);
+ * `base` é o mesmo sem a época — vai no label do segredo para o installer achar
+ * as versões antigas depois. `value` é o conteúdo cru (nunca logar).
+ */
+export type DockerSecretSpec = { base: string; name: string; value: string };
 
 export type GeneratedSecret = {
   name: string;
@@ -297,6 +313,20 @@ export type StackDefinition = {
   logoUrl?: string;
   installVia?: "panel" | "bash";
   generateSecrets?: (values: Record<string, unknown>) => GeneratedSecret[];
+  /**
+   * Segredos do Docker que o installer deve criar no Swarm ANTES do deploy
+   * (com os valores EFETIVOS — os mesmos que o generateYaml usa, já com o que
+   * foi reaproveitado de uma instalação anterior). Lista vazia = esta
+   * instalação usa o formato antigo (variáveis em texto): é o portão por
+   * versão da imagem. O installer cria, faz o deploy e só depois remove as
+   * versões antigas; ver installer.ts. Ausente = a stack não usa segredos do
+   * Docker.
+   */
+  dockerSecrets?: (
+    values: Record<string, unknown>,
+    secrets: Record<string, string>,
+    ctx: SwarmContext
+  ) => DockerSecretSpec[];
   generateYaml: (
     values: Record<string, unknown>,
     secrets: Record<string, string>,

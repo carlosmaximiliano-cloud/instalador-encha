@@ -9,6 +9,7 @@ import {
   listStacks,
   type Stack,
 } from "./portainer";
+import { criarSegredosVersionados, limparSegredosAntigos } from "./docker-secrets";
 import { RegistryAuthError } from "./registry-auth";
 import { resolveRegistryAndPullImages } from "./registry-pull";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
@@ -505,6 +506,14 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       }
     }
 
+    // Segredos do Docker (S4): a época versiona os NOMES dos segredos que esta
+    // instalação vai criar. Só para stacks que declaram `dockerSecrets`; se o
+    // portão por versão da stack estiver fechado, a lista abaixo sai vazia e
+    // o YAML é o formato antigo (variáveis em texto).
+    if (def.dockerSecrets) {
+      effectiveCtx = { ...effectiveCtx, versaoSegredos: String(Math.floor(Date.now() / 1000)) };
+    }
+    const dockerSecretSpecs = def.dockerSecrets?.(parsed.data, secretMap, effectiveCtx) ?? [];
     const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
 
@@ -547,9 +556,29 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
         await ensurePostgresExtension(input.token, endpointId, database, ext);
       }
     }
+    const stackName = input.stackId.replace(/-/g, "_");
+
+    // Segredos do Docker ANTES do deploy (o Swarm recusa referência a segredo
+    // inexistente). Nomes versionados: os da instalação anterior — que a stack
+    // em uso ainda referencia — ficam intocados; se algo falhar aqui, o
+    // deploy nem começa e nada foi trocado. Valores = os EFETIVOS (já com o
+    // que stack_secrets reaproveitou), então reinstalar reproduz os mesmos
+    // valores (inclusive a senha do Postgres do volume existente).
+    if (dockerSecretSpecs.length > 0) {
+      await criarSegredosVersionados(input.token, endpointId, stackName, dockerSecretSpecs);
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.create",
+        target: input.stackId,
+        result: "ok",
+        meta: { count: dockerSecretSpecs.length }, // nunca nomes com valor, nunca valores.
+      });
+    }
+
     const stack = await deploySwarmStack({
       token: input.token,
-      name: input.stackId.replace(/-/g, "_"),
+      name: stackName,
       yaml,
       swarmId,
       endpointId,
@@ -557,6 +586,26 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields);
     if (Object.keys(sharedToPersist).length > 0) saveSharedSecrets(sharedToPersist);
+
+    // Só DEPOIS do deploy aplicado e dos valores persistidos: remove as
+    // versões antigas dos segredos (best-effort, nunca lança; nunca o que um
+    // serviço ainda referencia — ver limparSegredosAntigos).
+    if (dockerSecretSpecs.length > 0) {
+      const limpeza = await limparSegredosAntigos(
+        input.token,
+        endpointId,
+        stackName,
+        dockerSecretSpecs.map((s) => s.name)
+      );
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.cleanup",
+        target: input.stackId,
+        result: "ok",
+        meta: { removidos: limpeza.removidos.length, ...(limpeza.motivoPulo ? { pulo: limpeza.motivoPulo } : {}) },
+      });
+    }
 
     // Só consome o pareamento DEPOIS do deploy ter sucesso — se o Console
     // caísse ou o deploy falhasse antes deste ponto, a chave continua
