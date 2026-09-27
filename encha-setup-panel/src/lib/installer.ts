@@ -238,7 +238,11 @@ function saveStackSecrets(
   stackName: string,
   envs: Record<string, unknown>,
   generated: GeneratedSecret[],
-  transientFields?: string[]
+  transientFields?: string[],
+  // false = gravação antecipada (antes do deploy, ver installStack): guarda os
+  // valores mas NÃO registra "stack.install ok" na auditoria — a instalação
+  // ainda não aconteceu.
+  auditar = true
 ): void {
   // Defesa em profundidade: mesmo que o chamador já tenha filtrado, nunca
   // deixar um campo transiente (ex.: chave de licença) chegar aqui dentro.
@@ -258,6 +262,7 @@ function saveStackSecrets(
      VALUES (?, ?, ?, ?)
      ON CONFLICT(stack_name) DO UPDATE SET encrypted_envs = excluded.encrypted_envs, updated_at = excluded.updated_at`
   ).run(stackName, blob, now, now);
+  if (!auditar) return;
   logAudit({
     user: "system",
     ip: "local",
@@ -606,6 +611,18 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
         meta: { count: dockerSecretSpecs.length }, // nunca nomes com valor, nunca valores.
       });
     }
+
+    // Valores efetivos gravados ANTES do deploy (S5-A, auditoria): o deploy
+    // pode falhar depois de o Postgres já ter inicializado o volume com eles
+    // (ex.: timeout do painel com a stack criada do lado do Portainer). Se só
+    // fossem salvos depois, a nova tentativa veria banco no host e nenhuma
+    // chave salva, e abortaria (BancoExistenteSemChavesError) uma instalação
+    // nova e legítima; salvos aqui, ela reusa exatamente os mesmos valores.
+    // Valores de uma tentativa que nunca subiu são inofensivos: o retry os
+    // reusa. Fica DEPOIS da trava de banco existente (a chave de um banco
+    // alheio nunca é sobrescrita por valor sorteado) e sem auditoria (a
+    // instalação ainda não aconteceu; o registro "stack.install" é do final).
+    saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields, false);
 
     const stack = await deploySwarmStack({
       token: input.token,

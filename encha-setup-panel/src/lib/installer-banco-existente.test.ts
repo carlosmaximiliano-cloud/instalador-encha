@@ -32,7 +32,7 @@ afterEach(() => {
   vi.doUnmock("./registry-pull");
 });
 
-type Host = { bancoExiste: boolean; falharChecagem: boolean; caminhosChecados: string[] };
+type Host = { bancoExiste: boolean; falharChecagem: boolean; caminhosChecados: string[]; deployFalhas: number };
 
 async function preparar(host: Host) {
   const efeitos = { deploys: [] as string[], hostDirs: 0, pulls: 0 };
@@ -47,6 +47,12 @@ async function preparar(host: Host) {
       listStacks: vi.fn(async () => []),
       deploySwarmStack: vi.fn(async (a: { yaml: string }) => {
         efeitos.deploys.push(a.yaml);
+        if (host.deployFalhas > 0) {
+          host.deployFalhas--;
+          // Ex.: timeout do lado do painel com a stack criada do lado do
+          // Portainer — o Postgres pode ter inicializado com estes valores.
+          throw new Error("Portainer 504: timeout ao criar a stack");
+        }
         return { Id: 7 };
       }),
     };
@@ -116,6 +122,7 @@ const novoHost = (over: Partial<Host> = {}): Host => ({
   bancoExiste: false,
   falharChecagem: false,
   caminhosChecados: [],
+  deployFalhas: 0,
   ...over,
 });
 
@@ -212,6 +219,46 @@ describe("installStack (EnchaT) — banco existente no host (S5-A)", () => {
     expect(salvos().enchat_master_key).toBeTruthy();
     expect(salvos().postgres_password).toBeTruthy();
     expect(host.caminhosChecados).toEqual(["/var/enchat/postgres/PG_VERSION"]);
+  });
+
+  // O deploy pode falhar DEPOIS de o Postgres ter inicializado com os valores
+  // sorteados (timeout do painel com a stack criada no Portainer; o operador
+  // remove a stack e tenta de novo). Se esses valores só fossem salvos depois
+  // do deploy, o retry veria banco + nenhuma chave salva e abortaria — numa
+  // instalação nova, legítima, que o próprio painel começou. Salvos antes do
+  // deploy, o retry reusa exatamente os mesmos.
+  it("deploy falhou depois de sortear as chaves: o retry (já com banco no host) reusa as MESMAS chaves em vez de abortar", async () => {
+    const host = novoHost({ bancoExiste: false, deployFalhas: 1 });
+    const { instalar, salvos, efeitos } = await preparar(host);
+
+    const r1 = await instalar();
+    expect(r1.ok).toBe(false);
+    expect(efeitos.deploys).toHaveLength(1);
+    const primeiras = salvos();
+    expect(primeiras.enchat_master_key).toBeTruthy();
+    expect(primeiras.postgres_password).toBeTruthy();
+    expect(efeitos.deploys[0]).toContain(primeiras.postgres_password);
+    expect(efeitos.deploys[0]).toContain(primeiras.enchat_master_key);
+
+    host.bancoExiste = true; // o Postgres inicializou com os valores da 1ª tentativa
+    host.caminhosChecados.length = 0;
+    const r2 = await instalar();
+    expect(r2.ok, r2.error).toBe(true);
+    expect(host.caminhosChecados).toEqual([]); // chaves salvas: nem olha o disco
+    const g = Object.fromEntries((r2.generatedSecrets ?? []).map((s) => [s.name, s.value]));
+    expect(g.enchat_master_key).toBe(primeiras.enchat_master_key);
+    expect(g.postgres_password).toBe(primeiras.postgres_password);
+    expect(efeitos.deploys[1]).toContain(primeiras.postgres_password);
+  });
+
+  it("a gravação antecipada não conta como instalação na auditoria: só o deploy aceito registra stack.install", async () => {
+    const host = novoHost({ bancoExiste: false, deployFalhas: 1 });
+    const { instalar } = await preparar(host);
+    await instalar();
+    const { listAudit } = await import("./audit");
+    const acoes = listAudit(50).map((a) => a.action);
+    expect(acoes).toContain("stack.install.fail");
+    expect(acoes).not.toContain("stack.install");
   });
 
   it("não deu para verificar o host: aborta (a dúvida nunca vira 'não existe'), sem deploy", async () => {
