@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { SwarmContext } from "./stacks/types";
@@ -71,9 +71,12 @@ function aplicarDeployNoSwarm(swarm: Swarm, yaml: string) {
   }
 }
 
-async function preparar(opts: { swarm: Swarm; tagRelease?: string }) {
+// `tagRef` permite trocar a release entre duas instalações do mesmo teste
+// (formato antigo -> segredos); sem ele vale `tagRelease` (padrão 0.4.1).
+async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { atual: string } }) {
   const { swarm } = opts;
-  const tag = opts.tagRelease ?? "0.4.1";
+  const tagFixa = opts.tagRelease ?? "0.4.1";
+  const tagAtual = () => opts.tagRef?.atual ?? tagFixa;
 
   vi.doMock("./portainer", async (importOriginal) => {
     const actual = await importOriginal<typeof import("./portainer")>();
@@ -130,9 +133,9 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string }) {
     return {
       ...actual,
       fetchLatestRelease: vi.fn(async () => ({
-        version: tag,
+        version: tagAtual(),
         imageRepo: "ghcr.io/enchainterno/enchat-free",
-        imageTag: tag,
+        imageTag: tagAtual(),
         obrigatoria: false,
       })),
     };
@@ -315,5 +318,62 @@ describe("installStack (EnchaT) — segredos do Docker: ordem criar → deploy �
     expect(swarm.yamls[0]).toMatch(/DATABASE_URL: "postgresql:\/\/enchat:/);
     expect(swarm.yamls[0]).not.toContain("/run/secrets/");
     expect(swarm.yamls[0]).not.toMatch(/^secrets:/m);
+  });
+});
+
+// Auditoria S4 — a migração que importa em campo: stack instalada pelo painel
+// no formato ANTIGO (release < 0.4.1, env em texto), removida e reinstalada
+// com o portão aberto. O valor de cada segredo tem que ser BYTE A BYTE o que a
+// mesma variável tinha no YAML antigo: a senha do Postgres está gravada no
+// volume (o initdb não roda de novo — provado num Swarm real na auditoria: com
+// senha diferente no segredo, o volume vence e o app não conecta), a
+// ENCHAT_MASTER_KEY cifra os segredos no banco (outra = boot aborta no
+// canário) e a PINFY_SESSION_KEY cifra as sessões do WhatsApp (outra = QR de
+// novo em todas). Tabela (serviço, variável, segredo) = a do contrato.
+describe("installStack (EnchaT) — migração do formato antigo para segredos", () => {
+  const contrato = readFileSync(path.join(__dirname, "stacks", "__fixtures__", "enchat-segredos-contrato.tsv"), "utf8")
+    .split("\n")
+    .filter((l) => l.trim() !== "" && !l.startsWith("#"))
+    .slice(1)
+    .map((l) => l.split("\t"))
+    .map(([servico, variavel, segredo]) => ({ servico, variavel, segredo }));
+
+  const envAntigo = (yaml: string, servico: string, variavel: string): string | undefined => {
+    const bloco = yaml.split(new RegExp(`^ {2}enchat_${servico}:$`, "m"))[1]?.split(/^ {2}\S|^\S/m)[0] ?? "";
+    return new RegExp(`^ {6}${variavel}: "(.*)"$`, "m").exec(bloco)?.[1];
+  };
+
+  it("0.4.0 (env) -> remover -> 0.4.1 (segredos): cada segredo tem o valor exato da variável antiga, e nada é re-sorteado", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    const swarm = novoSwarm();
+    const tagRef = { atual: "0.4.0" };
+    const { instalar, geradosSalvos } = await preparar({ swarm, tagRef });
+
+    expect((await instalar()).ok).toBe(true);
+    expect(swarm.segredos.size).toBe(0); // formato antigo: nenhum segredo
+    const yamlAntigo = swarm.yamls[0];
+    expect(yamlAntigo).not.toContain("/run/secrets/");
+    const gerados1 = geradosSalvos();
+
+    swarm.servicos.clear(); // operador removeu a stack; o volume do Postgres fica
+    tagRef.atual = "0.4.1";
+    vi.setSystemTime(new Date("2026-09-26T12:10:00Z"));
+    expect((await instalar()).ok).toBe(true);
+
+    expect(geradosSalvos()).toEqual(gerados1);
+    expect(swarm.yamls[1]).toMatch(/^secrets:$/m);
+    const valorDoSegredo = (segredo: string) =>
+      [...swarm.segredos.values()].find((s) => s.labels["com.encha.segredo-base"] === `enchat_${segredo}`)?.valor;
+    expect(contrato.length).toBe(14);
+    for (const { servico, variavel, segredo } of contrato) {
+      const antes = envAntigo(yamlAntigo, servico, variavel);
+      expect(antes, `${servico}/${variavel} no YAML antigo`).toBeTruthy();
+      expect(valorDoSegredo(segredo), `${servico}/${variavel} -> enchat_${segredo}`).toBe(antes);
+    }
+    // As que não se pode perder, explicitamente.
+    expect(valorDoSegredo("master_key")).toBe(gerados1.enchat_master_key);
+    expect(valorDoSegredo("pinfy_session_key")).toBe(gerados1.pinfy_session_key);
+    expect(valorDoSegredo("postgres_password")).toBe(gerados1.postgres_password);
   });
 });
