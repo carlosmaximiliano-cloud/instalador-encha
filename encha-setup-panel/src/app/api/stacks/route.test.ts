@@ -236,6 +236,8 @@ describe("POST /api/stacks — banco existente sem chaves (S5-A)", () => {
       });
     }
   }
+});
+
 // Painel P1 — a rota repassa o idioma da requisição ao installer e devolve o
 // erro POR CAMPO (400 {error, message, campos}); qualquer outra falha do
 // installer continua {error, reason} com o status dele.
