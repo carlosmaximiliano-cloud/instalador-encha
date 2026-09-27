@@ -29,6 +29,9 @@ export type InstallWizardText = {
   corrijaCamposParaInstalar: string;
   servidorRecusouDados: string;
   erroDeRede: string;
+  dnsNaoResolve: string;
+  dnsNaoAponta: string;
+  lembreteDnsHttps: (dominios: string) => string;
 };
 
 export const installWizardText: Record<Locale, InstallWizardText> = {
@@ -62,6 +65,12 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     corrijaCamposParaInstalar: "Preencha e corrija os campos acima para poder instalar.",
     servidorRecusouDados: "O servidor recusou estes dados:",
     erroDeRede: "Erro de rede",
+    dnsNaoResolve:
+      "O DNS deste domínio ainda não resolve. O certificado HTTPS vai falhar até o DNS apontar para esta VPS; se acabou de criar o registro, aguarde a propagação.",
+    dnsNaoAponta:
+      "Este domínio não aponta para esta VPS. O certificado HTTPS vai falhar até o DNS apontar para cá; confira os registros A e AAAA.",
+    lembreteDnsHttps: (dominios) =>
+      `O DNS de ${dominios} não apontava para esta VPS quando a instalação foi enviada. O HTTPS só vai funcionar depois que o DNS apontar e o certificado for emitido.`,
   },
   en: {
     defaultGroup: "Settings",
@@ -93,6 +102,12 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     corrijaCamposParaInstalar: "Fill in and fix the fields above to be able to install.",
     servidorRecusouDados: "The server rejected this data:",
     erroDeRede: "Network error",
+    dnsNaoResolve:
+      "This domain's DNS doesn't resolve yet. The HTTPS certificate will fail until the DNS points to this VPS; if you just created the record, wait for propagation.",
+    dnsNaoAponta:
+      "This domain doesn't point to this VPS. The HTTPS certificate will fail until the DNS points here; check the A and AAAA records.",
+    lembreteDnsHttps: (dominios) =>
+      `The DNS for ${dominios} did not point to this VPS when the installation was sent. HTTPS will only work after the DNS points here and the certificate is issued.`,
   },
   es: {
     defaultGroup: "Configuración",
@@ -124,5 +139,11 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     corrijaCamposParaInstalar: "Complete y corrija los campos de arriba para poder instalar.",
     servidorRecusouDados: "El servidor rechazó estos datos:",
     erroDeRede: "Error de red",
+    dnsNaoResolve:
+      "El DNS de este dominio aún no resuelve. El certificado HTTPS fallará hasta que el DNS apunte a esta VPS; si acaba de crear el registro, espere la propagación.",
+    dnsNaoAponta:
+      "Este dominio no apunta a esta VPS. El certificado HTTPS fallará hasta que el DNS apunte aquí; revise los registros A y AAAA.",
+    lembreteDnsHttps: (dominios) =>
+      `El DNS de ${dominios} no apuntaba a esta VPS cuando se envió la instalación. El HTTPS solo funcionará después de que el DNS apunte aquí y se emita el certificado.`,
   },
 };

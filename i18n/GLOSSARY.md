@@ -156,6 +156,21 @@ agora — fora do escopo de "nada muda"):**
   mensagens do Zod (domínio, e-mail, slug, usuário, `.min()` de texto)
   continuam só em português, agora chegando por campo, embaixo do input
   certo.
+- **Aviso de DNS (ciclo painel-dns)**: o wizard avisa em pt/en/es, embaixo
+  do campo de domínio e de novo na tela de sucesso, quando o domínio digitado
+  não resolve ou não aponta para esta VPS (`install-wizard.i18n.ts`:
+  `dnsNaoResolve`, `dnsNaoAponta`, `lembreteDnsHttps`). Só avisa, nunca
+  bloqueia a instalação. A rota `GET /api/dns/verificar` devolve apenas o
+  estado; o erro `dominio_invalido` dela sai como "Domínio inválido" /
+  "Invalid domain" / "Dominio inválido". Termos fixados:
+
+  | pt | en | es |
+  |---|---|---|
+  | apontar (DNS) | point to | apuntar a |
+  | resolver (DNS) | resolve | resolver |
+  | propagação | propagation | propagación |
+  | registros A e AAAA | A and AAAA records | registros A y AAAA |
+  | certificado HTTPS | HTTPS certificate | certificado HTTPS |
 
 ## Fase 4 — instalador (`main.sh` + `secondary.sh`)
 

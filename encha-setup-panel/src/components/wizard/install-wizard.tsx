@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,13 @@ import { useDict } from "@/lib/i18n/use-dict";
 import { installWizardText } from "./install-wizard.i18n";
 import { useLocale } from "@/components/locale-provider";
 import { falhasDoCampo, mensagens, type RegraCampo } from "@/lib/validacao-campos";
+// Só o tipo: o componente cliente não puxa zod nem node.
+import type { EstadoDns } from "@/lib/dns-check";
+
+// Espera depois da última tecla antes de consultar o DNS do domínio digitado.
+export const ATRASO_VERIFICACAO_DNS_MS = 800;
+
+type AvisoDns = Extract<EstadoDns, "nao_aponta" | "nao_resolve">;
 
 type Field = {
   name: string;
@@ -64,6 +71,8 @@ type InstallState =
       notes: string[];
       revealSecrets: RevealSecret[];
       aviso?: string;
+      // Valores dos campos de domínio que tinham aviso de DNS no envio.
+      dominiosSemDns: string[];
     }
   | ErrorState
   // Suporte embutido no wizard (ver suporte-panel.tsx) — `voltarPara` guarda
@@ -80,6 +89,13 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
   // Erros que o servidor devolveu para campos SEM input neste formulário (ex.:
   // chave_licenca, injetada pelo servidor): nunca somem calados.
   const [erroFormulario, setErroFormulario] = useState<{ campo: string; mensagens: string[] }[]>([]);
+  // Aviso de DNS por campo de domínio (nome do campo -> código do estado; o
+  // texto sai de installWizardText na hora de renderizar). Só avisa: nunca
+  // entra em camposPendentes nem no `disabled` do Instalar.
+  const [avisosDns, setAvisosDns] = useState<Record<string, AvisoDns>>({});
+  const contadorDns = useRef<Record<string, number>>({});
+  const timersDns = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const ultimoDns = useRef<Record<string, string>>({});
   const form = useForm<Record<string, unknown>>({
     mode: "all",
     defaultValues: Object.fromEntries(
@@ -90,6 +106,14 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
   useEffect(() => {
     if (!open) setState({ kind: "form" });
   }, [open]);
+
+  // Ao desmontar, nenhuma consulta agendada pode disparar.
+  useEffect(() => {
+    const timers = timersDns.current;
+    return () => {
+      for (const timer of Object.values(timers)) clearTimeout(timer);
+    };
+  }, []);
 
   const groups = Array.from(new Set(stack.fields.map((f) => f.group ?? t.defaultGroup)));
 
@@ -120,16 +144,83 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
   const camposPendentes = stack.fields.filter((f) => falhasDoCampo(f, form.watch(f.name)).length > 0);
   const erros = form.formState.errors;
 
+  function cancelarTimerDns(nome: string) {
+    clearTimeout(timersDns.current[nome]);
+    delete timersDns.current[nome];
+  }
+
+  // Consulta o DNS do valor e decide o aviso. Só a resposta da consulta mais
+  // recente do campo vale; falha da rota, corpo estranho e rejeição do fetch
+  // nunca viram aviso, nunca abrem a tela de falha e nunca mexem no botão.
+  async function verificarDominio(nome: string, valor: string) {
+    const seq = (contadorDns.current[nome] = (contadorDns.current[nome] ?? 0) + 1);
+    ultimoDns.current[nome] = valor;
+    let estado: unknown;
+    try {
+      const res = await fetch(`/api/dns/verificar?dominio=${encodeURIComponent(valor)}`);
+      if (res.ok) estado = (await res.json())?.estado;
+    } catch {
+      /* consulta de cortesia: falha calada */
+    }
+    if (contadorDns.current[nome] !== seq) return; // resposta atrasada
+    setAvisosDns((prev) => {
+      const copia = { ...prev };
+      if (estado === "nao_aponta" || estado === "nao_resolve") copia[nome] = estado;
+      else delete copia[nome];
+      return copia;
+    });
+  }
+
+  // Ao digitar: invalida a consulta em voo, esquece o último valor consultado
+  // e agenda uma nova depois da última tecla. O aviso já visível fica até a
+  // próxima resposta válida; campo esvaziado apaga na hora e não consulta.
+  function aoDigitarDominio(nome: string) {
+    const valor = String(form.getValues(nome) ?? "");
+    cancelarTimerDns(nome);
+    contadorDns.current[nome] = (contadorDns.current[nome] ?? 0) + 1;
+    delete ultimoDns.current[nome];
+    if (valor.trim() === "") {
+      setAvisosDns((prev) => {
+        if (!(nome in prev)) return prev;
+        const copia = { ...prev };
+        delete copia[nome];
+        return copia;
+      });
+      return;
+    }
+    timersDns.current[nome] = setTimeout(() => {
+      delete timersDns.current[nome];
+      void verificarDominio(nome, valor);
+    }, ATRASO_VERIFICACAO_DNS_MS);
+  }
+
+  // Ao sair do campo: consulta na hora (cancelando o debounce), a não ser que
+  // o valor seja o da última consulta deste campo.
+  function aoSairDominio(nome: string) {
+    const valor = String(form.getValues(nome) ?? "");
+    cancelarTimerDns(nome);
+    if (valor.trim() === "") return;
+    if (ultimoDns.current[nome] === valor) return;
+    void verificarDominio(nome, valor);
+  }
+
   function regrasDoCampo(f: Field) {
-    return {
+    const base = {
       validate: (v: unknown) => {
         const m = mensagens(falhasDoCampo(f, v), locale);
         return m.length ? m.join(" · ") : true;
       },
     };
+    if (f.kind !== "domain") return base;
+    return { ...base, onChange: () => aoDigitarDominio(f.name), onBlur: () => aoSairDominio(f.name) };
   }
 
   async function onSubmit(rawValues: Record<string, unknown>) {
+    // Lembrete da tela de sucesso: quais domínios tinham aviso de DNS agora.
+    const dominiosSemDns = stack.fields
+      .filter((f) => f.kind === "domain" && avisosDns[f.name])
+      .map((f) => String(rawValues[f.name]));
+    for (const nome of Object.keys(timersDns.current)) cancelarTimerDns(nome);
     setErroFormulario([]);
     setState({ kind: "installing" });
     // Campos opcionais deixados em branco chegam como "" (default do form),
@@ -190,6 +281,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         notes: data.notes ?? [],
         revealSecrets: data.revealSecrets ?? [],
         aviso: data.aviso,
+        dominiosSemDns,
       });
       onInstalled?.();
     } catch (e) {
@@ -218,9 +310,14 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                   .map((f) => {
                     const isCheckbox = f.kind === "checkbox";
                     const erro = erros[f.name]?.message ? String(erros[f.name]?.message) : undefined;
-                    const erroProps = erro
-                      ? ({ "aria-invalid": "true", "aria-describedby": `${f.name}-erro` } as const)
-                      : {};
+                    const avisoDns = avisosDns[f.name];
+                    const descritoPor = [erro ? `${f.name}-erro` : null, avisoDns ? `${f.name}-dns` : null]
+                      .filter(Boolean)
+                      .join(" ");
+                    const erroProps = {
+                      ...(erro ? { "aria-invalid": "true" as const } : {}),
+                      ...(descritoPor ? { "aria-describedby": descritoPor } : {}),
+                    };
                     const erroEl = erro ? (
                       <p id={`${f.name}-erro`} role="alert" className="text-xs text-destructive">
                         {erro}
@@ -271,6 +368,11 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                           {...erroProps}
                         />
                         {erroEl}
+                        {avisoDns && (
+                          <p id={`${f.name}-dns`} role="status" className="text-xs text-amber-500">
+                            {avisoDns === "nao_resolve" ? t.dnsNaoResolve : t.dnsNaoAponta}
+                          </p>
+                        )}
                         {f.helpText && <p className="text-xs text-muted-foreground">{f.helpText}</p>}
                       </div>
                     );
@@ -327,6 +429,16 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
               >
                 {state.accessUrl}
               </a>
+            )}
+            {state.dominiosSemDns.length > 0 && (
+              <div
+                id="lembrete-dns"
+                role="status"
+                className="max-w-md mx-auto text-left rounded-md border border-amber-500/40 bg-amber-500/10 p-3 flex gap-2"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                <p className="text-xs text-amber-500">{t.lembreteDnsHttps(state.dominiosSemDns.join(", "))}</p>
+              </div>
             )}
             {/* Link de primeiro acesso (ex.: EnchaT ?setup=<token>) — cria o
                 administrador. Carrega segredo, então só vive neste useState,

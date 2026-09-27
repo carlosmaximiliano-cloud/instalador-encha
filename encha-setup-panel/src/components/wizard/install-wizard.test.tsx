@@ -9,6 +9,9 @@ import { installWizardText } from "./install-wizard.i18n";
 import { licensePairingText } from "./license-pairing.i18n";
 import { LocaleProvider } from "@/components/locale-provider";
 import type { Locale } from "@/lib/locale-shared";
+import { act, configure } from "@testing-library/react";
+import { beforeEach } from "vitest";
+import { ATRASO_VERIFICACAO_DNS_MS } from "./install-wizard";
 
 // C7 (S10 do plano de segurança do EnchaT) — o card de sucesso mostra o
 // link de primeiro acesso (setupUrl) com botão de copiar e a nota de uso
@@ -557,5 +560,308 @@ describe("InstallWizard — validação no formulário (Painel P1)", () => {
     await screen.findByText(installWizardText.en.falhaNaInstalacao);
     expect(screen.getByText(installWizardText.en.erroDeRede)).toBeInTheDocument();
     expect(screen.queryByText("Erro de rede")).not.toBeInTheDocument();
+  });
+});
+
+// Painel dns — aviso de DNS no campo de domínio. O wizard consulta
+// GET /api/dns/verificar ao sair do campo (ou 800 ms depois da última tecla)
+// e só AVISA: o botão Instalar nunca depende do aviso. Componente real, fetch
+// falso por rota.
+
+type RespostaDns = { status: number; body: unknown } | Error | (() => Promise<{ status: number; body: unknown }>);
+
+const ESTADO = (estado: string): RespostaDns => ({ status: 200, body: { estado } });
+const jsonRes = (r: { status: number; body: unknown }) =>
+  new Response(JSON.stringify(r.body), { status: r.status, headers: { "content-type": "application/json" } });
+
+/**
+ * fetch falso com duas rotas. "/api/dns/verificar?dominio=<d>" guarda d
+ * (decodificado) em `dns` e responde pela tabela (d ausente: 200 aponta).
+ * "/api/stacks" conta como stubInstall e responde `install`.
+ */
+function stubRede(opts: { dns?: Record<string, RespostaDns>; install?: RespostaStub } = {}) {
+  const dns: string[] = [];
+  const install: { body: Record<string, unknown> }[] = [];
+  const resp = opts.install ?? { status: 200, body: { ok: true, notes: [], revealSecrets: [] } };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      const prefixo = "/api/dns/verificar?dominio=";
+      if (u.startsWith(prefixo)) {
+        const d = decodeURIComponent(u.slice(prefixo.length));
+        dns.push(d);
+        const r = opts.dns?.[d] ?? ESTADO("aponta");
+        if (r instanceof Error) throw r;
+        return jsonRes(typeof r === "function" ? await r() : r);
+      }
+      if (u === "/api/stacks") {
+        install.push({ body: JSON.parse(String(init?.body ?? "{}")) });
+        if (resp instanceof Error) throw resp;
+        return jsonRes(resp);
+      }
+      throw new Error(`URL inesperada: ${u}`);
+    })
+  );
+  return { dns, install };
+}
+
+const esperar = (ms: number) => act(() => new Promise<void>((r) => setTimeout(r, ms)));
+const avisoDns = (id: string) => document.getElementById(`${id}-dns`);
+
+// Cola o valor de uma vez (um só evento de input): com a máquina carregada,
+// digitar tecla a tecla pode deixar >800 ms entre teclas e disparar o debounce
+// no meio do valor. O W9 é o único que digita de verdade (é o debounce em teste).
+async function colar(user: ReturnType<typeof userEvent.setup>, id: string, valor: string) {
+  await user.click(input(id));
+  await user.paste(valor);
+}
+
+async function preencherComPaste(user: ReturnType<typeof userEvent.setup>) {
+  await colar(user, "dominio_tracker", DOMINIO);
+  await user.type(input("email_ativacao"), EMAIL);
+  await user.type(input("senha_admin"), SENHA_FORTE);
+}
+
+// Máquina carregada (vários agentes no mesmo host): dá folga às esperas do
+// bloco novo sem mexer nas dos testes anteriores.
+describe("InstallWizard — aviso de DNS no campo de domínio", { timeout: 20000 }, () => {
+  beforeEach(() => {
+    configure({ asyncUtilTimeout: 4000 });
+  });
+  afterEach(() => {
+    configure({ asyncUtilTimeout: 1000 });
+  });
+
+  it("W1 não resolve: aviso embaixo do campo ao sair dele, role=status, uma consulta por valor", async () => {
+    const { dns } = stubRede({ dns: { [DOMINIO]: ESTADO("nao_resolve") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await colar(user, "dominio_tracker", DOMINIO);
+    await user.tab();
+
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+    const aviso = avisoDns("dominio_tracker")!;
+    expect(aviso).toHaveTextContent(installWizardText.pt.dnsNaoResolve);
+    expect(aviso).toHaveAttribute("role", "status");
+    expect(input("dominio_tracker").getAttribute("aria-describedby")).toContain("dominio_tracker-dns");
+    expect(dns).toEqual([DOMINIO]);
+
+    // Volta ao campo e sai de novo sem mudar nada: não consulta de novo.
+    await user.click(input("dominio_tracker"));
+    await user.tab();
+    await esperar(50);
+    expect(dns).toHaveLength(1);
+  });
+
+  it("W2 não aponta: aviso com o texto de não aponta", async () => {
+    stubRede({ dns: { [DOMINIO]: ESTADO("nao_aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await colar(user, "dominio_tracker", DOMINIO);
+    await user.tab();
+
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+    expect(avisoDns("dominio_tracker")).toHaveTextContent(installWizardText.pt.dnsNaoAponta);
+    expect(screen.queryByText(installWizardText.pt.dnsNaoResolve)).not.toBeInTheDocument();
+  });
+
+  it("W3 aponta: sem aviso, e o aviso some quando o domínio passa a apontar", async () => {
+    const { dns } = stubRede({ dns: { "tracker.exemplo.co": ESTADO("nao_aponta"), [DOMINIO]: ESTADO("aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await colar(user, "dominio_tracker", "tracker.exemplo.co");
+    await user.tab();
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+
+    // O valor vira "tracker.exemplo.com" (aponta). O campo nunca fica vazio,
+    // então só a resposta "aponta" pode ter apagado o aviso.
+    await user.type(input("dominio_tracker"), "m");
+    await user.tab();
+    await waitFor(() => expect(dns).toEqual(["tracker.exemplo.co", DOMINIO]));
+    await waitFor(() => expect(avisoDns("dominio_tracker")).toBeNull());
+  });
+
+  it("W4 o aviso não bloqueia: Instalar habilitado e o envio chama /api/stacks", async () => {
+    const { install } = stubRede({ dns: { [DOMINIO]: ESTADO("nao_aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+    await preencherComPaste(user);
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+
+    expect(botaoInstalar()).toBeEnabled();
+    await user.click(botaoInstalar());
+
+    await screen.findByText(installWizardText.pt.stackImplantada);
+    expect(install).toHaveLength(1);
+  });
+
+  it.each<[string, RespostaDns]>([
+    ["429 muitas_tentativas", { status: 429, body: { error: "muitas_tentativas" } }],
+    ["500 vazio", { status: 500, body: {} }],
+    ["400 dominio_invalido", { status: 400, body: { error: "dominio_invalido" } }],
+    ["200 sem estado", { status: 200, body: { ok: true } }],
+    ["200 estado desconhecido", { status: 200, body: { estado: "desconhecido" } }],
+    ["fetch rejeitado", new TypeError("Failed to fetch")],
+  ])("W5 falha da rota não mostra aviso nem bloqueia (%s)", async (_nome, resposta) => {
+    const { dns } = stubRede({ dns: { [DOMINIO]: resposta } });
+    const naoTratadas: unknown[] = [];
+    const ouvinte = (e: unknown) => naoTratadas.push(e);
+    process.on("unhandledRejection", ouvinte);
+    try {
+      const user = userEvent.setup();
+      renderStack(STACK_TRACKER);
+      await preencherComPaste(user);
+      await waitFor(() => expect(dns).toHaveLength(1));
+      await esperar(50);
+
+      expect(avisoDns("dominio_tracker")).toBeNull();
+      expect(botaoInstalar()).toBeEnabled();
+      expect(naoTratadas).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", ouvinte);
+    }
+  });
+
+  it("W6 resposta atrasada de um valor antigo não sobrescreve o aviso do valor novo", async () => {
+    let soltar!: () => void;
+    const segurada = () =>
+      new Promise<{ status: number; body: unknown }>((resolve) => {
+        soltar = () => resolve({ status: 200, body: { estado: "nao_aponta" } });
+      });
+    const { dns } = stubRede({ dns: { "tracker.exemplo.co": segurada, [DOMINIO]: ESTADO("aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await colar(user, "dominio_tracker", "tracker.exemplo.co");
+    await user.tab();
+    await waitFor(() => expect(dns).toEqual(["tracker.exemplo.co"]));
+
+    await user.type(input("dominio_tracker"), "m");
+    await user.tab();
+    await waitFor(() => expect(dns).toEqual(["tracker.exemplo.co", DOMINIO]));
+    await esperar(50);
+
+    soltar();
+    await esperar(50);
+    expect(avisoDns("dominio_tracker")).toBeNull();
+  });
+
+  it.each(["en", "es"] as const)("W7 %s: o aviso sai no idioma da tela", async (locale) => {
+    stubRede({ dns: { [DOMINIO]: ESTADO("nao_aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER, locale);
+
+    await colar(user, "dominio_tracker", DOMINIO);
+    await user.tab();
+
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+    expect(avisoDns("dominio_tracker")).toHaveTextContent(installWizardText[locale].dnsNaoAponta);
+    expect(screen.queryByText(installWizardText.pt.dnsNaoAponta)).not.toBeInTheDocument();
+    for (const chave of ["dnsNaoAponta", "dnsNaoResolve"] as const) {
+      const textos = (["pt", "en", "es"] as const).map((l) => installWizardText[l][chave]);
+      expect(new Set(textos).size).toBe(3);
+    }
+  });
+
+  it("W8 vários campos de domínio: cada um com o seu aviso", async () => {
+    stubRede({
+      dns: {
+        "typebot.exemplo.com": ESTADO("nao_resolve"),
+        "viewer.exemplo.com": ESTADO("aponta"),
+        "viewer.outro.com": ESTADO("nao_aponta"),
+      },
+    });
+    const user = userEvent.setup();
+    renderStack({
+      id: "typebot",
+      name: "Typebot",
+      description: "t",
+      fields: [
+        { name: "url_typebot", label: "Typebot", kind: "domain" },
+        { name: "url_viewer", label: "Viewer", kind: "domain" },
+      ],
+    });
+
+    await colar(user, "url_typebot", "typebot.exemplo.com");
+    await colar(user, "url_viewer", "viewer.exemplo.com");
+    await user.tab();
+
+    await waitFor(() => expect(avisoDns("url_typebot")).not.toBeNull());
+    await esperar(50);
+    expect(avisoDns("url_typebot")).toHaveTextContent(installWizardText.pt.dnsNaoResolve);
+    expect(avisoDns("url_viewer")).toBeNull();
+
+    await user.clear(input("url_viewer"));
+    await colar(user, "url_viewer", "viewer.outro.com");
+    await user.tab();
+
+    await waitFor(() => expect(avisoDns("url_viewer")).not.toBeNull());
+    expect(avisoDns("url_viewer")).toHaveTextContent(installWizardText.pt.dnsNaoAponta);
+    expect(avisoDns("url_typebot")).toHaveTextContent(installWizardText.pt.dnsNaoResolve);
+  });
+
+  it("W9 debounce: digitando sem sair do campo, consulta uma vez, com o valor final", async () => {
+    const { dns } = stubRede({ dns: { [DOMINIO]: ESTADO("nao_aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await user.type(input("dominio_tracker"), DOMINIO);
+    await waitFor(() => expect(dns).toHaveLength(1), { timeout: 3000 });
+    expect(dns[0]).toBe(DOMINIO);
+
+    await esperar(ATRASO_VERIFICACAO_DNS_MS + 300);
+    expect(dns).toEqual([DOMINIO]);
+  });
+
+  it("W10 campo vazio: não consulta e limpa o aviso", async () => {
+    const { dns } = stubRede({ dns: { [DOMINIO]: ESTADO("nao_resolve") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+
+    await colar(user, "dominio_tracker", DOMINIO);
+    await user.tab();
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+
+    await user.clear(input("dominio_tracker"));
+    expect(avisoDns("dominio_tracker")).toBeNull();
+
+    await esperar(ATRASO_VERIFICACAO_DNS_MS + 300);
+    await user.tab();
+    await esperar(50);
+    expect(dns).toEqual([DOMINIO]);
+  });
+
+  it("W11 tela de sucesso: lembrete do HTTPS quando havia aviso ao enviar", async () => {
+    stubRede({ dns: { [DOMINIO]: ESTADO("nao_aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+    await preencherComPaste(user);
+    await waitFor(() => expect(avisoDns("dominio_tracker")).not.toBeNull());
+
+    await user.click(botaoInstalar());
+
+    await screen.findByText(installWizardText.pt.stackImplantada);
+    const lembrete = document.getElementById("lembrete-dns");
+    expect(lembrete).not.toBeNull();
+    expect(lembrete).toHaveTextContent(installWizardText.pt.lembreteDnsHttps(DOMINIO));
+    expect(lembrete).toHaveAttribute("role", "status");
+  });
+
+  it("W12 tela de sucesso: sem aviso ao enviar, sem lembrete", async () => {
+    const { dns } = stubRede({ dns: { [DOMINIO]: ESTADO("aponta") } });
+    const user = userEvent.setup();
+    renderStack(STACK_TRACKER);
+    await preencherComPaste(user);
+    await waitFor(() => expect(dns).toHaveLength(1));
+    await esperar(50);
+
+    await user.click(botaoInstalar());
+
+    await screen.findByText(installWizardText.pt.stackImplantada);
+    expect(document.getElementById("lembrete-dns")).toBeNull();
   });
 });
