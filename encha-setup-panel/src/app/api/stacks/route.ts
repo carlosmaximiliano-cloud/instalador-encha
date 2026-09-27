@@ -40,6 +40,33 @@ function msgDependenciaPendente(dependencia: string, alvo: string, locale: Local
   return t[locale] ?? t.pt;
 }
 
+// S5-A: mensagem montada a partir de def.protegeDadosExistentes (diretório e
+// arquivo de credenciais da PRÓPRIA stack) — nunca fixa: a do EnchaT mandaria
+// o operador do Tracker remover /var/enchat/postgres, o banco de outra stack.
+function msgBancoExistenteSemChaves(
+  produto: string,
+  dir: string,
+  arquivoDeCredenciais: string | undefined,
+  locale: Locale
+): string {
+  const a = arquivoDeCredenciais;
+  const t = {
+    pt:
+      `Existe um banco do ${produto} neste servidor (${dir}), mas o painel não tem as chaves dele. Reinstalar geraria chaves novas e tornaria os dados ilegíveis. ` +
+      (a ? `Recupere as chaves (arquivo ${a}) ou, se` : "Se") +
+      ` for uma instalação nova, remova ${dir} e tente de novo.`,
+    en:
+      `A ${produto} database already exists on this server (${dir}), but the panel does not have its keys. Reinstalling would generate new keys and make the data unreadable. ` +
+      (a ? `Recover the keys (file ${a}) or, if` : "If") +
+      ` this is a fresh install, remove ${dir} and try again.`,
+    es:
+      `Ya existe una base de datos de ${produto} en este servidor (${dir}), pero el panel no tiene sus claves. Reinstalar generaría claves nuevas y dejaría los datos ilegibles. ` +
+      (a ? `Recupere las claves (archivo ${a}) o, si` : "Si") +
+      ` es una instalación nueva, elimine ${dir} e inténtelo de nuevo.`,
+  };
+  return t[locale] ?? t.pt;
+}
+
 const installSchema = z.object({
   stackId: z.string().min(1).max(60),
   values: z.record(z.unknown()),
@@ -247,6 +274,22 @@ export async function POST(req: NextRequest) {
     ip,
   });
 
+  if (!result.ok && result.reason === "banco_existente_sem_chaves" && def.protegeDadosExistentes) {
+    const p = def.protegeDadosExistentes;
+    return NextResponse.json(
+      {
+        error: "banco_existente_sem_chaves",
+        message: msgBancoExistenteSemChaves(
+          def.name,
+          p.arquivoNoHost.replace(/\/[^/]+$/, ""),
+          p.arquivoDeCredenciais,
+          locale
+        ),
+        reason: result.reason,
+      },
+      { status: result.httpStatus ?? 409 }
+    );
+  }
   if (!result.ok) {
     // httpStatus vem de installer.ts (statusForCause) — falha do lado do
     // EnchaT (Console fora do ar, timeout, resposta malformada) devolve

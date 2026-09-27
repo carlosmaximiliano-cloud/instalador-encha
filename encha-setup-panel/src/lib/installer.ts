@@ -9,11 +9,14 @@ import {
   listStacks,
   type Stack,
 } from "./portainer";
+import { criarSegredosVersionados, limparSegredosAntigos } from "./docker-secrets";
 import { RegistryAuthError } from "./registry-auth";
 import { resolveRegistryAndPullImages } from "./registry-pull";
+import { avisoSegredosNaoAtivados, imagensDeclaramRecurso } from "./imagens-recursos";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
 import { ativarTrackerPorEmail, TrackerAtivacaoError } from "./tracker-ativacao";
 import { ensureHostDirs } from "./host-dirs";
+import { hostTemArquivo } from "./host-dados-existentes";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
@@ -33,6 +36,27 @@ export function resolverAppHostname(def: StackDefinition, contexto: "registryAut
     throw new Error(`stack "${def.id}" declara ${contexto} mas não tem appHostname — fingerprint indeterminado.`);
   }
   return def.appHostname;
+}
+
+// S5-A: existe banco do EnchaT no host mas o painel não tem as chaves dele.
+// Gerar chave nova aqui tornaria os dados ilegíveis — a instalação aborta e
+// deixa a decisão (recuperar as chaves ou remover o volume) com o operador.
+export const BANCO_EXISTENTE_SEM_CHAVES = "banco_existente_sem_chaves";
+export class BancoExistenteSemChavesError extends Error {
+  readonly reason = BANCO_EXISTENTE_SEM_CHAVES;
+  constructor(
+    readonly caminho: string,
+    readonly produto: string,
+    readonly arquivoDeCredenciais?: string
+  ) {
+    super(
+      `Existe um banco do ${produto} neste servidor (${caminho}), mas o painel não tem as chaves dele. ` +
+        "Reinstalar geraria chaves novas e tornaria os dados ilegíveis. " +
+        (arquivoDeCredenciais ? `Recupere as chaves (arquivo ${arquivoDeCredenciais}) ou, se` : "Se") +
+        ` for uma instalação nova, remova ${caminho} e tente de novo.`
+    );
+    this.name = "BancoExistenteSemChavesError";
+  }
 }
 
 export type InstallInput = {
@@ -66,6 +90,7 @@ export type InstallResult = {
 // motivo, e não dava pra saber se o problema era a chave ou o serviço do
 // EnchaT. Ver registry-auth.ts e release-info.ts para as taxonomias.
 function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
+  if (e instanceof BancoExistenteSemChavesError) return { httpStatus: 409, reason: e.reason };
   if (e instanceof RegistryAuthError) {
     switch (e.reason) {
       case "timeout":
@@ -219,7 +244,11 @@ function saveStackSecrets(
   stackName: string,
   envs: Record<string, unknown>,
   generated: GeneratedSecret[],
-  transientFields?: string[]
+  transientFields?: string[],
+  // false = gravação antecipada (antes do deploy, ver installStack): guarda os
+  // valores mas NÃO registra "stack.install ok" na auditoria — a instalação
+  // ainda não aconteceu.
+  auditar = true
 ): void {
   // Defesa em profundidade: mesmo que o chamador já tenha filtrado, nunca
   // deixar um campo transiente (ex.: chave de licença) chegar aqui dentro.
@@ -239,6 +268,7 @@ function saveStackSecrets(
      VALUES (?, ?, ?, ?)
      ON CONFLICT(stack_name) DO UPDATE SET encrypted_envs = excluded.encrypted_envs, updated_at = excluded.updated_at`
   ).run(stackName, blob, now, now);
+  if (!auditar) return;
   logAudit({
     user: "system",
     ip: "local",
@@ -505,8 +535,31 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       }
     }
 
-    const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
+    // Segredos do Docker (S4): a época versiona os NOMES dos segredos que esta
+    // instalação vai criar. Só para stacks que declaram `dockerSecrets`; se o
+    // portão por versão da stack estiver fechado, a lista abaixo sai vazia e
+    // o YAML é o formato antigo (variáveis em texto).
+    if (def.dockerSecrets) {
+      effectiveCtx = { ...effectiveCtx, versaoSegredos: String(Math.floor(Date.now() / 1000)) };
+    }
     const { endpointId, swarmId } = await discoverContext(input.token);
+
+    // S5-A: nunca sortear chave nova por cima de banco existente. Só olha o
+    // disco quando ALGUM segredo protegido não tem valor salvo (o caso normal
+    // de reinstall/retry, com stack_secrets íntegro, não paga a checagem).
+    // Roda antes de qualquer efeito colateral (pull, mkdir, segredos, deploy).
+    // "Não consegui verificar" propaga como erro — nunca vira "não existe".
+    const protecao = def.protegeDadosExistentes;
+    if (protecao) {
+      const semValorSalvo = protecao.segredosQueNaoPodemSerNovos.some((n) => previousOwn[n] === undefined);
+      if (semValorSalvo && (await hostTemArquivo(input.token, endpointId, protecao.arquivoNoHost))) {
+        throw new BancoExistenteSemChavesError(
+          protecao.arquivoNoHost.replace(/\/[^/]+$/, ""),
+          def.name,
+          protecao.arquivoDeCredenciais
+        );
+      }
+    }
 
     // Credencial de registro privado (ex.: GHCR) — precisa existir no
     // Portainer ANTES do deploy, é lá que ele resolve o EncodedRegistryAuth
@@ -531,6 +584,39 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       });
     }
 
+    // Portão por LABEL dos segredos do Docker (S4c) — DEPOIS do pull das
+    // imagens (o label só existe na imagem já puxada) e ANTES de gerar o YAML
+    // e a lista de segredos (que dependem do veredito). A versão manda
+    // também: abaixo do mínimo nem consulta. Qualquer falha de leitura =
+    // fechado (formato antigo), nunca lança e nunca vira "true" na dúvida.
+    let avisoSegredos: string | undefined;
+    const gate = def.dockerSecretsGate;
+    if (def.dockerSecrets && gate && def.registryAuth && gate.versaoOk(effectiveCtx.release?.imageTag)) {
+      const imagens = def.registryAuth.images(parsed.data, effectiveCtx.release);
+      const leitura = await imagensDeclaramRecurso({
+        token: input.token,
+        endpointId,
+        images: imagens,
+        label: gate.label,
+        recurso: gate.recurso,
+      });
+      effectiveCtx = { ...effectiveCtx, imagensSuportamSegredos: leitura.declaram };
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.gate",
+        target: input.stackId,
+        result: "ok",
+        meta: {
+          segredos: leitura.declaram,
+          imagens: leitura.detalhes.map((d) => ({ image: d.image, estado: d.estado })),
+        },
+      });
+      if (!leitura.declaram) avisoSegredos = avisoSegredosNaoAtivados(leitura.detalhes);
+    }
+    const dockerSecretSpecs = def.dockerSecrets?.(parsed.data, secretMap, effectiveCtx) ?? [];
+    const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
+
     // Diretórios de bind mount no node manager — o Swarm não os cria sozinho.
     if (def.hostDirs?.length) {
       await ensureHostDirs(input.token, endpointId, def.hostDirs);
@@ -547,9 +633,41 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
         await ensurePostgresExtension(input.token, endpointId, database, ext);
       }
     }
+    const stackName = input.stackId.replace(/-/g, "_");
+
+    // Segredos do Docker ANTES do deploy (o Swarm recusa referência a segredo
+    // inexistente). Nomes versionados: os da instalação anterior — que a stack
+    // em uso ainda referencia — ficam intocados; se algo falhar aqui, o
+    // deploy nem começa e nada foi trocado. Valores = os EFETIVOS (já com o
+    // que stack_secrets reaproveitou), então reinstalar reproduz os mesmos
+    // valores (inclusive a senha do Postgres do volume existente).
+    if (dockerSecretSpecs.length > 0) {
+      await criarSegredosVersionados(input.token, endpointId, stackName, dockerSecretSpecs);
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.create",
+        target: input.stackId,
+        result: "ok",
+        meta: { count: dockerSecretSpecs.length }, // nunca nomes com valor, nunca valores.
+      });
+    }
+
+    // Valores efetivos gravados ANTES do deploy (S5-A, auditoria): o deploy
+    // pode falhar depois de o Postgres já ter inicializado o volume com eles
+    // (ex.: timeout do painel com a stack criada do lado do Portainer). Se só
+    // fossem salvos depois, a nova tentativa veria banco no host e nenhuma
+    // chave salva, e abortaria (BancoExistenteSemChavesError) uma instalação
+    // nova e legítima; salvos aqui, ela reusa exatamente os mesmos valores.
+    // Valores de uma tentativa que nunca subiu são inofensivos: o retry os
+    // reusa. Fica DEPOIS da trava de banco existente (a chave de um banco
+    // alheio nunca é sobrescrita por valor sorteado) e sem auditoria (a
+    // instalação ainda não aconteceu; o registro "stack.install" é do final).
+    saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields, false);
+
     const stack = await deploySwarmStack({
       token: input.token,
-      name: input.stackId.replace(/-/g, "_"),
+      name: stackName,
       yaml,
       swarmId,
       endpointId,
@@ -558,16 +676,37 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     saveStackSecrets(input.stackId, stripTransient(parsed.data, def.transientFields), generated, def.transientFields);
     if (Object.keys(sharedToPersist).length > 0) saveSharedSecrets(sharedToPersist);
 
+    // Só DEPOIS do deploy aplicado e dos valores persistidos: remove as
+    // versões antigas dos segredos (best-effort, nunca lança; nunca o que um
+    // serviço ainda referencia — ver limparSegredosAntigos).
+    if (dockerSecretSpecs.length > 0) {
+      const limpeza = await limparSegredosAntigos(
+        input.token,
+        endpointId,
+        stackName,
+        dockerSecretSpecs.map((s) => s.name)
+      );
+      logAudit({
+        user: input.user,
+        ip: input.ip,
+        action: "stack.secrets.cleanup",
+        target: input.stackId,
+        result: "ok",
+        meta: { removidos: limpeza.removidos.length, ...(limpeza.motivoPulo ? { pulo: limpeza.motivoPulo } : {}) },
+      });
+    }
+
     // Só consome o pareamento DEPOIS do deploy ter sucesso — se o Console
     // caísse ou o deploy falhasse antes deste ponto, a chave continua
     // recuperável (cifrada em license_pairings) para uma nova tentativa,
     // em vez de perdida junto com uma sessão já marcada como usada.
     if (pareamentoId) consumirPareamento(pareamentoId);
 
-    let aviso: string | undefined;
+    let avisoFingerprint: string | undefined;
     if (pareamentoFingerprint && def.postInstall?.accessUrl) {
-      aviso = await checarFingerprintPosDeploy(def.postInstall.accessUrl(parsed.data), pareamentoFingerprint);
+      avisoFingerprint = await checarFingerprintPosDeploy(def.postInstall.accessUrl(parsed.data), pareamentoFingerprint);
     }
+    const aviso = [avisoFingerprint, avisoSegredos].filter(Boolean).join(" ") || undefined;
 
     logAudit({
       user: input.user,
@@ -575,7 +714,7 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
       action: "stack.install",
       target: input.stackId,
       result: "ok",
-      meta: { portainer_stack_id: stack.Id, ...(aviso ? { aviso_fingerprint: true } : {}) },
+      meta: { portainer_stack_id: stack.Id, ...(avisoFingerprint ? { aviso_fingerprint: true } : {}), ...(avisoSegredos ? { aviso_segredos: true } : {}) },
     });
 
     // Montado aqui (e não na rota) porque só aqui existe o secretMap efetivo

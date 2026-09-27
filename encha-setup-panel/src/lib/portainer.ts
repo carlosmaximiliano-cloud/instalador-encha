@@ -342,12 +342,22 @@ export type DockerServiceFull = {
         Healthcheck?: { Test: string[] };
         CapabilityAdd?: string[];
         CapabilityDrop?: string[];
+        // Secrets do Docker montados no serviço (referência por NOME — é o
+        // que secretsReferenciadosPorServico compara antes de remover uma
+        // versão antiga de segredo).
+        Secrets?: { SecretName?: string }[];
       };
       Networks?: NetworkAttachmentConfig[];
       // demais campos preservados via spread ao reenviar
       [k: string]: unknown;
     };
     [k: string]: unknown;
+  };
+  // Spec anterior ao último update — o Swarm volta para ele num rollback
+  // automático (failure_action=rollback). Só o que os helpers de segredo
+  // leem está tipado.
+  PreviousSpec?: {
+    TaskTemplate?: { ContainerSpec?: { Secrets?: { SecretName?: string }[] } };
   };
 };
 
@@ -548,6 +558,98 @@ export async function ensureSwarmVolume(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Segredos do Docker (Swarm) via proxy do Portainer — plano de segurança,
+// achado 2: as stacks passam a montar segredos em vez de variáveis de
+// ambiente em texto (visíveis em `docker service inspect` e no editor de
+// stacks do Portainer). Segredo do Docker é IMUTÁVEL e não devolve o valor em
+// nenhuma leitura — por isso o nome é versionado (`<base>_<epoch>`) e "trocar
+// o valor" = criar outro nome e apontar a stack para ele.
+//
+// NUNCA logar/serializar `value` em erro: PortainerError só carrega o corpo da
+// resposta do Docker, que não ecoa o `Data` enviado.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type DockerSecret = {
+  ID: string;
+  Spec: { Name: string; Labels?: Record<string, string> };
+};
+
+// POST /secrets/create — `Data` é o valor em base64 (não é criptografia; é o
+// formato exigido pela API do Docker). Nome que já existe = 409 (o chamador
+// versiona por época, então isso só acontece numa corrida real).
+export async function createDockerSecret(
+  token: string,
+  endpointId: number,
+  args: { name: string; value: string; labels?: Record<string, string> }
+): Promise<{ ID: string }> {
+  if (!args.value) {
+    // O Docker recusa segredo vazio (400 "must be larger than 0 bytes"); falha
+    // aqui, com mensagem própria, em vez de depender do erro do daemon.
+    throw new Error(`Segredo "${args.name}" com valor vazio — o Docker não aceita segredo vazio.`);
+  }
+  return call<{ ID: string }>(`/api/endpoints/${endpointId}/docker/secrets/create`, {
+    method: "POST",
+    token,
+    body: {
+      Name: args.name,
+      Labels: args.labels ?? {},
+      Data: Buffer.from(args.value, "utf8").toString("base64"),
+    },
+  });
+}
+
+// GET /secrets — a listagem NUNCA traz o valor. `labels` (["k=v", ...]) vira o
+// filtro `label` do Docker (todos precisam casar).
+export async function listDockerSecrets(
+  token: string,
+  endpointId: number,
+  labels?: string[]
+): Promise<DockerSecret[]> {
+  const query = labels?.length ? `?filters=${encodeURIComponent(JSON.stringify({ label: labels }))}` : "";
+  return call<DockerSecret[]>(`/api/endpoints/${endpointId}/docker/secrets${query}`, { token });
+}
+
+// DELETE /secrets/{id}. 404 = já não existe (alvo era remover). Segredo ainda
+// referenciado por um serviço volta 400/409 do daemon e sobe como
+// PortainerError — quem limpa versões antigas trata como "deixa pra próxima".
+export async function removeDockerSecret(token: string, endpointId: number, id: string): Promise<void> {
+  try {
+    await call(`/api/endpoints/${endpointId}/docker/secrets/${id}`, { method: "DELETE", token });
+  } catch (e) {
+    if (!(e instanceof PortainerError) || e.status !== 404) throw e;
+  }
+}
+
+// Serviços Swarm de uma stack (label com.docker.stack.namespace), com o Spec e
+// o PreviousSpec completos — a listagem do Docker já os traz. Usado por
+// quem precisa saber que segredos a stack ainda referencia.
+export async function listStackServices(
+  token: string,
+  endpointId: number,
+  stackName: string
+): Promise<DockerServiceFull[]> {
+  const filters = encodeURIComponent(JSON.stringify({ label: [`com.docker.stack.namespace=${stackName}`] }));
+  return call<DockerServiceFull[]>(`/api/endpoints/${endpointId}/docker/services?filters=${filters}`, { token });
+}
+
+// Nomes de segredo que um serviço referencia no Spec ATUAL **e** no
+// PreviousSpec. O `docker secret rm` só recusa segredo referenciado pelo Spec
+// atual; se a tarefa nova falhar, o Swarm faz rollback para o PreviousSpec —
+// que aponta para a versão ANTERIOR. Removê-la deixaria o rollback "completo"
+// com um spec apontando para segredo inexistente (o próximo restart da tarefa
+// não sobe mais). Mesma lição da auditoria do C9 (limpar_segredos_antigos_painel).
+export function secretsReferenciadosPorServico(svc: DockerServiceFull): string[] {
+  const nomes = new Set<string>();
+  for (const s of svc.Spec.TaskTemplate?.ContainerSpec?.Secrets ?? []) {
+    if (s.SecretName) nomes.add(s.SecretName);
+  }
+  for (const s of svc.PreviousSpec?.TaskTemplate?.ContainerSpec?.Secrets ?? []) {
+    if (s.SecretName) nomes.add(s.SecretName);
+  }
+  return [...nomes];
+}
+
 type DockerContainer = { Id: string; State?: string };
 type ExecCreateResponse = { Id: string };
 type ExecInspect = { ExitCode: number | null };
@@ -717,6 +819,16 @@ export async function imageExistsLocally(
     if (e instanceof PortainerError && e.status === 404) return false;
     throw e;
   }
+}
+
+// Inspeção crua de uma imagem já presente no node (`GET /images/{name}/json`
+// pelo proxy do Portainer). Devolve o JSON como veio — quem interpreta é
+// imagens-recursos.ts, que trata QUALQUER forma inesperada como "sem label".
+// Lança PortainerError em 404/erro HTTP (imagem ausente, Portainer fora).
+export async function inspectImage(token: string, endpointId: number, image: string): Promise<unknown> {
+  return call<unknown>(`/api/endpoints/${endpointId}/docker/images/${encodeURIComponent(image)}/json`, {
+    token,
+  });
 }
 
 // Pull de imagem — usado tanto no fallback do updater de scripts (imagem

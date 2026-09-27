@@ -306,3 +306,119 @@ describe("createService / updateService", () => {
     expect(JSON.parse(init.body)).toEqual(specFake);
   });
 });
+
+// Segredos do Docker via Portainer (S4, achado 2). O valor viaja em base64 no
+// campo `Data` (formato do Docker), nunca em claro, nunca em URL e nunca em
+// mensagem de erro.
+describe("segredos do Docker (createDockerSecret / listDockerSecrets / removeDockerSecret)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.doUnmock("undici");
+  });
+
+  it("createDockerSecret: POST .../docker/secrets/create com Name, Labels e Data em base64 (utf8)", async () => {
+    const fetchMock = mockJsonFetch(() => ({ ID: "sec-1" }));
+    const { createDockerSecret } = await carregarPortainerComFetchGenerico(fetchMock);
+
+    const valor = "senha-com-acento-é-e-ç-123";
+    const r = await createDockerSecret("token", 3, {
+      name: "enchat_master_key_1758900000",
+      value: valor,
+      labels: { "com.encha.segredo-stack": "enchat" },
+    });
+    expect(r).toEqual({ ID: "sec-1" });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, { method: string; body: string }];
+    expect(url).toContain("/api/endpoints/3/docker/secrets/create");
+    expect(url).not.toContain(encodeURIComponent(valor));
+    expect(init.method).toBe("POST");
+    const corpo = JSON.parse(init.body);
+    expect(corpo).toEqual({
+      Name: "enchat_master_key_1758900000",
+      Labels: { "com.encha.segredo-stack": "enchat" },
+      Data: Buffer.from(valor, "utf8").toString("base64"),
+    });
+    // O valor cru não aparece em lugar nenhum do corpo.
+    expect(init.body).not.toContain(valor);
+  });
+
+  it("createDockerSecret: valor vazio falha antes de chamar o Portainer (o Docker recusa segredo vazio)", async () => {
+    const fetchMock = mockJsonFetch(() => ({ ID: "x" }));
+    const { createDockerSecret } = await carregarPortainerComFetchGenerico(fetchMock);
+    await expect(createDockerSecret("token", 1, { name: "n", value: "" })).rejects.toThrow(/vazio/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("createDockerSecret: erro do Portainer não vaza o valor na mensagem", async () => {
+    const valor = "VALOR-SECRETO-NUNCA-NO-ERRO";
+    const fetchMock = vi.fn(async () => new Response("name conflicts with an existing object", { status: 409 }));
+    const { createDockerSecret, PortainerError } = await carregarPortainerComFetchGenerico(fetchMock);
+    const erro = await createDockerSecret("token", 1, { name: "n", value: valor }).catch((e) => e);
+    expect(erro).toBeInstanceOf(PortainerError);
+    expect(erro.status).toBe(409);
+    expect(String(erro.message)).not.toContain(valor);
+  });
+
+  it("listDockerSecrets: filtro por label vai no query `filters` do Docker; sem label, sem query", async () => {
+    const lista = [{ ID: "a", Spec: { Name: "enchat_master_key_1", Labels: { k: "v" } } }];
+    const fetchMock = mockJsonFetch(() => lista);
+    const { listDockerSecrets } = await carregarPortainerComFetchGenerico(fetchMock);
+
+    expect(await listDockerSecrets("token", 2, ["com.encha.segredo-stack=enchat"])).toEqual(lista);
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("/api/endpoints/2/docker/secrets?filters=");
+    expect(JSON.parse(decodeURIComponent(url.split("filters=")[1]))).toEqual({
+      label: ["com.encha.segredo-stack=enchat"],
+    });
+
+    await listDockerSecrets("token", 2);
+    const [url2] = fetchMock.mock.calls[1] as [string];
+    expect(url2.endsWith("/docker/secrets")).toBe(true);
+  });
+
+  it("removeDockerSecret: DELETE .../docker/secrets/{id}; 404 é ok, outro erro sobe", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    const { removeDockerSecret } = await carregarPortainerComFetchGenerico(fetchMock);
+    await removeDockerSecret("token", 4, "sec-9");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, { method: string }];
+    expect(url).toContain("/api/endpoints/4/docker/secrets/sec-9");
+    expect(init.method).toBe("DELETE");
+
+    vi.resetModules();
+    const f404 = vi.fn(async () => new Response("not found", { status: 404 }));
+    const m404 = await carregarPortainerComFetchGenerico(f404);
+    await expect(m404.removeDockerSecret("token", 4, "x")).resolves.toBeUndefined();
+
+    vi.resetModules();
+    const f400 = vi.fn(async () => new Response("secret is in use by service", { status: 400 }));
+    const m400 = await carregarPortainerComFetchGenerico(f400);
+    await expect(m400.removeDockerSecret("token", 4, "x")).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("secretsReferenciadosPorServico: junta o Spec ATUAL e o PreviousSpec (alvo do rollback)", async () => {
+    const { secretsReferenciadosPorServico } = await carregarPortainerComFetchGenerico(vi.fn());
+    const svc = {
+      ID: "s",
+      Version: { Index: 1 },
+      Spec: {
+        TaskTemplate: { ContainerSpec: { Secrets: [{ SecretName: "enchat_a_2" }, {}] } },
+      },
+      PreviousSpec: { TaskTemplate: { ContainerSpec: { Secrets: [{ SecretName: "enchat_a_1" }] } } },
+    };
+    expect(secretsReferenciadosPorServico(svc).sort()).toEqual(["enchat_a_1", "enchat_a_2"]);
+    expect(secretsReferenciadosPorServico({ ID: "s", Version: { Index: 1 }, Spec: {} })).toEqual([]);
+  });
+
+  it("listStackServices: filtra pelo label de namespace da stack", async () => {
+    const fetchMock = mockJsonFetch(() => []);
+    const { listStackServices } = await carregarPortainerComFetchGenerico(fetchMock);
+    await listStackServices("token", 1, "enchat");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(JSON.parse(decodeURIComponent(url.split("filters=")[1]))).toEqual({
+      label: ["com.docker.stack.namespace=enchat"],
+    });
+  });
+});

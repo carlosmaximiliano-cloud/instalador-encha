@@ -1,0 +1,33 @@
+# Vetor de paridade do portão por LABEL (S4c): valor do label com.enchat.recursos
+# -> o token segredos-arquivo está presente? Lido pelos DOIS lados, que têm de dar
+# a mesma decisão para cada linha:
+#   - painel: labelTemToken (src/lib/imagens-recursos.ts), teste imagens-recursos.test.ts;
+#   - opção 84: enchat_label_tem_token (secondary.sh), teste tests/test-enchat-segredos.sh.
+# Formato: <abre|fecha> TAB <valor em hex (UTF-8); "-" = vazio> TAB <descrição>. Separadores de
+# token: só espaço, tab e quebra de linha (o IFS padrão do bash); qualquer outro
+# caractere, inclusive espaço Unicode, faz parte do token.
+abre	7365677265646f732d6172717569766f	o token sozinho
+abre	61207365677265646f732d6172717569766f2062	lista separada por espaço
+abre	61097365677265646f732d6172717569766f	tab separa
+abre	610a7365677265646f732d6172717569766f	quebra de linha separa (o token depois dela também conta)
+abre	6f7574726f0a7365677265646f732d6172717569766f0a6d616973	várias linhas
+abre	20207365677265646f732d6172717569766f2020	espaço nas pontas
+abre	7365677265646f732d6172717569766f0a	quebra de linha no fim
+fecha	-	vazio
+fecha	7365677265646f732d6172717569766f32	prefixo de outro token
+fecha	6e616f2d7365677265646f732d6172717569766f2d78	substring no meio
+fecha	782d7365677265646f732d6172717569766f	sufixo de outro token
+fecha	5345475245444f532d4152515549564f	caixa alta
+fecha	5365677265646f732d4172717569766f	caixa mista
+fecha	7365677265646f732d6172717569766f2c78	vírgula não separa
+fecha	7365677265646f732d6172717569766f3b78	ponto e vírgula não separa
+fecha	2a	curinga
+fecha	7365677265646f732d2a	curinga parcial
+fecha	7365677265646f732d6172717569763f	curinga de um caractere
+fecha	7365677265646f732d6172717569766fc2a078	espaço sem quebra (U+00A0) não separa
+fecha	e280837365677265646f732d6172717569766f	em space (U+2003) não separa
+fecha	7365677265646f732d6172717569766f0d	CR não separa
+fecha	7365677265646f732d6172717569766f0b78	tab vertical não separa
+fecha	7365677265646f732d6172717569766f0c78	form feed não separa
+fecha	227365677265646f732d6172717569766f22	com aspas
+fecha	7365677265646f732d6172717569766f3d31	com valor

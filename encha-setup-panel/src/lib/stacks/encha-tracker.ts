@@ -95,6 +95,14 @@ export const enchaTracker: StackDefinition = {
   // postgres: SEM owner — a imagem postgres:16-alpine ajusta o dono dela
   // sozinha no boot, mesmo tratamento de enchat_postgres em enchat.ts.
   hostDirs: ["/var/enchat/tracker-postgres"],
+  // Mesma trava do EnchaT (S5-A, ver installer.ts): banco do Tracker no host
+  // e o painel sem as chaves dele (stack_secrets perdido/ilegível) = aborta,
+  // em vez de sortear tracker_master_key/senha do Postgres novas por cima.
+  // Sem arquivoDeCredenciais: o Tracker só se instala pelo painel.
+  protegeDadosExistentes: {
+    arquivoNoHost: "/var/enchat/tracker-postgres/PG_VERSION",
+    segredosQueNaoPodemSerNovos: ["tracker_master_key", "postgres_password"],
+  },
   // Ciclo 27 — o sidecar tracker-updater grava TRACKER_STATE_FILE
   // (/data/estado.json: histórico de update/rollback que a SPA mostra) e
   // até agora não tinha volume nenhum: o arquivo morria no primeiro

@@ -572,18 +572,6 @@ MSG_PT[checar_dns_desconhecido]="desconhecido"
 MSG_EN[checar_dns_desconhecido]="unknown"
 MSG_ES[checar_dns_desconhecido]="desconocida"
 
-MSG_PT[checar_dns_nao_resolveu]="DNS de '%s' não resolveu ainda. Se acabou de criar o registro, aguarde a propagação — o Let's Encrypt vai falhar até resolver."
-MSG_EN[checar_dns_nao_resolveu]="DNS for '%s' hasn't resolved yet. If you just created the record, wait for propagation — Let's Encrypt will fail until it resolves."
-MSG_ES[checar_dns_nao_resolveu]="El DNS de '%s' aún no resolvió. Si acaba de crear el registro, espere la propagación — Let's Encrypt fallará hasta que resuelva."
-
-MSG_PT[checar_dns_aponta_errado]="DNS de '%s' aponta para %s, não para o IP desta VPS (%s). Confirme o registro A antes de seguir."
-MSG_EN[checar_dns_aponta_errado]="DNS for '%s' points to %s, not to this VPS's IP (%s). Confirm the A record before continuing."
-MSG_ES[checar_dns_aponta_errado]="El DNS de '%s' apunta a %s, no a la IP de esta VPS (%s). Confirme el registro A antes de continuar."
-
-MSG_PT[checar_dns_ok]="DNS de '%s' já aponta para esta VPS."
-MSG_EN[checar_dns_ok]="DNS for '%s' already points to this VPS."
-MSG_ES[checar_dns_ok]="El DNS de '%s' ya apunta a esta VPS."
-
 MSG_PT[checar_dns_portas_ocupadas]="Porta 80 e/ou 443 já está em uso por outro processo nesta VPS — o Traefik pode falhar ao subir. Rode 'ss -ltnp | grep -E \":(80|443)\"' para identificar."
 MSG_EN[checar_dns_portas_ocupadas]="Port 80 and/or 443 is already in use by another process on this VPS — Traefik may fail to start. Run 'ss -ltnp | grep -E \":(80|443)\"' to identify it."
 MSG_ES[checar_dns_portas_ocupadas]="El puerto 80 y/o 443 ya está en uso por otro proceso en esta VPS — Traefik puede fallar al iniciar. Ejecute 'ss -ltnp | grep -E \":(80|443)\"' para identificarlo."
@@ -598,24 +586,18 @@ checar_dns_e_portas() {
     echo -e "${ciano}${negrito}$(t checar_dns_titulo)${reset}"
     barra_meio
 
-    local ip_atual
-    ip_atual=$(curl -s --max-time 10 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
-    if [ -z "$ip_atual" ]; then
-        ip_atual=$(hostname -I | awk '{print $1}')
-    fi
-    status_info "$(t checar_dns_ip_atual "${ip_atual:-$(t checar_dns_desconhecido)}")"
+    # S3 (achado 7): a checagem em si (IP público, resolução, cache por domínio,
+    # texto do aviso) mora em secondary.sh — checar_dns_dominio — e é a mesma
+    # que os outros caminhos que pedem domínio usam. Aqui só lista o resultado.
+    # Sem IP público obtido: silêncio nos domínios (antes caía no `hostname -I`,
+    # que atrás de NAT é IP privado e dava falso alarme).
+    dns_ip_publico_vps
+    status_info "$(t checar_dns_ip_atual "${DNS_IP_PUBLICO_VPS:-$(t checar_dns_desconhecido)}")"
 
-    local dominio resolvido
+    local dominio
     for dominio in "$url_portainer" "$url_painel"; do
         [ -z "$dominio" ] && continue
-        resolvido=$(getent ahostsv4 "$dominio" 2>/dev/null | awk '{print $1}' | head -n1)
-        if [ -z "$resolvido" ]; then
-            status_warning "$(t checar_dns_nao_resolveu "$dominio")"
-        elif [ -n "$ip_atual" ] && [ "$resolvido" != "$ip_atual" ]; then
-            status_warning "$(t checar_dns_aponta_errado "$dominio" "$resolvido" "$ip_atual")"
-        else
-            status_ok "$(t checar_dns_ok "$dominio")"
-        fi
+        checar_dns_dominio --sempre "$dominio"
     done
 
     local ocupadas
@@ -1030,6 +1012,8 @@ coletar_inputs_so_painel() {
         [[ "$url_painel" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] && break
         echo -e "$(t coletar_so_painel_dominio_invalido)"
     done
+    # S3 (achado 7): só avisa (nunca bloqueia) se o DNS não aponta para esta VPS.
+    checar_dns_dominio "$url_painel"
 
     # 2) Credenciais de serviço do Portainer — o painel usa para se
     #    autenticar sozinho na API. Tenta detectar em /root/dados_vps/dados_portainer
@@ -1058,10 +1042,13 @@ coletar_inputs_so_painel() {
     # Valida de verdade contra o Portainer, para não gerar uma stack do
     # painel com credenciais de serviço erradas.
     echo -e "$(t coletar_so_painel_validando)"
-    resp=$(sudo docker run --rm --network "$nome_rede_interna" "${ENCHA_CURL_IMAGE}" \
+    # S2: usuário/senha por env no jq e corpo por stdin (curl_portainer, de
+    # secondary.sh — já carregado por `source` antes desta função rodar):
+    # nunca na linha de comando, e o JSON agora escapa aspas/barras na senha.
+    resp=$(curl_portainer --rede "$nome_rede_interna" \
+        --body "$(portainer_json_login "$user_portainer" "$pass_portainer")" -- \
         -s -o /dev/null -w "%{http_code}" -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "{\"username\":\"$user_portainer\",\"password\":\"$pass_portainer\"}" 2>/dev/null)
+        -H "Content-Type: application/json" 2>/dev/null)
     if [ "$resp" != "200" ]; then
         echo -e "$(t coletar_so_painel_auth_falhou "$resp")"
         coletar_inputs_so_painel; return
@@ -1505,6 +1492,36 @@ MSG_PT[mostrar_resumo_ssh_root_aviso]="  ${amarelo}O SSH ainda aceita login como
 MSG_EN[mostrar_resumo_ssh_root_aviso]="  ${amarelo}SSH still accepts root login by password. Recommended (only after confirming your SSH key works; root keeps logging in by key): echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config.d/00-encha.conf && sshd -t && systemctl restart ssh${reset}"
 MSG_ES[mostrar_resumo_ssh_root_aviso]="  ${amarelo}El SSH todavía acepta login como root por contraseña. Recomendado (solo después de confirmar que su clave SSH funciona; root sigue entrando por clave): echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config.d/00-encha.conf && sshd -t && systemctl restart ssh${reset}"
 
+MSG_PT[mostrar_resumo_dns_marca]="  ${amarelo}⚠ DNS ainda não aponta para este servidor${reset}"
+MSG_EN[mostrar_resumo_dns_marca]="  ${amarelo}⚠ DNS does not point to this server yet${reset}"
+MSG_ES[mostrar_resumo_dns_marca]="  ${amarelo}⚠ El DNS aún no apunta a este servidor${reset}"
+
+MSG_PT[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ DNS aponta para outro IP${reset}"
+MSG_EN[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ DNS points to another IP${reset}"
+MSG_ES[mostrar_resumo_dns_marca_outro_ip]="  ${amarelo}⚠ El DNS apunta a otra IP${reset}"
+
+MSG_PT[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ DNS sem registro A (IPv4)${reset}"
+MSG_EN[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ DNS has no A record (IPv4)${reset}"
+MSG_ES[mostrar_resumo_dns_marca_so_ipv6]="  ${amarelo}⚠ El DNS no tiene registro A (IPv4)${reset}"
+
+# Marca curta ao lado do endereço no resumo final quando a última checagem de
+# DNS (secondary.sh: DNS_ESTADO_CACHE) achou que o domínio não resolve ou aponta
+# para outro IP. Vazia se está ok, se não deu para saber, ou se nunca foi
+# checado — o resumo fica idêntico ao de sempre. Só LÊ o cache (seguro em $( )).
+# A marca diz só o que a checagem viu: "outro IP" não vira "não aponta para
+# este servidor" (com Cloudflare/proxy é o normal, e o cliente acharia que a
+# instalação quebrou).
+dns_marca_resumo() {
+    local dominio="${1:-}"; dominio="${dominio,,}"   # chave minúscula, como em dns_estado_dominio
+    [ -z "$dominio" ] && return 0
+    case "${DNS_ESTADO_CACHE[$dominio]:-}" in
+        nao_resolve) t mostrar_resumo_dns_marca ;;
+        outro_ip) t mostrar_resumo_dns_marca_outro_ip ;;
+        so_ipv6) t mostrar_resumo_dns_marca_so_ipv6 ;;
+    esac
+    return 0
+}
+
 mostrar_resumo_final() {
     clear
     echo -e "${negrito}${verde}"
@@ -1516,9 +1533,14 @@ mostrar_resumo_final() {
     echo -e "${reset}"
     echo ""
     echo -e "$(t mostrar_resumo_acesse)"
-    echo -e "$(t mostrar_resumo_portainer "$url_portainer")"
+    # S3 (achado 7): DNS que estava sem apontar para cá é reavaliado agora
+    # (pode ter propagado durante a instalação) e, se ainda não aponta, o
+    # endereço ganha uma marca. Tudo ok/indisponível: saída idêntica à de antes.
+    dns_estado_dominio --reverificar "$url_portainer"
+    dns_estado_dominio --reverificar "$url_painel"
+    echo -e "$(t mostrar_resumo_portainer "$url_portainer")$(dns_marca_resumo "$url_portainer")"
     echo -e "$(t mostrar_resumo_usuario "$user_portainer")"
-    echo -e "$(t mostrar_resumo_painel "$url_painel")"
+    echo -e "$(t mostrar_resumo_painel "$url_painel")$(dns_marca_resumo "$url_painel")"
     echo -e "$(t mostrar_resumo_usuario "$user_painel")"
     echo ""
     echo -e "$(t mostrar_resumo_pronto)"

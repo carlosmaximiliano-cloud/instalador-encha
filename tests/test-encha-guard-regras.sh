@@ -51,9 +51,14 @@ FAKEBIN="$TMP_TESTE/bin"
 mkdir -p "$FAKEBIN"
 
 # `sleep` falso: o intervalo de ~60s do loop vira 0,2s (o script chama
-# `sleep 60 &` pelo PATH).
+# `sleep 60 &` pelo PATH). Cada chamada marca um CICLO em
+# $FAKE_NFT_DIR/ciclos: as janelas da seção 8/9 contam ciclos, não segundos —
+# com a máquina ocupada (run-all, CI, vários testes ao mesmo tempo) um ciclo
+# leva bem mais que 0,2s, e uma janela de relógio fixa terminava antes de o
+# loop ver a mudança (falso vermelho intermitente, reproduzido sob carga).
 cat > "$FAKEBIN/sleep" <<'FAKE'
 #!/bin/sh
+[ -n "${FAKE_NFT_DIR:-}" ] && echo . >> "$FAKE_NFT_DIR/ciclos"
 exec "$REAL_SLEEP" 0.2
 FAKE
 
@@ -495,25 +500,56 @@ fi
 
 # --- 8. Loop principal contra o nft falso ----------------------------------
 
-# Roda o loop por "$1" segundos num diretório de estado novo ("$2"), manda
-# SIGTERM e espera até 3s pela saída. LOOP_SAIU=1 se saiu sozinho. Com "$3"
-# (segundos), apaga por fora, nesse instante, o arquivo "$4" do estado do nft
-# falso (padrão: "tabela" — simula alguém removendo a tabela do kernel; ou
-# "recusar" — o nft deixa de recusar a transação) e segue até completar "$1".
+# Espera o loop sob teste completar "$2" ciclos (contados pelo `sleep` falso
+# em "$1/ciclos"), com teto de 60s de relógio para nunca pendurar — se o teto
+# estourar, segue e a asserção do chamador é quem falha, com a contagem real.
+# Para de esperar também se o processo "$3" morreu.
+esperar_ciclos() {
+  local dir="$1" alvo="$2" pid="$3" n
+  for _ in $(seq 1 1200); do
+    n="$(wc -l < "$dir/ciclos" 2>/dev/null | tr -d ' ')"
+    [ "${n:-0}" -ge "$alvo" ] && return 0
+    kill -0 "$pid" 2>/dev/null || return 0
+    "$REAL_SLEEP" 0.05
+  done
+  return 0
+}
+
+# Segundos (na escala do `sleep` falso, 0,2s por ciclo) -> ciclos inteiros.
+seg_para_ciclos() { awk -v s="$1" 'BEGIN { printf "%d\n", s / 0.2 + 0.5 }'; }
+
+# Roda o loop por "$1" segundos-de-ciclo (0,2s = 1 ciclo; 1,4 = 7 ciclos) num
+# diretório de estado novo ("$2"), manda SIGTERM e espera até 3s pela saída.
+# LOOP_SAIU=1 se saiu sozinho. Com "$3" (mesma escala), apaga por fora, depois
+# desse número de ciclos, o arquivo "$4" do estado do nft falso (padrão:
+# "tabela" — simula alguém removendo a tabela do kernel; ou "recusar" — o nft
+# deixa de recusar a transação) e segue até completar "$1". A medida é em
+# CICLOS do loop, nunca em relógio: sob carga um ciclo demora mais, e a janela
+# de relógio acabava antes de o loop reagir.
 rodar_loop() {
   local segundos="$1" dir="$2" apagar_em="${3:-}" apagar_o_que="${4:-tabela}"
   mkdir -p "$dir"
   : > "$dir/chamadas"
+  : > "$dir/ciclos"
   # shellcheck disable=SC2119 # sem argumento de propósito: é o loop real
   FAKE_NFT_DIR="$dir" sob_teste 2>"$dir/stderr" &
   local pid=$!
+  # Aquecimento: as janelas abaixo (~1,4s = ~7 ciclos) só fazem sentido a partir
+  # do momento em que o loop JÁ rodou o primeiro ciclo. Numa máquina lenta
+  # (contêiner recém-criado, runner ocupado) o processo pode levar mais de 1,4s
+  # só para começar, e a janela inteira passava antes da 1ª chamada ao nft —
+  # "0 aplicações em ~7 ciclos" sem nenhum bug no script. Espera (até 10s) a
+  # 1ª chamada; não muda o que é medido depois, só quando a medição começa.
+  for _ in $(seq 1 100); do
+    [ -s "$dir/chamadas" ] && break
+    kill -0 "$pid" 2>/dev/null || break
+    "$REAL_SLEEP" 0.1
+  done
   if [ -n "$apagar_em" ]; then
-    "$REAL_SLEEP" "$apagar_em"
+    esperar_ciclos "$dir" "$(seg_para_ciclos "$apagar_em")" "$pid"
     rm -f "${dir:?}/$apagar_o_que"
-    "$REAL_SLEEP" "$(awk -v a="$segundos" -v b="$apagar_em" 'BEGIN { print a - b }')"
-  else
-    "$REAL_SLEEP" "$segundos"
   fi
+  esperar_ciclos "$dir" "$(seg_para_ciclos "$segundos")" "$pid"
   kill -TERM "$pid" 2>/dev/null
   LOOP_SAIU=0
   for _ in $(seq 1 30); do
@@ -914,16 +950,19 @@ dir_pares_mexidos="$TMP_TESTE/loop-pares-mexidos"
 mkdir -p "$dir_pares_mexidos"
 : > "$dir_pares_mexidos/chamadas"
 : > "$dir_pares_mexidos/trafego_ssh"
+: > "$dir_pares_mexidos/ciclos"
 (
   unset ENCHA_GUARD_DESATIVADO ENCHA_GUARD_SSH_PORTAS ENCHA_GUARD_PERMITIR
   ENCHA_GUARD_PEERS="10.0.0.5"
   export ENCHA_GUARD_PEERS
   FAKE_NFT_DIR="$dir_pares_mexidos" sob_teste 2>"$dir_pares_mexidos/stderr" &
   pid=$!
-  "$REAL_SLEEP" 0.7
+  # Em CICLOS, não em relógio (ver esperar_ciclos): mexe depois de 3 ciclos
+  # (a 1ª aplicação já aconteceu) e observa até o 7º.
+  esperar_ciclos "$dir_pares_mexidos" 3 "$pid"
   sed 's/10\.0\.0\.5/10.0.0.99/' "$dir_pares_mexidos/tabela" > "$dir_pares_mexidos/tabela.novo"
   mv "$dir_pares_mexidos/tabela.novo" "$dir_pares_mexidos/tabela"
-  "$REAL_SLEEP" 0.7
+  esperar_ciclos "$dir_pares_mexidos" 7 "$pid"
   kill -TERM "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
 )

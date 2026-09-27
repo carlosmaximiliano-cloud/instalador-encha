@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { enchat } from "./enchat";
+import { DONO_SEGREDOS, enchat } from "./enchat";
 import type { SwarmContext } from "./types";
 
 const valuesValidos = {
@@ -181,5 +183,334 @@ describe("enchat — pós-instalação", () => {
     for (const v of [valuesValidos, { ...valuesValidos, licenca_pareamento_id: "0".repeat(32) }]) {
       expect(notas(v).some((n) => n.includes("administrador"))).toBe(true);
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// S4 (achado 2): segredos do Docker no EnchaT, com portão por versão.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Valores-sentinela DISTINTOS e reconhecíveis (os MESMOS com que os YAMLs de
+// __fixtures__ foram capturados, antes do S4): o teste procura cada um no
+// YAML gerado — se um único aparecer, o segredo vazou em texto.
+const sentinelas = {
+  enchat_master_key: "SENT-master-key",
+  postgres_password: "SENT-postgres-pw",
+  pinfy_master_key: "SENT-pinfy-master",
+  pinfy_webhook_token: "SENT-pinfy-webhook",
+  pinfy_panel_password: "SENT-pinfy-panel",
+  pinfy_db_password: "SENT-pinfy-dbpw",
+  pinfy_session_key: "SENT-pinfy-session",
+  updater_token: "SENT-updater-token",
+  enchat_setup_token: "SENT-setup-token",
+};
+const CHAVE_SENTINELA = "SENT-chave-licenca";
+const todasSentinelas = [...Object.values(sentinelas), CHAVE_SENTINELA];
+const valoresComChave = { url_enchat: "crm.exemplo.com", chave_licenca: CHAVE_SENTINELA };
+const valoresSemChave = { url_enchat: "crm.exemplo.com", licenca_pareamento_id: "0".repeat(32) };
+
+// S4c: por padrão os labels das 3 imagens JÁ foram lidos e declaram
+// `segredos-arquivo` — assim os testes de versão abaixo isolam o portão por
+// versão. Os testes do portão por label passam `imagensSuportamSegredos`
+// explícito (false/undefined).
+function ctxCom(tag: string, extra: Partial<SwarmContext> = {}): SwarmContext {
+  return {
+    ...ctxBase,
+    release: { version: tag, imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: tag, obrigatoria: false },
+    imagensSuportamSegredos: true,
+    ...extra,
+  };
+}
+const ctxAberto = ctxCom("0.4.3", { versaoSegredos: "1758900000" });
+
+const fixture = (nome: string): string => readFileSync(path.join(__dirname, "__fixtures__", nome), "utf8");
+
+// Trecho `    deploy:` até o fim do bloco do serviço — restart_policy/update_config/
+// placement/labels (regra stack-enchat-espelhada: têm que ser idênticos nos dois formatos).
+function blocoDeploy(yaml: string, servico: string): string {
+  const b = blocoDoServico(yaml, servico);
+  return b.slice(b.indexOf("    deploy:"));
+}
+
+describe("enchat — portão por versão: abaixo de 0.4.3 o YAML é o de sempre, byte a byte", () => {
+  it("0.3.2 com chave: idêntico ao YAML capturado antes do S4", () => {
+    expect(enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.3.2"))).toBe(
+      fixture("enchat-formato-antigo-com-chave-0.3.2.yaml")
+    );
+  });
+
+  it("0.4.0 sem chave (pareamento): idêntico ao YAML capturado antes do S4", () => {
+    expect(enchat.generateYaml(valoresSemChave, sentinelas, ctxCom("0.4.0"))).toBe(
+      fixture("enchat-formato-antigo-sem-chave-0.4.0.yaml")
+    );
+  });
+
+  it("tag ilegível ou indefinida também cai no formato antigo (nunca quebra)", () => {
+    const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
+    // A imagem muda com a tag; comparamos só o resto — nenhum `_FILE`, nenhum bloco de secrets.
+    for (const tag of ["latest", "stable", "0.4.3-rc.1", "beta"]) {
+      const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom(tag, { versaoSegredos: "1" }));
+      expect(yaml).not.toContain("/run/secrets/");
+      expect(yaml).not.toMatch(/^secrets:/m);
+      expect(yaml.replaceAll(`:${tag}`, ":0.3.2")).toBe(antigo);
+    }
+  });
+
+  // S4b/S4d: a 0.4.1 e a 0.4.2 do EnchaT JÁ estão publicadas e NÃO leem *_FILE
+  // (builds anteriores ao E5; a 0.4.2 real saiu de outra sessão sem o E5). Com
+  // segredos, elas subiriam sem MASTER_KEY/DATABASE_URL e a stack quebraria —
+  // este é o caso que o portão protege.
+  for (const versaoAntiga of ["0.4.1", "0.4.2"]) {
+    it(`${versaoAntiga} (publicada sem *_FILE): portão FECHADO — formato antigo, nenhum segredo, nenhum *_FILE`, () => {
+      const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
+      const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom(versaoAntiga, { versaoSegredos: "1758900000" }));
+      expect(yaml).not.toContain("/run/secrets/");
+      expect(yaml).not.toMatch(/\b(?!STATE_)[A-Z_]+_FILE:/); // STATE_FILE do updater não é segredo
+      expect(yaml).not.toMatch(/^secrets:/m);
+      expect(yaml.replaceAll(`:${versaoAntiga}`, ":0.3.2")).toBe(antigo);
+      expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom(versaoAntiga, { versaoSegredos: "1758900000" }))).toEqual([]);
+    });
+  }
+
+  it("0.4.3 abre o portão: /run/secrets e bloco secrets presentes", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3", { versaoSegredos: "1758900000" }));
+    expect(yaml).toContain("/run/secrets/");
+    expect(yaml).toMatch(/^secrets:$/m);
+  });
+
+  it("dockerSecrets devolve lista vazia com o portão fechado (o installer não cria nenhum segredo)", () => {
+    expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.3.2"))).toEqual([]);
+    expect(enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.0", { versaoSegredos: "1" }))).toEqual([]);
+  });
+
+  it("o formato antigo continua com os valores em texto (o que as imagens < 0.4.3 exigem)", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.3.2"));
+    for (const v of todasSentinelas) expect(yaml).toContain(v);
+  });
+});
+
+describe("enchat — portão por LABEL das imagens (S4c): a versão sozinha não abre", () => {
+  const antigo = fixture("enchat-formato-antigo-com-chave-0.3.2.yaml");
+
+  for (const [rotulo, extra] of [
+    ["imagensSuportamSegredos ausente", { imagensSuportamSegredos: undefined }],
+    ["imagensSuportamSegredos false", { imagensSuportamSegredos: false }],
+  ] as const) {
+    it(`0.4.3 com ${rotulo}: formato antigo byte a byte, nenhum segredo`, () => {
+      const c = ctxCom("0.4.3", { versaoSegredos: "1758900000", ...extra });
+      const yaml = enchat.generateYaml(valoresComChave, sentinelas, c);
+      expect(yaml).not.toContain("/run/secrets/");
+      expect(yaml).not.toMatch(/^secrets:/m);
+      expect(yaml.replaceAll(":0.4.3", ":0.3.2")).toBe(antigo);
+      expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
+    });
+  }
+
+  it("só o booleano estrito true abre (valor truthy não-booleano não vale)", () => {
+    const c = ctxCom("0.4.3", { versaoSegredos: "1758900000", imagensSuportamSegredos: "true" as unknown as boolean });
+    expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
+  });
+
+  it("versão < 0.4.3 fecha mesmo com os labels OK (a versão manda também)", () => {
+    const c = ctxCom("0.4.2", { versaoSegredos: "1758900000", imagensSuportamSegredos: true });
+    expect(enchat.generateYaml(valoresComChave, sentinelas, c)).not.toContain("/run/secrets/");
+    expect(enchat.dockerSecrets!(valoresComChave, sentinelas, c)).toEqual([]);
+  });
+
+  it("o gate declarado pela stack aponta para o label/recurso do contrato e para as 3 imagens", () => {
+    expect(enchat.dockerSecretsGate?.label).toBe("com.enchat.recursos");
+    expect(enchat.dockerSecretsGate?.recurso).toBe("segredos-arquivo");
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.3")).toBe(true);
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.2")).toBe(false);
+    expect(enchat.dockerSecretsGate?.versaoOk("0.4.1")).toBe(false);
+    const imgs = enchat.registryAuth!.images({}, { version: "0.4.3", imageRepo: "ghcr.io/enchainterno/enchat-free", imageTag: "0.4.3", obrigatoria: false });
+    expect(imgs).toEqual([
+      "ghcr.io/enchainterno/enchat-free:0.4.3",
+      "ghcr.io/enchainterno/enchat-updater:0.4.3",
+      "ghcr.io/enchainterno/pinfy:0.4.3",
+    ]);
+  });
+});
+
+describe("enchat — com segredos (>= 0.4.3): nenhum valor sensível no YAML", () => {
+  for (const [rotulo, valores] of [
+    ["com chave de licença", valoresComChave],
+    ["sem chave (pareamento)", valoresSemChave],
+  ] as const) {
+    it(`nenhuma sentinela aparece em texto no YAML (${rotulo})`, () => {
+      const yaml = enchat.generateYaml(valores, sentinelas, ctxAberto);
+      for (const v of todasSentinelas) expect(yaml, `vazou ${v}`).not.toContain(v);
+    });
+  }
+
+  it("as URLs de conexão (que carregam a senha) também não aparecem: nem 'postgresql://' com credencial", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    expect(yaml).not.toMatch(/postgresql:\/\//);
+    expect(yaml).not.toMatch(/@enchat_postgres/);
+  });
+
+  it("nenhuma das variáveis sensíveis fica como env em texto; todas viram *_FILE", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    const sensiveis = [
+      "DATABASE_URL", "PINFY_MASTER_KEY", "PINFY_WEBHOOK_TOKEN", "PINFY_DB_PASSWORD", "ENCHAT_MASTER_KEY",
+      "ENCHAT_SETUP_TOKEN", "LICENSE_KEY", "UPDATER_TOKEN", "MASTER_KEY", "PANEL_PASSWORD", "SESSION_KEY", "POSTGRES_PASSWORD",
+    ];
+    for (const nome of sensiveis) {
+      expect(yaml, `${nome} em texto`).not.toMatch(new RegExp(`^\\s+${nome}:`, "m"));
+      expect(yaml, `${nome}_FILE ausente`).toMatch(new RegExp(`^\\s+${nome}_FILE: "/run/secrets/enchat_[a-z_]+"$`, "m"));
+    }
+  });
+
+  it("cada serviço recebe os *_FILE dos SEUS segredos (e só deles)", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    const app = blocoDoServico(yaml, "enchat_app");
+    for (const f of [
+      "DATABASE_URL_FILE: \"/run/secrets/enchat_database_url\"",
+      "ENCHAT_MASTER_KEY_FILE: \"/run/secrets/enchat_master_key\"",
+      "ENCHAT_SETUP_TOKEN_FILE: \"/run/secrets/enchat_setup_token\"",
+      "LICENSE_KEY_FILE: \"/run/secrets/enchat_license_key\"",
+      "UPDATER_TOKEN_FILE: \"/run/secrets/enchat_updater_token\"",
+      "PINFY_MASTER_KEY_FILE: \"/run/secrets/enchat_pinfy_master_key\"",
+      "PINFY_WEBHOOK_TOKEN_FILE: \"/run/secrets/enchat_pinfy_webhook_token\"",
+      "PINFY_DB_PASSWORD_FILE: \"/run/secrets/enchat_pinfy_db_password\"",
+    ]) expect(app).toContain(f);
+    const pinfy = blocoDoServico(yaml, "enchat_pinfy");
+    // O Pinfy conecta com a URL DELE (usuário pinfy, ?schema=pinfy), num segredo à parte.
+    expect(pinfy).toContain('DATABASE_URL_FILE: "/run/secrets/enchat_pinfy_database_url"');
+    for (const f of ["MASTER_KEY_FILE", "PANEL_PASSWORD_FILE", "SESSION_KEY_FILE"]) expect(pinfy).toContain(`${f}: "/run/secrets/enchat_`);
+    expect(pinfy).not.toContain("enchat_database_url");
+    expect(pinfy).not.toContain("enchat_master_key");
+    expect(blocoDoServico(yaml, "enchat_updater")).toContain('UPDATER_TOKEN_FILE: "/run/secrets/enchat_updater_token"');
+    expect(blocoDoServico(yaml, "enchat_postgres")).toContain('POSTGRES_PASSWORD_FILE: "/run/secrets/enchat_postgres_password"');
+    // O app não recebe nada exclusivo do Pinfy/Postgres.
+    for (const f of ["SESSION_KEY", "PANEL_PASSWORD", "enchat_postgres_password", "enchat_pinfy_session_key", "enchat_pinfy_database_url"]) {
+      expect(app).not.toContain(f);
+    }
+  });
+
+  it("segredos externos com nome versionado <base>_<época>, e o alias == o alvo montado", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    const topo = yaml.slice(yaml.search(/^secrets:$/m));
+    const nomes = [...topo.matchAll(/^  (enchat_[a-z_]+):\n    external: true\n    name: (\S+)$/gm)];
+    expect(nomes.length).toBe(12);
+    for (const [, alias, name] of nomes) expect(name).toBe(`${alias}_1758900000`);
+    // Todo `source:` montado num serviço existe no bloco de topo.
+    const declarados = new Set(nomes.map((n) => n[1]));
+    for (const m of yaml.matchAll(/- source: (\S+)\n {8}target: (\S+)/g)) {
+      expect(declarados.has(m[1])).toBe(true);
+      expect(m[2]).toBe(m[1]);
+    }
+  });
+
+  it("sem chave de licença: sem segredo de licença, LICENSE_KEY fica vazio como hoje", () => {
+    const yaml = enchat.generateYaml(valoresSemChave, sentinelas, ctxAberto);
+    expect(yaml).toContain('LICENSE_KEY: ""');
+    expect(yaml).not.toContain("license_key");
+    expect(enchat.dockerSecrets!(valoresSemChave, sentinelas, ctxAberto).map((s) => s.base)).not.toContain("enchat_license_key");
+  });
+
+  it("mounts: uid/gid/mode do usuário que roda o processo em cada imagem, mode 0400 sempre", () => {
+    const yaml = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    const esperado = {
+      enchat_app: DONO_SEGREDOS.app,
+      enchat_pinfy: DONO_SEGREDOS.pinfy,
+      enchat_updater: DONO_SEGREDOS.updater,
+      enchat_postgres: DONO_SEGREDOS.postgres,
+    };
+    expect(DONO_SEGREDOS).toEqual({
+      app: { uid: "1000", gid: "1000" }, // USER enchat, adduser -u 1000 (ENCHAT GRÁTIS/Dockerfile)
+      pinfy: { uid: "1000", gid: "1000" }, // USER node (node:alpine)
+      updater: { uid: "0", gid: "0" }, // sem USER (root, docker.sock)
+      postgres: { uid: "0", gid: "0" }, // entrypoint lê *_FILE como root
+    });
+    for (const [servico, dono] of Object.entries(esperado)) {
+      const b = blocoDoServico(yaml, servico);
+      const montagens = [...b.matchAll(/- source: (\S+)\n {8}target: \S+\n {8}uid: "(\d+)"\n {8}gid: "(\d+)"\n {8}mode: (\d+)/g)];
+      expect(montagens.length, `${servico} sem montagens`).toBeGreaterThan(0);
+      // Nenhuma montagem sem uid/gid/mode: contagem de "source:" == contagem de montagens completas.
+      expect((b.match(/- source:/g) ?? []).length).toBe(montagens.length);
+      for (const [, , uid, gid, mode] of montagens) {
+        expect({ uid, gid }, servico).toEqual(dono);
+        expect(mode).toBe("0400");
+      }
+    }
+  });
+
+  it("restart_policy/update_config/placement/labels IDÊNTICOS nos dois formatos (regra stack-enchat-espelhada)", () => {
+    const antigo = enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.0", { versaoSegredos: "1758900000" }));
+    const novo = enchat.generateYaml(valoresComChave, sentinelas, ctxAberto);
+    for (const s of ["enchat_app", "enchat_updater", "enchat_pinfy", "enchat_postgres"]) {
+      expect(blocoDeploy(novo, s), s).toBe(blocoDeploy(antigo, s));
+    }
+    // E tudo que NÃO é segredo é igual: tirando as linhas de env sensível
+    // (texto ou _FILE), os mounts e o bloco `secrets:` de topo, os dois YAMLs
+    // coincidem (a tag da imagem é a única diferença que sobra).
+    const normalizar = (y: string, tag: string) =>
+      y
+        .split(/^secrets:$/m)[0]
+        .replace(/^ {4}secrets:\n(?: {6,}.*\n)+/gm, "")
+        .split("\n")
+        .filter(
+          (l) =>
+            !/^ {6}(DATABASE_URL|PINFY_MASTER_KEY|PINFY_WEBHOOK_TOKEN|PINFY_DB_PASSWORD|ENCHAT_MASTER_KEY|ENCHAT_SETUP_TOKEN|LICENSE_KEY|UPDATER_TOKEN|MASTER_KEY|PANEL_PASSWORD|SESSION_KEY|POSTGRES_PASSWORD)(_FILE)?:/.test(l)
+        )
+        .join("\n")
+        .replaceAll(`:${tag}`, ":TAG")
+        .trimEnd();
+    expect(normalizar(novo, "0.4.3")).toBe(normalizar(antigo, "0.4.0"));
+  });
+
+  it("sem versaoSegredos com o portão aberto: erro alto (bug do installer), nunca nome sem versão", () => {
+    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3"))).toThrow(/versaoSegredos/);
+    expect(() => enchat.dockerSecrets!(valoresComChave, sentinelas, ctxCom("0.4.3"))).toThrow(/versaoSegredos/);
+    expect(() => enchat.generateYaml(valoresComChave, sentinelas, ctxCom("0.4.3", { versaoSegredos: "abc" }))).toThrow(/versaoSegredos/);
+  });
+});
+
+describe("enchat — dockerSecrets (o que o installer cria no Swarm)", () => {
+  const specs = () => enchat.dockerSecrets!(valoresComChave, sentinelas, ctxAberto);
+  const valorDe = (base: string) => specs().find((s) => s.base === base)?.value;
+
+  it("12 segredos, nomes <base>_<época>, sem repetição", () => {
+    const l = specs();
+    expect(l.length).toBe(12);
+    expect(new Set(l.map((s) => s.name)).size).toBe(12);
+    for (const s of l) expect(s.name).toBe(`${s.base}_1758900000`);
+  });
+
+  it("valores: cada segredo carrega o valor EFETIVO recebido (o reaproveitado numa reinstalação)", () => {
+    expect(valorDe("enchat_master_key")).toBe(sentinelas.enchat_master_key);
+    expect(valorDe("enchat_postgres_password")).toBe(sentinelas.postgres_password);
+    expect(valorDe("enchat_pinfy_db_password")).toBe(sentinelas.pinfy_db_password);
+    expect(valorDe("enchat_pinfy_master_key")).toBe(sentinelas.pinfy_master_key);
+    expect(valorDe("enchat_pinfy_webhook_token")).toBe(sentinelas.pinfy_webhook_token);
+    expect(valorDe("enchat_pinfy_panel_password")).toBe(sentinelas.pinfy_panel_password);
+    expect(valorDe("enchat_pinfy_session_key")).toBe(sentinelas.pinfy_session_key);
+    expect(valorDe("enchat_updater_token")).toBe(sentinelas.updater_token);
+    expect(valorDe("enchat_setup_token")).toBe(sentinelas.enchat_setup_token);
+    expect(valorDe("enchat_license_key")).toBe(CHAVE_SENTINELA);
+  });
+
+  it("as URLs seguem o formato de sempre: app com o superusuário enchat; Pinfy como pinfy com ?schema=pinfy", () => {
+    expect(valorDe("enchat_database_url")).toBe(
+      `postgresql://enchat:${sentinelas.postgres_password}@enchat_postgres:5432/enchat?sslmode=disable`
+    );
+    expect(valorDe("enchat_pinfy_database_url")).toBe(
+      `postgresql://pinfy:${sentinelas.pinfy_db_password}@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable`
+    );
+  });
+
+  it("a senha do Postgres do segredo é a MESMA embutida na URL do app (volume existente mantém a senha antiga)", () => {
+    const senha = valorDe("enchat_postgres_password")!;
+    expect(valorDe("enchat_database_url")).toContain(`:${senha}@`);
+  });
+
+  it("nenhum valor de segredo é vazio (o Docker recusa)", () => {
+    for (const s of specs()) expect(s.value.length).toBeGreaterThan(0);
+  });
+
+  it("a mesma chave de licença sanitizada que o formato antigo mandaria (sem aspas/crase/quebra de linha)", () => {
+    const l = enchat.dockerSecrets!({ ...valoresComChave, chave_licenca: 'AB"C`D\nE' }, sentinelas, ctxAberto);
+    expect(l.find((s) => s.base === "enchat_license_key")!.value).toBe("ABCDE");
   });
 });

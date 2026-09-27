@@ -52,10 +52,113 @@ PORTAINER_VERSION="2.45.1"
 
 # Imagem do curl usada para as chamadas HTTP internas ao Portainer
 # (autenticação, verificação de admin, renomeação de usuário, deploy de
-# stack via API). Ela recebe a senha do Portainer e o JWT como argumento de
-# linha de comando, então merece ser íntegra — nunca ":latest" nem sem tag.
+# stack via API). Ela recebe a senha do Portainer e o JWT (por stdin — ver
+# curl_portainer abaixo), então merece ser íntegra — nunca ":latest" nem sem tag.
 # Tag + digest resolvidos via `docker manifest inspect curlimages/curl:8.11.1`.
 ENCHA_CURL_IMAGE="curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69"
+
+# ── Segredos do Portainer/GHCR NUNCA na linha de comando (S2, achado 6) ──────
+# A linha de comando de qualquer processo é pública para todo usuário local
+# (`ps`, /proc/<pid>/cmdline) pelo tempo que ele vive. Um `curl -d '{"password":
+# ...}'`, um `-H "Authorization: Bearer <jwt>"` ou um `jq --arg p "$senha"`
+# expõe a credencial do Portainer (senha, JWT) e o token do GHCR nesse
+# intervalo. Regra deste arquivo: os SEGREDOS (senha, JWT, token, corpo que os
+# contém) trafegam por STDIN/variável de ambiente — só o que não é segredo
+# (método, URL, códigos, Content-Type) fica no argv.
+#
+# curl_portainer manda o cabeçalho Authorization e o corpo para o curl como
+# ARQUIVO DE CONFIGURAÇÃO lido de stdin (`curl -K -`): `header = "..."`,
+# `data-raw = "..."`, `form-string = "Env=..."`. O printf é builtin (não vira
+# processo) e o valor é escapado como o curl exige entre aspas (\\ \" \n \r
+# \t \v). Escolhido em vez de arquivo temporário porque não deixa nada em
+# disco (nem trap/limpeza), e em vez de `--data @-` porque `-K -` e `@-`
+# disputariam o mesmo stdin. Validado contra o curl 8.11.1 da imagem pinada.
+#
+# LIMITE DE TAMANHO: o parser de config do curl recusa linha grande demais e
+# sai com código 26 ("cannot read config from '-'") sem mandar nada — e o
+# stderr costuma ir para /dev/null nas chamadas. Na imagem pinada (8.11.1) o
+# teto é 10 MB; no curl do HOST de um Debian 12 (7.88.1) é ~100 KB (medido:
+# data-raw de 102380 bytes passa, 102390 não). Sem --rede só mande corpo
+# pequeno (login, registry); corpo grande (StackFileContent) sempre com --rede.
+#
+#   curl_portainer [--rede REDE] [--mount ARQ] [--token JWT]
+#                  [--body JSON] [--form-env JSON] -- <args do curl sem segredo>
+#     --rede      roda dentro do contêiner ENCHA_CURL_IMAGE (docker run -i) na
+#                 rede overlay; sem ela, usa o `curl` do host.
+#     --mount     monta ARQ:ARQ:ro no contêiner (para -F "file=@ARQ").
+#     --token     vira o header "Authorization: Bearer ...".
+#     --body      corpo bruto (data-raw); precisa de -H Content-Type no argv.
+#     --form-env  campo multipart "Env" (form-string: sem interpretar ; nem @).
+# O corpo da resposta sai no stdout do curl, como antes.
+curl_portainer_escapar() {
+    local v="$1"
+    v=${v//\\/\\\\}
+    v=${v//\"/\\\"}
+    v=${v//$'\n'/\\n}
+    v=${v//$'\r'/\\r}
+    v=${v//$'\t'/\\t}
+    v=${v//$'\v'/\\v}
+    printf '%s' "$v"
+}
+
+curl_portainer() {
+    local rede="" mount="" token="" body="" form_env=""
+    local tem_body=false tem_form_env=false
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --rede) rede="$2"; shift 2 ;;
+            --mount) mount="$2"; shift 2 ;;
+            --token) token="$2"; shift 2 ;;
+            --body) body="$2"; tem_body=true; shift 2 ;;
+            --form-env) form_env="$2"; tem_form_env=true; shift 2 ;;
+            --) shift; break ;;
+            *) break ;;
+        esac
+    done
+
+    local cfg=""
+    if [ -n "$token" ]; then
+        cfg+="header = \"Authorization: Bearer $(curl_portainer_escapar "$token")\""$'\n'
+    fi
+    if [ "$tem_body" = true ]; then
+        cfg+="data-raw = \"$(curl_portainer_escapar "$body")\""$'\n'
+    fi
+    if [ "$tem_form_env" = true ]; then
+        cfg+="form-string = \"Env=$(curl_portainer_escapar "$form_env")\""$'\n'
+    fi
+
+    if [ -n "$rede" ]; then
+        local -a montar=()
+        [ -n "$mount" ] && montar=(-v "$mount:$mount:ro")
+        printf '%s' "$cfg" | docker run --rm -i --network "$rede" ${montar[@]+"${montar[@]}"} \
+            "${ENCHA_CURL_IMAGE}" -K - "$@"
+    else
+        printf '%s' "$cfg" | curl -K - "$@"
+    fi
+}
+
+# curl_portainer_http: igual a curl_portainer, mas devolve o código HTTP E o
+# corpo da resposta, ambos capturados NO HOST (stdout do curl):
+#   PORTAINER_HTTP_CODE  código HTTP ("000" se a conexão falhou)
+#   PORTAINER_HTTP_BODY  corpo da resposta
+# Não use `-o <arquivo>` com o curl em contêiner: o arquivo é gravado DENTRO
+# do contêiner (efêmero, --rm) e o `cat` no host lê vazio — era por isso que
+# o "detalhe" de uma falha do deploy do painel saía sempre em branco. O código
+# vem numa última linha própria (-w '\n%{http_code}'); não passe -w/-o nos args.
+curl_portainer_http() {
+    local saida
+    saida="$(curl_portainer "$@" -w $'\n%{http_code}')"
+    PORTAINER_HTTP_CODE="${saida##*$'\n'}"
+    PORTAINER_HTTP_BODY="${saida%$'\n'*}"
+}
+
+# JSON do POST /api/auth do Portainer. Usuário e senha entram no jq por
+# VARIÁVEL DE AMBIENTE (prefixada ao comando: não aparece em argv) — nunca
+# `jq --arg p "$senha"`, que poria a senha na linha de comando do jq. O jq
+# também escapa aspas/barras/controle corretamente.
+portainer_json_login() {
+    U="$1" P="$2" jq -nc '{username:env.U,password:env.P}'
+}
 
 #FERRAMENTAS VISUAIS
 
@@ -1476,11 +1579,249 @@ validar_dominio() {
     dominio=$1
 
     if [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+        # S3 (achado 7): só AVISA se o DNS não aponta para esta VPS — nunca
+        # muda o retorno (domínio válido em formato continua válido).
+        checar_dns_dominio "$dominio"
         return 0
     fi
 
     echo -e "$(t validar_dominio_invalido)"
     return 1
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S3 (achado 7 da auditoria 2): aviso de DNS em todo caminho que pede domínio.
+#
+# No teste real o operador digitou 'potainer.alunaencha.shop' (sem o "r", sem
+# registro DNS); o instalador só validava o FORMATO, instalou tudo e anunciou no
+# resumo um endereço que nunca abre nem obtém certificado. Decisão do dono do
+# produto: só AVISAR — nunca bloquear, nunca pedir confirmação extra. Por isso
+# nada aqui retorna diferente de 0 (um retorno != 0 num `&& break`/`||` de quem
+# chama, ou sob 'set -e', mudaria o fluxo).
+#
+# Silêncio é o padrão em qualquer dúvida: sem IP público da VPS, resolução
+# expirada (timeout), domínio fora do formato → nenhum aviso (nunca falso
+# alarme). Uma consulta por domínio por execução (cache abaixo). As funções que
+# preenchem o cache precisam ser chamadas DIRETO, não dentro de $( ).
+# ─────────────────────────────────────────────────────────────────────────────
+declare -gA DNS_ESTADO_CACHE   # domínio -> ok | nao_resolve | outro_ip | so_ipv6 | desconhecido
+declare -gA DNS_IPS_CACHE      # domínio -> IPs (v4) para onde aponta, separados por vírgula
+declare -gA DNS_AVISADO_CACHE  # domínio -> 1 se o aviso já foi impresso nesta execução
+DNS_IP_PUBLICO_CONSULTADO=0
+DNS_IP_PUBLICO_VPS=""
+DNS_IPS_LOCAIS_CONSULTADO=0
+DNS_IPS_LOCAIS_VPS=""
+
+MSG_PT[dns_aviso_nao_resolve]="O DNS de '%s' ainda não resolve — se o registro acabou de ser criado, pode ser só a propagação. O Traefik/Let's Encrypt só emite o certificado quando o domínio aponta para esta VPS; a instalação segue, e dá para criar ou corrigir o registro DNS depois."
+MSG_EN[dns_aviso_nao_resolve]="The DNS for '%s' doesn't resolve yet — if the record was just created, it may just be propagation. Traefik/Let's Encrypt only issues the certificate once the domain points to this VPS; the installation continues, and you can create or fix the DNS record later."
+MSG_ES[dns_aviso_nao_resolve]="El DNS de '%s' aún no resuelve — si el registro se acaba de crear, puede ser solo la propagación. Traefik/Let's Encrypt solo emite el certificado cuando el dominio apunta a esta VPS; la instalación continúa, y puede crear o corregir el registro DNS después."
+
+MSG_PT[dns_aviso_outro_ip]="O DNS de '%s' aponta para %s, e o IP desta VPS é %s. Se o domínio passa por proxy/CDN (como a Cloudflare), isso é esperado. Se não, confira o registro A: o Let's Encrypt só emite o certificado quando ele aponta para cá (se acabou de ser alterado, pode ser só a propagação). A instalação segue, e dá para corrigir o DNS depois."
+MSG_EN[dns_aviso_outro_ip]="The DNS for '%s' points to %s, and this VPS's IP is %s. If the domain goes through a proxy/CDN (such as Cloudflare), this is expected. If not, check the A record: Let's Encrypt only issues the certificate when it points here (if it was just changed, it may just be propagation). The installation continues, and you can fix the DNS later."
+MSG_ES[dns_aviso_outro_ip]="El DNS de '%s' apunta a %s, y la IP de esta VPS es %s. Si el dominio pasa por un proxy/CDN (como Cloudflare), esto es esperado. Si no, verifique el registro A: Let's Encrypt solo emite el certificado cuando apunta aquí (si se acaba de cambiar, puede ser solo la propagación). La instalación continúa, y puede corregir el DNS después."
+
+MSG_PT[dns_aviso_so_ipv6]="O DNS de '%s' só tem endereço IPv6 (registro AAAA), sem nenhum registro A (IPv4). Crie um registro A apontando para o IPv4 desta VPS (%s): sem ele, quem acessa só por IPv4 não chega no endereço e o Let's Encrypt pode não emitir o certificado — a instalação segue, e dá para criar o registro depois."
+MSG_EN[dns_aviso_so_ipv6]="The DNS for '%s' only has an IPv6 address (AAAA record), with no A record (IPv4). Create an A record pointing to this VPS's IPv4 (%s): without it, anyone connecting only over IPv4 can't reach the address and Let's Encrypt may not issue the certificate — the installation continues, and you can create the record later."
+MSG_ES[dns_aviso_so_ipv6]="El DNS de '%s' solo tiene dirección IPv6 (registro AAAA), sin ningún registro A (IPv4). Cree un registro A que apunte a la IPv4 de esta VPS (%s): sin él, quien accede solo por IPv4 no llega a la dirección y Let's Encrypt puede no emitir el certificado — la instalación continúa, y puede crear el registro después."
+
+MSG_PT[dns_ok_linha]="DNS de '%s' já aponta para esta VPS."
+MSG_EN[dns_ok_linha]="DNS for '%s' already points to this VPS."
+MSG_ES[dns_ok_linha]="El DNS de '%s' ya apunta a esta VPS."
+
+# Preenche DNS_IP_PUBLICO_VPS (vazio se não deu para obter) — uma tentativa só
+# por execução, mesmo quando falha, para não repetir o timeout a cada domínio.
+# `-4` é obrigatório: numa VPS dual-stack (Hostinger, Hetzner, DO... — a VPS de
+# teste real incluída) o icanhazip responde pelo IPv6, que não é IPv4, e a
+# checagem inteira ficava muda — nem o domínio sem DNS do achado 7 era avisado.
+dns_ip_publico_vps() {
+    if [ "${DNS_IP_PUBLICO_CONSULTADO:-0}" != "1" ]; then
+        DNS_IP_PUBLICO_CONSULTADO=1
+        local ip
+        ip=$(curl -4 -s --max-time 5 https://icanhazip.com 2>/dev/null | tr -d '[:space:]')
+        if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            DNS_IP_PUBLICO_VPS="$ip"
+        fi
+    fi
+    return 0
+}
+
+# Preenche DNS_IPS_LOCAIS_VPS (IPv4 das interfaces desta máquina, separados por
+# espaço) uma vez por execução. Servem SÓ para reconhecer que o domínio aponta
+# para cá (IP flutuante/adicional numa interface, que o icanhazip não vê porque
+# a saída usa o IP principal) — nunca como "o IP desta VPS" num aviso nem como
+# substituto do IP público: atrás de NAT são IPs privados (o falso alarme que o
+# S3 removeu ao tirar o fallback `hostname -I`).
+dns_ips_locais_vps() {
+    if [ "${DNS_IPS_LOCAIS_CONSULTADO:-0}" != "1" ]; then
+        DNS_IPS_LOCAIS_CONSULTADO=1
+        local lista ip_x filtrados=""
+        lista=$(hostname -I 2>/dev/null) || lista=""
+        if [ -z "$lista" ] && command -v ip >/dev/null 2>&1; then
+            lista=$(ip -4 -o addr show 2>/dev/null | awk '{sub(/\/.*/, "", $4); print $4}') || lista=""
+        fi
+        # Filtro em bash, não em awk: o awk padrão do Debian é o mawk, que não
+        # entende {1,3} e não casaria nada.
+        for ip_x in $lista; do
+            if [[ "$ip_x" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "$ip_x" != 127.* ]]; then
+                filtrados="${filtrados:+$filtrados }$ip_x"
+            fi
+        done
+        DNS_IPS_LOCAIS_VPS="$filtrados"
+    fi
+    return 0
+}
+
+# Resolve <dominio> (uma vez por execução) e grava o estado em
+# DNS_ESTADO_CACHE. --reverificar refaz a consulta só de quem já foi checado e
+# estava com problema (o resumo final usa: o DNS pode ter propagado durante a
+# instalação); domínio nunca checado continua sem consulta.
+dns_estado_dominio() {
+    local reverificar=0
+    if [ "${1:-}" = "--reverificar" ]; then reverificar=1; shift; fi
+    # DNS não diferencia maiúsculas; os prompts do menu e o Host() da stack
+    # aceitam o que foi digitado. Chave do cache sempre minúscula.
+    local dominio="${1:-}"; dominio="${dominio,,}"
+    # Fora do formato de FQDN: silêncio (a validação de formato é de quem pede
+    # o domínio) — e nunca passa lixo/opção ao getent nem usa de chave.
+    [[ "$dominio" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] || return 0
+
+    local anterior="${DNS_ESTADO_CACHE[$dominio]:-}"
+    if [ -n "$anterior" ]; then
+        if [ "$reverificar" = "0" ] || { [ "$anterior" != "nao_resolve" ] && [ "$anterior" != "outro_ip" ] && [ "$anterior" != "so_ipv6" ]; }; then
+            return 0
+        fi
+    elif [ "$reverificar" = "1" ]; then
+        return 0   # nunca checado: --reverificar não inaugura consulta nova
+    fi
+
+    dns_ip_publico_vps
+    if [ -z "$DNS_IP_PUBLICO_VPS" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
+
+    # `|| rc=$?`: getent sai != 0 quando o domínio não existe (é o caso que
+    # queremos avisar), e isso não pode abortar quem roda sob 'set -e'.
+    local saida rc=0
+    if command -v timeout >/dev/null 2>&1; then
+        saida=$(timeout 5 getent ahostsv4 "$dominio" 2>/dev/null) || rc=$?
+    else
+        saida=$(getent ahostsv4 "$dominio" 2>/dev/null) || rc=$?
+    fi
+    # Só 0 (achou) e 2 (não achou) do getent dizem algo sobre o DNS. 124 =
+    # estourou o tempo (resolvedor lento não é "domínio sem DNS"); 127/126 =
+    # getent/timeout ausente; 125 = o timeout falhou; 1/3 = uso; 137 = morto.
+    if [ "$rc" != "0" ] && [ "$rc" != "2" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
+
+    # Loopback (127.0.0.0/8) sai da conta: getent lê o /etc/hosts antes do DNS,
+    # e a Hostinger grava lá "127.0.1.1 srvNNN.hstgr.cloud" — um hostname que
+    # também é domínio público apontando para a VPS. Só loopback = não dá para
+    # saber o DNS público daqui: silêncio (nunca "aponta para 127.0.1.1").
+    local todos ips
+    todos=$(printf '%s\n' "$saida" | awk 'NF {print $1}' | sort -u)
+    ips=$(printf '%s\n' "$todos" | awk 'NF && $1 !~ /^127\./' | paste -sd, -)
+    if [ -z "$ips" ] && [ -n "$todos" ]; then
+        DNS_ESTADO_CACHE[$dominio]="desconhecido"
+        return 0
+    fi
+    DNS_IPS_CACHE[$dominio]="$ips"
+    if [ -z "$ips" ]; then
+        # Sem registro A. Antes de dizer "não resolve", confere se há AAAA: um
+        # domínio só-IPv6 resolve, só não por IPv4 — o aviso é outro (falta o
+        # registro A). `ahostsv6` devolve A mapeado (::ffff:) quando existe A,
+        # mas aqui já sabemos que não existe; loopback (::1) não conta.
+        local saida6 rc6=0
+        if command -v timeout >/dev/null 2>&1; then
+            saida6=$(timeout 5 getent ahostsv6 "$dominio" 2>/dev/null) || rc6=$?
+        else
+            saida6=$(getent ahostsv6 "$dominio" 2>/dev/null) || rc6=$?
+        fi
+        if [ "$rc6" = "0" ] && printf '%s\n' "$saida6" | awk 'NF && $1 ~ /:/ && $1 !~ /^::ffff:/ && $1 != "::1" {achou=1} END {exit !achou}'; then
+            DNS_ESTADO_CACHE[$dominio]="so_ipv6"
+            return 0
+        fi
+        DNS_ESTADO_CACHE[$dominio]="nao_resolve"
+    elif [[ ",$ips," == *",$DNS_IP_PUBLICO_VPS,"* ]]; then
+        DNS_ESTADO_CACHE[$dominio]="ok"
+    else
+        # Não bate com o IP público: ainda pode ser um IP desta máquina (IP
+        # flutuante/adicional numa interface). Bate com um deles = ok.
+        DNS_ESTADO_CACHE[$dominio]="outro_ip"
+        dns_ips_locais_vps
+        local ip_local
+        for ip_local in $DNS_IPS_LOCAIS_VPS; do
+            if [[ ",$ips," == *",$ip_local,"* ]]; then
+                DNS_ESTADO_CACHE[$dominio]="ok"
+                break
+            fi
+        done
+    fi
+    return 0
+}
+
+# Uma linha de aviso (status_warning quando main.sh o define; senão texto
+# simples — secondary.sh também roda sozinho pelo menu).
+dns_imprimir_aviso() {
+    if type status_warning >/dev/null 2>&1; then
+        status_warning "$1"
+    else
+        echo -e "\e[33m⚠️  $1\e[0m"
+    fi
+}
+
+# checar_dns_dominio [--sempre] <dominio> — imprime UMA linha de aviso se o
+# domínio não resolve ou não aponta para esta VPS; nada se estiver ok, se não
+# deu para saber, ou se o aviso desse domínio já saiu nesta execução.
+# --sempre: ignora o "já avisou" e também imprime a linha "já aponta" (usado
+# pela pré-checagem informativa de checar_dns_e_portas). Retorna SEMPRE 0.
+checar_dns_dominio() {
+    local sempre=0
+    if [ "${1:-}" = "--sempre" ]; then sempre=1; shift; fi
+    local dominio="${1:-}"; dominio="${dominio,,}"   # mesma chave (minúscula) de dns_estado_dominio
+    [ -z "$dominio" ] && return 0
+
+    dns_estado_dominio "$dominio"
+    local estado="${DNS_ESTADO_CACHE[$dominio]:-desconhecido}"
+    case "$estado" in
+        nao_resolve|outro_ip|so_ipv6)
+            if [ "$sempre" = "1" ] || [ "${DNS_AVISADO_CACHE[$dominio]:-}" != "1" ]; then
+                DNS_AVISADO_CACHE[$dominio]="1"
+                if [ "$estado" = "nao_resolve" ]; then
+                    dns_imprimir_aviso "$(t dns_aviso_nao_resolve "$dominio")"
+                elif [ "$estado" = "so_ipv6" ]; then
+                    dns_imprimir_aviso "$(t dns_aviso_so_ipv6 "$dominio" "$DNS_IP_PUBLICO_VPS")"
+                else
+                    local ips_legiveis="${DNS_IPS_CACHE[$dominio]:-}"
+                    dns_imprimir_aviso "$(t dns_aviso_outro_ip "$dominio" "${ips_legiveis//,/, }" "$DNS_IP_PUBLICO_VPS")"
+                fi
+            fi
+            ;;
+        ok)
+            if [ "$sempre" = "1" ]; then
+                if type status_ok >/dev/null 2>&1; then
+                    status_ok "$(t dns_ok_linha "$dominio")"
+                else
+                    echo -e "\e[32m✅ $(t dns_ok_linha "$dominio")\e[0m"
+                fi
+            fi
+            ;;
+    esac
+    return 0
+}
+
+# Lê os domínios Host(`...`) das labels do Traefik de um arquivo de stack e
+# checa cada um — é o ponto único que cobre as ~90 ferramentas do menu, todas
+# com o próprio prompt de domínio (stack_editavel chama antes do deploy).
+dns_checar_hosts_da_stack() {
+    local arquivo="${1:-}" host
+    [ -f "$arquivo" ] || return 0
+    while IFS= read -r host; do
+        [ -n "$host" ] && checar_dns_dominio "$host"
+    done < <(grep -oE 'Host\(`[^`]+`\)' "$arquivo" 2>/dev/null | sed -E 's/^Host\(`//; s/`\)$//' | awk '!v[$0]++')
+    return 0
 }
 
 # O Portainer só cria o admin via --admin-password-file com o username fixo
@@ -1520,11 +1861,10 @@ renomear_admin_portainer_se_necessario() {
 
     local ok=false http
     for _ in 1 2 3 4 5; do
-        http=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+        http=$(curl_portainer --rede "$rede" --token "$token_admin" \
+            --body "$(jq -nc --arg u "$alvo" '{Username:$u}')" -- \
             -s -o /dev/null -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token_admin" \
             -H "Content-Type: application/json" \
-            -d "$(jq -nc --arg u "$alvo" '{Username:$u}')" \
             http://portainer_portainer:9000/api/users/1 2>/dev/null)
         [ "$http" = "200" ] && { ok=true; break; }
         sleep 3
@@ -1536,10 +1876,10 @@ renomear_admin_portainer_se_necessario() {
     fi
 
     local novo_token
-    novo_token=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+    novo_token=$(curl_portainer --rede "$rede" \
+        --body "$(portainer_json_login "$alvo" "$senha")" -- \
         -s -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "$(jq -nc --arg u "$alvo" --arg p "$senha" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+        -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
 
     if [ -n "$novo_token" ] && [ "$novo_token" != "null" ]; then
         USER_PORTAINER_FINAL="$alvo"
@@ -1631,10 +1971,10 @@ finalizar_admin_portainer() {
 
     local usuario_atual="" token="" cand
     for cand in "${candidatos[@]}"; do
-        token=$(sudo docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+        token=$(curl_portainer --rede "$rede" \
+            --body "$(portainer_json_login "$cand" "$senha")" -- \
             -s -X POST http://portainer_portainer:9000/api/auth \
-            -H "Content-Type: application/json" \
-            -d "$(jq -nc --arg u "$cand" --arg p "$senha" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+            -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
         if [ -n "$token" ] && [ "$token" != "null" ]; then
             usuario_atual="$cand"
             break
@@ -2088,10 +2428,12 @@ stack_editavel(){
     while [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; do
 
         # [CORREÇÃO] Usa jq para criar o JSON. Isso corrige o erro com a senha contendo "@"
-        JSON_PAYLOAD=$(jq -n --arg u "$USUARIO" --arg p "$SENHA" '{username: $u, password: $p}')
+        # (S2: usuário/senha entram no jq por env e o corpo vai por stdin —
+        # nunca na linha de comando; ver curl_portainer).
+        JSON_PAYLOAD=$(portainer_json_login "$USUARIO" "$SENHA")
 
-        TOKEN=$(curl -k -s -X POST -H "Content-Type: application/json" \
-        -d "$JSON_PAYLOAD" \
+        TOKEN=$(curl_portainer --body "$JSON_PAYLOAD" -- \
+        -k -s -X POST -H "Content-Type: application/json" \
         "https://$PORTAINER_URL/api/auth" | jq -r .jwt)
 
         if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
@@ -2110,7 +2452,7 @@ stack_editavel(){
 
     # --- 4. OBTENÇÃO DOS IDs ---
     # Pega o Endpoint ID (Geralmente é 1 ou 2)
-    ENDPOINT_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
+    ENDPOINT_ID=$(curl_portainer --token "$TOKEN" -- -k -s -X GET "https://$PORTAINER_URL/api/endpoints" | jq -r '.[0].Id')
 
     if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" == "null" ]; then
         echo "$(t stack_editavel_endpoint_erro)"
@@ -2120,7 +2462,7 @@ stack_editavel(){
     fi
 
     # Pega o Swarm ID
-    SWARM_ID=$(curl -k -s -X GET -H "Authorization: Bearer $TOKEN" "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
+    SWARM_ID=$(curl_portainer --token "$TOKEN" -- -k -s -X GET "https://$PORTAINER_URL/api/endpoints/$ENDPOINT_ID/docker/swarm" | jq -r .ID)
 
     if [ -z "$SWARM_ID" ] || [ "$SWARM_ID" == "null" ]; then
          # Tenta pegar sem especificar endpoint caso falhe
@@ -2134,14 +2476,18 @@ stack_editavel(){
         return 1
     fi
 
+    # S3 (achado 7): antes do deploy, avisa (sem bloquear) se algum Host() da
+    # stack não aponta para esta VPS — cobre todas as ferramentas do menu.
+    dns_checar_hosts_da_stack "$(pwd)/$STACK_NAME.yaml"
+
     echo -e "$(t stack_editavel_iniciando_deploy "$STACK_NAME")"
 
     # Arquivos temporários para captura de erro
     erro_output=$(mktemp)
     response_output=$(mktemp)
 
-    http_code=$(curl -s -o "$response_output" -w "%{http_code}" -k -X POST \
-    -H "Authorization: Bearer $TOKEN" \
+    http_code=$(curl_portainer --token "$TOKEN" -- \
+    -s -o "$response_output" -w "%{http_code}" -k -X POST \
     -F "Name=$STACK_NAME" \
     -F "file=@$(pwd)/$STACK_NAME.yaml" \
     -F "SwarmID=$SWARM_ID" \
@@ -2207,30 +2553,35 @@ registrar_registry_portainer() {
     senha=$(grep -E "^(Password|Senha): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | tr -d '\r')
     portainer_url=$(grep -E "^(Domain|Dominio): " "$arquivo" | head -1 | awk -F': ' '{print $2}' | sed 's/https:\/\///' | tr -d '\r')
 
+    # S2: credenciais por env/stdin, nunca no argv (ver curl_portainer).
     local json_payload
-    json_payload=$(jq -n --arg u "$usuario" --arg p "$senha" '{username: $u, password: $p}')
-    token=$(curl -k -s -X POST -H "Content-Type: application/json" \
-        -d "$json_payload" "https://$portainer_url/api/auth" | jq -r .jwt)
+    json_payload=$(portainer_json_login "$usuario" "$senha")
+    token=$(curl_portainer --body "$json_payload" -- \
+        -k -s -X POST -H "Content-Type: application/json" \
+        "https://$portainer_url/api/auth" | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" == "null" ]; then
         echo "$(t registrar_registry_portainer_falha_auth)"
         return 1
     fi
 
     local existing_id reg_payload http_code
-    existing_id=$(curl -k -s -H "Authorization: Bearer $token" "https://$portainer_url/api/registries" \
+    existing_id=$(curl_portainer --token "$token" -- -k -s "https://$portainer_url/api/registries" \
         | jq -r '.[] | select(.URL=="ghcr.io") | .Id' | head -n1)
 
-    reg_payload=$(jq -n --arg u "$GHCR_USER" --arg p "$GHCR_TOKEN" \
-        '{Name:"GHCR EnchaT", Type:3, URL:"ghcr.io", Authentication:true, Username:$u, Password:$p, TLS:true}')
+    # O token do GHCR entra no jq por env (nunca --arg) e no curl por stdin.
+    reg_payload=$(U="$GHCR_USER" P="$GHCR_TOKEN" jq -n \
+        '{Name:"GHCR EnchaT", Type:3, URL:"ghcr.io", Authentication:true, Username:env.U, Password:env.P, TLS:true}')
 
     if [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
-        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$reg_payload" "https://$portainer_url/api/registries/$existing_id")
+        http_code=$(curl_portainer --token "$token" --body "$reg_payload" -- \
+            -k -s -o /dev/null -w "%{http_code}" -X PUT \
+            -H "Content-Type: application/json" \
+            "https://$portainer_url/api/registries/$existing_id")
     else
-        http_code=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$reg_payload" "https://$portainer_url/api/registries")
+        http_code=$(curl_portainer --token "$token" --body "$reg_payload" -- \
+            -k -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            "https://$portainer_url/api/registries")
     fi
 
     if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
@@ -3150,6 +3501,73 @@ MSG_PT[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 SUCESSO U
 MSG_EN[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 UNIVERSAL SUCCESS!\e[0m Access: https://%s"
 MSG_ES[ferramenta_traefik_e_portainer_sucesso_universal]="\n\e[32m🚀 ÉXITO UNIVERSAL!\e[0m Acceda: https://%s"
 
+################################################################################
+# aplicar_guarda_pre_swarm — Ciclo S1 (achado 5 da auditoria 2 de segurança):
+# numa instalação nova, do "docker swarm init" até o painel subir e criar o
+# serviço encha-guard passam ~2 min em que 2377/tcp, 7946/tcp+udp e 4789/udp
+# ficam abertas à Internet. Esta função aplica UMA vez, ANTES do swarm init, a
+# mesma tabela nftables "inet encha_guard" que o serviço encha-guard mantém
+# depois (o serviço substitui a tabela de forma atômica, então não há conflito).
+#
+# Usa a imagem do painel (já traz nft + /usr/local/bin/encha-guard) numa
+# execução descartável em rede host com só CAP_NET_ADMIN. NUNCA instala o
+# pacote "nftables" no host: o nftables.service do Debian faz "flush ruleset"
+# no boot e apagaria o guarda (ver instalar_protecao_ssh).
+#
+# Falha em qualquer etapa (sem docker, pull, nft) NUNCA aborta a instalação:
+# só avisa e segue — o serviço encha-guard do painel continua sendo criado
+# depois. Nó já membro de um Swarm (active/locked/pending/error): não faz nada.
+# Uso: aplicar_guarda_pre_swarm "<ip-do-nó>"
+################################################################################
+MSG_PT[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DO SWARM (antes do swarm init)\e[0m"
+MSG_EN[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APPLYING SWARM FIREWALL GUARD (before swarm init)\e[0m"
+MSG_ES[aplicar_guarda_pre_swarm_aplicando]="\e[97m• APLICANDO GUARDA DE FIREWALL DEL SWARM (antes de swarm init)\e[0m"
+
+MSG_PT[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Não foi possível aplicar o guarda de firewall antes do swarm init (imagem do painel indisponível, sem rede ou kernel sem nftables). A instalação continua; o serviço encha-guard do painel o aplicará assim que subir.\e[0m"
+MSG_EN[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  Could not apply the firewall guard before swarm init (panel image unavailable, no network or kernel without nftables). The installation continues; the panel's encha-guard service will apply it once it is up.\e[0m"
+MSG_ES[aplicar_guarda_pre_swarm_falha]="\e[33m⚠️  No fue posible aplicar el guarda de firewall antes de swarm init (imagen del panel no disponible, sin red o kernel sin nftables). La instalación continúa; el servicio encha-guard del panel lo aplicará cuando esté activo.\e[0m"
+
+aplicar_guarda_pre_swarm() {
+  local ip="${1:-}"
+
+  # Só age num nó FORA de qualquer Swarm ("inactive"; vazio = docker sem
+  # resposta, e aí o pull abaixo falha e só avisa). active/locked/pending/
+  # error = nó já membro de um cluster: o guarda é do serviço encha-guard, e
+  # esta tabela (só com o IP deste nó como par) descartaria o 2377/7946/4789
+  # dos outros nós até o serviço reaplicar a dele.
+  local estado_swarm
+  estado_swarm="$(sudo docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null || true)"
+  case "$estado_swarm" in
+    inactive | "") : ;;
+    *) return 0 ;;
+  esac
+
+  echo -e "$(t aplicar_guarda_pre_swarm_aplicando)"
+
+  local imagem="ghcr.io/enchaaluno/setup-panel:${ENCHA_PANEL_IMAGE_TAG:-$ENCHA_VERSION}"
+
+  if ! sudo docker pull "$imagem" > /dev/null 2>&1; then
+    echo -e "$(t aplicar_guarda_pre_swarm_falha)"
+    return 0
+  fi
+
+  # Falha fechada, como o próprio serviço (aplicar_se_necessario em
+  # guard/encha-guard.sh): se o kernel recusar a versão completa (o limite de
+  # SSH usa set dinâmico com "limit", que kernel antigo não aceita), aplica a
+  # mínima — sem pares e sem limite de SSH, só lo + drops do Swarm. Nunca
+  # deixar 2377/7946/4789 abertas por causa de uma mitigação de SSH. String
+  # fixa: nada de variável interpolada no -c (o IP vai só por -e, validado
+  # pelo script).
+  if ! sudo docker run --rm --network host --user 0 \
+       --cap-drop ALL --cap-add NET_ADMIN \
+       -e ENCHA_GUARD_PEERS="$ip" \
+       --entrypoint sh "$imagem" \
+       -c '/usr/local/bin/encha-guard --render | nft -f - || ENCHA_GUARD_PEERS= ENCHA_GUARD_SSH_PORTAS= /usr/local/bin/encha-guard --render | nft -f -' > /dev/null 2>&1; then
+    echo -e "$(t aplicar_guarda_pre_swarm_falha)"
+  fi
+  return 0
+}
+
 ferramenta_traefik_e_portainer() {
 
   # Verifica recursos e limpa tela
@@ -3162,6 +3580,10 @@ ferramenta_traefik_e_portainer() {
   if [[ -n "$ENCHA_NONINTERACTIVE" ]]; then
     echo -e "$(t ferramenta_traefik_e_portainer_noninterativo)"
     echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
+    # S3 (achado 7): --sempre porque o `clear` do topo desta função acabou de
+    # apagar o aviso que checar_dns_e_portas (main.sh) deu — sem repetir aqui,
+    # o aviso da infra completa só existia por uma fração de segundo na tela.
+    checar_dns_dominio --sempre "$url_portainer"
   else
     while true; do
       echo -e "$(t ferramenta_traefik_e_portainer_passo1)"
@@ -3205,6 +3627,8 @@ ferramenta_traefik_e_portainer() {
       if type msg_traefik_portainer &> /dev/null; then msg_traefik_portainer; fi
       echo -e "$(t ferramenta_traefik_e_portainer_confira)"
       echo -e "$(t ferramenta_traefik_e_portainer_resumo_link "$url_portainer" "$user_portainer" "$nome_servidor")"
+      # S3 (achado 7): só avisa (nunca bloqueia) se o DNS não aponta para cá.
+      checar_dns_dominio --sempre "$url_portainer"
       read -p "$(t ferramenta_traefik_e_portainer_confirma)" confirmacao
       if [[ "$confirmacao" =~ ^[Yy]$ ]]; then clear; break; else clear; fi
     done
@@ -3316,6 +3740,7 @@ EOL
 
   echo -e "$(t ferramenta_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  aplicar_guarda_pre_swarm "$ip"
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "$(t ferramenta_traefik_e_portainer_criando_rede)"
@@ -16191,9 +16616,485 @@ EOL
 
 }
 
+################################################################################
+# EnchaT (opção 84) — segredos do Docker (S4 do plano de segurança, achado 2).
+#
+# Espelho de encha-setup-panel/src/lib/stacks/enchat.ts (+ enchat-segredos.ts e
+# docker-secrets.ts): a stack sai com `secrets:` externos de nome versionado
+# (enchat_<chave>_<época>) e `*_FILE` no lugar das env em texto — mas SÓ quando
+# a versão informada do EnchaT lê `*_FILE` (>= ENCHAT_VERSAO_MINIMA_SEGREDOS).
+# Antes disso as imagens ignoram `*_FILE`, então o formato é o de sempre.
+# Mesmos labels do painel (com.encha.segredo-*), de propósito: quem reinstala
+# por um caminho limpa o que o outro criou.
+#
+# Neste caminho NÃO entram: UPDATER_TOKEN (não há sidecar de update aqui,
+# a env é "" como sempre) e LICENSE_KEY (a chave só serve para o login no GHCR;
+# o app é ativado pela tela de ativação). Os outros 10 valores sensíveis do
+# painel entram todos.
+#
+# uid/gid dos mounts (mode 0400): app 1000 (USER enchat, adduser -u 1000);
+# Pinfy 1000 (USER node); Postgres 0 (o entrypoint oficial lê *_FILE como root
+# antes de baixar o privilégio). Mesma tabela de DONO_SEGREDOS no painel.
+################################################################################
+# 0.4.1 e 0.4.2 foram publicadas sem o suporte a *_FILE (a 0.4.2 real, full e
+# free, saiu de outra sessão sem o E5); o E5/E5b saem só na 0.4.3.
+# Uma 0.4.1 ou 0.4.2 real ignora *_FILE: com segredos ela subiria sem MASTER_KEY/DATABASE_URL.
+# Espelho de ENCHAT_VERSAO_MINIMA_SEGREDOS em encha-setup-panel/src/lib/stacks/enchat-segredos.ts.
+ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.3"
+# S4c: além da versão, as imagens da stack (app, Pinfy, updater) têm de declarar o
+# recurso no LABEL abaixo (lista separada por espaço; token exato). Espelho de
+# LABEL_RECURSOS_ENCHAT/RECURSO_SEGREDOS_ARQUIVO em enchat-segredos.ts.
+ENCHAT_LABEL_RECURSOS="com.enchat.recursos"
+ENCHAT_RECURSO_SEGREDOS_ARQUIVO="segredos-arquivo"
+ENCHAT_SEGREDOS_CHAVES=(master_key postgres_password database_url pinfy_database_url pinfy_db_password pinfy_master_key pinfy_webhook_token pinfy_panel_password pinfy_session_key setup_token)
+ENCHAT_SEGREDOS_CRIADOS=()
+ENCHAT_IMAGENS_SEM_SUPORTE=()
+ENCHAT_IMAGENS_SEM_LEITURA=()
+ENCHAT_PORTAO_MOTIVO=""
+
+MSG_PT[ferramenta_enchat_segredos_criados]="\e[32m✓ Segredos do Docker criados — as chaves e senhas do EnchaT não ficam em texto na stack.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_criados]="\e[32m✓ Docker secrets created — EnchaT keys and passwords are not stored as plain text in the stack.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_criados]="\e[32m✓ Secretos de Docker creados — las claves y contraseñas de EnchaT no quedan en texto en el stack.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_falhou]="\e[33m↳ Não foi possível criar os segredos do Docker — seguindo com o formato antigo (variáveis em texto). Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_falhou]="\e[33m↳ Could not create the Docker secrets — continuing with the old format (plain-text variables). Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_falhou]="\e[33m↳ No fue posible crear los secretos de Docker — siguiendo con el formato antiguo (variables en texto). Nada se rompió.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ A versão %s do EnchaT ainda não lê segredos do Docker (a partir da %s) — usando variáveis em texto.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ EnchaT version %s does not read Docker secrets yet (from %s on) — using plain-text variables.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ La versión %s de EnchaT aún no lee secretos de Docker (desde la %s) — usando variables en texto.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Segredos do Docker não ativados: a imagem %s ainda não declara suporte (LABEL com.enchat.recursos) — usando variáveis em texto. Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Docker secrets not enabled: image %s does not declare support yet (LABEL com.enchat.recursos) — using plain-text variables. Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_imagem_sem_suporte]="\e[33m↳ Secretos de Docker no activados: la imagen %s aún no declara soporte (LABEL com.enchat.recursos) — usando variables en texto. Nada se rompió.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Segredos do Docker não ativados: não foi possível baixar/ler a imagem %s — usando variáveis em texto. Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Docker secrets not enabled: could not pull/read image %s — using plain-text variables. Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_imagem_sem_leitura]="\e[33m↳ Secretos de Docker no activados: no fue posible descargar/leer la imagen %s — usando variables en texto. Nada se rompió.\e[0m"
+
+# a >= b, só se as DUAS forem X.Y.Z legíveis (ilegível = falso, nunca erro).
+# Espelho de semverMaiorOuIgual em encha-setup-panel/src/lib/semver.ts.
+versao_semver_maior_ou_igual() {
+    local a="$1" b="$2"
+    versao_semver_maior "$a" "$b" && return 0
+    versao_semver_maior "$b" "$a" && return 1
+    [[ "$a" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "$b" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+# Portão por versão: true (exit 0) só se $1 >= ENCHAT_VERSAO_MINIMA_SEGREDOS.
+enchat_versao_usa_segredos() {
+    versao_semver_maior_ou_igual "$1" "$ENCHAT_VERSAO_MINIMA_SEGREDOS"
+}
+
+# S4c — portão por LABEL das imagens. As três imagens da release (app, Pinfy,
+# updater; mesma tag, mesmo owner) — espelho de registryAuth.images em enchat.ts.
+# A opção 84 não sobe o updater, mas exigir o label dele mantém o mesmo veredito
+# do painel para a mesma release.
+enchat_imagens_da_stack() {
+    printf '%s\n' \
+        "ghcr.io/enchainterno/enchat-free:$1" \
+        "ghcr.io/enchainterno/enchat-updater:$1" \
+        "ghcr.io/enchainterno/pinfy:$1"
+}
+
+# Token EXATO por palavra: "segredos-arquivo" vale; "nao-segredos-arquivo-x" e
+# "segredos-arquivo2" não. Separadores: só espaço, tab e quebra de linha (IFS
+# fixo aqui, não o do chamador) — o mesmo de labelTemToken no painel
+# (imagens-recursos.ts; vetor comum em stacks/label-recursos-vetor.tsv).
+# `-d ''` lê o valor INTEIRO: sem ele o `read` parava na 1ª quebra de linha e
+# um token na 2ª linha era ignorado (o painel o via). Sem expansão de glob.
+enchat_label_tem_token() {
+    local valor="$1" token="$2" partes p
+    [ -n "$token" ] || return 1
+    IFS=$' \t\n' builtin read -r -d '' -a partes <<< "$valor"
+    for p in ${partes[@]+"${partes[@]}"}; do
+        [ "$p" = "$token" ] && return 0
+    done
+    return 1
+}
+
+# true (0) só se a imagem $1 (já puxada) tem o token no label. Falha ao
+# inspecionar (imagem ausente, docker fora) = 1: nunca "true" na dúvida.
+enchat_imagem_declara_segredos_arquivo() {
+    local valor
+    valor=$(docker image inspect "$1" --format "{{index .Config.Labels \"$ENCHAT_LABEL_RECURSOS\"}}" 2>/dev/null) || return 1
+    enchat_label_tem_token "$valor" "$ENCHAT_RECURSO_SEGREDOS_ARQUIVO"
+}
+
+# Puxa as 3 imagens (a credencial do `docker login` já está na sessão; a saída
+# do pull é descartada) e confere o label de cada uma. Preenche
+# ENCHAT_IMAGENS_SEM_SUPORTE (sem label) e ENCHAT_IMAGENS_SEM_LEITURA (pull ou
+# inspeção falhou). Retorna 0 só se as TRÊS declaram.
+enchat_imagens_declaram_segredos() {
+    local img rc=0
+    ENCHAT_IMAGENS_SEM_SUPORTE=()
+    ENCHAT_IMAGENS_SEM_LEITURA=()
+    # Nomes de imagem não têm espaço nem glob: word splitting é seguro aqui.
+    for img in $(enchat_imagens_da_stack "$1"); do
+        if ! docker pull "$img" >/dev/null 2>&1; then
+            ENCHAT_IMAGENS_SEM_LEITURA+=("$img"); rc=1; continue
+        fi
+        if ! docker image inspect "$img" >/dev/null 2>&1; then
+            ENCHAT_IMAGENS_SEM_LEITURA+=("$img"); rc=1; continue
+        fi
+        if ! enchat_imagem_declara_segredos_arquivo "$img"; then
+            ENCHAT_IMAGENS_SEM_SUPORTE+=("$img"); rc=1
+        fi
+    done
+    return $rc
+}
+
+# Portão final: versão >= mínima E labels das 3 imagens. Versão abaixo do mínimo
+# nem puxa/inspeciona nada. ENCHAT_PORTAO_MOTIVO diz por que fechou (versao|imagens).
+enchat_portao_segredos() {
+    ENCHAT_PORTAO_MOTIVO=""
+    ENCHAT_IMAGENS_SEM_SUPORTE=()
+    ENCHAT_IMAGENS_SEM_LEITURA=()
+    if ! enchat_versao_usa_segredos "$1"; then
+        ENCHAT_PORTAO_MOTIVO="versao"
+        return 1
+    fi
+    if ! enchat_imagens_declaram_segredos "$1"; then
+        ENCHAT_PORTAO_MOTIVO="imagens"
+        return 1
+    fi
+    return 0
+}
+
+# URLs de conexão — fonte única: o mesmo texto vai para a env (formato antigo)
+# ou para o CONTEÚDO do segredo (formato novo). Usam as globais do fluxo.
+enchat_url_banco_app() {
+    printf '%s' "postgresql://enchat:${postgres_password}@enchat_postgres:5432/enchat?sslmode=disable"
+}
+enchat_url_banco_pinfy() {
+    printf '%s' "postgresql://pinfy:${pinfy_db_password}@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
+}
+
+# Conteúdo cru do segredo $1 (stdout, sem \n final — vai por stdin ao docker).
+enchat_valor_segredo() {
+    case "$1" in
+        master_key) printf '%s' "$enchat_master_key" ;;
+        postgres_password) printf '%s' "$postgres_password" ;;
+        database_url) enchat_url_banco_app ;;
+        pinfy_database_url) enchat_url_banco_pinfy ;;
+        pinfy_db_password) printf '%s' "$pinfy_db_password" ;;
+        pinfy_master_key) printf '%s' "$pinfy_master_key" ;;
+        pinfy_webhook_token) printf '%s' "$pinfy_webhook_token" ;;
+        pinfy_panel_password) printf '%s' "$pinfy_panel_password" ;;
+        pinfy_session_key) printf '%s' "$pinfy_session_key" ;;
+        setup_token) printf '%s' "$enchat_setup_token" ;;
+        *) return 1 ;;
+    esac
+}
+
+# Cria os segredos versionados (época em ENCHAT_EPOCA_SEGREDOS) ANTES do
+# deploy. Falhou um → desfaz os desta rodada e retorna 1 (o chamador cai no
+# formato antigo; nada foi trocado). Nomes criados em ENCHAT_SEGREDOS_CRIADOS.
+enchat_criar_segredos_docker() {
+    local chave nome
+    ENCHAT_SEGREDOS_CRIADOS=()
+    for chave in "${ENCHAT_SEGREDOS_CHAVES[@]}"; do
+        nome="enchat_${chave}_${ENCHAT_EPOCA_SEGREDOS}"
+        if enchat_valor_segredo "$chave" | docker secret create "$nome" \
+            --label "com.encha.segredo-stack=enchat" \
+            --label "com.encha.segredo-base=enchat_${chave}" - >/dev/null 2>&1; then
+            ENCHAT_SEGREDOS_CRIADOS+=("$nome")
+        else
+            for nome in "${ENCHAT_SEGREDOS_CRIADOS[@]}"; do
+                docker secret rm "$nome" >/dev/null 2>&1
+            done
+            ENCHAT_SEGREDOS_CRIADOS=()
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Linha de env de UM valor sensível: texto (formato antigo) ou `_FILE`.
+# $1=nome da env  $2=chave do segredo  $3=valor em texto. Sem \n final.
+enchat_linha_env() {
+    local env="$1" chave="$2" valor="$3"
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        printf '      %s_FILE: "/run/secrets/enchat_%s"' "$env" "$chave"
+    else
+        printf '      %s: "%s"' "$env" "$valor"
+    fi
+}
+
+# Bloco `secrets:` de um serviço (com \n final) em $1 (nome da variável);
+# vazio no formato antigo. $2=uid  $3=gid  demais=chaves.
+enchat_bloco_montagens() {
+    local destino="$1" uid="$2" gid="$3" bloco="" chave
+    shift 3
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        bloco="    secrets:"$'\n'
+        for chave in "$@"; do
+            bloco+="      - source: enchat_${chave}"$'\n'
+            bloco+="        target: enchat_${chave}"$'\n'
+            bloco+="        uid: \"${uid}\""$'\n'
+            bloco+="        gid: \"${gid}\""$'\n'
+            bloco+="        mode: 0400"$'\n'
+        done
+    fi
+    printf -v "$destino" '%s' "$bloco"
+}
+
+# Monta as variáveis que o heredoc do enchat.yaml interpola: as linhas de env
+# sensível (ENCHAT_YAML_ENV_*), os mounts por serviço (ENCHAT_YAML_SEG_*) e o
+# bloco `secrets:` de topo (ENCHAT_YAML_SEG_TOPO, sem \n final). No formato
+# antigo tudo isso reproduz, byte a byte, o YAML de antes do S4. Exige
+# ENCHAT_USA_SEGREDOS (true/false) e, com true, ENCHAT_EPOCA_SEGREDOS.
+enchat_montar_blocos_yaml() {
+    ENCHAT_YAML_ENV_DATABASE_URL="$(enchat_linha_env DATABASE_URL database_url "$(enchat_url_banco_app)")"
+    ENCHAT_YAML_ENV_PINFY_MASTER_KEY="$(enchat_linha_env PINFY_MASTER_KEY pinfy_master_key "$pinfy_master_key")"
+    ENCHAT_YAML_ENV_PINFY_WEBHOOK_TOKEN="$(enchat_linha_env PINFY_WEBHOOK_TOKEN pinfy_webhook_token "$pinfy_webhook_token")"
+    ENCHAT_YAML_ENV_PINFY_DB_PASSWORD="$(enchat_linha_env PINFY_DB_PASSWORD pinfy_db_password "$pinfy_db_password")"
+    ENCHAT_YAML_ENV_MASTER_KEY="$(enchat_linha_env ENCHAT_MASTER_KEY master_key "$enchat_master_key")"
+    ENCHAT_YAML_ENV_SETUP_TOKEN="$(enchat_linha_env ENCHAT_SETUP_TOKEN setup_token "$enchat_setup_token")"
+    ENCHAT_YAML_ENV_PINFY_DATABASE_URL="$(enchat_linha_env DATABASE_URL pinfy_database_url "$(enchat_url_banco_pinfy)")"
+    ENCHAT_YAML_ENV_PINFY_MASTER="$(enchat_linha_env MASTER_KEY pinfy_master_key "$pinfy_master_key")"
+    ENCHAT_YAML_ENV_PINFY_PANEL="$(enchat_linha_env PANEL_PASSWORD pinfy_panel_password "$pinfy_panel_password")"
+    ENCHAT_YAML_ENV_PINFY_SESSION="$(enchat_linha_env SESSION_KEY pinfy_session_key "$pinfy_session_key")"
+    ENCHAT_YAML_ENV_POSTGRES_PASSWORD="$(enchat_linha_env POSTGRES_PASSWORD postgres_password "$postgres_password")"
+
+    enchat_bloco_montagens ENCHAT_YAML_SEG_APP 1000 1000 master_key database_url pinfy_db_password pinfy_master_key pinfy_webhook_token setup_token
+    enchat_bloco_montagens ENCHAT_YAML_SEG_PINFY 1000 1000 pinfy_database_url pinfy_master_key pinfy_panel_password pinfy_session_key
+    enchat_bloco_montagens ENCHAT_YAML_SEG_POSTGRES 0 0 postgres_password
+
+    ENCHAT_YAML_SEG_TOPO=""
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        local chave
+        ENCHAT_YAML_SEG_TOPO="secrets:"
+        for chave in "${ENCHAT_SEGREDOS_CHAVES[@]}"; do
+            ENCHAT_YAML_SEG_TOPO+=$'\n'"  enchat_${chave}:"$'\n'"    external: true"$'\n'"    name: enchat_${chave}_${ENCHAT_EPOCA_SEGREDOS}"
+        done
+    fi
+}
+
+# Remove as versões antigas dos segredos DEPOIS do deploy confirmado (o
+# chamador só invoca com o wait_stack em 0). $@ = nomes a manter (os criados
+# agora). Mesma disciplina de limpar_segredos_antigos_painel (auditoria C9):
+# só age com prova de que o spec novo foi aplicado (algum serviço referencia
+# um nome mantido) e nunca remove um segredo que o Spec atual OU o PreviousSpec
+# (alvo do rollback) de qualquer serviço da stack ainda referencia. Best-effort:
+# se qualquer inspeção falhar, não remove nada (sobra para a próxima rodada).
+enchat_limpar_segredos_antigos() {
+    local servico atuais anteriores referenciados="" novo_aplicado=false nome manter
+    for servico in enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres; do
+        atuais=$(docker service inspect "$servico" --format '{{range .Spec.TaskTemplate.ContainerSpec.Secrets}}{{println .SecretName}}{{end}}' 2>/dev/null) || return 0
+        anteriores=$(docker service inspect "$servico" --format '{{if .PreviousSpec}}{{range .PreviousSpec.TaskTemplate.ContainerSpec.Secrets}}{{println .SecretName}}{{end}}{{end}}' 2>/dev/null) || return 0
+        referenciados+="${atuais}"$'\n'"${anteriores}"$'\n'
+        for manter in "$@"; do
+            printf '%s\n' "$atuais" | grep -qxF -- "$manter" && novo_aplicado=true
+        done
+    done
+    [ "$novo_aplicado" = true ] || return 0
+
+    while IFS= read -r nome; do
+        [ -z "$nome" ] && continue
+        for manter in "$@"; do
+            [ "$nome" = "$manter" ] && continue 2
+        done
+        printf '%s\n' "$referenciados" | grep -qxF -- "$nome" && continue
+        docker secret rm "$nome" >/dev/null 2>&1
+    done < <(docker secret ls --filter "label=com.encha.segredo-stack=enchat" --format '{{.Name}}' 2>/dev/null)
+    return 0
+}
+
+################################################################################
+# S5-B — opção 84: reaproveitar credenciais existentes e não inventar versão.
+#
+# 1) Reinstalar por cima de um banco que já tem dados NUNCA pode sortear valores
+#    novos: a senha do Postgres nova não abre o volume, a ENCHAT_MASTER_KEY nova
+#    aborta o boot pelo canário e deixa os segredos cifrados ilegíveis, a
+#    PINFY_SESSION_KEY nova invalida todas as sessões do WhatsApp. As credenciais
+#    da instalação anterior estão em /root/dados_vps/dados_enchat (0600, gravado
+#    por esta mesma função no passo 5/5).
+#      - dados_enchat legível com chave-mestra e senha do Postgres -> REUSA;
+#      - sem isso, mas /var/enchat/postgres/PG_VERSION existe        -> ABORTA
+#        (nunca oferece apagar dados);
+#      - sem banco e sem dados_enchat utilizável                     -> instalação
+#        nova, sorteia como sempre.
+# 2) A versão sugerida é a estável REAL publicada no Console; sem resposta do
+#    Console não há sugestão (o operador digita) — nunca um "1.0.0" inventado.
+#
+# Costuras de teste (produção usa os defaults): ENCHA_ROOT_DIR substitui /root,
+# ENCHA_DATA_DIR substitui /var/enchat.
+################################################################################
+MSG_PT[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ Já existe um banco do EnchaT neste servidor (%s), mas as credenciais dele não foram encontradas em %s.\e[0m\n\e[97m   Instalar de novo sortearia chaves NOVAS e tornaria os dados existentes ilegíveis (a senha do Postgres não abriria o volume e a ENCHAT_MASTER_KEY nova não decifra o que já foi gravado).\n   • Recupere as chaves da instalação anterior (arquivo dados_enchat da pasta /root/dados_vps, ou o backup dele) e coloque em %s; ou\n   • se esta for uma instalação NOVA e os dados antigos não importam, remova você mesmo o diretório %s e rode a opção de novo.\n   Nada foi alterado.\e[0m"
+MSG_EN[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ An EnchaT database already exists on this server (%s), but its credentials were not found in %s.\e[0m\n\e[97m   Installing again would generate NEW keys and make the existing data unreadable (the Postgres password would not open the volume and the new ENCHAT_MASTER_KEY cannot decrypt what was already stored).\n   • Recover the keys from the previous installation (the dados_enchat file in the /root/dados_vps folder, or its backup) and put them in %s; or\n   • if this is a NEW installation and the old data does not matter, remove the directory %s yourself and run the option again.\n   Nothing was changed.\e[0m"
+MSG_ES[ferramenta_enchat_banco_sem_chaves]="\e[31m❌ Ya existe una base de datos de EnchaT en este servidor (%s), pero sus credenciales no se encontraron en %s.\e[0m\n\e[97m   Instalar de nuevo generaría claves NUEVAS y dejaría los datos existentes ilegibles (la contraseña de Postgres no abriría el volumen y la nueva ENCHAT_MASTER_KEY no descifra lo ya guardado).\n   • Recupere las claves de la instalación anterior (el archivo dados_enchat de la carpeta /root/dados_vps, o su respaldo) y colóquelas en %s; o\n   • si esta es una instalación NUEVA y los datos antiguos no importan, elimine usted mismo el directorio %s y ejecute la opción de nuevo.\n   No se cambió nada.\e[0m"
+
+MSG_PT[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reaproveitando as credenciais de %s — o banco existente continua legível.\e[0m"
+MSG_EN[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reusing the credentials from %s — the existing database stays readable.\e[0m"
+MSG_ES[ferramenta_enchat_credenciais_reaproveitadas]="\e[32m↳ Reutilizando las credenciales de %s — la base de datos existente sigue legible.\e[0m"
+
+MSG_PT[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mVersão do EnchaT (estável atual: %s; nunca 'latest') [%s]: \e[0m"
+MSG_EN[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mEnchaT version (current stable: %s; never 'latest') [%s]: \e[0m"
+MSG_ES[ferramenta_enchat_versao_prompt_sugerida]="🔢 \e[33mVersión de EnchaT (estable actual: %s; nunca 'latest') [%s]: \e[0m"
+
+MSG_PT[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mVersão do EnchaT no formato X.Y.Z (veja a versão estável no portal EnchaT; nunca 'latest'): \e[0m"
+MSG_EN[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mEnchaT version in X.Y.Z format (see the stable version on the EnchaT portal; never 'latest'): \e[0m"
+MSG_ES[ferramenta_enchat_versao_prompt_sem_sugestao]="🔢 \e[33mVersión de EnchaT en formato X.Y.Z (vea la versión estable en el portal EnchaT; nunca 'latest'): \e[0m"
+
+# Caminhos (com as costuras de teste).
+enchat_arquivo_dados() {
+    printf '%s' "${ENCHA_ROOT_DIR:-/root}/dados_vps/dados_enchat"
+}
+enchat_dir_postgres() {
+    printf '%s' "${ENCHA_DATA_DIR:-/var/enchat}/postgres"
+}
+enchat_arquivo_pg_version() {
+    printf '%s/PG_VERSION' "$(enchat_dir_postgres)"
+}
+
+# Valor de "Rótulo: valor" no dados_enchat (primeira ocorrência; sem CR).
+# $1 = rótulo literal (sem regex), $2 = arquivo.
+enchat_ler_campo_dados() {
+    awk -v r="$1: " 'index($0, r) == 1 { print substr($0, length(r) + 1); exit }' "$2" 2>/dev/null | tr -d '\r'
+}
+
+# Decide o que fazer com credenciais existentes. Retorna:
+#   0 = há credenciais utilizáveis no dados_enchat -> ENCHAT_REUSAR_DADOS=true
+#   1 = instalação nova (nem banco nem credenciais)  -> sorteia
+#   2 = há banco mas NÃO há credenciais utilizáveis  -> quem chama deve ABORTAR
+enchat_avaliar_credenciais_existentes() {
+    local arq mk pg
+    ENCHAT_REUSAR_DADOS=false
+    arq="$(enchat_arquivo_dados)"
+    if [ -r "$arq" ]; then
+        mk="$(enchat_ler_campo_dados "ENCHAT_MASTER_KEY" "$arq")"
+        pg="$(enchat_ler_campo_dados "Senha do Postgres" "$arq")"
+        if [ -n "$mk" ] && [ -n "$pg" ]; then
+            ENCHAT_REUSAR_DADOS=true
+            return 0
+        fi
+    fi
+    if [ -e "$(enchat_arquivo_pg_version)" ]; then
+        return 2
+    fi
+    return 1
+}
+
+# Preenche as variáveis de credencial: valores do dados_enchat quando
+# ENCHAT_REUSAR_DADOS=true (o que faltar no arquivo — campos que versões
+# antigas não gravavam — é sorteado), tudo sorteado numa instalação nova.
+# pinfy_master_key e pinfy_webhook_token nunca foram gravados no dados_enchat
+# e não protegem dado em disco: são sempre novos (o app e o Pinfy leem o mesmo
+# valor da stack).
+enchat_definir_credenciais() {
+    local arq
+    enchat_master_key=""; postgres_password=""; pinfy_panel_password=""
+    pinfy_db_password=""; pinfy_session_key=""; enchat_setup_token=""
+    if [ "${ENCHAT_REUSAR_DADOS:-false}" = true ]; then
+        arq="$(enchat_arquivo_dados)"
+        enchat_master_key="$(enchat_ler_campo_dados "ENCHAT_MASTER_KEY" "$arq")"
+        postgres_password="$(enchat_ler_campo_dados "Senha do Postgres" "$arq")"
+        pinfy_panel_password="$(enchat_ler_campo_dados "Senha do painel Pinfy" "$arq")"
+        pinfy_db_password="$(enchat_ler_campo_dados "Senha do papel Pinfy no Postgres" "$arq")"
+        pinfy_session_key="$(enchat_ler_campo_dados "PINFY_SESSION_KEY" "$arq")"
+        enchat_setup_token="$(grep -m1 -oE '\?setup=[A-Za-z0-9_-]+' "$arq" 2>/dev/null | sed 's/^?setup=//')" || true
+    fi
+    [ -n "$enchat_master_key" ] || enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
+    [ -n "$postgres_password" ] || postgres_password=$(openssl rand -hex 24)
+    pinfy_master_key=$(openssl rand -hex 24)
+    pinfy_webhook_token=$(openssl rand -hex 24)
+    [ -n "$pinfy_panel_password" ] || pinfy_panel_password=$(openssl rand -hex 24)
+    # Senha do papel restrito "pinfy" no Postgres (S12 C1/C2, plano de
+    # segurança do EnchaT) — o app cria/mantém esse papel no boot com ela, e o
+    # Pinfy conecta com a MESMA senha (ver DATABASE_URL do enchat_pinfy
+    # abaixo). Nunca o superusuário "enchat" mais.
+    [ -n "$pinfy_db_password" ] || pinfy_db_password=$(openssl rand -hex 24)
+    # Cifra (AES-256-GCM) a sessão do WhatsApp guardada pelo Pinfy no Postgres
+    # (S12 C3). GUARDE como a ENCHAT_MASTER_KEY: perdê-la faz toda instância
+    # pedir QR code de novo.
+    [ -n "$pinfy_session_key" ] || pinfy_session_key=$(openssl rand -hex 32)
+    # Token de primeiro acesso (S-03 do plano de segurança do EnchaT): o app só
+    # cria o primeiro administrador para quem abrir https://<domínio>/?setup=<token>.
+    # Sem a env ele sorteia um e escreve só no log do contêiner. Mesmo formato
+    # do instalar.sh standalone (hex, 48 caracteres; o app exige >= 20).
+    [ -n "$enchat_setup_token" ] || enchat_setup_token=$(openssl rand -hex 24)
+}
+
+# Versão estável REAL publicada no Console (GET /api/version, o mesmo que o
+# painel usa em release-info.ts). Imprime X.Y.Z, ou nada se o Console não
+# respondeu / respondeu algo que não é X.Y.Z fixo (nunca "latest").
+enchat_versao_estavel_console() {
+    local corpo v
+    corpo="$(curl -fsS --max-time 8 \
+        "https://console.enchat.pro/api/version?app=enchat&edicao=free&canal=stable" 2>/dev/null)" || return 0
+    if command -v jq >/dev/null 2>&1; then
+        v="$(printf '%s' "$corpo" | jq -r '.latest_version // empty' 2>/dev/null)" || v=""
+    else
+        v="$(printf '%s' "$corpo" | sed -n 's/.*"latest_version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+    fi
+    [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && printf '%s' "$v"
+    return 0
+}
+
+# Pergunta a versão e deixa em $versao_enchat (possivelmente vazia/inválida —
+# quem chama valida). Enter só vale com sugestão REAL do Console.
+enchat_perguntar_versao() {
+    local sugerida
+    sugerida="$(enchat_versao_estavel_console)"
+    if [ -n "$sugerida" ]; then
+        echo -en "$(t ferramenta_enchat_versao_prompt_sugerida "$sugerida" "$sugerida")"
+    else
+        echo -en "$(t ferramenta_enchat_versao_prompt_sem_sugestao)"
+    fi
+    read -r versao_enchat
+    versao_enchat="${versao_enchat:-$sugerida}"
+}
+
+# Grava ${ENCHA_ROOT_DIR:-/root}/dados_vps/dados_enchat (0600) com as
+# credenciais da instalação. A opção 84 chama DUAS vezes (auditoria do S5):
+#   - logo ANTES do deploy: se a sessão cair (Ctrl-C, SSH) enquanto espera os
+#     serviços — com o Postgres já inicializado com estas credenciais —, elas
+#     já estão salvas, e a próxima execução as reaproveita (sem isso ela via o
+#     PG_VERSION e abortava, numa instalação nova começada por ela mesma);
+#   - no passo 5/5, com o mesmo conteúdo.
+# Subshell: não muda o diretório de quem chama.
+enchat_gravar_dados_enchat() {
+  (
+  cd "${ENCHA_ROOT_DIR:-/root}/dados_vps" || exit 1
+  # 600 ANTES de escrever: /root/dados_vps é 755 e bind-montado no contêiner
+  # do painel (uid 1001, ver o chmod de dados_portainer) — este arquivo leva a
+  # ENCHAT_MASTER_KEY e o link de primeiro acesso. O chmod vale também para
+  # um dados_enchat já existente (reinstalação), que o `cat >` manteria 644.
+  : > dados_enchat
+  chmod 600 dados_enchat
+  cat > dados_enchat <<EOL
+[ ENCHAT GRÁTIS ]
+
+Painel: https://$url_enchat
+Primeiro acesso (criar o administrador, uso único): https://$url_enchat/?setup=$enchat_setup_token
+Versão: $versao_enchat
+ENCHAT_MASTER_KEY: $enchat_master_key
+Senha do Postgres: $postgres_password
+Senha do painel Pinfy: $pinfy_panel_password
+Senha do papel Pinfy no Postgres: $pinfy_db_password
+PINFY_SESSION_KEY: $pinfy_session_key
+
+⚠️ GUARDE a ENCHAT_MASTER_KEY em local seguro! Sem ela, os segredos
+   gravados no banco são irrecuperáveis.
+⚠️ GUARDE a PINFY_SESSION_KEY também! Sem ela, toda instância do WhatsApp
+   pede QR code de novo (leads e conversas não se perdem).
+EOL
+  )
+}
+
 ferramenta_enchat(){
   msg_enchat
   dados
+
+  # S5-B: banco existente sem as credenciais dele -> aborta ANTES de perguntar
+  # qualquer coisa (nada é alterado, nada é sugerido apagar).
+  enchat_avaliar_credenciais_existentes
+  if [ "$?" -eq 2 ]; then
+    echo -e "$(t ferramenta_enchat_banco_sem_chaves "$(enchat_dir_postgres)" "$(enchat_arquivo_dados)" "$(enchat_arquivo_dados)" "$(enchat_dir_postgres)")"
+    msg_retorno_menu
+    return 1
+  fi
 
   while true; do
     MSG_PT[ferramenta_enchat_passo1]="\n📍 Passo 1/3"
@@ -16212,11 +17113,7 @@ ferramenta_enchat(){
     MSG_EN[ferramenta_enchat_passo2]="\n📍 Step 2/3"
     MSG_ES[ferramenta_enchat_passo2]="\n📍 Paso 2/3"
     echo -e "$(t ferramenta_enchat_passo2)"
-    MSG_PT[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersão do EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
-    MSG_EN[ferramenta_enchat_versao_prompt]="🔢 \e[33mEnchaT version (EnchaT portal, never 'latest') [1.0.0]: \e[0m"
-    MSG_ES[ferramenta_enchat_versao_prompt]="🔢 \e[33mVersión de EnchaT (portal EnchaT, nunca 'latest') [1.0.0]: \e[0m"
-    echo -en "$(t ferramenta_enchat_versao_prompt)" && read -r versao_enchat
-    versao_enchat="${versao_enchat:-1.0.0}"
+    enchat_perguntar_versao
     if [ "$versao_enchat" = "latest" ] || ! [[ "$versao_enchat" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
       MSG_PT[ferramenta_enchat_versao_invalida]="\e[31m❌ Use uma versão fixa no formato X.Y.Z indicada no portal EnchaT (nunca 'latest').\e[0m"
       MSG_EN[ferramenta_enchat_versao_invalida]="\e[31m❌ Use a fixed version in X.Y.Z format shown on the EnchaT portal (never 'latest').\e[0m"
@@ -16309,27 +17206,38 @@ ferramenta_enchat(){
   MSG_ES[ferramenta_enchat_gerando_segredos]="\e[97m• GENERANDO SECRETOS \e[33m[2/5]\e[0m"
   echo -e "$(t ferramenta_enchat_gerando_segredos)"
   echo ""
-  enchat_master_key=$(openssl rand -base64 32 | tr -d '\n')
-  postgres_password=$(openssl rand -hex 24)
-  pinfy_master_key=$(openssl rand -hex 24)
-  pinfy_webhook_token=$(openssl rand -hex 24)
-  pinfy_panel_password=$(openssl rand -hex 24)
-  # Senha do papel restrito "pinfy" no Postgres (S12 C1/C2, plano de
-  # segurança do EnchaT) — o app cria/mantém esse papel no boot com ela, e o
-  # Pinfy conecta com a MESMA senha (ver DATABASE_URL do enchat_pinfy
-  # abaixo). Nunca o superusuário "enchat" mais.
-  pinfy_db_password=$(openssl rand -hex 24)
-  # Cifra (AES-256-GCM) a sessão do WhatsApp guardada pelo Pinfy no Postgres
-  # (S12 C3). GUARDE como a ENCHAT_MASTER_KEY: perdê-la faz toda instância
-  # pedir QR code de novo.
-  pinfy_session_key=$(openssl rand -hex 32)
-  # Token de primeiro acesso (S-03 do plano de segurança do EnchaT): o app só
-  # cria o primeiro administrador para quem abrir https://<domínio>/?setup=<token>.
-  # Sem a env ele sorteia um e escreve só no log do contêiner. Mesmo formato
-  # do instalar.sh standalone (hex, 48 caracteres; o app exige >= 20).
-  enchat_setup_token=$(openssl rand -hex 24)
+  enchat_definir_credenciais
+  if [ "$ENCHAT_REUSAR_DADOS" = true ]; then
+    echo -e "$(t ferramenta_enchat_credenciais_reaproveitadas "$(enchat_arquivo_dados)")"
+  fi
 
-  mkdir -p /var/enchat/media /var/enchat/postgres
+  # S4 (achado 2): segredos do Docker em vez de env em texto, quando a versão
+  # informada do EnchaT já lê *_FILE (portão por versão). Criados ANTES do
+  # deploy; se a criação falhar cai no formato antigo, sem quebrar nada.
+  ENCHAT_USA_SEGREDOS=false
+  ENCHAT_EPOCA_SEGREDOS=$(date +%s)
+  if enchat_portao_segredos "$versao_enchat"; then
+    if enchat_criar_segredos_docker; then
+      ENCHAT_USA_SEGREDOS=true
+      echo -e "$(t ferramenta_enchat_segredos_criados)"
+    else
+      echo -e "$(t ferramenta_enchat_segredos_falhou)"
+    fi
+  elif [ "$ENCHAT_PORTAO_MOTIVO" = "imagens" ]; then
+    # S4c: versão ok, mas nem todas as imagens declaram suporte (ou não deu
+    # para lê-las) — formato antigo, dizendo QUAL imagem barrou.
+    for img_seg in ${ENCHAT_IMAGENS_SEM_SUPORTE[@]+"${ENCHAT_IMAGENS_SEM_SUPORTE[@]}"}; do
+      echo -e "$(t ferramenta_enchat_segredos_imagem_sem_suporte "$img_seg")"
+    done
+    for img_seg in ${ENCHAT_IMAGENS_SEM_LEITURA[@]+"${ENCHAT_IMAGENS_SEM_LEITURA[@]}"}; do
+      echo -e "$(t ferramenta_enchat_segredos_imagem_sem_leitura "$img_seg")"
+    done
+  else
+    echo -e "$(t ferramenta_enchat_segredos_versao_antiga "$versao_enchat" "$ENCHAT_VERSAO_MINIMA_SEGREDOS")"
+  fi
+  enchat_montar_blocos_yaml
+
+  mkdir -p "${ENCHA_DATA_DIR:-/var/enchat}/media" "$(enchat_dir_postgres)"
 
   MSG_PT[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
   MSG_EN[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALLING ENCHAT \e[33m[3/5]\e[0m"
@@ -16354,7 +17262,7 @@ services:
     volumes:
       - /var/enchat/media:/data/media
     environment:
-      DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?sslmode=disable"
+${ENCHAT_YAML_ENV_DATABASE_URL}
       WHATSAPP_APP_SECRET: ""
       WHATSAPP_VERIFY_TOKEN: ""
       WHATSAPP_API_VERSION: "v21.0"
@@ -16364,10 +17272,10 @@ services:
       INSTAGRAM_VERIFY_TOKEN: ""
       INSTAGRAM_API_VERSION: "v21.0"
       PINFY_BASE_URL: "http://enchat_pinfy:3000"
-      PINFY_MASTER_KEY: "$pinfy_master_key"
+${ENCHAT_YAML_ENV_PINFY_MASTER_KEY}
       PINFY_WEBHOOK_URL: "http://enchat_app:8080/api/webhooks/pinfy"
-      PINFY_WEBHOOK_TOKEN: "$pinfy_webhook_token"
-      PINFY_DB_PASSWORD: "$pinfy_db_password"
+${ENCHAT_YAML_ENV_PINFY_WEBHOOK_TOKEN}
+${ENCHAT_YAML_ENV_PINFY_DB_PASSWORD}
       MAUTIC_BASE_URL: ""
       MAUTIC_USER: ""
       MAUTIC_PASSWORD: ""
@@ -16379,13 +17287,13 @@ services:
       MEDIA_DIR: "/data/media"
       LICENSE_SERVER_URL: "https://console.enchat.pro"
       ENCHAT_CANAL: "stable"
-      ENCHAT_MASTER_KEY: "$enchat_master_key"
-      ENCHAT_SETUP_TOKEN: "$enchat_setup_token"
+${ENCHAT_YAML_ENV_MASTER_KEY}
+${ENCHAT_YAML_ENV_SETUP_TOKEN}
       TZ: "America/Sao_Paulo"
       UPDATER_URL: ""
       UPDATER_TOKEN: ""
       UPDATE_MODE: ""
-    deploy:
+${ENCHAT_YAML_SEG_APP}    deploy:
       replicas: 1
       update_config:
         order: start-first
@@ -16431,13 +17339,13 @@ services:
     environment:
       # Usuário restrito "pinfy" (papel criado pelo enchat_app no boot, S12
       # C1) — nunca mais o superusuário "enchat".
-      DATABASE_URL: "postgresql://pinfy:$pinfy_db_password@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
-      MASTER_KEY: "$pinfy_master_key"
-      PANEL_PASSWORD: "$pinfy_panel_password"
-      SESSION_KEY: "$pinfy_session_key"
+${ENCHAT_YAML_ENV_PINFY_DATABASE_URL}
+${ENCHAT_YAML_ENV_PINFY_MASTER}
+${ENCHAT_YAML_ENV_PINFY_PANEL}
+${ENCHAT_YAML_ENV_PINFY_SESSION}
       LICENSE_SERVER_URL: "https://app.pinfy.fun"
       TZ: "America/Sao_Paulo"
-    deploy:
+${ENCHAT_YAML_SEG_PINFY}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -16453,9 +17361,9 @@ services:
       - /var/enchat/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: "enchat"
-      POSTGRES_PASSWORD: "$postgres_password"
+${ENCHAT_YAML_ENV_POSTGRES_PASSWORD}
       POSTGRES_DB: "enchat"
-    deploy:
+${ENCHAT_YAML_SEG_POSTGRES}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -16470,8 +17378,11 @@ networks:
   enchat_net:
     driver: overlay
     attachable: true
-
+${ENCHAT_YAML_SEG_TOPO}
 EOL
+
+  # Credenciais no disco ANTES do deploy (ver enchat_gravar_dados_enchat).
+  enchat_gravar_dados_enchat || return 1
 
   STACK_NAME="enchat"
   stack_editavel
@@ -16496,6 +17407,13 @@ EOL
 
   pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy:$versao_enchat
   wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
+  enchat_stack_ok=$?
+
+  # Só depois do deploy confirmado (wait_stack em 0): remove as versões antigas
+  # dos segredos (nunca as que um serviço ainda referencia — ver a função).
+  if [ "$ENCHAT_USA_SEGREDOS" = true ] && [ "$enchat_stack_ok" -eq 0 ]; then
+    enchat_limpar_segredos_antigos "${ENCHAT_SEGREDOS_CRIADOS[@]}"
+  fi
 
   MSG_PT[ferramenta_enchat_salvando_credenciais]="\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
   MSG_EN[ferramenta_enchat_salvando_credenciais]="\e[97m• SAVING CREDENTIALS \e[33m[5/5]\e[0m"
@@ -16503,30 +17421,7 @@ EOL
   echo -e "$(t ferramenta_enchat_salvando_credenciais)"
   echo ""
 
-  cd /root/dados_vps
-  # 600 ANTES de escrever: /root/dados_vps é 755 e bind-montado no contêiner
-  # do painel (uid 1001, ver o chmod de dados_portainer) — este arquivo leva a
-  # ENCHAT_MASTER_KEY e o link de primeiro acesso. O chmod vale também para
-  # um dados_enchat já existente (reinstalação), que o `cat >` manteria 644.
-  : > dados_enchat
-  chmod 600 dados_enchat
-  cat > dados_enchat <<EOL
-[ ENCHAT GRÁTIS ]
-
-Painel: https://$url_enchat
-Primeiro acesso (criar o administrador, uso único): https://$url_enchat/?setup=$enchat_setup_token
-Versão: $versao_enchat
-ENCHAT_MASTER_KEY: $enchat_master_key
-Senha do Postgres: $postgres_password
-Senha do painel Pinfy: $pinfy_panel_password
-Senha do papel Pinfy no Postgres: $pinfy_db_password
-PINFY_SESSION_KEY: $pinfy_session_key
-
-⚠️ GUARDE a ENCHAT_MASTER_KEY em local seguro! Sem ela, os segredos
-   gravados no banco são irrecuperáveis.
-⚠️ GUARDE a PINFY_SESSION_KEY também! Sem ela, toda instância do WhatsApp
-   pede QR code de novo (leads e conversas não se perdem).
-EOL
+  enchat_gravar_dados_enchat || return 1
   cd
 
   unset chave_licenca GHCR_TOKEN AUTH_JSON
@@ -23879,6 +24774,8 @@ instalar_traefik_e_portainer() {
 
   echo -e "$(t instalar_traefik_e_portainer_titulo)"
   echo -e "$(t instalar_traefik_e_portainer_dados_recebidos "$url_portainer")"
+  # S3 (achado 7): só avisa (nunca bloqueia) se o DNS não aponta para esta VPS.
+  checar_dns_dominio "$url_portainer"
 
   # --- INSTALAÇÃO INTELIGENTE (Sua lógica original mantida) ---
 
@@ -24030,6 +24927,7 @@ EOL
 
   echo -e "$(t instalar_traefik_e_portainer_iniciando_swarm)"
   ip=$(hostname -I | tr ' ' '\n' | grep -vE '^(127\.0\.0\.1|10\.)' | head -n 1)
+  aplicar_guarda_pre_swarm "$ip"
   sudo docker swarm init --advertise-addr "$ip" > /dev/null 2>&1 || true
 
   echo -e "$(t instalar_traefik_e_portainer_criando_rede)"
@@ -25401,6 +26299,7 @@ instalar_ambiente_completo() {
     msg_traefik_portainer
     echo -e "$(t instalar_ambiente_completo_passo1_6)"
     echo -ne "$(t instalar_ambiente_completo_portainer_dominio_pergunta)" && read -r url_portainer
+    checar_dns_dominio "$url_portainer"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_passo2_6)"
@@ -25518,10 +26417,12 @@ instalar_ambiente_completo() {
     msg_n8n # Supondo que esta função exiba um banner para o N8N
     echo -e "$(t instalar_ambiente_completo_n8n_passo1_7 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_n8n_dominio_pergunta)" && read -r url_editorn8n
+    checar_dns_dominio "$url_editorn8n"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_n8n_passo2_7 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_n8n_webhook_pergunta)" && read -r url_webhookn8n
+    checar_dns_dominio "$url_webhookn8n"   # S3 (achado 7): só avisa
     echo ""
 
     echo -e "$(t instalar_ambiente_completo_n8n_passo3_7 "$amarelo")"
@@ -25552,6 +26453,7 @@ instalar_ambiente_completo() {
     msg_evolution_api # Supondo que esta função exiba um banner para a Evolution
     echo -e "$(t instalar_ambiente_completo_evolution_passo1_1 "$amarelo")"
     echo -ne "$(t instalar_ambiente_completo_evolution_dominio_pergunta)" && read -r url_evolution
+    checar_dns_dominio "$url_evolution"   # S3 (achado 7): só avisa
     echo ""
 
     # =================================================================
@@ -27226,34 +28128,34 @@ deploy_stack_painel_via_portainer() {
     fi
 
     local token
-    token=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
+    token=$(curl_portainer --rede "$rede" \
+        --body "$(portainer_json_login "$user_portainer" "$pass_portainer")" -- \
         -s -X POST http://portainer_portainer:9000/api/auth \
-        -H "Content-Type: application/json" \
-        -d "$(jq -nc --arg u "$user_portainer" --arg p "$pass_portainer" '{username:$u,password:$p}')" 2>/dev/null | jq -r .jwt)
+        -H "Content-Type: application/json" 2>/dev/null | jq -r .jwt)
     if [ -z "$token" ] || [ "$token" = "null" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_falha_auth "$user_portainer")"
         return 1
     fi
 
     local endpoint_id
-    endpoint_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
+    endpoint_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s http://portainer_portainer:9000/api/endpoints 2>/dev/null | jq -r '.[0].Id')
     if [ -z "$endpoint_id" ] || [ "$endpoint_id" = "null" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_sem_endpoint)"
         return 1
     fi
 
     local swarm_id
-    swarm_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" "http://portainer_portainer:9000/api/endpoints/$endpoint_id/docker/swarm" 2>/dev/null | jq -r .ID)
+    swarm_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s "http://portainer_portainer:9000/api/endpoints/$endpoint_id/docker/swarm" 2>/dev/null | jq -r .ID)
     if [ -z "$swarm_id" ] || [ "$swarm_id" = "null" ]; then
         swarm_id=$(docker info --format '{{.Swarm.Cluster.ID}}')
     fi
 
     # Localiza a stack já gerenciada pelo Portainer (se houver) e seu Env atual.
     local stacks_json stack_id current_env_json
-    stacks_json=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-        -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null)
+    stacks_json=$(curl_portainer --rede "$rede" --token "$token" -- \
+        -s http://portainer_portainer:9000/api/stacks 2>/dev/null)
     stack_id=$(echo "$stacks_json" | jq -r '.[] | select(.Name=="encha-panel") | .Id' 2>/dev/null | head -n1)
     if [ -n "$stack_id" ]; then
         current_env_json=$(echo "$stacks_json" | jq -c --arg id "$stack_id" '.[] | select((.Id|tostring)==$id) | (.Env // [])')
@@ -27339,75 +28241,80 @@ deploy_stack_painel_via_portainer() {
     # tag $tag_imagem estivesse cacheada localmente (ou vice-versa), o
     # ensureHostDirs de QUALQUER stack com hostDirs (ex.: EnchaT Grátis)
     # cairia no fallback alpine/git e puxaria do Hub no meio do install.
+    # S2: as duas senhas (painel e Portainer) entram no jq por VARIÁVEL DE
+    # AMBIENTE (env.PP/env.SP) — `--arg pp/sp` as poria no argv do jq.
     local env_json
-    env_json=$(jq -nc \
-        --arg host "$url_painel" \
-        --arg pu "$panel_user_val" --arg pp "$panel_pass_env_val" \
-        --arg su "$user_portainer" --arg sp "$sp_env_val" \
-        --arg tag "$tag_imagem" \
-        --arg paf "$panel_admin_password_file_val" \
-        --arg ppf "$portainer_password_file_val" \
-        --arg pasn "$panel_admin_password_secret_novo" \
-        --arg ppsn "$portainer_password_secret_novo" \
-        '[{name:"ENCHA_PANEL_HOST",value:$host},
-          {name:"PANEL_ADMIN_USER",value:$pu},
-          {name:"PANEL_ADMIN_PASSWORD",value:$pp},
-          {name:"PORTAINER_USER",value:$su},
-          {name:"PORTAINER_PASSWORD",value:$sp},
-          {name:"PANEL_IMAGE_TAG",value:$tag},
-          {name:"PANEL_ADMIN_PASSWORD_FILE",value:$paf},
-          {name:"PORTAINER_PASSWORD_FILE",value:$ppf},
-          {name:"PANEL_ADMIN_PASSWORD_SECRET_NAME",value:$pasn},
-          {name:"PORTAINER_PASSWORD_SECRET_NAME",value:$ppsn}]')
+    env_json=$(HOST="$url_painel" \
+        PU="$panel_user_val" PP="$panel_pass_env_val" \
+        SU="$user_portainer" SP="$sp_env_val" \
+        TAG="$tag_imagem" \
+        PAF="$panel_admin_password_file_val" \
+        PPF="$portainer_password_file_val" \
+        PASN="$panel_admin_password_secret_novo" \
+        PPSN="$portainer_password_secret_novo" \
+        jq -nc \
+        '[{name:"ENCHA_PANEL_HOST",value:env.HOST},
+          {name:"PANEL_ADMIN_USER",value:env.PU},
+          {name:"PANEL_ADMIN_PASSWORD",value:env.PP},
+          {name:"PORTAINER_USER",value:env.SU},
+          {name:"PORTAINER_PASSWORD",value:env.SP},
+          {name:"PANEL_IMAGE_TAG",value:env.TAG},
+          {name:"PANEL_ADMIN_PASSWORD_FILE",value:env.PAF},
+          {name:"PORTAINER_PASSWORD_FILE",value:env.PPF},
+          {name:"PANEL_ADMIN_PASSWORD_SECRET_NAME",value:env.PASN},
+          {name:"PORTAINER_PASSWORD_SECRET_NAME",value:env.PPSN}]')
 
-    local resp http_code
-    resp=$(mktemp)
+    # Código e corpo da resposta vêm de curl_portainer_http (capturados no host,
+    # ver o comentário dela): PORTAINER_HTTP_CODE / PORTAINER_HTTP_BODY.
+    local http_code
 
     if [ -n "$stack_id" ]; then
         echo -e "$(t deploy_stack_painel_via_portainer_ja_gerenciada "$stack_id")"
         local body
-        body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
-            '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
-        http_code=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-            -s -o "$resp" -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-            -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+        # S2: o Env (com as senhas) chega ao jq por variável de ambiente, não
+        # por `--argjson env` (argv), e o corpo segue por stdin.
+        body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
+            '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
+        curl_portainer_http --rede "$rede" --token "$token" --body "$body" -- \
+            -s -X PUT \
+            -H "Content-Type: application/json" \
+            "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null
+        http_code="$PORTAINER_HTTP_CODE"
     else
-        http_code=$(docker run --rm --network "$rede" -v "$stack_file":"$stack_file":ro "${ENCHA_CURL_IMAGE}" \
-            -s -o "$resp" -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $token" \
+        curl_portainer_http --rede "$rede" --mount "$stack_file" \
+            --token "$token" --form-env "$env_json" -- \
+            -s -X POST \
             -F "Name=encha-panel" \
             -F "SwarmID=$swarm_id" \
             -F "endpointId=$endpoint_id" \
-            -F "Env=$env_json" \
             -F "file=@$stack_file" \
-            http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null)
+            http://portainer_portainer:9000/api/stacks/create/swarm/file 2>/dev/null
+        http_code="$PORTAINER_HTTP_CODE"
         if [ "$http_code" = "409" ]; then
             echo -e "$(t deploy_stack_painel_via_portainer_409)"
-            stack_id=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-                -s -H "Authorization: Bearer $token" http://portainer_portainer:9000/api/stacks 2>/dev/null \
+            stack_id=$(curl_portainer --rede "$rede" --token "$token" -- \
+                -s http://portainer_portainer:9000/api/stacks 2>/dev/null \
                 | jq -r '.[] | select(.Name=="encha-panel") | .Id' | head -n1)
             if [ -n "$stack_id" ]; then
                 local body
-                body=$(jq -n --rawfile f "$stack_file" --argjson env "$env_json" \
-                    '{StackFileContent:$f, Env:$env, Prune:false, PullImage:true}')
-                http_code=$(docker run --rm --network "$rede" "${ENCHA_CURL_IMAGE}" \
-                    -s -o "$resp" -w "%{http_code}" -X PUT \
-                    -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-                    -d "$body" "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null)
+                body=$(ENV_JSON="$env_json" jq -n --rawfile f "$stack_file" \
+                    '{StackFileContent:$f, Env:(env.ENV_JSON|fromjson), Prune:false, PullImage:true}')
+                curl_portainer_http --rede "$rede" --token "$token" --body "$body" -- \
+                    -s -X PUT \
+                    -H "Content-Type: application/json" \
+                    "http://portainer_portainer:9000/api/stacks/$stack_id?endpointId=$endpoint_id" 2>/dev/null
+                http_code="$PORTAINER_HTTP_CODE"
             fi
         fi
     fi
 
     if ! [[ "$http_code" =~ ^20[0-9]$ ]]; then
         echo -e "$(t deploy_stack_painel_via_portainer_falhou "$http_code")"
-        echo -e "$(t deploy_stack_painel_via_portainer_detalhe "$(cat "$resp" 2>/dev/null)")"
-        rm -f "$resp"
+        echo -e "$(t deploy_stack_painel_via_portainer_detalhe "$PORTAINER_HTTP_BODY")"
         return 1
     fi
 
     echo -e "$(t deploy_stack_painel_via_portainer_sucesso)"
-    rm -f "$resp"
 
     # Só limpa a versão anterior depois que a stack REALMENTE aplicou a nova
     # (acima) — nunca antes, senão uma stack que falhasse ficaria sem
@@ -27544,6 +28451,11 @@ ferramenta_encha_panel() {
         echo -e "$(t ferramenta_encha_panel_sem_url)"
         return 1
     fi
+
+    # S3 (achado 7): só avisa (nunca bloqueia) se o DNS do painel não aponta
+    # para esta VPS. --sempre porque o `clear` do topo desta função apagou o
+    # aviso que main.sh deu (checar_dns_e_portas / coletar_inputs_so_painel).
+    checar_dns_dominio --sempre "$url_painel"
 
     # Knob de teste (mesma regra do ENCHA_SRC_BRANCH em main.sh): NUNCA em
     # produção — existe só pra testar uma imagem específica (ex.: uma

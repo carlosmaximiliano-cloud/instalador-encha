@@ -47,7 +47,30 @@ export type SwarmContext = {
    * mecanismo.
    */
   machineId?: string;
+  /**
+   * Época (segundos, só dígitos) que versiona o NOME dos segredos do Docker
+   * desta instalação (`<base>_<época>`) — preenchida pelo installer antes de
+   * generateYaml, só para stacks que declaram `dockerSecrets`. Segredo do
+   * Docker é imutável: trocar o valor = criar outro nome. Ver
+   * StackDefinition.dockerSecrets.
+   */
+  versaoSegredos?: string;
+  /**
+   * Portão por LABEL dos segredos do Docker (S4c): true SOMENTE se o installer
+   * leu, depois do pull, o label das imagens da stack e TODAS declaram o
+   * recurso (ver StackDefinition.dockerSecretsGate). Ausente/false = formato
+   * antigo. O generateYaml só LÊ este campo — nunca consulta imagem (é puro).
+   */
+  imagensSuportamSegredos?: boolean;
 };
+
+/**
+ * Um segredo do Swarm a criar antes do deploy (ver StackDefinition.dockerSecrets).
+ * `name` é o nome VERSIONADO (o que o YAML referencia em `external: true`);
+ * `base` é o mesmo sem a época — vai no label do segredo para o installer achar
+ * as versões antigas depois. `value` é o conteúdo cru (nunca logar).
+ */
+export type DockerSecretSpec = { base: string; name: string; value: string };
 
 export type GeneratedSecret = {
   name: string;
@@ -248,6 +271,25 @@ export type StackDefinition = {
    * (ex.: postgres) já ajusta sozinho no boot — não dar chown neles.
    */
   hostDirs?: (string | { path: string; owner: string })[];
+  /**
+   * Trava contra chave nova por cima de dados existentes (S5-A). Se o arquivo
+   * `arquivoNoHost` (ex.: /var/enchat/postgres/PG_VERSION) existe no host E
+   * o painel não tem valor salvo (stack_secrets) para algum segredo em
+   * `segredosQueNaoPodemSerNovos`, a instalação ABORTA em vez de sortear valor
+   * novo: a senha do Postgres nova não abre o volume, a chave-mestra nova
+   * torna os segredos cifrados ilegíveis. Nunca apaga nada do host.
+   * `arquivoDeCredenciais`: onde o operador acha as chaves de uma instalação
+   * feita fora do painel (ex.: /root/dados_vps/dados_enchat da opção 84 do
+   * menu); só entra na mensagem de erro — ausente = a stack só se instala
+   * pelo painel. A mensagem é montada a partir DESTES campos (route.ts),
+   * nunca fixa: apontar o diretório de outra stack mandaria apagar o banco
+   * errado.
+   */
+  protegeDadosExistentes?: {
+    arquivoNoHost: string;
+    segredosQueNaoPodemSerNovos: string[];
+    arquivoDeCredenciais?: string;
+  };
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;
@@ -297,6 +339,32 @@ export type StackDefinition = {
   logoUrl?: string;
   installVia?: "panel" | "bash";
   generateSecrets?: (values: Record<string, unknown>) => GeneratedSecret[];
+  /**
+   * Segredos do Docker que o installer deve criar no Swarm ANTES do deploy
+   * (com os valores EFETIVOS — os mesmos que o generateYaml usa, já com o que
+   * foi reaproveitado de uma instalação anterior). Lista vazia = esta
+   * instalação usa o formato antigo (variáveis em texto): é o portão por
+   * versão da imagem. O installer cria, faz o deploy e só depois remove as
+   * versões antigas; ver installer.ts. Ausente = a stack não usa segredos do
+   * Docker.
+   */
+  dockerSecrets?: (
+    values: Record<string, unknown>,
+    secrets: Record<string, string>,
+    ctx: SwarmContext
+  ) => DockerSecretSpec[];
+  /**
+   * Portão dos segredos do Docker por LABEL das imagens (S4c). Depois do
+   * pré-pull das imagens de `registryAuth.images`, o installer lê o label
+   * `label` de CADA uma; só se todas contêm o token `recurso` (e `versaoOk`
+   * passa) é que `ctx.imagensSuportamSegredos` vira true. `versaoOk` falso =
+   * nem consulta os labels. Falha ao ler = fechado, com aviso ao operador.
+   */
+  dockerSecretsGate?: {
+    versaoOk: (imageTag: string | undefined) => boolean;
+    label: string;
+    recurso: string;
+  };
   generateYaml: (
     values: Record<string, unknown>,
     secrets: Record<string, string>,

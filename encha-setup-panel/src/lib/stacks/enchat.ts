@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn } from "./types";
+import { type DockerSecretSpec, type StackDefinition, type SwarmContext, fqdn } from "./types";
 import { randomBytes } from "node:crypto";
 import { ENCHAT_APP_HOSTNAME } from "../enchat-fingerprint";
+import { LABEL_RECURSOS_ENCHAT, RECURSO_SEGREDOS_ARQUIVO, enchatPortaoSegredos, enchatUsaSegredos } from "./enchat-segredos";
 
 // Imagem do Pinfy (WhatsApp não-oficial, bundled). Antes fixa em
 // "ghcr.io/enchainterno/pinfy-api:1.0.0" (uma republicação manual,
@@ -55,6 +56,163 @@ function updaterRepoFrom(imageRepo: string): string {
   return imageRepo.replace(/\/enchat-free$/, "/enchat-updater");
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Segredos do Docker (plano de segurança, achado 2 — ciclo S4).
+//
+// Com a imagem >= ENCHAT_VERSAO_MINIMA_SEGREDOS (enchat-segredos.ts), os
+// valores abaixo saem do YAML: cada um vira um segredo do Swarm (criado pelo
+// installer ANTES do deploy, com nome versionado `enchat_<chave>_<época>`) e o
+// serviço recebe só `NOME_FILE=/run/secrets/enchat_<chave>`. Assim nada disso
+// aparece em `docker service inspect` nem no editor de stacks do Portainer.
+// Abaixo do mínimo o formato é EXATAMENTE o de sempre (variáveis em texto) —
+// as imagens antigas ignoram `*_FILE`.
+//
+// Contrato com o EnchaT (ciclo E5): app, Pinfy e updater leem `NOME_FILE`
+// (variável direta não vazia vence; senão o arquivo, sem "\n" final); o
+// Postgres oficial lê POSTGRES_PASSWORD_FILE.
+// ─────────────────────────────────────────────────────────────────────────
+export type ChaveSegredo =
+  | "master_key"
+  | "postgres_password"
+  | "database_url"
+  | "pinfy_database_url"
+  | "pinfy_db_password"
+  | "pinfy_master_key"
+  | "pinfy_webhook_token"
+  | "pinfy_panel_password"
+  | "pinfy_session_key"
+  | "updater_token"
+  | "setup_token"
+  | "license_key";
+
+// Usuário/grupo que RODA o processo em cada imagem — o Swarm monta o arquivo
+// como root:root por padrão e, com mode 0400, quem não é root leva EACCES (o
+// serviço sobe sem o segredo e trava; lição do C9 no painel). Fontes:
+//   app      -> ENCHAT GRÁTIS/Dockerfile: `adduser -D -H -u 1000 enchat` + `USER enchat`
+//               (mesmo 1000:1000 do hostDirs de /var/enchat/media abaixo);
+//   pinfy    -> third_party/pinfy/.../Dockerfile: `USER node` (S-44), uid/gid 1000
+//               da imagem node:alpine. Antes do S-44 rodava como root, e
+//               root lê qualquer arquivo — 1000 continua correto nos dois casos;
+//   updater  -> cmd/enchat-updater/Dockerfile: sem USER (root, precisa do docker.sock);
+//   postgres -> pgvector/pgvector:pg16 (base postgres oficial): o entrypoint
+//               lê POSTGRES_PASSWORD_FILE como root ANTES de baixar o
+//               privilégio (gosu postgres), então uid 0 basta.
+export const DONO_SEGREDOS = {
+  app: { uid: "1000", gid: "1000" },
+  pinfy: { uid: "1000", gid: "1000" },
+  updater: { uid: "0", gid: "0" },
+  postgres: { uid: "0", gid: "0" },
+} as const;
+
+const CHAVES_POR_SERVICO = {
+  app: ["master_key", "database_url", "pinfy_db_password", "pinfy_master_key", "pinfy_webhook_token", "updater_token", "setup_token", "license_key"],
+  updater: ["updater_token"],
+  pinfy: ["pinfy_database_url", "pinfy_master_key", "pinfy_panel_password", "pinfy_session_key"],
+  postgres: ["postgres_password"],
+} as const satisfies Record<keyof typeof DONO_SEGREDOS, readonly ChaveSegredo[]>;
+
+const baseSegredo = (c: ChaveSegredo): string => `enchat_${c}`;
+const caminhoSegredo = (c: ChaveSegredo): string => `/run/secrets/${baseSegredo(c)}`;
+
+// URLs de conexão — fonte única: o mesmo texto vai para a env (formato
+// antigo) ou para o CONTEÚDO do segredo (formato novo). A senha é hex, sem
+// nada a codificar.
+const urlBancoApp = (senha: string): string =>
+  `postgresql://enchat:${senha}@enchat_postgres:5432/enchat?sslmode=disable`;
+const urlBancoPinfy = (senhaPinfy: string): string =>
+  `postgresql://pinfy:${senhaPinfy}@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable`;
+
+const sanitiza = (x: unknown): string => String(x ?? "").replace(/[`"\n\r]/g, "");
+
+function valoresDosSegredos(values: Record<string, unknown>, secrets: Record<string, string>): Record<ChaveSegredo, string> {
+  return {
+    master_key: secrets.enchat_master_key,
+    postgres_password: secrets.postgres_password,
+    database_url: urlBancoApp(secrets.postgres_password),
+    pinfy_database_url: urlBancoPinfy(secrets.pinfy_db_password),
+    pinfy_db_password: secrets.pinfy_db_password,
+    pinfy_master_key: secrets.pinfy_master_key,
+    pinfy_webhook_token: secrets.pinfy_webhook_token,
+    pinfy_panel_password: secrets.pinfy_panel_password,
+    pinfy_session_key: secrets.pinfy_session_key,
+    updater_token: secrets.updater_token,
+    setup_token: secrets.enchat_setup_token,
+    license_key: sanitiza(values.chave_licenca),
+  };
+}
+
+// Chaves efetivamente usadas: license_key só existe se houver chave (segredo
+// vazio o Docker recusa; sem chave o app sobe como hoje, `LICENSE_KEY: ""`).
+function chavesAtivas(valores: Record<ChaveSegredo, string>, servico: keyof typeof CHAVES_POR_SERVICO): ChaveSegredo[] {
+  return CHAVES_POR_SERVICO[servico].filter((c) => valores[c] !== "" && valores[c] !== undefined);
+}
+
+export function nomeVersionadoSegredo(c: ChaveSegredo, versao: string): string {
+  return `${baseSegredo(c)}_${versao}`;
+}
+
+function usaSegredosNesteCtx(ctx: SwarmContext): boolean {
+  return enchatPortaoSegredos(ctx.release?.imageTag, ctx.imagensSuportamSegredos);
+}
+
+function exigeVersaoSegredos(ctx: SwarmContext): string {
+  if (!ctx.versaoSegredos || !/^\d{1,20}$/.test(ctx.versaoSegredos)) {
+    throw new Error("ctx.versaoSegredos ausente/ inválida com segredos do Docker ligados — bug no installer.");
+  }
+  return ctx.versaoSegredos;
+}
+
+// Os segredos que o installer cria no Swarm (vazio = formato antigo).
+export function segredosDockerDoEnchat(
+  values: Record<string, unknown>,
+  secrets: Record<string, string>,
+  ctx: SwarmContext
+): DockerSecretSpec[] {
+  if (!usaSegredosNesteCtx(ctx)) return [];
+  const versao = exigeVersaoSegredos(ctx);
+  const valores = valoresDosSegredos(values, secrets);
+  const vistas = new Set<ChaveSegredo>();
+  const out: DockerSecretSpec[] = [];
+  for (const servico of Object.keys(CHAVES_POR_SERVICO) as (keyof typeof CHAVES_POR_SERVICO)[]) {
+    for (const c of chavesAtivas(valores, servico)) {
+      if (vistas.has(c)) continue;
+      vistas.add(c);
+      out.push({ base: baseSegredo(c), name: nomeVersionadoSegredo(c, versao), value: valores[c] });
+    }
+  }
+  return out;
+}
+
+// Linha de env de UM valor sensível: texto (formato antigo) ou `_FILE`.
+function linhaEnv(usar: boolean, env: string, chave: ChaveSegredo, valor: string, ativas: ChaveSegredo[]): string {
+  if (usar && ativas.includes(chave)) return `      ${env}_FILE: "${caminhoSegredo(chave)}"`;
+  return `      ${env}: "${valor}"`;
+}
+
+function blocoMontagens(usar: boolean, servico: keyof typeof CHAVES_POR_SERVICO, ativas: ChaveSegredo[]): string {
+  if (!usar) return "";
+  const { uid, gid } = DONO_SEGREDOS[servico];
+  return (
+    "    secrets:\n" +
+    ativas
+      .map(
+        (c) =>
+          `      - source: ${baseSegredo(c)}\n        target: ${baseSegredo(c)}\n        uid: "${uid}"\n        gid: "${gid}"\n        mode: 0400\n`
+      )
+      .join("")
+  );
+}
+
+function blocoSegredosTopo(usar: boolean, ativasTodas: ChaveSegredo[], versao: string): string {
+  if (!usar) return "";
+  return (
+    "\nsecrets:\n" +
+    ativasTodas
+      .map((c) => `  ${baseSegredo(c)}:\n    external: true\n    name: ${nomeVersionadoSegredo(c, versao)}\n`)
+      .join("")
+  );
+}
+
 const schema = z
   .object({
     url_enchat: fqdn,
@@ -95,6 +253,15 @@ export const enchat: StackDefinition = {
   // de cmd/enchat-updater). É onde fica o STATE_FILE dele (ver
   // enchat_updater no generateYaml).
   hostDirs: [{ path: "/var/enchat/media", owner: "1000:1000" }, "/var/enchat/postgres", "/var/enchat/updater"],
+  // S5-A: PG_VERSION só existe depois que o Postgres inicializou o volume. Com
+  // banco ali e sem as chaves salvas no painel (ex.: instalado pela opção 84 do
+  // menu), gerar valores novos deixaria o app sem conectar (senha) e os
+  // segredos cifrados ilegíveis (ENCHAT_MASTER_KEY) — ver installer.ts.
+  protegeDadosExistentes: {
+    arquivoNoHost: "/var/enchat/postgres/PG_VERSION",
+    segredosQueNaoPodemSerNovos: ["enchat_master_key", "postgres_password"],
+    arquivoDeCredenciais: "/root/dados_vps/dados_enchat",
+  },
   // licenca_pareamento_id também nunca deve ser persistido — é só uma
   // referência a uma linha de license_pairings (que já guarda a chave
   // CIFRADA); persisti-lo em stack_secrets seria redundante e aumentaria a
@@ -200,15 +367,40 @@ export const enchat: StackDefinition = {
     // a atualização pelo sidecar só troca a imagem do serviço — o env fica.
     { name: "enchat_setup_token", value: randomBytes(24).toString("base64url") },
   ],
+  dockerSecrets: segredosDockerDoEnchat,
+  dockerSecretsGate: {
+    versaoOk: enchatUsaSegredos,
+    label: LABEL_RECURSOS_ENCHAT,
+    recurso: RECURSO_SEGREDOS_ARQUIVO,
+  },
   generateYaml(values, secrets, ctx) {
     const v = values as z.infer<typeof schema>;
     if (!ctx.release) throw new Error("ctx.release ausente em generateYaml — bug no installer.");
     const net = ctx.networkName;
-    const san = (x: unknown) => String(x ?? "").replace(/[`"\n\r]/g, "");
+    const san = sanitiza;
     const domain = san(v.url_enchat);
     const { imageRepo, imageTag } = ctx.release;
     const updaterRepo = updaterRepoFrom(imageRepo);
     const pinfyRepo = pinfyRepoFrom(imageRepo);
+    // Portão por versão (ver o bloco "Segredos do Docker" acima): abaixo da
+    // versão mínima o YAML é byte a byte o de sempre.
+    const usar = usaSegredosNesteCtx(ctx);
+    const versaoSeg = usar ? exigeVersaoSegredos(ctx) : "";
+    const valores = valoresDosSegredos(values, secrets);
+    const ativas = {
+      app: chavesAtivas(valores, "app") as ChaveSegredo[],
+      updater: chavesAtivas(valores, "updater") as ChaveSegredo[],
+      pinfy: chavesAtivas(valores, "pinfy") as ChaveSegredo[],
+      postgres: chavesAtivas(valores, "postgres") as ChaveSegredo[],
+    };
+    const todasAtivas = [...new Set([...ativas.app, ...ativas.updater, ...ativas.pinfy, ...ativas.postgres])];
+    const segApp = blocoMontagens(usar, "app", ativas.app);
+    const segUpdater = blocoMontagens(usar, "updater", ativas.updater);
+    const segPinfy = blocoMontagens(usar, "pinfy", ativas.pinfy);
+    const segPostgres = blocoMontagens(usar, "postgres", ativas.postgres);
+    const segTopo = blocoSegredosTopo(usar, todasAtivas, versaoSeg);
+    const env = (nome: string, chave: ChaveSegredo, servico: keyof typeof ativas, valor: string) =>
+      linhaEnv(usar, nome, chave, valor, ativas[servico]);
     return `version: "3.7"
 services:
 
@@ -221,7 +413,7 @@ services:
     volumes:
       - /var/enchat/media:/data/media
     environment:
-      DATABASE_URL: "postgresql://enchat:${secrets.postgres_password}@enchat_postgres:5432/enchat?sslmode=disable"
+${env("DATABASE_URL", "database_url", "app", urlBancoApp(secrets.postgres_password))}
       WHATSAPP_APP_SECRET: ""
       WHATSAPP_VERIFY_TOKEN: ""
       WHATSAPP_API_VERSION: "v21.0"
@@ -231,10 +423,10 @@ services:
       INSTAGRAM_VERIFY_TOKEN: ""
       INSTAGRAM_API_VERSION: "v21.0"
       PINFY_BASE_URL: "http://enchat_pinfy:3000"
-      PINFY_MASTER_KEY: "${secrets.pinfy_master_key}"
+${env("PINFY_MASTER_KEY", "pinfy_master_key", "app", secrets.pinfy_master_key)}
       PINFY_WEBHOOK_URL: "http://enchat_app:8080/api/webhooks/pinfy"
-      PINFY_WEBHOOK_TOKEN: "${secrets.pinfy_webhook_token}"
-      PINFY_DB_PASSWORD: "${secrets.pinfy_db_password}"
+${env("PINFY_WEBHOOK_TOKEN", "pinfy_webhook_token", "app", secrets.pinfy_webhook_token)}
+${env("PINFY_DB_PASSWORD", "pinfy_db_password", "app", secrets.pinfy_db_password)}
       MAUTIC_BASE_URL: ""
       MAUTIC_USER: ""
       MAUTIC_PASSWORD: ""
@@ -246,15 +438,15 @@ services:
       MEDIA_DIR: "/data/media"
       LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       ENCHAT_CANAL: "stable"
-      ENCHAT_MASTER_KEY: "${secrets.enchat_master_key}"
-      ENCHAT_SETUP_TOKEN: "${secrets.enchat_setup_token}"
+${env("ENCHAT_MASTER_KEY", "master_key", "app", secrets.enchat_master_key)}
+${env("ENCHAT_SETUP_TOKEN", "setup_token", "app", secrets.enchat_setup_token)}
       ENCHAT_MACHINE_ID: "${san(ctx.machineId ?? "")}"
-      LICENSE_KEY: "${san(String(values.chave_licenca ?? ""))}"
+${env("LICENSE_KEY", "license_key", "app", san(String(values.chave_licenca ?? "")))}
       TZ: "America/Sao_Paulo"
       UPDATER_URL: "http://enchat_updater:9000"
-      UPDATER_TOKEN: "${secrets.updater_token}"
+${env("UPDATER_TOKEN", "updater_token", "app", secrets.updater_token)}
       UPDATE_MODE: ""
-    deploy:
+${segApp}    deploy:
       replicas: 1
       update_config:
         order: start-first
@@ -305,7 +497,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/enchat/updater:/data
     environment:
-      UPDATER_TOKEN: "${secrets.updater_token}"
+${env("UPDATER_TOKEN", "updater_token", "updater", secrets.updater_token)}
       LICENSE_SERVER_URL: "${CONSOLE_BASE_URL}"
       ENCHAT_EDICAO: "free"
       ENCHAT_CANAL: "stable"
@@ -324,7 +516,7 @@ services:
       PINFY_HEALTHZ_URL: "http://enchat_pinfy:3000/api/health"
       HEALTHZ_URL: "http://enchat_app:8080/api/healthz"
       STATE_FILE: "/data/estado.json"
-    deploy:
+${segUpdater}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -344,13 +536,13 @@ services:
     environment:
       # Usuário restrito "pinfy" (papel criado pelo enchat_app no boot, S12
       # C1) — nunca mais o superusuário "enchat".
-      DATABASE_URL: "postgresql://pinfy:${secrets.pinfy_db_password}@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
-      MASTER_KEY: "${secrets.pinfy_master_key}"
-      PANEL_PASSWORD: "${secrets.pinfy_panel_password}"
-      SESSION_KEY: "${secrets.pinfy_session_key}"
+${env("DATABASE_URL", "pinfy_database_url", "pinfy", urlBancoPinfy(secrets.pinfy_db_password))}
+${env("MASTER_KEY", "pinfy_master_key", "pinfy", secrets.pinfy_master_key)}
+${env("PANEL_PASSWORD", "pinfy_panel_password", "pinfy", secrets.pinfy_panel_password)}
+${env("SESSION_KEY", "pinfy_session_key", "pinfy", secrets.pinfy_session_key)}
       LICENSE_SERVER_URL: "${PINFY_LICENSE_SERVER_URL}"
       TZ: "America/Sao_Paulo"
-    deploy:
+${segPinfy}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -366,9 +558,9 @@ services:
       - /var/enchat/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: "enchat"
-      POSTGRES_PASSWORD: "${secrets.postgres_password}"
+${env("POSTGRES_PASSWORD", "postgres_password", "postgres", secrets.postgres_password)}
       POSTGRES_DB: "enchat"
-    deploy:
+${segPostgres}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -383,7 +575,7 @@ networks:
   enchat_net:
     driver: overlay
     attachable: true
-`;
+${segTopo}`;
   },
   postInstall: {
     // accessUrl fica LIMPO de propósito: installer.ts o usa para conferir o

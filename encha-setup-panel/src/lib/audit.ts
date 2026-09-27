@@ -6,6 +6,13 @@ export type AuditAction =
   | "logout"
   | "stack.install"
   | "stack.install.fail"
+  // Segredos do Docker da stack (ver docker-secrets.ts). Só contagens no
+  // `meta` — nunca nome de segredo com valor, nunca valor.
+  | "stack.secrets.create"
+  | "stack.secrets.cleanup"
+  // Portão por label das imagens (S4c): só o veredito e, por imagem, o estado
+  // (declara/sem_label/erro_leitura) — nunca segredo.
+  | "stack.secrets.gate"
   | "stack.remove"
   | "stack.remove.fail"
   | "stack.update"
