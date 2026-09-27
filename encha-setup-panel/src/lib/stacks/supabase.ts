@@ -74,6 +74,7 @@ export const supabase: StackDefinition = {
       sensitive: true,
       helpText: "Sem caracteres especiais @ ! # $",
       group: "Acesso",
+      regra: "senha_forte",
     },
     {
       name: "url_s3",

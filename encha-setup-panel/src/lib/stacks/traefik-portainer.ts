@@ -57,6 +57,7 @@ export const traefikPortainer: StackDefinition = {
       sensitive: true,
       helpText: "Mínimo 12 chars, com maiúsculas, números e símbolos",
       group: "Credenciais",
+      regra: "senha_forte",
     },
     {
       name: "nome_servidor",

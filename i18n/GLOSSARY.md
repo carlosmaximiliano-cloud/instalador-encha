@@ -146,6 +146,16 @@ agora — fora do escopo de "nada muda"):**
 - **Gap conhecido**: mensagens de validação do Zod (`.refine()` dentro do
   `schema` de cada stack) continuam só em português — fora do escopo do
   `StackTextOverlay`.
+- **Painel P1** (validação no formulário de instalação): "campo obrigatório"
+  e as regras `senha_forte`/`senha_forte_yaml` (campo `regra` em
+  `StackField`) passam a sair em pt/en/es por `src/lib/validacao-campos.ts`,
+  módulo puro compartilhado — no cliente (o wizard bloqueia "Instalar" e
+  mostra a mensagem embaixo do campo) e na resposta do servidor
+  (`POST /api/stacks` devolve `400 {error: "campos_invalidos", message,
+  campos: [{campo, mensagens}]}` no idioma da requisição). As demais
+  mensagens do Zod (domínio, e-mail, slug, usuário, `.min()` de texto)
+  continuam só em português, agora chegando por campo, embaixo do input
+  certo.
 
 ## Fase 4 — instalador (`main.sh` + `secondary.sh`)
 

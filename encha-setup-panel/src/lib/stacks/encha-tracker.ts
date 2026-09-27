@@ -188,6 +188,7 @@ export const enchaTracker: StackDefinition = {
       sensitive: true,
       group: "Acesso",
       helpText: "Mínimo 12 caracteres, com maiúscula, minúscula, número e símbolo.",
+      regra: "senha_forte_yaml",
     },
   ],
   schema,

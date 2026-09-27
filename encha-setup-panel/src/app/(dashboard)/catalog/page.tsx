@@ -11,6 +11,7 @@ import { Search, Boxes, X, AlertTriangle } from "lucide-react";
 import { useDict } from "@/lib/i18n/use-dict";
 import { useLocale } from "@/components/locale-provider";
 import { catalogPageText } from "./page.i18n";
+import type { RegraCampo } from "@/lib/validacao-campos";
 
 const MAX_DEPLOY_MS = 10 * 60 * 1000;
 
@@ -24,6 +25,7 @@ type Field = {
   optional?: boolean;
   default?: string | boolean;
   group?: string;
+  regra?: RegraCampo;
 };
 
 type PairingSpecUI = { targetField: string; sessionField: string };

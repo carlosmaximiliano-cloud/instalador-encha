@@ -22,7 +22,7 @@ export const minio: StackDefinition = {
     { name: "url_minio", label: "Domínio do Console", kind: "domain", placeholder: "minio.suaempresa.com", group: "Domínios" },
     { name: "url_s3", label: "Domínio do endpoint S3", kind: "domain", placeholder: "s3.suaempresa.com", group: "Domínios" },
     { name: "user_minio", label: "Usuário admin", kind: "username", placeholder: "admin", group: "Credenciais" },
-    { name: "senha_minio", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais" },
+    { name: "senha_minio", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte" },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {

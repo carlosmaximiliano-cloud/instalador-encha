@@ -236,4 +236,67 @@ describe("POST /api/stacks — banco existente sem chaves (S5-A)", () => {
       });
     }
   }
+// Painel P1 — a rota repassa o idioma da requisição ao installer e devolve o
+// erro POR CAMPO (400 {error, message, campos}); qualquer outra falha do
+// installer continua {error, reason} com o status dele.
+describe("POST /api/stacks — erros por campo (Painel P1)", () => {
+  async function postComInstaller(installStack: ReturnType<typeof vi.fn>, locale: "pt" | "en" | "es") {
+    const def = fakeDef({ updateViaRelease: undefined });
+    await setupCommonMocks(def);
+    vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => locale) }));
+    vi.doMock("@/lib/csrf", () => ({
+      verifyOrigin: () => true,
+      verifyCsrf: async () => true,
+      getClientIp: () => "10.0.0.10",
+    }));
+    vi.doMock("@/lib/installer", () => ({ installStack, listInstalledStacks: vi.fn(async () => []) }));
+    vi.doMock("@/lib/portainer", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/portainer")>();
+      return {
+        ...actual,
+        discoverContext: vi.fn(async () => ({ endpointId: 1, swarmId: "s1" })),
+        listSwarmStackStatuses: vi.fn(async () => []),
+      };
+    });
+
+    const { POST } = await import("./route");
+    const req = new Request("http://painel.local/api/stacks", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        stackId: FAKE_ID,
+        values: { senha: "abc" },
+        swarmCtx: { networkName: "rede", serverName: "vps", email: "" },
+      }),
+    });
+    return POST(req as unknown as import("next/server").NextRequest);
+  }
+
+  it("repassa o locale ao installStack e responde 400 {error:'campos_invalidos', message, campos}", async () => {
+    const campos = [{ campo: "senha", mensagens: ["At least 12 characters"] }];
+    const installStack = vi.fn(async () => ({ ok: false, error: "campos_invalidos", httpStatus: 400, campos }));
+
+    const res = await postComInstaller(installStack, "en");
+    const body = await res.json();
+
+    expect(installStack).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
+    expect(res.status).toBe(400);
+    expect(body).toEqual({ error: "campos_invalidos", message: "Fix the highlighted fields.", campos });
+  });
+
+  it("falha sem campos continua {error, reason} com o status do installer", async () => {
+    const installStack = vi.fn(async () => ({
+      ok: false,
+      error: "Ativação recusada",
+      reason: "ativacao_recusada",
+      httpStatus: 400,
+    }));
+
+    const res = await postComInstaller(installStack, "pt");
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body).toEqual({ error: "Ativação recusada", reason: "ativacao_recusada" });
+    expect(body).not.toHaveProperty("campos");
+  });
 });

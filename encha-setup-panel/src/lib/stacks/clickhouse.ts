@@ -36,6 +36,7 @@ export const clickhouse: StackDefinition = {
       label: "Senha do usuário",
       kind: "password",
       sensitive: true,
+      regra: "senha_forte",
     },
   ],
   schema,

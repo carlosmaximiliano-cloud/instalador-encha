@@ -484,3 +484,76 @@ describe("installStack — setupUrl do EnchaT (token de primeiro acesso)", () =>
     expect(JSON.stringify(listAudit(200))).not.toContain(token);
   });
 });
+
+// Painel P1 — senha fraca não vira mais um `join("; ")` sem nome de campo: o
+// installer devolve os erros POR CAMPO, no idioma da requisição, e para antes
+// de ativar licença ou fazer deploy.
+describe("installStack — erros por campo (Painel P1)", () => {
+  async function stackComSenha() {
+    const { strongPassword } = await import("./stacks/types");
+    return fakeStack({
+      fields: [{ name: "senha", label: "Senha", kind: "password", regra: "senha_forte" }],
+      schema: z.object({ senha: strongPassword }),
+    });
+  }
+
+  it("senha fraca: devolve campos_invalidos por campo, no locale pedido, sem chamar ativação nem deploy", async () => {
+    await setupMocks({ stack: await stackComSenha() });
+    const { installStack } = await import("./installer");
+    const { deploySwarmStack } = await import("./portainer");
+    const { ativarTrackerPorEmail } = await import("./tracker-ativacao");
+
+    const result = await installStack({
+      stackId: FAKE_STACK_ID,
+      values: { senha: "abc" },
+      swarmCtx: swarmCtx(),
+      token: "tok",
+      user: "tester",
+      ip: "127.0.0.1",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("campos_invalidos");
+    expect(result.httpStatus).toBe(400);
+    expect(result.campos).toEqual([
+      {
+        campo: "senha",
+        mensagens: [
+          "At least 12 characters",
+          "Include an uppercase letter",
+          "Include a number",
+          "Include a symbol",
+        ],
+      },
+    ]);
+    expect(ativarTrackerPorEmail).not.toHaveBeenCalled();
+    expect(deploySwarmStack).not.toHaveBeenCalled();
+    // O valor recebido nunca volta na resposta.
+    expect(JSON.stringify(result)).not.toContain('"abc"');
+    expect(JSON.stringify(result)).not.toContain("abc");
+  });
+
+  it("sem locale, cai em pt com o texto de sempre", async () => {
+    await setupMocks({ stack: await stackComSenha() });
+    const { installStack } = await import("./installer");
+
+    const result = await installStack({
+      stackId: FAKE_STACK_ID,
+      values: { senha: "abc" },
+      swarmCtx: swarmCtx(),
+      token: "tok",
+      user: "tester",
+      ip: "127.0.0.1",
+    });
+
+    expect(result.error).toBe("campos_invalidos");
+    expect(result.httpStatus).toBe(400);
+    expect(result.campos).toEqual([
+      {
+        campo: "senha",
+        mensagens: ["Mínimo 12 caracteres", "Inclua uma letra maiúscula", "Inclua um número", "Inclua um símbolo"],
+      },
+    ]);
+  });
+});

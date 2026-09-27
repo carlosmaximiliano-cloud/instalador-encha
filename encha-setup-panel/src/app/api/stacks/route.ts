@@ -20,6 +20,7 @@ const ERROS = {
   payload_invalido_generico: { pt: "Inválido", en: "Invalid", es: "Inválido" },
   stack_desconhecida: { pt: "Stack desconhecida", en: "Unknown stack", es: "Stack desconocida" },
   stack_ja_instalada: { pt: "Stack já está instalada", en: "Stack is already installed", es: "El stack ya está instalado" },
+  campos_invalidos: { pt: "Corrija os campos destacados.", en: "Fix the highlighted fields.", es: "Corrija los campos resaltados." },
 } satisfies Record<string, Record<Locale, string>>;
 
 function msgMuitasTentativas(segundos: number, locale: Locale): string {
@@ -272,6 +273,7 @@ export async function POST(req: NextRequest) {
     token,
     user: session.user,
     ip,
+    locale,
   });
 
   if (!result.ok && result.reason === "banco_existente_sem_chaves" && def.protegeDadosExistentes) {
@@ -291,6 +293,13 @@ export async function POST(req: NextRequest) {
     );
   }
   if (!result.ok) {
+    // Erro de validação por campo (installer.ts): o wizard mantém a pessoa no
+    // formulário e mostra cada mensagem embaixo do campo. `message` existe
+    // também para uma aba antiga do painel, cujo JS anterior mostra
+    // data.message na tela de falha.
+    if (result.campos) {
+      return apiError(ERROS, "campos_invalidos", locale, 400, { campos: result.campos });
+    }
     // httpStatus vem de installer.ts (statusForCause) — falha do lado do
     // EnchaT (Console fora do ar, timeout, resposta malformada) devolve
     // 502/504/429, não 400. 400 fica só pra chave de licença errada ou bug

@@ -11,6 +11,8 @@ import { LicensePairing } from "./license-pairing";
 import { SuportePanel } from "./suporte-panel";
 import { useDict } from "@/lib/i18n/use-dict";
 import { installWizardText } from "./install-wizard.i18n";
+import { useLocale } from "@/components/locale-provider";
+import { falhasDoCampo, mensagens, type RegraCampo } from "@/lib/validacao-campos";
 
 type Field = {
   name: string;
@@ -22,6 +24,7 @@ type Field = {
   optional?: boolean;
   default?: string | boolean;
   group?: string;
+  regra?: RegraCampo;
 };
 
 // Sem `group`: o servidor traduz o grupo dos campos por idioma mas nunca
@@ -71,9 +74,14 @@ type InstallState =
 
 export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, swarmCtx }: Props) {
   const t = useDict(installWizardText);
+  const { locale } = useLocale();
   const [state, setState] = useState<InstallState>({ kind: "form" });
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  // Erros que o servidor devolveu para campos SEM input neste formulário (ex.:
+  // chave_licenca, injetada pelo servidor): nunca somem calados.
+  const [erroFormulario, setErroFormulario] = useState<{ campo: string; mensagens: string[] }[]>([]);
   const form = useForm<Record<string, unknown>>({
+    mode: "all",
     defaultValues: Object.fromEntries(
       stack.fields.map((f) => [f.name, f.default ?? (f.kind === "checkbox" ? false : "")])
     ),
@@ -106,7 +114,23 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
   const semLicenca =
     !!stack.pairing && !form.watch(stack.pairing.sessionField) && !form.watch(stack.pairing.targetField);
 
+  // Campos que a mesma regra pura do servidor (validacao-campos.ts) recusaria.
+  // Derivado de forma SÍNCRONA de form.watch — não de formState.isValid, que é
+  // assíncrono e nasce false (o botão nasceria desabilitado no primeiro render).
+  const camposPendentes = stack.fields.filter((f) => falhasDoCampo(f, form.watch(f.name)).length > 0);
+  const erros = form.formState.errors;
+
+  function regrasDoCampo(f: Field) {
+    return {
+      validate: (v: unknown) => {
+        const m = mensagens(falhasDoCampo(f, v), locale);
+        return m.length ? m.join(" · ") : true;
+      },
+    };
+  }
+
   async function onSubmit(rawValues: Record<string, unknown>) {
+    setErroFormulario([]);
     setState({ kind: "installing" });
     // Campos opcionais deixados em branco chegam como "" (default do form),
     // não undefined — e "" falha validação de z.string().email().optional()
@@ -127,6 +151,22 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
         body: JSON.stringify({ stackId: stack.id, values, swarmCtx }),
       });
       const data = await res.json();
+      if (!res.ok && data.error === "campos_invalidos" && Array.isArray(data.campos)) {
+        // Erro de validação por campo (installer.ts): a pessoa continua no
+        // formulário, com os valores digitados e a mensagem embaixo do campo
+        // certo — nada de tela de falha genérica.
+        setState({ kind: "form" });
+        const semInput: { campo: string; mensagens: string[] }[] = [];
+        for (const item of data.campos as { campo: string; mensagens: string[] }[]) {
+          if (stack.fields.some((f) => f.name === item.campo)) {
+            form.setError(item.campo, { type: "server", message: item.mensagens.join(" · ") });
+          } else {
+            semInput.push(item);
+          }
+        }
+        setErroFormulario(semInput);
+        return;
+      }
       if (!res.ok) {
         // reason vem de statusForCause (installer.ts) quando a falha é do
         // lado do EnchaT (chave errada, Console fora do ar, timeout) —
@@ -153,7 +193,7 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
       });
       onInstalled?.();
     } catch (e) {
-      setState({ kind: "error", message: e instanceof Error ? e.message : "Erro de rede" });
+      setState({ kind: "error", message: t.erroDeRede, reason: e instanceof Error ? e.message : undefined });
     }
   }
 
@@ -177,12 +217,29 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                   .filter((f) => (f.group ?? t.defaultGroup) === g)
                   .map((f) => {
                     const isCheckbox = f.kind === "checkbox";
+                    const erro = erros[f.name]?.message ? String(erros[f.name]?.message) : undefined;
+                    const erroProps = erro
+                      ? ({ "aria-invalid": "true", "aria-describedby": `${f.name}-erro` } as const)
+                      : {};
+                    const erroEl = erro ? (
+                      <p id={`${f.name}-erro`} role="alert" className="text-xs text-destructive">
+                        {erro}
+                      </p>
+                    ) : null;
                     if (isCheckbox) {
                       return (
-                        <label key={f.name} className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" {...form.register(f.name)} className="h-4 w-4 rounded border-input" />
-                          <span className="text-sm">{f.label}</span>
-                        </label>
+                        <div key={f.name} className="space-y-1.5">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              {...form.register(f.name, regrasDoCampo(f))}
+                              {...erroProps}
+                              className="h-4 w-4 rounded border-input"
+                            />
+                            <span className="text-sm">{f.label}</span>
+                          </label>
+                          {erroEl}
+                        </div>
                       );
                     }
                     const isPwd = f.kind === "password";
@@ -210,18 +267,35 @@ export function InstallWizard({ stack, open, onClose, onInstalled, csrfToken, sw
                           type={isPwd && !show ? "password" : f.kind === "email" ? "email" : f.kind === "port" ? "number" : "text"}
                           placeholder={f.placeholder}
                           autoComplete={isPwd ? "new-password" : "off"}
-                          {...form.register(f.name)}
+                          {...form.register(f.name, regrasDoCampo(f))}
+                          {...erroProps}
                         />
+                        {erroEl}
                         {f.helpText && <p className="text-xs text-muted-foreground">{f.helpText}</p>}
                       </div>
                     );
                   })}
               </div>
             ))}
+            {erroFormulario.length > 0 && (
+              <div id="erro-formulario" role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-1">
+                <p className="text-xs font-semibold text-destructive">{t.servidorRecusouDados}</p>
+                <ul className="text-xs text-destructive space-y-0.5">
+                  {erroFormulario.map((e) => (
+                    <li key={e.campo}>
+                      <span className="font-mono">{e.campo}</span> <span>{e.mensagens.join(" · ")}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onClose}>{t.cancelar}</Button>
-              <Button type="submit" disabled={semLicenca}>{t.instalar}</Button>
+              <Button type="submit" disabled={semLicenca || camposPendentes.length > 0}>{t.instalar}</Button>
             </div>
+            {camposPendentes.length > 0 && (
+              <p className="text-xs text-muted-foreground text-right">{t.corrijaCamposParaInstalar}</p>
+            )}
             {semLicenca && <p className="text-xs text-muted-foreground text-right">{t.concluaLicencaParaInstalar}</p>}
             <button
               type="button"

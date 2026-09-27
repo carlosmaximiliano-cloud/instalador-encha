@@ -26,6 +26,9 @@ export type InstallWizardText = {
   detalheStack: string;
   detalheMensagem: string;
   detalheCausa: string;
+  corrijaCamposParaInstalar: string;
+  servidorRecusouDados: string;
+  erroDeRede: string;
 };
 
 export const installWizardText: Record<Locale, InstallWizardText> = {
@@ -56,6 +59,9 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     detalheStack: "Stack",
     detalheMensagem: "Mensagem",
     detalheCausa: "Causa",
+    corrijaCamposParaInstalar: "Preencha e corrija os campos acima para poder instalar.",
+    servidorRecusouDados: "O servidor recusou estes dados:",
+    erroDeRede: "Erro de rede",
   },
   en: {
     defaultGroup: "Settings",
@@ -84,6 +90,9 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     detalheStack: "Stack",
     detalheMensagem: "Message",
     detalheCausa: "Cause",
+    corrijaCamposParaInstalar: "Fill in and fix the fields above to be able to install.",
+    servidorRecusouDados: "The server rejected this data:",
+    erroDeRede: "Network error",
   },
   es: {
     defaultGroup: "Configuración",
@@ -112,5 +121,8 @@ export const installWizardText: Record<Locale, InstallWizardText> = {
     detalheStack: "Stack",
     detalheMensagem: "Mensaje",
     detalheCausa: "Causa",
+    corrijaCamposParaInstalar: "Complete y corrija los campos de arriba para poder instalar.",
+    servidorRecusouDados: "El servidor rechazó estos datos:",
+    erroDeRede: "Error de red",
   },
 };

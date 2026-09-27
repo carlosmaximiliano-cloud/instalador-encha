@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { getStack } from "./stacks/registry";
 import {
   deploySwarmStack,
@@ -24,6 +23,8 @@ import { getOrCreateMachineId, buscarPareamento, chaveDoPareamento, consumirPare
 import { fingerprintEnchat } from "./enchat-fingerprint";
 import { APP_VERSION } from "./version";
 import type { SwarmContext, GeneratedSecret, StackDefinition } from "./stacks/types";
+import type { Locale } from "./locale-shared";
+import { errosDeCampoDoServidor, type ErroDeCampo } from "./validacao-campos";
 
 // resolverAppHostname é o ÚNICO ponto que os dois call sites de
 // getOrCreateMachineId/fingerprintEnchat usam pra obter o hostname (Ciclo
@@ -66,6 +67,8 @@ export type InstallInput = {
   token: string;
   user: string;
   ip: string;
+  /** Idioma da requisição — traduz as mensagens por campo (validacao-campos.ts). Padrão "pt". */
+  locale?: Locale;
 };
 
 export type InstallResult = {
@@ -81,6 +84,8 @@ export type InstallResult = {
   aviso?: string;
   /** Link de primeiro acesso (StackDefinition.postInstall.setupUrl), montado com os segredos EFETIVOS do deploy. Contém segredo: só vai na resposta do POST, nunca em audit log. */
   setupUrl?: string;
+  /** Erros de validação por campo (error === "campos_invalidos") — nunca contém o valor recebido. */
+  campos?: ErroDeCampo[];
 };
 
 // Mapeia a causa estruturada de RegistryAuthError/ReleaseInfoError pro status
@@ -325,7 +330,12 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
   const parsed = def.schema.safeParse(input.values);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.errors.map((e: z.ZodIssue) => e.message).join("; ") };
+    return {
+      ok: false,
+      error: "campos_invalidos",
+      httpStatus: 400,
+      campos: errosDeCampoDoServidor(def.fields, input.values, parsed.error.issues, input.locale ?? "pt"),
+    };
   }
 
   try {

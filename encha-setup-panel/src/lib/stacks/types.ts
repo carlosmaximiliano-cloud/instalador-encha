@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ReleaseInfo } from "../release-info";
 import type { Locale } from "../locale-shared";
+import { falhasDaRegra, mensagens, type RegraCampo } from "../validacao-campos";
 
 export type FieldKind = "text" | "domain" | "email" | "password" | "username" | "port" | "checkbox" | "slug";
 
@@ -14,6 +15,8 @@ export type StackField = {
   optional?: boolean;
   default?: string | boolean;
   group?: string;
+  /** Regra de validação nomeada, espelhada no wizard — ver ../validacao-campos.ts. */
+  regra?: RegraCampo;
 };
 
 export type SwarmContext = {
@@ -423,13 +426,13 @@ export const fqdn = z
 
 export const slug = z.string().min(2).max(40).regex(/^[a-zA-Z0-9-]+$/, "Use apenas letras, números e hifens");
 
-export const strongPassword = z
-  .string()
-  .min(12, "Mínimo 12 caracteres")
-  .regex(/[A-Z]/, "Inclua uma letra maiúscula")
-  .regex(/[a-z]/, "Inclua uma letra minúscula")
-  .regex(/[0-9]/, "Inclua um número")
-  .regex(/[^A-Za-z0-9]/, "Inclua um símbolo");
+// Construída a partir de validacao-campos.ts (regra única, compartilhada com o
+// wizard). O texto continua em pt aqui: a tradução por idioma acontece em
+// errosDeCampoDoServidor, pelo campo, não pelo texto do zod.
+export const strongPassword = z.string().superRefine((s, ctx) => {
+  for (const message of mensagens(falhasDaRegra("senha_forte", s), "pt"))
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+});
 
 export const username = z.string().min(3).max(40).regex(/^[a-zA-Z0-9_-]+$/);
 

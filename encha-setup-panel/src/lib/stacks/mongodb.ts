@@ -21,7 +21,7 @@ export const mongodb: StackDefinition = {
   fields: [
     { name: "url_mongo_express", label: "Domínio do Mongo Express (UI)", kind: "domain", placeholder: "mongo.suaempresa.com", group: "Domínios" },
     { name: "usuario_mongo", label: "Usuário admin", kind: "username", group: "Credenciais" },
-    { name: "senha_mongo", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais" },
+    { name: "senha_mongo", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte" },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {

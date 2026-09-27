@@ -22,7 +22,7 @@ export const directus: StackDefinition = {
   fields: [
     { name: "url_directus", label: "Domínio", kind: "domain", placeholder: "directus.suaempresa.com", group: "Domínios" },
     { name: "email_admin", label: "E-mail admin", kind: "email", group: "Admin" },
-    { name: "senha_admin", label: "Senha admin", kind: "password", sensitive: true, group: "Admin" },
+    { name: "senha_admin", label: "Senha admin", kind: "password", sensitive: true, group: "Admin", regra: "senha_forte" },
   ],
   schema,
   generateSecrets: () => [
