@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { execFileSync } from "node:child_process";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { ALLOWED_DIR_RE } from "./host-dirs";
-import { ALLOWED_PROBE_RE } from "./host-dados-existentes";
+import { ALLOWED_PROBE_RE, scriptSonda } from "./host-dados-existentes";
 import { enchat } from "./stacks/enchat";
 
 beforeEach(() => {
@@ -42,6 +46,15 @@ describe("hostTemArquivo", () => {
     await expect(hostTemArquivo("t", 1, "/var/enchat/postgres/PG_VERSION")).resolves.toBe(false);
   });
 
+  it("INDETERMINADO (diretório do caminho existe mas não pôde ser atravessado): LANÇA, nunca vira 'não existe'", async () => {
+    const { hostTemArquivo } = await comJob({
+      exitCode: 0,
+      logs: "sh: cd: can't cd to /host-var/enchat/postgres: Permission denied\r\nENCHA_HOST_PROBE_INDETERMINADO\r\n",
+      timedOut: false,
+    });
+    await expect(hostTemArquivo("t", 1, "/var/enchat/postgres/PG_VERSION")).rejects.toThrow(/Não foi possível verificar/);
+  });
+
   it("timeout, exit != 0 ou saída desconhecida: LANÇA (nunca devolve false por dúvida)", async () => {
     for (const r of [
       { exitCode: -1, logs: "", timedOut: true },
@@ -76,4 +89,56 @@ describe("enchat.protegeDadosExistentes", () => {
     for (const n of p.segredosQueNaoPodemSerNovos) expect(nomes).toContain(n);
     expect(p.segredosQueNaoPodemSerNovos).toEqual(expect.arrayContaining(["enchat_master_key", "postgres_password"]));
   });
+});
+
+// O script de verdade, executado por um /bin/sh de verdade contra uma árvore
+// temporária no lugar de /host-var (mesma substituição de prefixo que o bind
+// faz). Cobre o que o mock do job não cobre: o que o shell responde.
+describe("scriptSonda executado de verdade", () => {
+  let raiz: string;
+  beforeEach(() => {
+    raiz = mkdtempSync(path.join(tmpdir(), "encha-sonda-"));
+  });
+  afterEach(() => {
+    try {
+      chmodSync(path.join(raiz, "enchat", "postgres"), 0o755);
+    } catch {
+      /* não existia */
+    }
+    rmSync(raiz, { recursive: true, force: true });
+  });
+  const rodar = () =>
+    execFileSync("/bin/sh", ["-c", scriptSonda("/host-var/enchat/postgres/PG_VERSION").replaceAll("/host-var", raiz)], {
+      stdio: ["ignore", "pipe", "ignore"],
+    }).toString();
+
+  it("PG_VERSION presente -> PRESENTE", () => {
+    mkdirSync(path.join(raiz, "enchat", "postgres"), { recursive: true });
+    writeFileSync(path.join(raiz, "enchat", "postgres", "PG_VERSION"), "16\n");
+    expect(rodar()).toContain("ENCHA_HOST_PROBE_PRESENTE");
+  });
+
+  it("diretório criado pelo preparo (ensureHostDirs) mas vazio -> AUSENTE (instalação nova segue)", () => {
+    mkdirSync(path.join(raiz, "enchat", "postgres"), { recursive: true });
+    expect(rodar()).toContain("ENCHA_HOST_PROBE_AUSENTE");
+  });
+
+  it("nem /var/enchat existe -> AUSENTE", () => {
+    expect(rodar()).toContain("ENCHA_HOST_PROBE_AUSENTE");
+  });
+
+  // Root atravessa 0700 por CAP_DAC_OVERRIDE; o caso só é reproduzível sem
+  // ele (o runner do CI roda como usuário comum; em contêiner root, pula).
+  it.skipIf(process.getuid?.() === 0)(
+    "diretório do Postgres existe mas não pode ser atravessado (0700 de outro dono, root sem DAC) -> INDETERMINADO, nunca AUSENTE",
+    () => {
+      const pg = path.join(raiz, "enchat", "postgres");
+      mkdirSync(pg, { recursive: true });
+      writeFileSync(path.join(pg, "PG_VERSION"), "16\n");
+      chmodSync(pg, 0o000);
+      const saida = rodar();
+      expect(saida).toContain("ENCHA_HOST_PROBE_INDETERMINADO");
+      expect(saida).not.toContain("ENCHA_HOST_PROBE_AUSENTE");
+    }
+  );
 });

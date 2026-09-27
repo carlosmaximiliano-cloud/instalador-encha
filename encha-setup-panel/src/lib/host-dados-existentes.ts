@@ -20,6 +20,7 @@ const FALLBACK_IMAGE = "alpine/git:2.45.2";
 
 const MARCA_PRESENTE = "ENCHA_HOST_PROBE_PRESENTE";
 const MARCA_AUSENTE = "ENCHA_HOST_PROBE_AUSENTE";
+const MARCA_INDETERMINADO = "ENCHA_HOST_PROBE_INDETERMINADO";
 
 // Só /var/enchat/<slug>/<arquivo> — o caminho entra num script de shell, então
 // nunca aceita nada fora desta forma (sem "..", sem espaço, sem aspas).
@@ -30,6 +31,35 @@ export class HostProbeError extends Error {
     super(message);
     this.name = "HostProbeError";
   }
+}
+
+/**
+ * Script da sonda (exportado para teste). `caminhoNoContainer` já é o caminho
+ * sob /host-var, validado por ALLOWED_PROBE_RE.
+ *
+ * `test -e` devolve FALSO quando um diretório do caminho não pode ser
+ * atravessado — e o do Postgres é 0700 de outro uid (999 na VPS). O root do
+ * job só o atravessa por CAP_DAC_OVERRIDE/DAC_READ_SEARCH; com userns-remap
+ * ou Docker rootless ele não tem isso, e um banco existente virava "não
+ * existe" (chave nova por cima — justamente o que esta trava impede). Por
+ * isso "ausente" só vale se cada diretório do caminho que existe pôde ser
+ * atravessado de verdade (`cd`, que é a chamada ao kernel; `[ -x ]` não serve:
+ * para root o busybox responde "sim" só olhando os bits). Senão: INDETERMINADO.
+ * Sem redirecionamento nenhum (o erro do `cd` vai para o log, inofensivo): o
+ * script da sonda não tem `>` — ver o teste.
+ */
+export function scriptSonda(caminhoNoContainer: string): string {
+  const partes = caminhoNoContainer.split("/").filter(Boolean);
+  const dirs: string[] = [];
+  for (let i = 1; i < partes.length; i++) dirs.push("/" + partes.slice(0, i).join("/"));
+  return [
+    "set -u",
+    `if [ -e "${caminhoNoContainer}" ]; then echo ${MARCA_PRESENTE}; exit 0; fi`,
+    `for d in ${dirs.map((d) => `"${d}"`).join(" ")}; do`,
+    `  if [ -e "$d" ] && ! ( cd "$d" ); then echo ${MARCA_INDETERMINADO}; exit 0; fi`,
+    "done",
+    `echo ${MARCA_AUSENTE}`,
+  ].join("\n");
 }
 
 /**
@@ -51,7 +81,7 @@ export async function hostTemArquivo(token: string, endpointId: number, caminho:
   }
 
   const alvo = `/host-var${caminho.slice("/var".length)}`;
-  const script = `set -eu\nif [ -e "${alvo}" ]; then echo ${MARCA_PRESENTE}; else echo ${MARCA_AUSENTE}; fi`;
+  const script = scriptSonda(alvo);
 
   try {
     const { exitCode, logs, timedOut } = await runOneShotJob(token, endpointId, {
@@ -76,6 +106,11 @@ export async function hostTemArquivo(token: string, endpointId: number, caminho:
     if (timedOut) throw new HostProbeError("Timeout ao checar dados existentes no host (30s)");
     if (exitCode !== 0) throw new HostProbeError(`Falha ao checar dados existentes no host (exit ${exitCode}): ${logs}`);
     if (logs.includes(MARCA_PRESENTE)) return true;
+    if (logs.includes(MARCA_INDETERMINADO)) {
+      throw new HostProbeError(
+        `Não foi possível verificar ${caminho} no host: um diretório do caminho existe mas não pôde ser lido pela sonda (userns-remap/Docker rootless?)`
+      );
+    }
     if (logs.includes(MARCA_AUSENTE)) return false;
     throw new HostProbeError(`Resposta inesperada ao checar dados existentes no host: ${logs}`);
   } catch (e) {
