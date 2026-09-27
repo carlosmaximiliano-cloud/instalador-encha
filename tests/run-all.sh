@@ -42,8 +42,12 @@ export ENCHA_RUN_ALL=1
 LOGS="$(mktemp -d)"
 trap 'rm -rf "$LOGS"' EXIT
 
+# Prazo por teste: um teste pendurado vira FALHA explícita em vez de segurar o
+# job do CI até o limite dele (6 h no GitHub). -k: quem ignora o TERM leva
+# KILL 10 s depois. Sem `timeout` (macOS sem coreutils) roda sem prazo.
+prazo="${ENCHA_RUN_ALL_PRAZO:-600}"
 com_prazo() {
-  if command -v timeout >/dev/null 2>&1; then timeout "${ENCHA_RUN_ALL_PRAZO:-600}" "$@"; else "$@"; fi
+  if command -v timeout >/dev/null 2>&1; then timeout -k 10 "$prazo" "$@"; else "$@"; fi
 }
 
 passaram=0; falharam=0; puladas=0
@@ -55,7 +59,9 @@ for t in $(ls "$dir_testes"/test-*.sh 2>/dev/null | sort); do
   case " ${ENCHA_RUN_ALL_SKIP:-} " in *" $base "*) echo "⏭️  $base — excluído por ENCHA_RUN_ALL_SKIP (quem chamou o roda por conta própria)"; continue ;; esac
   total=$((total + 1))
   log="$LOGS/$base.log"
-  com_prazo bash "$t" > "$log" 2>&1
+  # stdin = /dev/null: um `read` esquecido num teste recebe EOF na hora, em vez
+  # de esperar um terminal que o CI não tem (ou o do dev, para sempre).
+  com_prazo bash "$t" < /dev/null > "$log" 2>&1
   rc=$?
   if [ "$rc" -eq 77 ]; then
     motivo="$(grep -v '^[[:space:]]*$' "$log" | tail -1)"
@@ -73,6 +79,10 @@ for t in $(ls "$dir_testes"/test-*.sh 2>/dev/null | sort); do
   elif [ "$rc" -eq 0 ]; then
     echo "✅ $base ($(grep -c '^✅' "$log") verificações)"
     passaram=$((passaram + 1))
+  elif [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+    echo "❌ FALHOU: $base — estourou o prazo de ${prazo}s (pendurado?); saída até ali abaixo"
+    sed 's/^/    | /' "$log"
+    falharam=$((falharam + 1)); nomes_falha="$nomes_falha $base"
   else
     echo "❌ FALHOU: $base — saída $rc; saída abaixo"
     sed 's/^/    | /' "$log"

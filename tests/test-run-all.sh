@@ -68,7 +68,39 @@ D6="$DIR/quebrado"; mk "$D6" test-x.sh 'this_command_does_not_exist_zzz'
 rodar "$D6" X=1
 [ "$(cat "$DIR/rc")" != "0" ] && ok "teste que quebra (comando inexistente) é falha" || falha "teste quebrado deu verde"
 
-# 7) run-all real enxerga os testes de verdade deste repo (e não a si mesmo).
+# 7) Teste pendurado: estoura o prazo (ENCHA_RUN_ALL_PRAZO) e vira FALHA
+#    explícita — nunca segura o CI até o limite do job. (Só onde há `timeout`.)
+if command -v timeout >/dev/null 2>&1; then
+  D7="$DIR/pendurado"; mk "$D7" test-trava.sh 'exec sleep 60; echo "✅ não devia chegar aqui"'
+  inicio=$(date +%s)
+  rodar "$D7" ENCHA_RUN_ALL_PRAZO=3
+  dur=$(( $(date +%s) - inicio ))
+  if [ "$(cat "$DIR/rc")" != "0" ] && grep -q "test-trava.sh — estourou o prazo de 3s" "$DIR/saida.log" && [ "$dur" -lt 45 ]; then
+    ok "teste pendurado: falha por prazo em ${dur}s, com o motivo"
+  else
+    falha "teste pendurado não foi cortado pelo prazo (rc=$(cat "$DIR/rc"), ${dur}s)"; tail -3 "$DIR/saida.log"
+  fi
+
+  # 8) Teste que lê a entrada padrão recebe EOF (stdin = /dev/null), em vez de
+  #    ficar esperando um terminal/pipe de quem chamou o run-all. Aqui a
+  #    entrada de quem chama é um FIFO aberto que nunca recebe nada nem fecha:
+  #    sem o /dev/null, o `read` espera e o teste estoura o prazo.
+  D8="$DIR/le-stdin"; mk "$D8" test-le.sh 'if read -r x; then echo "leu: $x"; fi; echo "✅ seguiu sem esperar entrada"'
+  mkfifo "$DIR/fifo"
+  exec 3<>"$DIR/fifo"
+  env ENCHA_RUN_ALL_PRAZO=20 ENCHA_TESTS_DIR="$D8" bash tests/run-all.sh <&3 > "$DIR/saida.log" 2>&1
+  echo $? > "$DIR/rc"
+  exec 3<&-
+  if [ "$(cat "$DIR/rc")" = "0" ]; then
+    ok "teste que lê stdin recebe EOF e segue (não espera quem chamou)"
+  else
+    falha "teste que lê stdin ficou esperando (rc=$(cat "$DIR/rc"))"; tail -3 "$DIR/saida.log"
+  fi
+else
+  echo "ℹ️  sem 'timeout' neste ambiente: casos de prazo/stdin não verificados aqui (o CI tem)"
+fi
+
+# 9) run-all real enxerga os testes de verdade deste repo (e não a si mesmo).
 ls tests/test-*.sh | grep -qx "tests/test-enchat-84-reinstalacao.sh" && ok "o glob do run-all cobre os testes reais do repo" || falha "glob não achou os testes reais"
 
 if [ "$falhas" -eq 0 ]; then echo "✅ run-all.sh: falha, skip e falso-verde tratados como devem"; else exit 1; fi
