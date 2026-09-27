@@ -39,6 +39,17 @@ describe("validacao-campos — regras de senha", () => {
       "numero",
       "caractere_proibido",
     ]);
+
+    // Mesmas regras, agora pelo caminho do campo (falhasDoCampo repassa `regra`).
+    const campoForte: CampoValidavel = { name: "s", kind: "password", regra: "senha_forte" };
+    const campoYaml: CampoValidavel = { name: "y", kind: "password", regra: "senha_forte_yaml" };
+    const comAspas = 'Aa1!aaaaaa"a';
+    expect(falhasDoCampo(campoForte, FORTE)).toEqual([]);
+    expect(falhasDoCampo(campoForte, "aa1!aaaaaaaa")).toEqual(["maiuscula"]);
+    expect(falhasDoCampo(campoYaml, FORTE)).toEqual([]);
+    expect(falhasDoCampo(campoYaml, comAspas)).toEqual(["caractere_proibido"]);
+    // A regra básica não recusa aspas: quem escolhe a regra é o campo.
+    expect(falhasDoCampo(campoForte, comAspas)).toEqual([]);
   });
 
   it("11 caracteres com todo o resto certo falha só por min_12", () => {
