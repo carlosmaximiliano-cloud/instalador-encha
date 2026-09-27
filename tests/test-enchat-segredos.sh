@@ -103,9 +103,12 @@ export FALHAR_NA_CRIACAO=4
 if enchat_criar_segredos_docker; then falha "criação deveria ter falhado"; else ok "criação: retorna 1 quando um segredo falha"; fi
 [ "${#ENCHAT_SEGREDOS_CRIADOS[@]}" -eq 0 ] || falha "ENCHAT_SEGREDOS_CRIADOS deveria esvaziar na falha"
 [ "$(wc -l < "$ESTADO/removidos.log" | tr -d ' ')" = "3" ] || falha "deveria remover os 3 criados antes da falha (achei $(wc -l < "$ESTADO/removidos.log" 2>/dev/null))"
-for n in "$(sed -n 1,3p "$ESTADO/criados.log" | awk '{print $1}')"; do
-  grep -qx "$n" "$ESTADO/removidos.log" || falha "$n criado e não desfeito"
-done
+# Um nome por iteração (entre aspas, o "$(...)" virava UMA string de 3 linhas,
+# e o grep aceitava se QUALQUER um dos 3 tivesse sido removido).
+while read -r n; do
+  grep -qxF -- "$n" "$ESTADO/removidos.log" || falha "$n criado e não desfeito"
+done < <(sed -n 1,3p "$ESTADO/criados.log" | awk '{print $1}')
+[ "$(sort -u "$ESTADO/removidos.log" | wc -l | tr -d ' ')" = "3" ] || falha "o desfazer não removeu 3 nomes DISTINTOS"
 ok "criação: falha no meio desfaz os criados nesta rodada"
 unset FALHAR_NA_CRIACAO
 
