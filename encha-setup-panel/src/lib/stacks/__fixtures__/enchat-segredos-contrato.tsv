@@ -1,0 +1,39 @@
+# Contrato dos segredos do Docker da stack do EnchaT (ciclo S4 do Encha Setup
+# <-> ciclo E5 do ENCHAT). Fonte ÚNICA para os três lados que precisam
+# concordar sobre "qual processo lê qual arquivo por qual variável":
+#   - painel:  encha-setup-panel/src/lib/stacks/enchat-segredos-contrato.test.ts
+#   - menu 84: tests/test-enchat-segredos-contrato.sh (só as linhas opcao84=sim)
+#   - E5 (repo ENCHAT): o app/Pinfy/updater precisam ler exatamente
+#     <variavel>_FILE destas linhas (variável direta não vazia vence; senão o
+#     arquivo, sem o "\n" final). Copie esta tabela para o teste do E5 em vez
+#     de reescrevê-la de memória.
+#
+# Uma linha por (serviço, variável). O mesmo segredo pode aparecer em dois
+# serviços com NOMES DE VARIÁVEL diferentes (pinfy_master_key: o app lê
+# PINFY_MASTER_KEY, o Pinfy lê MASTER_KEY) — é o ponto mais fácil de errar.
+#   servico  = chave do serviço no YAML sem o prefixo "enchat_" (app, updater, pinfy, postgres)
+#   variavel = a variável que o processo lê HOJE em texto (o YAML novo usa <variavel>_FILE)
+#   segredo  = chave do segredo; o arquivo montado é /run/secrets/enchat_<segredo>
+#              e o segredo do Swarm se chama enchat_<segredo>_<época>
+#   uid/gid  = dono do arquivo montado (mode 0400) = usuário que LÊ o arquivo:
+#              app 1000 (USER enchat), Pinfy 1000 (USER node), updater 0 (sem
+#              USER), Postgres 0 (o entrypoint oficial lê *_FILE como root,
+#              antes do gosu). Conferido em imagens 0.4.0 reais (auditoria S4).
+#   opcao84  = sim se a stack da opção 84 do menu (secondary.sh) também usa a
+#              linha (ela não tem sidecar de update nem LICENSE_KEY)
+# Colunas separadas por TAB.
+servico	variavel	segredo	uid	gid	opcao84
+app	DATABASE_URL	database_url	1000	1000	sim
+app	ENCHAT_MASTER_KEY	master_key	1000	1000	sim
+app	ENCHAT_SETUP_TOKEN	setup_token	1000	1000	sim
+app	LICENSE_KEY	license_key	1000	1000	nao
+app	PINFY_DB_PASSWORD	pinfy_db_password	1000	1000	sim
+app	PINFY_MASTER_KEY	pinfy_master_key	1000	1000	sim
+app	PINFY_WEBHOOK_TOKEN	pinfy_webhook_token	1000	1000	sim
+app	UPDATER_TOKEN	updater_token	1000	1000	nao
+updater	UPDATER_TOKEN	updater_token	0	0	nao
+pinfy	DATABASE_URL	pinfy_database_url	1000	1000	sim
+pinfy	MASTER_KEY	pinfy_master_key	1000	1000	sim
+pinfy	PANEL_PASSWORD	pinfy_panel_password	1000	1000	sim
+pinfy	SESSION_KEY	pinfy_session_key	1000	1000	sim
+postgres	POSTGRES_PASSWORD	postgres_password	0	0	sim
