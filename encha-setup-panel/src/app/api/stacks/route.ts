@@ -19,11 +19,6 @@ const ERROS = {
   payload_invalido: { pt: "Payload inválido", en: "Invalid payload", es: "Payload inválido" },
   payload_invalido_generico: { pt: "Inválido", en: "Invalid", es: "Inválido" },
   stack_desconhecida: { pt: "Stack desconhecida", en: "Unknown stack", es: "Stack desconocida" },
-  banco_existente_sem_chaves: {
-    pt: "Existe um banco do EnchaT neste servidor (/var/enchat/postgres), mas o painel não tem as chaves dele. Reinstalar geraria chaves novas e tornaria os dados ilegíveis. Recupere as chaves (arquivo /root/dados_vps/dados_enchat) ou, se for uma instalação nova, remova /var/enchat/postgres e tente de novo.",
-    en: "An EnchaT database already exists on this server (/var/enchat/postgres), but the panel does not have its keys. Reinstalling would generate new keys and make the data unreadable. Recover the keys (file /root/dados_vps/dados_enchat) or, if this is a fresh install, remove /var/enchat/postgres and try again.",
-    es: "Ya existe una base de datos de EnchaT en este servidor (/var/enchat/postgres), pero el panel no tiene sus claves. Reinstalar generaría claves nuevas y dejaría los datos ilegibles. Recupere las claves (archivo /root/dados_vps/dados_enchat) o, si es una instalación nueva, elimine /var/enchat/postgres e inténtelo de nuevo.",
-  },
   stack_ja_instalada: { pt: "Stack já está instalada", en: "Stack is already installed", es: "El stack ya está instalado" },
 } satisfies Record<string, Record<Locale, string>>;
 
@@ -41,6 +36,33 @@ function msgDependenciaPendente(dependencia: string, alvo: string, locale: Local
     pt: `Dependência pendente: instale "${dependencia}" antes de "${alvo}".`,
     en: `Pending dependency: install "${dependencia}" before "${alvo}".`,
     es: `Dependencia pendiente: instale "${dependencia}" antes de "${alvo}".`,
+  };
+  return t[locale] ?? t.pt;
+}
+
+// S5-A: mensagem montada a partir de def.protegeDadosExistentes (diretório e
+// arquivo de credenciais da PRÓPRIA stack) — nunca fixa: a do EnchaT mandaria
+// o operador do Tracker remover /var/enchat/postgres, o banco de outra stack.
+function msgBancoExistenteSemChaves(
+  produto: string,
+  dir: string,
+  arquivoDeCredenciais: string | undefined,
+  locale: Locale
+): string {
+  const a = arquivoDeCredenciais;
+  const t = {
+    pt:
+      `Existe um banco do ${produto} neste servidor (${dir}), mas o painel não tem as chaves dele. Reinstalar geraria chaves novas e tornaria os dados ilegíveis. ` +
+      (a ? `Recupere as chaves (arquivo ${a}) ou, se` : "Se") +
+      ` for uma instalação nova, remova ${dir} e tente de novo.`,
+    en:
+      `A ${produto} database already exists on this server (${dir}), but the panel does not have its keys. Reinstalling would generate new keys and make the data unreadable. ` +
+      (a ? `Recover the keys (file ${a}) or, if` : "If") +
+      ` this is a fresh install, remove ${dir} and try again.`,
+    es:
+      `Ya existe una base de datos de ${produto} en este servidor (${dir}), pero el panel no tiene sus claves. Reinstalar generaría claves nuevas y dejaría los datos ilegibles. ` +
+      (a ? `Recupere las claves (archivo ${a}) o, si` : "Si") +
+      ` es una instalación nueva, elimine ${dir} e inténtelo de nuevo.`,
   };
   return t[locale] ?? t.pt;
 }
@@ -252,8 +274,21 @@ export async function POST(req: NextRequest) {
     ip,
   });
 
-  if (!result.ok && result.reason === "banco_existente_sem_chaves") {
-    return apiError(ERROS, "banco_existente_sem_chaves", locale, result.httpStatus ?? 409, { reason: result.reason });
+  if (!result.ok && result.reason === "banco_existente_sem_chaves" && def.protegeDadosExistentes) {
+    const p = def.protegeDadosExistentes;
+    return NextResponse.json(
+      {
+        error: "banco_existente_sem_chaves",
+        message: msgBancoExistenteSemChaves(
+          def.name,
+          p.arquivoNoHost.replace(/\/[^/]+$/, ""),
+          p.arquivoDeCredenciais,
+          locale
+        ),
+        reason: result.reason,
+      },
+      { status: result.httpStatus ?? 409 }
+    );
   }
   if (!result.ok) {
     // httpStatus vem de installer.ts (statusForCause) — falha do lado do

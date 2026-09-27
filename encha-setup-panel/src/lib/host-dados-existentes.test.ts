@@ -75,6 +75,22 @@ describe("hostTemArquivo", () => {
   });
 });
 
+describe("encha-tracker.protegeDadosExistentes", () => {
+  it("aponta para o PG_VERSION do diretório do Postgres DO TRACKER, aceito pela sonda, e protege as duas chaves dele", async () => {
+    const { enchaTracker } = await import("./stacks/encha-tracker");
+    const p = enchaTracker.protegeDadosExistentes!;
+    expect(ALLOWED_PROBE_RE.test(p.arquivoNoHost)).toBe(true);
+    const dir = p.arquivoNoHost.replace(/\/[^/]+$/, "");
+    expect(dir).toBe("/var/enchat/tracker-postgres");
+    const dirs = (enchaTracker.hostDirs ?? []).map((d) => (typeof d === "string" ? d : d.path));
+    expect(dirs).toContain(dir);
+    const nomes = enchaTracker.generateSecrets!({}).map((g) => g.name);
+    expect(p.segredosQueNaoPodemSerNovos).toEqual(expect.arrayContaining(["tracker_master_key", "postgres_password"]));
+    for (const n of p.segredosQueNaoPodemSerNovos) expect(nomes).toContain(n);
+    expect(p.arquivoDeCredenciais).toBeUndefined(); // só se instala pelo painel
+  });
+});
+
 describe("enchat.protegeDadosExistentes", () => {
   const p = enchat.protegeDadosExistentes!;
   it("aponta para o PG_VERSION do diretório do Postgres que a própria stack cria e o caminho é aceito pela sonda", () => {

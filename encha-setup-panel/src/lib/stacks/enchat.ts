@@ -260,6 +260,7 @@ export const enchat: StackDefinition = {
   protegeDadosExistentes: {
     arquivoNoHost: "/var/enchat/postgres/PG_VERSION",
     segredosQueNaoPodemSerNovos: ["enchat_master_key", "postgres_password"],
+    arquivoDeCredenciais: "/root/dados_vps/dados_enchat",
   },
   // licenca_pareamento_id também nunca deve ser persistido — é só uma
   // referência a uma linha de license_pairings (que já guarda a chave

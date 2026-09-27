@@ -30,11 +30,17 @@ afterEach(() => {
   vi.doUnmock("./host-dirs");
   vi.doUnmock("./host-dados-existentes");
   vi.doUnmock("./registry-pull");
+  vi.doUnmock("./tracker-ativacao");
 });
 
 type Host = { bancoExiste: boolean; falharChecagem: boolean; caminhosChecados: string[]; deployFalhas: number };
 
-async function preparar(host: Host) {
+const INSTALACOES = {
+  enchat: { url_enchat: "crm.exemplo.com", chave_licenca: "CHAVE-DE-TESTE-123" },
+  "encha-tracker": { dominio_tracker: "tracker.exemplo.com", email_ativacao: "dono@exemplo.com", senha_admin: "Senha-Forte-123!abc" },
+} as const;
+
+async function preparar(host: Host, stackId: keyof typeof INSTALACOES = "enchat") {
   const efeitos = { deploys: [] as string[], hostDirs: 0, pulls: 0 };
   vi.doMock("./portainer", async (importOriginal) => {
     const actual = await importOriginal<typeof import("./portainer")>();
@@ -62,12 +68,16 @@ async function preparar(host: Host) {
     return {
       ...actual,
       // < 0.4.1: formato antigo (variáveis em texto), sem segredos do Docker.
-      fetchLatestRelease: vi.fn(async () => ({
-        version: "0.3.9",
-        imageRepo: "ghcr.io/enchainterno/enchat-free",
-        imageTag: "0.3.9",
-        obrigatoria: false,
-      })),
+      fetchLatestRelease: vi.fn(async (_base: string, app: string) =>
+        app === "tracker"
+          ? { version: "1.2.0", imageRepo: "ghcr.io/cheiodecoisa/encha-tracker", imageTag: "1.2.0", obrigatoria: false }
+          : {
+              version: "0.3.9",
+              imageRepo: "ghcr.io/enchainterno/enchat-free",
+              imageTag: "0.3.9",
+              obrigatoria: false,
+            }
+      ),
     };
   });
   vi.doMock("./registry-pull", () => ({
@@ -80,6 +90,10 @@ async function preparar(host: Host) {
       efeitos.hostDirs++;
     }),
   }));
+  vi.doMock("./tracker-ativacao", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("./tracker-ativacao")>();
+    return { ...actual, ativarTrackerPorEmail: vi.fn(async () => ({ chave: "CHAVE-TRACKER-123456" })) };
+  });
   vi.doMock("./host-dados-existentes", () => ({
     hostTemArquivo: vi.fn(async (_t: string, _e: number, caminho: string) => {
       host.caminhosChecados.push(caminho);
@@ -94,15 +108,15 @@ async function preparar(host: Host) {
   const ctx: SwarmContext = { networkName: "rede", serverName: "vps", email: "" };
   const instalar = () =>
     installStack({
-      stackId: "enchat",
-      values: { url_enchat: "crm.exemplo.com", chave_licenca: "CHAVE-DE-TESTE-123" },
+      stackId,
+      values: { ...INSTALACOES[stackId] },
       swarmCtx: ctx,
       token: "tok",
       user: "tester",
       ip: "127.0.0.1",
     });
   const salvos = (): Record<string, string> => {
-    const row = getDb().prepare("SELECT encrypted_envs FROM stack_secrets WHERE stack_name = ?").get("enchat") as
+    const row = getDb().prepare("SELECT encrypted_envs FROM stack_secrets WHERE stack_name = ?").get(stackId) as
       | { encrypted_envs: string }
       | undefined;
     if (!row) return {};
@@ -113,7 +127,7 @@ async function preparar(host: Host) {
     const now = Date.now();
     getDb()
       .prepare("INSERT INTO stack_secrets (stack_name, encrypted_envs, created_at, updated_at) VALUES (?, ?, ?, ?)")
-      .run("enchat", encryptSecret(JSON.stringify({ values: {}, generated })), now, now);
+      .run(stackId, encryptSecret(JSON.stringify({ values: {}, generated })), now, now);
   };
   return { instalar, salvos, semear, efeitos };
 }
@@ -269,5 +283,36 @@ describe("installStack (EnchaT) — banco existente no host (S5-A)", () => {
     expect(r.ok).toBe(false);
     expect(r.error).toContain("sonda falhou");
     expect(efeitos.deploys).toHaveLength(0);
+  });
+});
+
+// Mesma trava no Tracker, com a mensagem DELE: o diretório do Tracker, nunca
+// o do EnchaT (apagar /var/enchat/postgres por engano destruiria outro banco).
+describe("installStack (Encha Tracker) — banco existente no host", () => {
+  it("banco do Tracker existe e o painel NÃO tem stack_secrets: aborta citando só o diretório do Tracker", async () => {
+    const host = novoHost({ bancoExiste: true });
+    const { instalar, salvos, efeitos } = await preparar(host, "encha-tracker");
+
+    const r = await instalar();
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe("banco_existente_sem_chaves");
+    expect(r.httpStatus).toBe(409);
+    expect(host.caminhosChecados).toEqual(["/var/enchat/tracker-postgres/PG_VERSION"]);
+    expect(r.error).toContain("/var/enchat/tracker-postgres");
+    expect(r.error).not.toContain("/var/enchat/postgres");
+    expect(r.error).not.toContain("dados_enchat");
+    expect(efeitos.deploys).toHaveLength(0);
+    expect(salvos()).toEqual({});
+  });
+
+  it("Tracker novo (sem banco, sem stack_secrets): instala com chaves novas", async () => {
+    const host = novoHost({ bancoExiste: false });
+    const { instalar, salvos, efeitos } = await preparar(host, "encha-tracker");
+
+    const r = await instalar();
+    expect(r.ok, r.error).toBe(true);
+    expect(efeitos.deploys).toHaveLength(1);
+    expect(salvos().tracker_master_key).toBeTruthy();
+    expect(host.caminhosChecados).toEqual(["/var/enchat/tracker-postgres/PG_VERSION"]);
   });
 });

@@ -43,11 +43,16 @@ export function resolverAppHostname(def: StackDefinition, contexto: "registryAut
 export const BANCO_EXISTENTE_SEM_CHAVES = "banco_existente_sem_chaves";
 export class BancoExistenteSemChavesError extends Error {
   readonly reason = BANCO_EXISTENTE_SEM_CHAVES;
-  constructor(readonly caminho: string) {
+  constructor(
+    readonly caminho: string,
+    readonly produto: string,
+    readonly arquivoDeCredenciais?: string
+  ) {
     super(
-      `Existe um banco do EnchaT neste servidor (${caminho}), mas o painel não tem as chaves dele. ` +
-        "Reinstalar geraria chaves novas e tornaria os dados ilegíveis. Recupere as chaves (arquivo /root/dados_vps/dados_enchat) " +
-        "ou, se for uma instalação nova, remova /var/enchat/postgres e tente de novo."
+      `Existe um banco do ${produto} neste servidor (${caminho}), mas o painel não tem as chaves dele. ` +
+        "Reinstalar geraria chaves novas e tornaria os dados ilegíveis. " +
+        (arquivoDeCredenciais ? `Recupere as chaves (arquivo ${arquivoDeCredenciais}) ou, se` : "Se") +
+        ` for uma instalação nova, remova ${caminho} e tente de novo.`
     );
     this.name = "BancoExistenteSemChavesError";
   }
@@ -549,7 +554,11 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     if (protecao) {
       const semValorSalvo = protecao.segredosQueNaoPodemSerNovos.some((n) => previousOwn[n] === undefined);
       if (semValorSalvo && (await hostTemArquivo(input.token, endpointId, protecao.arquivoNoHost))) {
-        throw new BancoExistenteSemChavesError(protecao.arquivoNoHost.replace(/\/[^/]+$/, ""));
+        throw new BancoExistenteSemChavesError(
+          protecao.arquivoNoHost.replace(/\/[^/]+$/, ""),
+          def.name,
+          protecao.arquivoDeCredenciais
+        );
       }
     }
 

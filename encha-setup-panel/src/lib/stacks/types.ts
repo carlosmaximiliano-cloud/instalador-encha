@@ -271,8 +271,18 @@ export type StackDefinition = {
    * `segredosQueNaoPodemSerNovos`, a instalação ABORTA em vez de sortear valor
    * novo: a senha do Postgres nova não abre o volume, a chave-mestra nova
    * torna os segredos cifrados ilegíveis. Nunca apaga nada do host.
+   * `arquivoDeCredenciais`: onde o operador acha as chaves de uma instalação
+   * feita fora do painel (ex.: /root/dados_vps/dados_enchat da opção 84 do
+   * menu); só entra na mensagem de erro — ausente = a stack só se instala
+   * pelo painel. A mensagem é montada a partir DESTES campos (route.ts),
+   * nunca fixa: apontar o diretório de outra stack mandaria apagar o banco
+   * errado.
    */
-  protegeDadosExistentes?: { arquivoNoHost: string; segredosQueNaoPodemSerNovos: string[] };
+  protegeDadosExistentes?: {
+    arquivoNoHost: string;
+    segredosQueNaoPodemSerNovos: string[];
+    arquivoDeCredenciais?: string;
+  };
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;

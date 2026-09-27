@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { StackDefinition } from "@/lib/stacks/types";
+import { enchat } from "@/lib/stacks/enchat";
+import { enchaTracker } from "@/lib/stacks/encha-tracker";
 
 // Ciclo 29 — GET /api/stacks soma computeReleaseBasedPendingUpdates (em vez
 // de computePendingUpdates) para stacks com updateViaRelease — as duas
@@ -174,53 +176,64 @@ describe("POST /api/stacks — setupUrl no pós-instalação", () => {
 // S5-A — a recusa "banco do EnchaT existe e o painel não tem as chaves" chega
 // ao usuário traduzida (PT/EN/ES), com 409 e o reason estável.
 describe("POST /api/stacks — banco existente sem chaves (S5-A)", () => {
-  for (const [locale, trecho] of [
-    ["pt", "tornaria os dados ilegíveis"],
-    ["en", "make the data unreadable"],
-    ["es", "dejaría los datos ilegibles"],
-  ] as const) {
-    it(`devolve 409 com a mensagem em ${locale}, citando /root/dados_vps/dados_enchat e /var/enchat/postgres`, async () => {
-      const def = fakeDef({ updateViaRelease: undefined });
-      await setupCommonMocks(def);
-      vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => locale) }));
-      vi.doMock("@/lib/csrf", () => ({ verifyOrigin: () => true, verifyCsrf: async () => true, getClientIp: () => `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` }));
-      vi.doMock("@/lib/installer", () => ({
-        installStack: vi.fn(async () => ({
-          ok: false,
-          error: "texto em pt do installer",
-          reason: "banco_existente_sem_chaves",
-          httpStatus: 409,
-        })),
-        listInstalledStacks: vi.fn(async () => []),
-      }));
-      vi.doMock("@/lib/portainer", async (importOriginal) => {
-        const actual = await importOriginal<typeof import("@/lib/portainer")>();
-        return {
-          ...actual,
-          discoverContext: vi.fn(async () => ({ endpointId: 1, swarmId: "s1" })),
-          listSwarmStackStatuses: vi.fn(async () => []),
-        };
-      });
+  // A mensagem sai de def.protegeDadosExistentes da PRÓPRIA stack: a do
+  // EnchaT cita dados_enchat e /var/enchat/postgres; a do Tracker cita só o
+  // diretório dele — nunca o do EnchaT (seria mandar apagar o banco errado).
+  const casos = [
+    { stack: "enchat", protecao: enchat.protegeDadosExistentes!, tem: ["/root/dados_vps/dados_enchat", "/var/enchat/postgres"], nao: [] as string[] },
+    { stack: "encha-tracker", protecao: enchaTracker.protegeDadosExistentes!, tem: ["/var/enchat/tracker-postgres"], nao: ["dados_enchat", "/var/enchat/postgres"] },
+  ];
+  for (const caso of casos) {
+    for (const [locale, trecho] of [
+      ["pt", "tornaria os dados ilegíveis"],
+      ["en", "make the data unreadable"],
+      ["es", "dejaría los datos ilegibles"],
+    ] as const) {
+      it(`${caso.stack}: 409 com a mensagem em ${locale}, citando ${caso.tem.join(" e ")}`, async () => {
+        const def = fakeDef({ updateViaRelease: undefined, protegeDadosExistentes: caso.protecao });
+        await setupCommonMocks(def);
+        vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => locale) }));
+        vi.doMock("@/lib/csrf", () => ({ verifyOrigin: () => true, verifyCsrf: async () => true, getClientIp: () => `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` }));
+        vi.doMock("@/lib/installer", () => ({
+          installStack: vi.fn(async () => ({
+            ok: false,
+            error: "texto em pt do installer",
+            reason: "banco_existente_sem_chaves",
+            httpStatus: 409,
+          })),
+          listInstalledStacks: vi.fn(async () => []),
+        }));
+        vi.doMock("@/lib/portainer", async (importOriginal) => {
+          const actual = await importOriginal<typeof import("@/lib/portainer")>();
+          return {
+            ...actual,
+            discoverContext: vi.fn(async () => ({ endpointId: 1, swarmId: "s1" })),
+            listSwarmStackStatuses: vi.fn(async () => []),
+          };
+        });
 
-      const { POST } = await import("./route");
-      const req = new Request("http://painel.local/api/stacks", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          stackId: FAKE_ID,
-          values: {},
-          swarmCtx: { networkName: "rede", serverName: "vps", email: "" },
-        }),
-      });
-      const res = await POST(req as unknown as import("next/server").NextRequest);
-      const body = await res.json();
+        const { POST } = await import("./route");
+        const req = new Request("http://painel.local/api/stacks", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            stackId: FAKE_ID,
+            values: {},
+            swarmCtx: { networkName: "rede", serverName: "vps", email: "" },
+          }),
+        });
+        const res = await POST(req as unknown as import("next/server").NextRequest);
+        const body = await res.json();
 
-      expect(res.status).toBe(409);
-      expect(body.reason).toBe("banco_existente_sem_chaves");
-      expect(body.message).toContain(trecho);
-      expect(body.message).toContain("/root/dados_vps/dados_enchat");
-      expect(body.message).toContain("/var/enchat/postgres");
-      expect(body.message).not.toContain("texto em pt do installer");
-    });
+        expect(res.status).toBe(409);
+        expect(body.error).toBe("banco_existente_sem_chaves");
+        expect(body.reason).toBe("banco_existente_sem_chaves");
+        expect(body.message).toContain(trecho);
+        expect(body.message).toContain(def.name);
+        for (const t of caso.tem) expect(body.message).toContain(t);
+        for (const t of caso.nao) expect(body.message).not.toContain(t);
+        expect(body.message).not.toContain("texto em pt do installer");
+      });
+    }
   }
 });
