@@ -170,3 +170,57 @@ describe("POST /api/stacks — setupUrl no pós-instalação", () => {
     expect(body.accessUrl).toBe("https://crm.exemplo.com");
   });
 });
+
+// S5-A — a recusa "banco do EnchaT existe e o painel não tem as chaves" chega
+// ao usuário traduzida (PT/EN/ES), com 409 e o reason estável.
+describe("POST /api/stacks — banco existente sem chaves (S5-A)", () => {
+  for (const [locale, trecho] of [
+    ["pt", "tornaria os dados ilegíveis"],
+    ["en", "make the data unreadable"],
+    ["es", "dejaría los datos ilegibles"],
+  ] as const) {
+    it(`devolve 409 com a mensagem em ${locale}, citando /root/dados_vps/dados_enchat e /var/enchat/postgres`, async () => {
+      const def = fakeDef({ updateViaRelease: undefined });
+      await setupCommonMocks(def);
+      vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => locale) }));
+      vi.doMock("@/lib/csrf", () => ({ verifyOrigin: () => true, verifyCsrf: async () => true, getClientIp: () => `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` }));
+      vi.doMock("@/lib/installer", () => ({
+        installStack: vi.fn(async () => ({
+          ok: false,
+          error: "texto em pt do installer",
+          reason: "banco_existente_sem_chaves",
+          httpStatus: 409,
+        })),
+        listInstalledStacks: vi.fn(async () => []),
+      }));
+      vi.doMock("@/lib/portainer", async (importOriginal) => {
+        const actual = await importOriginal<typeof import("@/lib/portainer")>();
+        return {
+          ...actual,
+          discoverContext: vi.fn(async () => ({ endpointId: 1, swarmId: "s1" })),
+          listSwarmStackStatuses: vi.fn(async () => []),
+        };
+      });
+
+      const { POST } = await import("./route");
+      const req = new Request("http://painel.local/api/stacks", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          stackId: FAKE_ID,
+          values: {},
+          swarmCtx: { networkName: "rede", serverName: "vps", email: "" },
+        }),
+      });
+      const res = await POST(req as unknown as import("next/server").NextRequest);
+      const body = await res.json();
+
+      expect(res.status).toBe(409);
+      expect(body.reason).toBe("banco_existente_sem_chaves");
+      expect(body.message).toContain(trecho);
+      expect(body.message).toContain("/root/dados_vps/dados_enchat");
+      expect(body.message).toContain("/var/enchat/postgres");
+      expect(body.message).not.toContain("texto em pt do installer");
+    });
+  }
+});

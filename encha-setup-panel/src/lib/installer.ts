@@ -15,6 +15,7 @@ import { resolveRegistryAndPullImages } from "./registry-pull";
 import { ReleaseInfoError, fetchLatestRelease } from "./release-info";
 import { ativarTrackerPorEmail, TrackerAtivacaoError } from "./tracker-ativacao";
 import { ensureHostDirs } from "./host-dirs";
+import { hostTemArquivo } from "./host-dados-existentes";
 import { logAudit } from "./audit";
 import { encryptSecret } from "./crypto";
 import { getDb } from "./db";
@@ -34,6 +35,22 @@ export function resolverAppHostname(def: StackDefinition, contexto: "registryAut
     throw new Error(`stack "${def.id}" declara ${contexto} mas não tem appHostname — fingerprint indeterminado.`);
   }
   return def.appHostname;
+}
+
+// S5-A: existe banco do EnchaT no host mas o painel não tem as chaves dele.
+// Gerar chave nova aqui tornaria os dados ilegíveis — a instalação aborta e
+// deixa a decisão (recuperar as chaves ou remover o volume) com o operador.
+export const BANCO_EXISTENTE_SEM_CHAVES = "banco_existente_sem_chaves";
+export class BancoExistenteSemChavesError extends Error {
+  readonly reason = BANCO_EXISTENTE_SEM_CHAVES;
+  constructor(readonly caminho: string) {
+    super(
+      `Existe um banco do EnchaT neste servidor (${caminho}), mas o painel não tem as chaves dele. ` +
+        "Reinstalar geraria chaves novas e tornaria os dados ilegíveis. Recupere as chaves (arquivo /root/dados_vps/dados_enchat) " +
+        "ou, se for uma instalação nova, remova /var/enchat/postgres e tente de novo."
+    );
+    this.name = "BancoExistenteSemChavesError";
+  }
 }
 
 export type InstallInput = {
@@ -67,6 +84,7 @@ export type InstallResult = {
 // motivo, e não dava pra saber se o problema era a chave ou o serviço do
 // EnchaT. Ver registry-auth.ts e release-info.ts para as taxonomias.
 function statusForCause(e: unknown): { httpStatus: number; reason?: string } {
+  if (e instanceof BancoExistenteSemChavesError) return { httpStatus: 409, reason: e.reason };
   if (e instanceof RegistryAuthError) {
     switch (e.reason) {
       case "timeout":
@@ -516,6 +534,19 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
     const dockerSecretSpecs = def.dockerSecrets?.(parsed.data, secretMap, effectiveCtx) ?? [];
     const yaml = def.generateYaml(parsed.data, secretMap, effectiveCtx);
     const { endpointId, swarmId } = await discoverContext(input.token);
+
+    // S5-A: nunca sortear chave nova por cima de banco existente. Só olha o
+    // disco quando ALGUM segredo protegido não tem valor salvo (o caso normal
+    // de reinstall/retry, com stack_secrets íntegro, não paga a checagem).
+    // Roda antes de qualquer efeito colateral (pull, mkdir, segredos, deploy).
+    // "Não consegui verificar" propaga como erro — nunca vira "não existe".
+    const protecao = def.protegeDadosExistentes;
+    if (protecao) {
+      const semValorSalvo = protecao.segredosQueNaoPodemSerNovos.some((n) => previousOwn[n] === undefined);
+      if (semValorSalvo && (await hostTemArquivo(input.token, endpointId, protecao.arquivoNoHost))) {
+        throw new BancoExistenteSemChavesError(protecao.arquivoNoHost.replace(/\/[^/]+$/, ""));
+      }
+    }
 
     // Credencial de registro privado (ex.: GHCR) — precisa existir no
     // Portainer ANTES do deploy, é lá que ele resolve o EncodedRegistryAuth

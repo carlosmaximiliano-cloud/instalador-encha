@@ -31,6 +31,7 @@ afterEach(() => {
   vi.doUnmock("./portainer");
   vi.doUnmock("./release-info");
   vi.doUnmock("./host-dirs");
+  vi.doUnmock("./host-dados-existentes");
   vi.doUnmock("./registry-pull");
   vi.useRealTimers();
 });
@@ -142,6 +143,8 @@ async function preparar(opts: { swarm: Swarm; tagRelease?: string; tagRef?: { at
   });
   vi.doMock("./registry-pull", () => ({ resolveRegistryAndPullImages: vi.fn(async () => undefined) }));
   vi.doMock("./host-dirs", () => ({ ensureHostDirs: vi.fn(async () => undefined) }));
+  // S5-A: estes testes são de instalação nova (sem banco no host).
+  vi.doMock("./host-dados-existentes", () => ({ hostTemArquivo: vi.fn(async () => false) }));
 
   const { installStack } = await import("./installer");
   const { getDb } = await import("./db");

@@ -264,6 +264,15 @@ export type StackDefinition = {
    * (ex.: postgres) já ajusta sozinho no boot — não dar chown neles.
    */
   hostDirs?: (string | { path: string; owner: string })[];
+  /**
+   * Trava contra chave nova por cima de dados existentes (S5-A). Se o arquivo
+   * `arquivoNoHost` (ex.: /var/enchat/postgres/PG_VERSION) existe no host E
+   * o painel não tem valor salvo (stack_secrets) para algum segredo em
+   * `segredosQueNaoPodemSerNovos`, a instalação ABORTA em vez de sortear valor
+   * novo: a senha do Postgres nova não abre o volume, a chave-mestra nova
+   * torna os segredos cifrados ilegíveis. Nunca apaga nada do host.
+   */
+  protegeDadosExistentes?: { arquivoNoHost: string; segredosQueNaoPodemSerNovos: string[] };
   /** Nomes de campos do formulário que NUNCA devem ser persistidos em stack_secrets nem em audit meta (ex.: chave de licença). */
   transientFields?: string[];
   registryAuth?: RegistryAuthSpec;

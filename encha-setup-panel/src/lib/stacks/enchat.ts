@@ -253,6 +253,14 @@ export const enchat: StackDefinition = {
   // de cmd/enchat-updater). É onde fica o STATE_FILE dele (ver
   // enchat_updater no generateYaml).
   hostDirs: [{ path: "/var/enchat/media", owner: "1000:1000" }, "/var/enchat/postgres", "/var/enchat/updater"],
+  // S5-A: PG_VERSION só existe depois que o Postgres inicializou o volume. Com
+  // banco ali e sem as chaves salvas no painel (ex.: instalado pela opção 84 do
+  // menu), gerar valores novos deixaria o app sem conectar (senha) e os
+  // segredos cifrados ilegíveis (ENCHAT_MASTER_KEY) — ver installer.ts.
+  protegeDadosExistentes: {
+    arquivoNoHost: "/var/enchat/postgres/PG_VERSION",
+    segredosQueNaoPodemSerNovos: ["enchat_master_key", "postgres_password"],
+  },
   // licenca_pareamento_id também nunca deve ser persistido — é só uma
   // referência a uma linha de license_pairings (que já guarda a chave
   // CIFRADA); persisti-lo em stack_secrets seria redundante e aumentaria a
