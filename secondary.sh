@@ -16616,6 +16616,196 @@ EOL
 
 }
 
+################################################################################
+# EnchaT (opção 84) — segredos do Docker (S4 do plano de segurança, achado 2).
+#
+# Espelho de encha-setup-panel/src/lib/stacks/enchat.ts (+ enchat-segredos.ts e
+# docker-secrets.ts): a stack sai com `secrets:` externos de nome versionado
+# (enchat_<chave>_<época>) e `*_FILE` no lugar das env em texto — mas SÓ quando
+# a versão informada do EnchaT lê `*_FILE` (>= ENCHAT_VERSAO_MINIMA_SEGREDOS).
+# Antes disso as imagens ignoram `*_FILE`, então o formato é o de sempre.
+# Mesmos labels do painel (com.encha.segredo-*), de propósito: quem reinstala
+# por um caminho limpa o que o outro criou.
+#
+# Neste caminho NÃO entram: UPDATER_TOKEN (não há sidecar de update aqui,
+# a env é "" como sempre) e LICENSE_KEY (a chave só serve para o login no GHCR;
+# o app é ativado pela tela de ativação). Os outros 10 valores sensíveis do
+# painel entram todos.
+#
+# uid/gid dos mounts (mode 0400): app 1000 (USER enchat, adduser -u 1000);
+# Pinfy 1000 (USER node); Postgres 0 (o entrypoint oficial lê *_FILE como root
+# antes de baixar o privilégio). Mesma tabela de DONO_SEGREDOS no painel.
+################################################################################
+ENCHAT_VERSAO_MINIMA_SEGREDOS="0.4.1"
+ENCHAT_SEGREDOS_CHAVES=(master_key postgres_password database_url pinfy_database_url pinfy_db_password pinfy_master_key pinfy_webhook_token pinfy_panel_password pinfy_session_key setup_token)
+ENCHAT_SEGREDOS_CRIADOS=()
+
+MSG_PT[ferramenta_enchat_segredos_criados]="\e[32m✓ Segredos do Docker criados — as chaves e senhas do EnchaT não ficam em texto na stack.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_criados]="\e[32m✓ Docker secrets created — EnchaT keys and passwords are not stored as plain text in the stack.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_criados]="\e[32m✓ Secretos de Docker creados — las claves y contraseñas de EnchaT no quedan en texto en el stack.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_falhou]="\e[33m↳ Não foi possível criar os segredos do Docker — seguindo com o formato antigo (variáveis em texto). Nada quebrou.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_falhou]="\e[33m↳ Could not create the Docker secrets — continuing with the old format (plain-text variables). Nothing broke.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_falhou]="\e[33m↳ No fue posible crear los secretos de Docker — siguiendo con el formato antiguo (variables en texto). Nada se rompió.\e[0m"
+
+MSG_PT[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ A versão %s do EnchaT ainda não lê segredos do Docker (a partir da %s) — usando variáveis em texto.\e[0m"
+MSG_EN[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ EnchaT version %s does not read Docker secrets yet (from %s on) — using plain-text variables.\e[0m"
+MSG_ES[ferramenta_enchat_segredos_versao_antiga]="\e[97m↳ La versión %s de EnchaT aún no lee secretos de Docker (desde la %s) — usando variables en texto.\e[0m"
+
+# a >= b, só se as DUAS forem X.Y.Z legíveis (ilegível = falso, nunca erro).
+# Espelho de semverMaiorOuIgual em encha-setup-panel/src/lib/semver.ts.
+versao_semver_maior_ou_igual() {
+    local a="$1" b="$2"
+    versao_semver_maior "$a" "$b" && return 0
+    versao_semver_maior "$b" "$a" && return 1
+    [[ "$a" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "$b" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+# Portão por versão: true (exit 0) só se $1 >= ENCHAT_VERSAO_MINIMA_SEGREDOS.
+enchat_versao_usa_segredos() {
+    versao_semver_maior_ou_igual "$1" "$ENCHAT_VERSAO_MINIMA_SEGREDOS"
+}
+
+# URLs de conexão — fonte única: o mesmo texto vai para a env (formato antigo)
+# ou para o CONTEÚDO do segredo (formato novo). Usam as globais do fluxo.
+enchat_url_banco_app() {
+    printf '%s' "postgresql://enchat:${postgres_password}@enchat_postgres:5432/enchat?sslmode=disable"
+}
+enchat_url_banco_pinfy() {
+    printf '%s' "postgresql://pinfy:${pinfy_db_password}@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
+}
+
+# Conteúdo cru do segredo $1 (stdout, sem \n final — vai por stdin ao docker).
+enchat_valor_segredo() {
+    case "$1" in
+        master_key) printf '%s' "$enchat_master_key" ;;
+        postgres_password) printf '%s' "$postgres_password" ;;
+        database_url) enchat_url_banco_app ;;
+        pinfy_database_url) enchat_url_banco_pinfy ;;
+        pinfy_db_password) printf '%s' "$pinfy_db_password" ;;
+        pinfy_master_key) printf '%s' "$pinfy_master_key" ;;
+        pinfy_webhook_token) printf '%s' "$pinfy_webhook_token" ;;
+        pinfy_panel_password) printf '%s' "$pinfy_panel_password" ;;
+        pinfy_session_key) printf '%s' "$pinfy_session_key" ;;
+        setup_token) printf '%s' "$enchat_setup_token" ;;
+        *) return 1 ;;
+    esac
+}
+
+# Cria os segredos versionados (época em ENCHAT_EPOCA_SEGREDOS) ANTES do
+# deploy. Falhou um → desfaz os desta rodada e retorna 1 (o chamador cai no
+# formato antigo; nada foi trocado). Nomes criados em ENCHAT_SEGREDOS_CRIADOS.
+enchat_criar_segredos_docker() {
+    local chave nome
+    ENCHAT_SEGREDOS_CRIADOS=()
+    for chave in "${ENCHAT_SEGREDOS_CHAVES[@]}"; do
+        nome="enchat_${chave}_${ENCHAT_EPOCA_SEGREDOS}"
+        if enchat_valor_segredo "$chave" | docker secret create "$nome" \
+            --label "com.encha.segredo-stack=enchat" \
+            --label "com.encha.segredo-base=enchat_${chave}" - >/dev/null 2>&1; then
+            ENCHAT_SEGREDOS_CRIADOS+=("$nome")
+        else
+            for nome in "${ENCHAT_SEGREDOS_CRIADOS[@]}"; do
+                docker secret rm "$nome" >/dev/null 2>&1
+            done
+            ENCHAT_SEGREDOS_CRIADOS=()
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Linha de env de UM valor sensível: texto (formato antigo) ou `_FILE`.
+# $1=nome da env  $2=chave do segredo  $3=valor em texto. Sem \n final.
+enchat_linha_env() {
+    local env="$1" chave="$2" valor="$3"
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        printf '      %s_FILE: "/run/secrets/enchat_%s"' "$env" "$chave"
+    else
+        printf '      %s: "%s"' "$env" "$valor"
+    fi
+}
+
+# Bloco `secrets:` de um serviço (com \n final) em $1 (nome da variável);
+# vazio no formato antigo. $2=uid  $3=gid  demais=chaves.
+enchat_bloco_montagens() {
+    local destino="$1" uid="$2" gid="$3" bloco="" chave
+    shift 3
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        bloco="    secrets:"$'\n'
+        for chave in "$@"; do
+            bloco+="      - source: enchat_${chave}"$'\n'
+            bloco+="        target: enchat_${chave}"$'\n'
+            bloco+="        uid: \"${uid}\""$'\n'
+            bloco+="        gid: \"${gid}\""$'\n'
+            bloco+="        mode: 0400"$'\n'
+        done
+    fi
+    printf -v "$destino" '%s' "$bloco"
+}
+
+# Monta as variáveis que o heredoc do enchat.yaml interpola: as linhas de env
+# sensível (ENCHAT_YAML_ENV_*), os mounts por serviço (ENCHAT_YAML_SEG_*) e o
+# bloco `secrets:` de topo (ENCHAT_YAML_SEG_TOPO, sem \n final). No formato
+# antigo tudo isso reproduz, byte a byte, o YAML de antes do S4. Exige
+# ENCHAT_USA_SEGREDOS (true/false) e, com true, ENCHAT_EPOCA_SEGREDOS.
+enchat_montar_blocos_yaml() {
+    ENCHAT_YAML_ENV_DATABASE_URL="$(enchat_linha_env DATABASE_URL database_url "$(enchat_url_banco_app)")"
+    ENCHAT_YAML_ENV_PINFY_MASTER_KEY="$(enchat_linha_env PINFY_MASTER_KEY pinfy_master_key "$pinfy_master_key")"
+    ENCHAT_YAML_ENV_PINFY_WEBHOOK_TOKEN="$(enchat_linha_env PINFY_WEBHOOK_TOKEN pinfy_webhook_token "$pinfy_webhook_token")"
+    ENCHAT_YAML_ENV_PINFY_DB_PASSWORD="$(enchat_linha_env PINFY_DB_PASSWORD pinfy_db_password "$pinfy_db_password")"
+    ENCHAT_YAML_ENV_MASTER_KEY="$(enchat_linha_env ENCHAT_MASTER_KEY master_key "$enchat_master_key")"
+    ENCHAT_YAML_ENV_SETUP_TOKEN="$(enchat_linha_env ENCHAT_SETUP_TOKEN setup_token "$enchat_setup_token")"
+    ENCHAT_YAML_ENV_PINFY_DATABASE_URL="$(enchat_linha_env DATABASE_URL pinfy_database_url "$(enchat_url_banco_pinfy)")"
+    ENCHAT_YAML_ENV_PINFY_MASTER="$(enchat_linha_env MASTER_KEY pinfy_master_key "$pinfy_master_key")"
+    ENCHAT_YAML_ENV_PINFY_PANEL="$(enchat_linha_env PANEL_PASSWORD pinfy_panel_password "$pinfy_panel_password")"
+    ENCHAT_YAML_ENV_PINFY_SESSION="$(enchat_linha_env SESSION_KEY pinfy_session_key "$pinfy_session_key")"
+    ENCHAT_YAML_ENV_POSTGRES_PASSWORD="$(enchat_linha_env POSTGRES_PASSWORD postgres_password "$postgres_password")"
+
+    enchat_bloco_montagens ENCHAT_YAML_SEG_APP 1000 1000 master_key database_url pinfy_db_password pinfy_master_key pinfy_webhook_token setup_token
+    enchat_bloco_montagens ENCHAT_YAML_SEG_PINFY 1000 1000 pinfy_database_url pinfy_master_key pinfy_panel_password pinfy_session_key
+    enchat_bloco_montagens ENCHAT_YAML_SEG_POSTGRES 0 0 postgres_password
+
+    ENCHAT_YAML_SEG_TOPO=""
+    if [ "$ENCHAT_USA_SEGREDOS" = true ]; then
+        local chave
+        ENCHAT_YAML_SEG_TOPO="secrets:"
+        for chave in "${ENCHAT_SEGREDOS_CHAVES[@]}"; do
+            ENCHAT_YAML_SEG_TOPO+=$'\n'"  enchat_${chave}:"$'\n'"    external: true"$'\n'"    name: enchat_${chave}_${ENCHAT_EPOCA_SEGREDOS}"
+        done
+    fi
+}
+
+# Remove as versões antigas dos segredos DEPOIS do deploy confirmado (o
+# chamador só invoca com o wait_stack em 0). $@ = nomes a manter (os criados
+# agora). Mesma disciplina de limpar_segredos_antigos_painel (auditoria C9):
+# só age com prova de que o spec novo foi aplicado (algum serviço referencia
+# um nome mantido) e nunca remove um segredo que o Spec atual OU o PreviousSpec
+# (alvo do rollback) de qualquer serviço da stack ainda referencia. Best-effort:
+# se qualquer inspeção falhar, não remove nada (sobra para a próxima rodada).
+enchat_limpar_segredos_antigos() {
+    local servico atuais anteriores referenciados="" novo_aplicado=false nome manter
+    for servico in enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres; do
+        atuais=$(docker service inspect "$servico" --format '{{range .Spec.TaskTemplate.ContainerSpec.Secrets}}{{println .SecretName}}{{end}}' 2>/dev/null) || return 0
+        anteriores=$(docker service inspect "$servico" --format '{{if .PreviousSpec}}{{range .PreviousSpec.TaskTemplate.ContainerSpec.Secrets}}{{println .SecretName}}{{end}}{{end}}' 2>/dev/null) || return 0
+        referenciados+="${atuais}"$'\n'"${anteriores}"$'\n'
+        for manter in "$@"; do
+            printf '%s\n' "$atuais" | grep -qxF -- "$manter" && novo_aplicado=true
+        done
+    done
+    [ "$novo_aplicado" = true ] || return 0
+
+    while IFS= read -r nome; do
+        [ -z "$nome" ] && continue
+        for manter in "$@"; do
+            [ "$nome" = "$manter" ] && continue 2
+        done
+        printf '%s\n' "$referenciados" | grep -qxF -- "$nome" && continue
+        docker secret rm "$nome" >/dev/null 2>&1
+    done < <(docker secret ls --filter "label=com.encha.segredo-stack=enchat" --format '{{.Name}}' 2>/dev/null)
+    return 0
+}
+
 ferramenta_enchat(){
   msg_enchat
   dados
@@ -16754,6 +16944,23 @@ ferramenta_enchat(){
   # do instalar.sh standalone (hex, 48 caracteres; o app exige >= 20).
   enchat_setup_token=$(openssl rand -hex 24)
 
+  # S4 (achado 2): segredos do Docker em vez de env em texto, quando a versão
+  # informada do EnchaT já lê *_FILE (portão por versão). Criados ANTES do
+  # deploy; se a criação falhar cai no formato antigo, sem quebrar nada.
+  ENCHAT_USA_SEGREDOS=false
+  ENCHAT_EPOCA_SEGREDOS=$(date +%s)
+  if enchat_versao_usa_segredos "$versao_enchat"; then
+    if enchat_criar_segredos_docker; then
+      ENCHAT_USA_SEGREDOS=true
+      echo -e "$(t ferramenta_enchat_segredos_criados)"
+    else
+      echo -e "$(t ferramenta_enchat_segredos_falhou)"
+    fi
+  else
+    echo -e "$(t ferramenta_enchat_segredos_versao_antiga "$versao_enchat" "$ENCHAT_VERSAO_MINIMA_SEGREDOS")"
+  fi
+  enchat_montar_blocos_yaml
+
   mkdir -p /var/enchat/media /var/enchat/postgres
 
   MSG_PT[ferramenta_enchat_instalando_enchat]="\e[97m• INSTALANDO O ENCHAT \e[33m[3/5]\e[0m"
@@ -16779,7 +16986,7 @@ services:
     volumes:
       - /var/enchat/media:/data/media
     environment:
-      DATABASE_URL: "postgresql://enchat:$postgres_password@enchat_postgres:5432/enchat?sslmode=disable"
+${ENCHAT_YAML_ENV_DATABASE_URL}
       WHATSAPP_APP_SECRET: ""
       WHATSAPP_VERIFY_TOKEN: ""
       WHATSAPP_API_VERSION: "v21.0"
@@ -16789,10 +16996,10 @@ services:
       INSTAGRAM_VERIFY_TOKEN: ""
       INSTAGRAM_API_VERSION: "v21.0"
       PINFY_BASE_URL: "http://enchat_pinfy:3000"
-      PINFY_MASTER_KEY: "$pinfy_master_key"
+${ENCHAT_YAML_ENV_PINFY_MASTER_KEY}
       PINFY_WEBHOOK_URL: "http://enchat_app:8080/api/webhooks/pinfy"
-      PINFY_WEBHOOK_TOKEN: "$pinfy_webhook_token"
-      PINFY_DB_PASSWORD: "$pinfy_db_password"
+${ENCHAT_YAML_ENV_PINFY_WEBHOOK_TOKEN}
+${ENCHAT_YAML_ENV_PINFY_DB_PASSWORD}
       MAUTIC_BASE_URL: ""
       MAUTIC_USER: ""
       MAUTIC_PASSWORD: ""
@@ -16804,13 +17011,13 @@ services:
       MEDIA_DIR: "/data/media"
       LICENSE_SERVER_URL: "https://console.enchat.pro"
       ENCHAT_CANAL: "stable"
-      ENCHAT_MASTER_KEY: "$enchat_master_key"
-      ENCHAT_SETUP_TOKEN: "$enchat_setup_token"
+${ENCHAT_YAML_ENV_MASTER_KEY}
+${ENCHAT_YAML_ENV_SETUP_TOKEN}
       TZ: "America/Sao_Paulo"
       UPDATER_URL: ""
       UPDATER_TOKEN: ""
       UPDATE_MODE: ""
-    deploy:
+${ENCHAT_YAML_SEG_APP}    deploy:
       replicas: 1
       update_config:
         order: start-first
@@ -16856,13 +17063,13 @@ services:
     environment:
       # Usuário restrito "pinfy" (papel criado pelo enchat_app no boot, S12
       # C1) — nunca mais o superusuário "enchat".
-      DATABASE_URL: "postgresql://pinfy:$pinfy_db_password@enchat_postgres:5432/enchat?schema=pinfy&sslmode=disable"
-      MASTER_KEY: "$pinfy_master_key"
-      PANEL_PASSWORD: "$pinfy_panel_password"
-      SESSION_KEY: "$pinfy_session_key"
+${ENCHAT_YAML_ENV_PINFY_DATABASE_URL}
+${ENCHAT_YAML_ENV_PINFY_MASTER}
+${ENCHAT_YAML_ENV_PINFY_PANEL}
+${ENCHAT_YAML_ENV_PINFY_SESSION}
       LICENSE_SERVER_URL: "https://app.pinfy.fun"
       TZ: "America/Sao_Paulo"
-    deploy:
+${ENCHAT_YAML_SEG_PINFY}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -16878,9 +17085,9 @@ services:
       - /var/enchat/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: "enchat"
-      POSTGRES_PASSWORD: "$postgres_password"
+${ENCHAT_YAML_ENV_POSTGRES_PASSWORD}
       POSTGRES_DB: "enchat"
-    deploy:
+${ENCHAT_YAML_SEG_POSTGRES}    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -16895,7 +17102,7 @@ networks:
   enchat_net:
     driver: overlay
     attachable: true
-
+${ENCHAT_YAML_SEG_TOPO}
 EOL
 
   STACK_NAME="enchat"
@@ -16921,6 +17128,13 @@ EOL
 
   pull ghcr.io/enchainterno/enchat-free:$versao_enchat ghcr.io/enchainterno/pinfy:$versao_enchat
   wait_stack enchat_enchat_app enchat_enchat_pinfy enchat_enchat_postgres
+  enchat_stack_ok=$?
+
+  # Só depois do deploy confirmado (wait_stack em 0): remove as versões antigas
+  # dos segredos (nunca as que um serviço ainda referencia — ver a função).
+  if [ "$ENCHAT_USA_SEGREDOS" = true ] && [ "$enchat_stack_ok" -eq 0 ]; then
+    enchat_limpar_segredos_antigos "${ENCHAT_SEGREDOS_CRIADOS[@]}"
+  fi
 
   MSG_PT[ferramenta_enchat_salvando_credenciais]="\e[97m• SALVANDO CREDENCIAIS \e[33m[5/5]\e[0m"
   MSG_EN[ferramenta_enchat_salvando_credenciais]="\e[97m• SAVING CREDENTIALS \e[33m[5/5]\e[0m"
