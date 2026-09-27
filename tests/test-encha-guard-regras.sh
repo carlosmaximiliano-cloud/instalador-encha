@@ -507,6 +507,17 @@ rodar_loop() {
   # shellcheck disable=SC2119 # sem argumento de propósito: é o loop real
   FAKE_NFT_DIR="$dir" sob_teste 2>"$dir/stderr" &
   local pid=$!
+  # Aquecimento: as janelas abaixo (~1,4s = ~7 ciclos) só fazem sentido a partir
+  # do momento em que o loop JÁ rodou o primeiro ciclo. Numa máquina lenta
+  # (contêiner recém-criado, runner ocupado) o processo pode levar mais de 1,4s
+  # só para começar, e a janela inteira passava antes da 1ª chamada ao nft —
+  # "0 aplicações em ~7 ciclos" sem nenhum bug no script. Espera (até 10s) a
+  # 1ª chamada; não muda o que é medido depois, só quando a medição começa.
+  for _ in $(seq 1 100); do
+    [ -s "$dir/chamadas" ] && break
+    kill -0 "$pid" 2>/dev/null || break
+    "$REAL_SLEEP" 0.1
+  done
   if [ -n "$apagar_em" ]; then
     "$REAL_SLEEP" "$apagar_em"
     rm -f "${dir:?}/$apagar_o_que"

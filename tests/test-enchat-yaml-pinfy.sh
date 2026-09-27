@@ -203,17 +203,22 @@ for v in 0.4.2 0.5.0 1.0.0 0.4.10; do
   grep -q '^secrets:$' "$DIR/aberto-$v/enchat.yaml" || falha "versão $v deveria usar segredos"
 done
 
-# Os outros dois testes da opção 84 com segredos do Docker rodam DAQUI: este é
-# o único deles que o CI (.github/workflows/test.yml) chama — sem isso a
-# criação/limpeza (docker falso) e a tabela-contrato nunca rodariam num push.
-for t in tests/test-enchat-segredos.sh tests/test-enchat-segredos-contrato.sh; do
-  if bash "$t" > "$DIR/saida-$(basename "$t").log" 2>&1; then
-    ok "$t"
+# TODOS os outros testes de shell (tests/test-*.sh) rodam DAQUI: este é o único
+# que o CI (.github/workflows/test.yml) chama por nome, e o workflow não pode ser
+# editado sem autorização do Carlos. Sem isso, só 2 dos testes rodavam num push e
+# os demais (incluindo os de segredos da opção 84) nunca eram executados por
+# ninguém. A forma definitiva é o workflow chamar tests/run-all.sh direto — ver o
+# cabeçalho dele. ENCHA_RUN_ALL=1 (exportado pelo run-all) evita a recursão: se
+# foi o run-all que nos chamou, ele mesmo cuida do resto.
+if [ -z "${ENCHA_RUN_ALL:-}" ]; then
+  if ENCHA_RUN_ALL_SKIP="test-enchat-yaml-pinfy.sh" bash tests/run-all.sh > "$DIR/run-all.log" 2>&1; then
+    cat "$DIR/run-all.log"
+    ok "tests/run-all.sh: todos os testes de shell do repo"
   else
-    falha "$t (saída abaixo)"
-    grep -F "FALHOU" "$DIR/saida-$(basename "$t").log" | head -20
+    cat "$DIR/run-all.log"
+    falha "tests/run-all.sh: algum teste de shell falhou (saída acima)"
   fi
-done
+fi
 
 if [ "$falhas" -eq 0 ]; then
   ok "enchat.yaml: papel pinfy/SESSION_KEY nos serviços certos e segredos do Docker sem valor em texto"

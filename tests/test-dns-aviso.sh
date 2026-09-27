@@ -20,8 +20,9 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
     echo "ℹ️  bash ${BASH_VERSION%%(*} < 4: reexecutando em debian:12 (Docker)"
     exec docker run --rm -e ENCHA_TEST_EM_DOCKER=1 -v "$PWD":/w -w /w debian:12 bash tests/test-dns-aviso.sh
   fi
-  echo "❌ FALHOU: este teste precisa de bash >= 4 (ou Docker para reexecutar em debian:12)"
-  exit 1
+  # 77 = PULADO (tests/run-all.sh mostra o motivo no resumo; nunca vira verde calado).
+  echo "PULADO: precisa de bash >= 4 (ou Docker para reexecutar em debian:12) — nem um nem outro disponível"
+  exit 77
 fi
 
 falhas=0
