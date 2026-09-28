@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enchaTracker } from "./encha-tracker";
+import { DONO_SEGREDOS_TRACKER, TRACKER_VERSAO_MINIMA_SEGREDOS, trackerUsaSegredos } from "./encha-tracker-segredos";
 import type { SwarmContext } from "./types";
 
 const valuesValidos = {
@@ -21,6 +22,7 @@ const ctxBase: SwarmContext = {
   release: { version: "1.2.3", imageRepo: "ghcr.io/conta-tracker/encha-tracker", imageTag: "1.2.3", obrigatoria: false },
   machineId: "0123456789abcdef0123456789abcdef",
   fingerprint: "58132042721689d3e6fb25654444e5b7",
+  versaoSegredos: "1758900000",
 };
 
 describe("encha-tracker — schema", () => {
@@ -123,6 +125,8 @@ describe("encha-tracker — generateYaml", () => {
   });
 
   it("TRACKER_ADMIN_SENHA usa a senha digitada pelo cliente (values.senha_admin), não secrets", () => {
+    const ctxAbaixo: SwarmContext = { ...ctxBase, release: { ...ctxBase.release!, version: "1.2.0", imageTag: "1.2.0" } };
+    const yaml = enchaTracker.generateYaml(valuesValidos, secrets, ctxAbaixo);
     expect(yaml).toContain(`TRACKER_ADMIN_SENHA: "${valuesValidos.senha_admin}"`);
     expect(yaml).not.toContain("admin_senha");
   });
@@ -294,5 +298,110 @@ describe("encha-tracker — release (produto/edicao)", () => {
     for (const linha of ocorrencias) {
       expect(linha).toBe(`TRACKER_CANAL: "${enchaTracker.release?.canal}"`);
     }
+  });
+});
+
+describe("encha-tracker — senha do admin como Docker secret (painel-secret)", () => {
+  const SENHA = valuesValidos.senha_admin;
+  const ctxTag = (tag: string, extra: Partial<SwarmContext> = {}): SwarmContext => ({
+    ...ctxBase,
+    release: { version: tag, imageRepo: "ghcr.io/conta-tracker/encha-tracker", imageTag: tag, obrigatoria: false },
+    versaoSegredos: undefined,
+    ...extra,
+  });
+  const ABERTO = ctxTag("1.2.1", { versaoSegredos: "1758900000" });
+
+  it("TS1: portão: 1.2.1 é a mínima (primeira tag com LerSenhaBootstrap, Ciclo 63 do Tracker)", () => {
+    expect(TRACKER_VERSAO_MINIMA_SEGREDOS).toBe("1.2.1");
+    for (const tag of ["1.2.1", "1.2.2", "1.3.31", "1.10.0", "2.0.0"]) {
+      expect(trackerUsaSegredos(tag)).toBe(true);
+    }
+    for (const tag of ["1.2.0", "1.0.40", "1.1.99", "0.0.0-referencia", "1.2.1-beta.3", "v1.2.1", "latest", "", undefined, null]) {
+      expect(trackerUsaSegredos(tag as never)).toBe(false);
+    }
+  });
+
+  it("TS2: sem portão por label: a stack não declara dockerSecretsGate e o ctx sem imagensSuportamSegredos abre", () => {
+    expect(enchaTracker.dockerSecretsGate).toBeUndefined();
+    expect(ABERTO.imagensSuportamSegredos).toBeUndefined();
+    expect(enchaTracker.dockerSecrets!(valuesValidos, secrets, ABERTO)).toHaveLength(1);
+    expect(enchaTracker.generateYaml(valuesValidos, secrets, ABERTO)).toContain(
+      'TRACKER_ADMIN_SENHA_FILE: "/run/secrets/encha_tracker_senha_admin"'
+    );
+  });
+
+  it("TS3: dockerSecrets aberto: só a senha do admin, com o valor digitado", () => {
+    expect(enchaTracker.dockerSecrets!(valuesValidos, secrets, ABERTO)).toEqual([
+      { base: "encha_tracker_senha_admin", name: "encha_tracker_senha_admin_1758900000", value: SENHA },
+    ]);
+  });
+
+  it("TS4: dockerSecrets fechado: lista vazia (o installer não cria nada)", () => {
+    for (const tag of ["1.2.0", "1.0.40", "0.0.0-referencia", "1.2.1-beta.3", "latest"]) {
+      expect(enchaTracker.dockerSecrets!(valuesValidos, secrets, ctxTag(tag, { versaoSegredos: "1758900000" }))).toEqual([]);
+    }
+  });
+
+  it("TS5: portão aberto sem versaoSegredos válida: erro alto nos dois (bug do installer)", () => {
+    expect(() => enchaTracker.generateYaml(valuesValidos, secrets, ctxTag("1.2.1"))).toThrow(/versaoSegredos/);
+    expect(() => enchaTracker.dockerSecrets!(valuesValidos, secrets, ctxTag("1.2.1"))).toThrow(/versaoSegredos/);
+    expect(() => enchaTracker.generateYaml(valuesValidos, secrets, ctxTag("1.2.1", { versaoSegredos: "abc" }))).toThrow(
+      /versaoSegredos/
+    );
+    expect(() => enchaTracker.dockerSecrets!(valuesValidos, secrets, ctxTag("1.2.1", { versaoSegredos: "abc" }))).toThrow(
+      /versaoSegredos/
+    );
+  });
+
+  it("TS6: YAML aberto = YAML fechado com exatamente as três trocas (senha, montagem no app, bloco de topo)", () => {
+    const fechado = enchaTracker.generateYaml(valuesValidos, secrets, ctxTag("1.2.0", { versaoSegredos: "1758900000" }));
+    const aberto = enchaTracker.generateYaml(valuesValidos, secrets, ABERTO);
+    expect(fechado).toContain('      TRACKER_ADMIN_SENHA: "SenhaForte#123"\n');
+    expect(fechado).toContain('      TRACKER_UPDATER_TOKEN: "updater-token-fake"\n    deploy:');
+    const esperado =
+      fechado
+        .replaceAll(":1.2.0", ":1.2.1")
+        .replace(
+          '      TRACKER_ADMIN_SENHA: "SenhaForte#123"\n',
+          '      TRACKER_ADMIN_SENHA_FILE: "/run/secrets/encha_tracker_senha_admin"\n'
+        )
+        .replace(
+          '      TRACKER_UPDATER_TOKEN: "updater-token-fake"\n    deploy:',
+          '      TRACKER_UPDATER_TOKEN: "updater-token-fake"\n' +
+            "    secrets:\n" +
+            "      - source: encha_tracker_senha_admin\n" +
+            "        target: encha_tracker_senha_admin\n" +
+            '        uid: "1000"\n' +
+            '        gid: "1000"\n' +
+            "        mode: 0400\n" +
+            "    deploy:"
+        ) +
+      "\nsecrets:\n  encha_tracker_senha_admin:\n    external: true\n    name: encha_tracker_senha_admin_1758900000\n";
+    expect(aberto).toBe(esperado);
+  });
+
+  it("TS7: abaixo do portão ou ilegível: YAML byte a byte o de 1.2.0, com a senha em texto como hoje", () => {
+    const fechado120 = enchaTracker.generateYaml(valuesValidos, secrets, ctxTag("1.2.0", { versaoSegredos: "1758900000" }));
+    expect(fechado120).toContain(`TRACKER_ADMIN_SENHA: "${SENHA}"`);
+    expect(fechado120).not.toContain("/run/secrets/");
+    expect(fechado120).not.toContain("TRACKER_ADMIN_SENHA_FILE");
+    expect(fechado120).not.toMatch(/^secrets:/m);
+    for (const tag of ["1.0.40", "1.1.99", "0.0.0-referencia", "1.2.1-beta.3", "v1.2.1", "latest"]) {
+      const y = enchaTracker.generateYaml(valuesValidos, secrets, ctxTag(tag, { versaoSegredos: "1758900000" }));
+      expect(y.replaceAll(`:${tag}`, ":1.2.0")).toBe(fechado120);
+    }
+  });
+
+  it("TS8: a senha não aparece em texto no YAML aberto", () => {
+    const y = enchaTracker.generateYaml(valuesValidos, secrets, ABERTO);
+    expect(y).not.toContain(SENHA);
+    expect(y).not.toMatch(/^\s+TRACKER_ADMIN_SENHA:/m);
+  });
+
+  it("TS9: a montagem é legível pelo usuário do container: uid/gid 1000 (Dockerfile do Tracker), mode 0400", () => {
+    expect(DONO_SEGREDOS_TRACKER).toEqual({ app: { uid: "1000", gid: "1000" } });
+    const y = enchaTracker.generateYaml(valuesValidos, secrets, ABERTO);
+    const m = y.match(/ {8}uid: "1000"\n {8}gid: "1000"\n {8}mode: 0400\n/g) ?? [];
+    expect(m).toHaveLength(1);
   });
 });

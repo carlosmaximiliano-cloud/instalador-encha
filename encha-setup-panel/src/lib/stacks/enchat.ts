@@ -3,6 +3,13 @@ import { type DockerSecretSpec, type StackDefinition, type SwarmContext, fqdn } 
 import { randomBytes } from "node:crypto";
 import { ENCHAT_APP_HOSTNAME } from "../enchat-fingerprint";
 import { LABEL_RECURSOS_ENCHAT, RECURSO_SEGREDOS_ARQUIVO, enchatPortaoSegredos, enchatUsaSegredos } from "./enchat-segredos";
+import {
+  blocoMontagensSegredos,
+  blocoSegredosTopo as blocoSegredosTopoComum,
+  exigeVersaoSegredos,
+  linhaEnvArquivo,
+  nomeSegredoVersionado,
+} from "./segredos-yaml";
 
 // Imagem do Pinfy (WhatsApp não-oficial, bundled). Antes fixa em
 // "ghcr.io/enchainterno/pinfy-api:1.0.0" (uma republicação manual,
@@ -112,7 +119,6 @@ const CHAVES_POR_SERVICO = {
 } as const satisfies Record<keyof typeof DONO_SEGREDOS, readonly ChaveSegredo[]>;
 
 const baseSegredo = (c: ChaveSegredo): string => `enchat_${c}`;
-const caminhoSegredo = (c: ChaveSegredo): string => `/run/secrets/${baseSegredo(c)}`;
 
 // URLs de conexão — fonte única: o mesmo texto vai para a env (formato
 // antigo) ou para o CONTEÚDO do segredo (formato novo). A senha é hex, sem
@@ -148,18 +154,11 @@ function chavesAtivas(valores: Record<ChaveSegredo, string>, servico: keyof type
 }
 
 export function nomeVersionadoSegredo(c: ChaveSegredo, versao: string): string {
-  return `${baseSegredo(c)}_${versao}`;
+  return nomeSegredoVersionado(baseSegredo(c), versao);
 }
 
 function usaSegredosNesteCtx(ctx: SwarmContext): boolean {
   return enchatPortaoSegredos(ctx.release?.imageTag, ctx.imagensSuportamSegredos);
-}
-
-function exigeVersaoSegredos(ctx: SwarmContext): string {
-  if (!ctx.versaoSegredos || !/^\d{1,20}$/.test(ctx.versaoSegredos)) {
-    throw new Error("ctx.versaoSegredos ausente/ inválida com segredos do Docker ligados — bug no installer.");
-  }
-  return ctx.versaoSegredos;
 }
 
 // Os segredos que o installer cria no Swarm (vazio = formato antigo).
@@ -185,32 +184,19 @@ export function segredosDockerDoEnchat(
 
 // Linha de env de UM valor sensível: texto (formato antigo) ou `_FILE`.
 function linhaEnv(usar: boolean, env: string, chave: ChaveSegredo, valor: string, ativas: ChaveSegredo[]): string {
-  if (usar && ativas.includes(chave)) return `      ${env}_FILE: "${caminhoSegredo(chave)}"`;
+  if (usar && ativas.includes(chave)) return linhaEnvArquivo(env, baseSegredo(chave));
   return `      ${env}: "${valor}"`;
 }
 
 function blocoMontagens(usar: boolean, servico: keyof typeof CHAVES_POR_SERVICO, ativas: ChaveSegredo[]): string {
   if (!usar) return "";
   const { uid, gid } = DONO_SEGREDOS[servico];
-  return (
-    "    secrets:\n" +
-    ativas
-      .map(
-        (c) =>
-          `      - source: ${baseSegredo(c)}\n        target: ${baseSegredo(c)}\n        uid: "${uid}"\n        gid: "${gid}"\n        mode: 0400\n`
-      )
-      .join("")
-  );
+  return blocoMontagensSegredos(ativas.map((c) => ({ base: baseSegredo(c), uid, gid })));
 }
 
 function blocoSegredosTopo(usar: boolean, ativasTodas: ChaveSegredo[], versao: string): string {
   if (!usar) return "";
-  return (
-    "\nsecrets:\n" +
-    ativasTodas
-      .map((c) => `  ${baseSegredo(c)}:\n    external: true\n    name: ${nomeVersionadoSegredo(c, versao)}\n`)
-      .join("")
-  );
+  return blocoSegredosTopoComum(ativasTodas.map((c) => ({ base: baseSegredo(c), nome: nomeVersionadoSegredo(c, versao) })));
 }
 
 const schema = z

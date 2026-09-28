@@ -422,3 +422,55 @@ describe("segredos do Docker (createDockerSecret / listDockerSecrets / removeDoc
     });
   });
 });
+
+describe("updateServiceImage — preserva o segredo montado (painel-secret)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.doUnmock("undici");
+  });
+
+  it("PT1: troca só a imagem e preserva Secrets, Env e o resto do Spec (a atualização não perde o segredo da senha)", async () => {
+    const spec = {
+      Name: "encha_tracker_app",
+      Labels: { "com.docker.stack.namespace": "encha_tracker" },
+      TaskTemplate: {
+        ContainerSpec: {
+          Image: "ghcr.io/cheiodecoisa/encha-tracker:1.2.1",
+          Env: ["TRACKER_ADMIN_SENHA_FILE=/run/secrets/encha_tracker_senha_admin"],
+          Secrets: [
+            {
+              SecretName: "encha_tracker_senha_admin_1790596800",
+              SecretID: "sid-1",
+              File: { Name: "encha_tracker_senha_admin", UID: "1000", GID: "1000", Mode: 256 },
+            },
+          ],
+        },
+        RestartPolicy: { Condition: "on-failure" },
+      },
+    };
+    const service = {
+      ID: "svc-app",
+      Version: { Index: 9 },
+      Spec: spec,
+    } as unknown as import("./portainer").DockerServiceFull;
+
+    const fetchMock = mockJsonFetch(() => "");
+    const { updateServiceImage } = await carregarPortainerComFetchGenerico(fetchMock);
+
+    await updateServiceImage("token", 1, service, "ghcr.io/cheiodecoisa/encha-tracker:1.2.2");
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, { method: string; body: string }];
+    expect(url).toContain("/api/endpoints/1/docker/services/svc-app/update?version=9");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({
+      ...spec,
+      TaskTemplate: {
+        ...spec.TaskTemplate,
+        ContainerSpec: { ...spec.TaskTemplate.ContainerSpec, Image: "ghcr.io/cheiodecoisa/encha-tracker:1.2.2" },
+      },
+    });
+  });
+});

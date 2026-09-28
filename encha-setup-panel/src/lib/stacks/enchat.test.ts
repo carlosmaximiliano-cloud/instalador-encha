@@ -514,3 +514,17 @@ describe("enchat — dockerSecrets (o que o installer cria no Swarm)", () => {
     expect(l.find((s) => s.base === "enchat_license_key")!.value).toBe("ABCDE");
   });
 });
+
+describe("enchat — com segredos (0.4.3): YAML byte a byte o de antes da extração (painel-secret)", () => {
+  it("com chave: idêntico ao golden capturado de b752cd8", () => {
+    expect(enchat.generateYaml(valoresComChave, sentinelas, ctxAberto)).toBe(
+      fixture("enchat-segredos-com-chave-0.4.3.yaml")
+    );
+  });
+
+  it("sem chave (pareamento): idêntico ao golden capturado de b752cd8", () => {
+    expect(enchat.generateYaml(valoresSemChave, sentinelas, ctxAberto)).toBe(
+      fixture("enchat-segredos-sem-chave-0.4.3.yaml")
+    );
+  });
+});
