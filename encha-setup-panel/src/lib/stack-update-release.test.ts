@@ -281,3 +281,103 @@ describe("applyReleaseUpdate", () => {
     expect(logAuditMock.mock.calls[0][0].action).toBe("stack.update.fail");
   });
 });
+
+describe("applyReleaseUpdate — nunca rebaixa (painel-rebaixamento)", () => {
+  const S = FAKE_STACK_ID.replace(/-/g, "_");
+
+  it("T1: alvo menor nos dois serviços: recusa sem machine-id, sem pull e sem update", async () => {
+    const { def, resolveRegistryAndPullImagesMock, updateServiceImageMock, getOrCreateMachineIdMock, logAuditMock } =
+      await setupMocks({
+        appImage: "ghcr.io/x/fake:1.2.0",
+        updaterImage: "ghcr.io/x/fake-updater:1.2.0",
+        releaseTag: "1.1.0",
+      });
+    const { RebaixamentoRecusadoError } = await import("./ordem-versao");
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const err = await applyReleaseUpdate({ token: "tok", stackId: FAKE_STACK_ID, def, user: "tester", ip: "127.0.0.1" }).catch(
+      (e) => e
+    );
+
+    expect(err).toBeInstanceOf(RebaixamentoRecusadoError);
+    expect(err.name).toBe("RebaixamentoRecusadoError");
+    expect(err.codigo).toBe("rebaixamento_recusado");
+    expect(err.recusados.map((r: { servico: string }) => r.servico)).toEqual([`${S}_app`, `${S}_updater`]);
+    expect(getOrCreateMachineIdMock).not.toHaveBeenCalled();
+    expect(resolveRegistryAndPullImagesMock).not.toHaveBeenCalled();
+    expect(updateServiceImageMock).not.toHaveBeenCalled();
+    expect(logAuditMock).toHaveBeenCalledTimes(1);
+    expect(logAuditMock.mock.calls[0][0].action).toBe("stack.update.fail");
+  });
+
+  it.each([
+    ["ghcr.io/x/fake:latest", "ghcr.io/x/fake-updater:1.1.0", "1.1.0"],
+    ["ghcr.io/x/fake:1.0.0-beta.3", "ghcr.io/x/fake-updater:1.1.0", "1.1.0"],
+    ["ghcr.io/x/fake", "ghcr.io/x/fake-updater:1.1.0", "1.1.0"],
+    ["ghcr.io/y/fake:1.1.0", "ghcr.io/x/fake-updater:1.1.0", "1.1.0"], // mesma tag, outro repositório
+    ["ghcr.io/x/fake:1.0.0", "ghcr.io/x/fake-updater:1.0.0", "latest"], // alvo ilegível
+  ])(
+    "T2: tag ilegível ou não comprovadamente maior: recusa sem pull e sem update (%s, %s, %s)",
+    async (appImage, updaterImage, releaseTag) => {
+      const { def, resolveRegistryAndPullImagesMock, updateServiceImageMock } = await setupMocks({
+        appImage,
+        updaterImage,
+        releaseTag,
+      });
+      const { applyReleaseUpdate } = await import("./stack-update-release");
+
+      const err = await applyReleaseUpdate({
+        token: "tok",
+        stackId: FAKE_STACK_ID,
+        def,
+        user: "tester",
+        ip: "127.0.0.1",
+      }).catch((e) => e);
+
+      expect(err.codigo).toBe("rebaixamento_recusado");
+      expect(resolveRegistryAndPullImagesMock).not.toHaveBeenCalled();
+      expect(updateServiceImageMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it("T3: app igual e updater atrás: atualiza só o updater e só puxa a imagem dele", async () => {
+    const { def, resolveRegistryAndPullImagesMock, updateServiceImageMock } = await setupMocks({
+      appImage: "ghcr.io/x/fake:1.1.0",
+      updaterImage: "ghcr.io/x/fake-updater:1.0.0",
+      releaseTag: "1.1.0",
+    });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const result = await applyReleaseUpdate({ token: "tok", stackId: FAKE_STACK_ID, def, user: "tester", ip: "127.0.0.1" });
+
+    expect(result.atualizados).toEqual(["updater: ghcr.io/x/fake-updater:1.0.0 → ghcr.io/x/fake-updater:1.1.0"]);
+    expect(updateServiceImageMock).toHaveBeenCalledTimes(1);
+    expect(updateServiceImageMock.mock.calls[0][3]).toBe("ghcr.io/x/fake-updater:1.1.0");
+    expect(resolveRegistryAndPullImagesMock).toHaveBeenCalledTimes(1);
+    expect(resolveRegistryAndPullImagesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ images: ["ghcr.io/x/fake-updater:1.1.0"] })
+    );
+  });
+
+  it("T4: app atrás e updater à frente: atualiza só o app, e o updater nunca é rebaixado", async () => {
+    const { def, state, resolveRegistryAndPullImagesMock, updateServiceImageMock, logAuditMock } = await setupMocks({
+      appImage: "ghcr.io/x/fake:1.0.0",
+      updaterImage: "ghcr.io/x/fake-updater:1.2.0",
+      releaseTag: "1.1.0",
+    });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const result = await applyReleaseUpdate({ token: "tok", stackId: FAKE_STACK_ID, def, user: "tester", ip: "127.0.0.1" });
+
+    expect(result.atualizados).toEqual(["app: ghcr.io/x/fake:1.0.0 → ghcr.io/x/fake:1.1.0"]);
+    expect(updateServiceImageMock).toHaveBeenCalledTimes(1);
+    expect(updateServiceImageMock.mock.calls[0][3]).toBe("ghcr.io/x/fake:1.1.0");
+    expect(resolveRegistryAndPullImagesMock).toHaveBeenCalledTimes(1);
+    expect(resolveRegistryAndPullImagesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ images: ["ghcr.io/x/fake:1.1.0"] })
+    );
+    expect(state.updater.Spec.TaskTemplate?.ContainerSpec?.Image).toBe("ghcr.io/x/fake-updater:1.2.0");
+    expect(logAuditMock).toHaveBeenCalledTimes(1);
+    expect(logAuditMock.mock.calls[0][0].action).toBe("stack.update");
+  });
+});

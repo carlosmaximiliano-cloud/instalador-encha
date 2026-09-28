@@ -172,6 +172,27 @@ agora — fora do escopo de "nada muda"):**
   | registros A e AAAA | A and AAAA records | registros A y AAAA |
   | certificado HTTPS | HTTPS certificate | certificado HTTPS |
 
+- **Trava de rebaixamento (ciclo painel-rebaixamento)**: o botão "Atualizar"
+  só oferece, e a rota só aplica, uma versão estritamente maior que a
+  instalada (tag X.Y.Z, tag ilegível nunca vira atualização). A recusa sai
+  como `rebaixamento_recusado` (412), com o mesmo texto do Encha Tracker
+  para o mesmo código:
+
+  | pt | en | es |
+  |---|---|---|
+  | Nada foi aplicado — não foi possível confirmar que a versão disponível é mais nova que a instalada. | Nothing was applied — could not confirm that the available version is newer than the installed one. | No se aplicó nada — no se pudo confirmar que la versión disponible sea más nueva que la instalada. |
+
+  Termos fixados:
+
+  | pt | en | es |
+  |---|---|---|
+  | versão disponível | available version | versión disponible |
+  | versão instalada | installed version | versión instalada |
+  | mais nova | newer | más nueva |
+
+  A tela não usa "rebaixamento"/"downgrade", porque a mesma frase cobre
+  também a versão ilegível (instalada ou alvo).
+
 ## Fase 4 — instalador (`main.sh` + `secondary.sh`)
 
 - Mesma arquitetura `t()`/`MSG_PT`/`MSG_EN`/`MSG_ES` da Fase 0/1, agora

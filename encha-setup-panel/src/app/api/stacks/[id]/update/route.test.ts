@@ -161,6 +161,41 @@ describe("POST /api/stacks/[id]/update — ramo updateViaRelease (Ciclo 29)", ()
   });
 });
 
+describe("POST /api/stacks/[id]/update — rebaixamento recusado (painel-rebaixamento)", () => {
+  const MENSAGENS = {
+    pt: "Nada foi aplicado — não foi possível confirmar que a versão disponível é mais nova que a instalada.",
+    en: "Nothing was applied — could not confirm that the available version is newer than the installed one.",
+    es: "No se aplicó nada — no se pudo confirmar que la versión disponible sea más nueva que la instalada.",
+  } as const;
+
+  it.each(["pt", "en", "es"] as const)(
+    "RT1: rebaixamento recusado: 412 rebaixamento_recusado no idioma da requisição, só error e message (%s)",
+    async (locale) => {
+      await setupAuthAndCsrfMocks();
+      const def = fakeDef();
+      vi.doMock("@/lib/stacks/registry", () => ({ getStack: (id: string) => (id === FAKE_ID ? def : undefined) }));
+      // O doMock mais recente vale — sobrescreve o "pt" fixo de setupAuthAndCsrfMocks.
+      vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => locale) }));
+
+      const { RebaixamentoRecusadoError } = await import("@/lib/ordem-versao");
+      vi.doMock("@/lib/stack-update-release", () => ({
+        applyReleaseUpdate: vi.fn(async () => {
+          throw new RebaixamentoRecusadoError([
+            { servico: "x_app", atual: "ghcr.io/x/fake:1.2.0", alvo: "ghcr.io/x/fake:1.1.0" },
+          ]);
+        }),
+      }));
+
+      const { POST } = await import("./route");
+      const res = await POST(makeReq(), { params: Promise.resolve({ id: FAKE_ID }) });
+      const body = await res.json();
+
+      expect(res.status).toBe(412);
+      expect(body).toEqual({ error: "rebaixamento_recusado", message: MENSAGENS[locale] });
+    }
+  );
+});
+
 describe("GET /api/stacks/[id]/update — troca condicional pra computeReleaseBasedPendingUpdates (Ciclo 29)", () => {
   it("usa computeReleaseBasedPendingUpdates (não computePendingUpdates) quando a stack declara updateViaRelease", async () => {
     vi.doMock("@/lib/auth/require-token", () => ({

@@ -12,6 +12,7 @@ import { computePendingUpdates, computeReleaseBasedPendingUpdates } from "@/lib/
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { logAudit } from "@/lib/audit";
 import { applyReleaseUpdate } from "@/lib/stack-update-release";
+import { RebaixamentoRecusadoError } from "@/lib/ordem-versao";
 import { resolveLocale } from "@/lib/locale";
 import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 import type { Locale } from "@/lib/locale-shared";
@@ -31,6 +32,11 @@ const ERROS = {
     pt: "Esta stack não suporta atualização in-place",
     en: "This stack does not support in-place updates",
     es: "Este stack no admite actualización in-place",
+  },
+  rebaixamento_recusado: {
+    pt: "Nada foi aplicado — não foi possível confirmar que a versão disponível é mais nova que a instalada.",
+    en: "Nothing was applied — could not confirm that the available version is newer than the installed one.",
+    es: "No se aplicó nada — no se pudo confirmar que la versión disponible sea más nueva que la instalada.",
   },
 } satisfies Record<string, Record<Locale, string>>;
 
@@ -124,6 +130,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         message: atualizados.length ? undefined : "Já está na versão mais recente",
       });
     } catch (e) {
+      if (e instanceof RebaixamentoRecusadoError) {
+        return apiError(ERROS, "rebaixamento_recusado", locale, 412);
+      }
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`[api/stacks/${id}/update] falhou (updateViaRelease):`, e);
       return NextResponse.json(

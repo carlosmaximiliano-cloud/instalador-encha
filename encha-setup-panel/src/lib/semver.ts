@@ -28,3 +28,16 @@ export function semverMaiorOuIgual(a: unknown, b: unknown): boolean {
   }
   return true;
 }
+
+// true só se AMBAS as versões são legíveis e `a > b` (estritamente).
+// Ilegível → false (nunca lança). Não é !semverMaiorOuIgual(b, a): isso
+// abriria no ilegível. Usado pela trava de rebaixamento (ordem-versao.ts).
+export function semverMaior(a: unknown, b: unknown): boolean {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  if (!pa || !pb) return false;
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] !== pb[i]) return pa[i] > pb[i];
+  }
+  return false;
+}

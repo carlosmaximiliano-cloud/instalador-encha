@@ -24,6 +24,7 @@ import { resolverAppHostname } from "./installer";
 import { swarmServiceName } from "./stacks/updates";
 import { logAudit } from "./audit";
 import type { StackDefinition } from "./stacks/types";
+import { ehAtualizacaoPorVersao, RebaixamentoRecusadoError } from "./ordem-versao";
 
 export type ApplyReleaseUpdateInput = {
   token: string;
@@ -84,14 +85,42 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
       resolved.push({ target, svc });
     }
 
-    // Idempotência: já rodando a versão-alvo em TODOS os serviços -> não
-    // toca em nada (nem pull, nem update, nem audit) — chamar de novo
-    // depois de já ter atualizado não repete trabalho nem re-pede
-    // credencial.
-    const jaAtualizados = resolved.every(
-      ({ target, svc }) => stripDigest(svc.Spec.TaskTemplate?.ContainerSpec?.Image ?? "") === target.image
-    );
-    if (jaAtualizados) {
+    // Trava de rebaixamento (painel-rebaixamento): cada serviço-alvo cai em
+    // uma de três classes, ANTES de qualquer machine-id, pull ou troca de
+    // imagem — nunca "tudo ou nada", porque o sidecar tracker-updater nunca
+    // se auto-atualiza (Ciclo 54 do Tracker): depois de uma atualização
+    // feita de dentro do produto o app fica à frente do updater, e um
+    // rollback do sidecar pode deixar o app atrás. Então a decisão é por
+    // serviço:
+    //   - igual: current === target.image (texto) — não mexe, como hoje.
+    //   - aplicável: ehAtualizacaoPorVersao(current, target.image) — alvo
+    //     estritamente maior e legível dos dois lados — é pré-puxado e
+    //     atualizado.
+    //   - recusado: todo o resto (menor, igual só por tag em outro
+    //     repositório, ilegível de qualquer lado) — nunca é puxado nem
+    //     tocado.
+    const aplicaveis: typeof resolved = [];
+    const recusados: { servico: string; atual: string; alvo: string }[] = [];
+    for (const item of resolved) {
+      const { target, svc } = item;
+      const current = stripDigest(svc.Spec.TaskTemplate?.ContainerSpec?.Image ?? "");
+      if (current === target.image) {
+        // igual: não mexe.
+      } else if (ehAtualizacaoPorVersao(current, target.image)) {
+        aplicaveis.push(item);
+      } else {
+        recusados.push({ servico: swarmServiceName(stackName, target.service), atual: current, alvo: target.image });
+      }
+    }
+
+    if (aplicaveis.length === 0) {
+      if (recusados.length > 0) {
+        throw new RebaixamentoRecusadoError(recusados);
+      }
+      // Idempotência: já rodando a versão-alvo em TODOS os serviços -> não
+      // toca em nada (nem pull, nem update, nem audit) — chamar de novo
+      // depois de já ter atualizado não repete trabalho nem re-pede
+      // credencial.
       return { atualizados: [] };
     }
 
@@ -99,9 +128,10 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
     // novo se já existir.
     const { fingerprint } = getOrCreateMachineId(stackId, resolverAppHostname(def, "registryAuth"));
 
-    // Pré-pull autenticado de TODAS as imagens-alvo — ANTES de trocar
-    // qualquer imagem. É a ordem que fecha o defeito que motivou este
-    // ciclo: updateServiceImage nunca autentica sozinho.
+    // Pré-pull autenticado SÓ das imagens aplicáveis — ANTES de trocar
+    // qualquer imagem. É a ordem que fecha o defeito que motivou o Ciclo 29:
+    // updateServiceImage nunca autentica sozinho. Os recusados nunca são
+    // puxados nem tocados.
     await resolveRegistryAndPullImages({
       token,
       endpointId,
@@ -110,13 +140,12 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
       registryAuth,
       chave,
       fingerprint,
-      images: targets.map((t) => t.image),
+      images: aplicaveis.map((a) => a.target.image),
     });
 
     const atualizados: string[] = [];
-    for (const { target, svc } of resolved) {
+    for (const { target, svc } of aplicaveis) {
       const current = stripDigest(svc.Spec.TaskTemplate?.ContainerSpec?.Image ?? "");
-      if (current === target.image) continue;
       await updateServiceImage(token, endpointId, svc, target.image);
       atualizados.push(`${target.service}: ${current} → ${target.image}`);
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSemver, semverMaiorOuIgual } from "./semver";
+import { parseSemver, semverMaior, semverMaiorOuIgual } from "./semver";
 import { ENCHAT_VERSAO_MINIMA_SEGREDOS, enchatUsaSegredos } from "./stacks/enchat-segredos";
 
 describe("parseSemver", () => {
@@ -34,6 +34,29 @@ describe("semverMaiorOuIgual", () => {
     expect(semverMaiorOuIgual("abc", "0.4.1")).toBe(false);
     expect(semverMaiorOuIgual("0.4.1", "abc")).toBe(false);
     expect(semverMaiorOuIgual(undefined, "0.4.1")).toBe(false);
+  });
+});
+
+describe("semverMaior", () => {
+  it("estritamente maior, comparando números e não texto", () => {
+    expect(semverMaior("1.2.1", "1.2.0")).toBe(true);
+    expect(semverMaior("1.10.0", "1.9.0")).toBe(true);
+    expect(semverMaior("2.0.0", "1.99.99")).toBe(true);
+    expect(semverMaior("0.4.10", "0.4.9")).toBe(true);
+  });
+  it("igual e menor são false", () => {
+    expect(semverMaior("1.2.1", "1.2.1")).toBe(false);
+    expect(semverMaior("0.0.0", "0.0.0")).toBe(false);
+    expect(semverMaior("1.2.0", "1.2.1")).toBe(false);
+    expect(semverMaior("1.9.0", "1.10.0")).toBe(false);
+  });
+  it("ilegível em qualquer lado → false (nunca lança)", () => {
+    for (const x of ["latest", "1.2.0-beta.3", "v1.2.0", "1.2", "", undefined, null, 4]) {
+      expect(semverMaior(x, "1.2.0")).toBe(false);
+      expect(semverMaior("1.2.0", x)).toBe(false);
+    }
+    expect(semverMaior("1.2.1", "latest")).toBe(false);
+    expect(semverMaior("1.2.1", "1.2.0-beta.3")).toBe(false);
   });
 });
 
