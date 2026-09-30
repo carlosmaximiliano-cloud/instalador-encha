@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { z } from "zod";
 import type { StackDefinition } from "@/lib/stacks/types";
 import { enchat } from "@/lib/stacks/enchat";
@@ -9,11 +12,20 @@ import { enchaTracker } from "@/lib/stacks/encha-tracker";
 // nunca coexistem na mesma stack. Isolado com um catálogo sintético de UMA
 // stack fake (evita depender do catálogo real, dezenas de stacks).
 
+// O POST passa pelo checkRateLimit REAL (SQLite); sem DB_PATH ele caía em
+// ./data/panel.db, que sobrevivia entre execuções, e a segunda `npm test`
+// seguida levava 429 no lugar de 400. Mesmo padrão de [id]/update/route.test.ts.
+let tmpDir: string;
+
 beforeEach(() => {
   vi.resetModules();
+  tmpDir = mkdtempSync(path.join(tmpdir(), "encha-setup-stacks-route-test-"));
+  process.env.DB_PATH = path.join(tmpDir, "panel.db");
 });
 
 afterEach(() => {
+  rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.DB_PATH;
   vi.doUnmock("@/lib/auth/require-token");
   vi.doUnmock("@/lib/installer");
   vi.doUnmock("@/lib/portainer");

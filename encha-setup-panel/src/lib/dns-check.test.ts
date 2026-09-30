@@ -188,6 +188,65 @@ describe("dns-check — estado por endereços", () => {
   });
 });
 
+describe("dns-check — cancela as consultas em voo (painel-higiene)", () => {
+  it("D14 prazo estourado: cancelar é chamado uma vez e encerra as quatro consultas pendentes", async () => {
+    const pendentes: Array<(e: Error) => void> = [];
+    const resolvedor = vi.fn<ResolvedorDns>(
+      () => new Promise<string[]>((_resolve, reject) => void pendentes.push(reject))
+    );
+    const cancelar = vi.fn(() => {
+      for (const rejeitar of pendentes) rejeitar(erroCom("ECANCELLED"));
+    });
+
+    const r = await verificarDns({ dominio: DOMINIO, hostPainel: PAINEL, resolvedor, cancelar, limiteMs: 50 });
+
+    expect(r).toBe("indeterminado");
+    expect(pendentes).toHaveLength(4);
+    expect(cancelar).toHaveBeenCalledTimes(1);
+  });
+
+  it("D15 consulta que termina antes do prazo: cancelar é chamado uma vez, só depois das quatro respostas, e o estado não muda", async () => {
+    const tabela = resolvedorDe({
+      [PAINEL]: { 4: [IP_PAINEL] },
+      [DOMINIO]: { 4: [IP_PAINEL] },
+    });
+    let respondidas = 0;
+    const resolvedor: ResolvedorDns = async (nome, familia) => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      try {
+        return await tabela(nome, familia);
+      } finally {
+        respondidas += 1;
+      }
+    };
+    let respondidasNoCancelar = -1;
+    const cancelar = vi.fn(() => {
+      respondidasNoCancelar = respondidas;
+    });
+
+    const r = await verificarDns({ dominio: DOMINIO, hostPainel: PAINEL, resolvedor, cancelar });
+
+    expect(r).toBe("aponta");
+    expect(cancelar).toHaveBeenCalledTimes(1);
+    expect(respondidasNoCancelar).toBe(4);
+  });
+
+  it("D16 cancelar que lança não muda o estado", async () => {
+    const cancelar = vi.fn(() => {
+      throw new Error("falha ao cancelar");
+    });
+    const resolvedor = resolvedorDe({
+      [PAINEL]: { 4: [IP_PAINEL] },
+      [DOMINIO]: { 4: [IP_PAINEL] },
+    });
+
+    const r = await verificarDns({ dominio: DOMINIO, hostPainel: PAINEL, resolvedor, cancelar });
+
+    expect(r).toBe("aponta");
+    expect(cancelar).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("dns-check — sem rede além de DNS", () => {
   const ARQUIVOS: Record<string, string[]> = {
     "dns-check.ts": ["./stacks/types", "@/lib/stacks/types"],

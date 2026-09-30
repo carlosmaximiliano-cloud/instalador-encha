@@ -72,7 +72,7 @@ export const supabase: StackDefinition = {
       label: "Senha do Dashboard",
       kind: "password",
       sensitive: true,
-      helpText: "Sem caracteres especiais @ ! # $",
+      helpText: "Mínimo 12 caracteres, com maiúscula, minúscula, número e símbolo (use - _ . ou +; evite $, aspas simples e espaços).",
       group: "Acesso",
       regra: "senha_forte",
     },
@@ -509,7 +509,7 @@ networks:
       fields: {
         url_supabase: { label: "Supabase Domain", placeholder: "supabase.yourcompany.com", group: "Access" },
         user_supabase: { label: "Dashboard Username", placeholder: "admin", group: "Access" },
-        pass_supabase: { label: "Dashboard Password", helpText: "No special characters @ ! # $", group: "Access" },
+        pass_supabase: { label: "Dashboard Password", helpText: "Minimum 12 characters, with uppercase, lowercase, number and symbol (use - _ . or +; avoid $, single quotes and spaces).", group: "Access" },
         url_s3: { label: "S3 URL (MinIO)", placeholder: "s3.yourcompany.com", group: "MinIO/S3" },
         s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
         s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },
@@ -524,7 +524,7 @@ networks:
       fields: {
         url_supabase: { label: "Dominio de Supabase", placeholder: "supabase.suempresa.com", group: "Acceso" },
         user_supabase: { label: "Usuario del Dashboard", placeholder: "admin", group: "Acceso" },
-        pass_supabase: { label: "Contraseña del Dashboard", helpText: "Sin caracteres especiales @ ! # $", group: "Acceso" },
+        pass_supabase: { label: "Contraseña del Dashboard", helpText: "Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo (use - _ . o +; evite $, comillas simples y espacios).", group: "Acceso" },
         url_s3: { label: "URL del S3 (MinIO)", placeholder: "s3.suempresa.com", group: "MinIO/S3" },
         s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
         s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },

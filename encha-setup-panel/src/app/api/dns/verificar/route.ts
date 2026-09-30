@@ -38,10 +38,12 @@ export async function GET(req: NextRequest) {
   const dominio = req.nextUrl.searchParams.get("dominio") ?? "";
   if (!dominioValido(dominio)) return apiError(ERROS, "dominio_invalido", locale, 400);
 
+  const resolvedor = criarResolvedorDoSistema();
   const estado = await verificarDns({
     dominio,
     hostPainel: req.headers.get("host"),
-    resolvedor: criarResolvedorDoSistema(),
+    resolvedor,
+    cancelar: resolvedor.cancelar,
   });
   return NextResponse.json({ estado }, { headers: { "Cache-Control": "no-store" } });
 }

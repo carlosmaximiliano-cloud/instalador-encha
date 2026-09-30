@@ -500,10 +500,10 @@ MODO_SEM_PARES=0
 # passar — o limite de SSH do C7 usa set dinâmico com "limit", que um kernel
 # antigo pode recusar, e sem esta terceira camada isso deixava o guarda sem
 # regra NENHUMA (as portas do Swarm abertas por causa de uma mitigação de
-# SSH) —, aplica a versão mínima (só lo + drops do Swarm, texto fixo). Nos
-# ciclos seguintes, com a tabela intacta, só CONFERE com `nft -c` (não aplica
-# nada, contadores intactos) se a versão completa já passa — e a aplica
-# quando passar.
+# SSH) —, aplica a versão mínima (só lo + drops do Swarm e do LLMNR, texto
+# fixo). Nos ciclos seguintes, com a tabela intacta, só CONFERE com `nft -c`
+# (não aplica nada, contadores intactos) se a versão completa já passa — e a
+# aplica quando passar.
 aplicar_se_necessario() {
   ruleset_completo="$1"
   ruleset_sem_pares="$2"
@@ -547,7 +547,7 @@ aplicar_se_necessario() {
   fi
   if aplicar_ruleset "$ruleset_minimo"; then
     MODO_SEM_PARES=1
-    log "ATENÇÃO: o nft recusou o limite de conexões SSH (ENCHA_GUARD_SSH_PORTAS, ou o kernel sem suporte a set dinâmico com limite) — aplicados SÓ os drops do Swarm, sem pares e sem limite de SSH (falha fechada). O guarda confere de novo a cada ciclo."
+    log "ATENÇÃO: o nft recusou o limite de conexões SSH (ENCHA_GUARD_SSH_PORTAS, ou o kernel sem suporte a set dinâmico com limite) — aplicados SÓ os drops do Swarm e do LLMNR (5355), sem pares e sem limite de SSH (falha fechada). O guarda confere de novo a cada ciclo."
   else
     log "falha ao aplicar até a versão mínima (só os drops) via 'nft -f -': $ERRO_NFT"
   fi

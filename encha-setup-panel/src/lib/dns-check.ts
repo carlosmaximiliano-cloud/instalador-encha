@@ -100,6 +100,11 @@ export async function verificarDns(args: {
   hostPainel: string | null;
   resolvedor: ResolvedorDns;
   limiteMs?: number;
+  /**
+   * Chamado uma vez, depois do resultado, quando a consulta chegou a começar;
+   * cancela o que ainda estiver em voo. Erro dele é ignorado.
+   */
+  cancelar?: () => void;
 }): Promise<EstadoDns> {
   try {
     if (!dominioValido(args.dominio)) return "indeterminado";
@@ -118,6 +123,11 @@ export async function verificarDns(args: {
       return await Promise.race([consulta, prazo]);
     } finally {
       clearTimeout(timer);
+      try {
+        args.cancelar?.();
+      } catch {
+        // Cancelar é limpeza: nunca muda o estado.
+      }
     }
   } catch {
     return "indeterminado";

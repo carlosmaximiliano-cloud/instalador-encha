@@ -169,4 +169,17 @@ describe("GET /api/dns/verificar", () => {
     expect(new Set(resolvedor.mock.calls.map((c) => c[0]))).toEqual(new Set([DOMINIO, PAINEL]));
     expect(fetchProibido).toHaveBeenCalledTimes(0);
   });
+
+  it("R8 cancela as consultas em voo do resolvedor depois de responder (painel-higiene)", async () => {
+    const { resolvedor } = preparar({
+      tabela: { [PAINEL]: { 4: [IP_PAINEL] }, [DOMINIO]: { 4: [IP_PAINEL] } },
+    });
+    const cancelar = vi.fn();
+    Object.assign(resolvedor, { cancelar });
+
+    const res = await chamar(DOMINIO);
+
+    expect(await res.json()).toEqual({ estado: "aponta" });
+    expect(cancelar).toHaveBeenCalledTimes(1);
+  });
 });

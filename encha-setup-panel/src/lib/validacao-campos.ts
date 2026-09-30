@@ -20,8 +20,9 @@ export type CodigoFalha =
   | "simbolo"
   | "caractere_proibido";
 
-// Aspas duplas, crase, barra invertida e quebra de linha — o que generateYaml
-// do Tracker não consegue carregar sem alterar a senha em silêncio.
+// Aspas duplas, crase, barra invertida e quebra de linha — a mesma recusa de
+// SENHA_CARACTERES_PROIBIDOS (stacks/encha-tracker.ts), onde está o porquê de
+// ela valer nos dois formatos da senha (env em texto e Docker secret).
 export const CARACTERES_PROIBIDOS_YAML: RegExp = /["`\\\r\n]/;
 
 export const MENSAGENS_VALIDACAO: Record<Locale, Record<CodigoFalha, string>> = {

@@ -19,7 +19,8 @@ beforeEach(() => {
   vi.resetModules();
   dbDir = mkdtempSync(path.join(tmpdir(), "encha-setup-sessao-morta-"));
   process.env.DB_PATH = path.join(dbDir, "panel.db");
-  ipSeq += 1; // rate limit é em memória por IP — um IP por teste evita vazar entre eles
+  process.env.MASTER_KEY_PATH = path.join(dbDir, "master.key");
+  ipSeq += 1; // o rate limit mora no SQLite de DB_PATH (já novo a cada teste): um IP por teste é só redundância
 });
 
 afterEach(() => {
@@ -31,6 +32,7 @@ afterEach(() => {
   vi.doUnmock("@/lib/release-info");
   rmSync(dbDir, { recursive: true, force: true });
   delete process.env.DB_PATH;
+  delete process.env.MASTER_KEY_PATH;
 });
 
 type Mocks = {

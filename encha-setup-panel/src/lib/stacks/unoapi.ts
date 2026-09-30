@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { type StackDefinition, fqdn, username } from "./types";
 
-const boolStr = z.enum(["true", "false"]);
+// A mensagem padrão do zod para enum repete o valor digitado, e
+// errosDeCampoDoServidor promete nunca devolvê-lo: por isso a mensagem própria.
+const boolStr = z.enum(["true", "false"], { message: 'Use "true" ou "false"' });
 
 const schema = z.object({
   url_unoapi: fqdn,

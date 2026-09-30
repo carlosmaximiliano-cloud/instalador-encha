@@ -997,6 +997,13 @@ if grep -qF 'sem limite de SSH (falha fechada)' "$dir_ssh_recusado/stderr" 2>/de
 else
   falha "falha fechada: a queda para a versão mínima não foi avisada no log"
 fi
+# O aviso diz o que a versão mínima ainda bloqueia: os drops do Swarm E os do
+# LLMNR (ciclo painel-higiene; antes dizia só "drops do Swarm").
+if grep -qF 'SÓ os drops do Swarm e do LLMNR (5355)' "$dir_ssh_recusado/stderr" 2>/dev/null; then
+  ok "falha fechada: o aviso da versão mínima cita os drops do Swarm e do LLMNR"
+else
+  falha "falha fechada: o aviso da versão mínima não cita o LLMNR (o operador acharia a 5355 aberta)"
+fi
 aplicacoes="$(conta_chamadas "$dir_ssh_recusado" '-f -')"
 if [ "$aplicacoes" -eq 2 ]; then
   ok "falha fechada: versão mínima não é reaplicada a cada ciclo (completa recusada + mínima = 2 aplicações)"

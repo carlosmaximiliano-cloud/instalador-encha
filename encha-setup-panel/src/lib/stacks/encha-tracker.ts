@@ -58,14 +58,21 @@ function updaterRepoFromTracker(imageRepo: string): string {
   return imageRepo.replace(/\/encha-tracker$/, "/tracker-updater");
 }
 
-// Caracteres que `san()` (generateYaml, abaixo) REMOVE em vez de escapar —
-// aspas duplas, crase e quebra de linha — mais barra invertida, que `san()`
+// Caracteres que `sanitiza()` (abaixo) REMOVE em vez de escapar — aspas
+// duplas, crase e quebra de linha — mais barra invertida, que `sanitiza()`
 // não trata e é caractere de escape dentro de um scalar YAML entre aspas
 // duplas. Uma senha GERADA nunca continha nada disso (randomBytes().
 // toString('base64url')); uma senha DIGITADA pelo cliente pode conter
 // qualquer um dos cinco, e sem esta recusa o container subiria com uma
 // senha DIFERENTE da que o cliente digitou, sem nenhum aviso — a pior forma
 // de bug de senha, porque some silenciosamente.
+//
+// A regra vale nos DOIS formatos da senha: no antigo (imagem abaixo de
+// 1.2.1, senha em texto no env do YAML) e no Docker secret (1.2.1 ou mais,
+// ver encha-tracker-segredos.ts), porque o valor do segredo passa pela
+// MESMA `sanitiza()`. A barra invertida não altera o arquivo do segredo,
+// mas continua recusada para que a mesma senha valha em qualquer versão da
+// imagem.
 const SENHA_CARACTERES_PROIBIDOS = /["`\\\r\n]/;
 const senhaAdmin = strongPassword.refine((s) => !SENHA_CARACTERES_PROIBIDOS.test(s), {
   message: 'A senha não pode conter aspas duplas, crase, barra invertida (\\) nem quebra de linha.',
@@ -96,9 +103,13 @@ const schema = z.object({
 });
 
 // Os segredos que o installer cria no Swarm (vazio = formato antigo, senha
-// em texto no env). Só a senha do admin entra neste ciclo — os demais
-// segredos do env do Tracker ficam para depois (decisão do usuário, ver o
-// contrato do ciclo painel-secret).
+// em texto no env). Só a senha do admin é Docker secret (ciclo
+// painel-secret, decisão do usuário): DATABASE_URL, TRACKER_MASTER_KEY,
+// TRACKER_CHAVE/TRACKER_LICENSE_KEY, TRACKER_UPDATER_TOKEN e
+// POSTGRES_PASSWORD continuam em texto no env. Para levar mais um, a imagem
+// do Tracker precisa ler o `_FILE` dele primeiro, e esta lista, as trocas do
+// generateYaml e o TS6 de encha-tracker.test.ts (YAML byte a byte) mudam
+// juntos.
 export function segredosDockerDoTracker(
   values: Record<string, unknown>,
   _secrets: Record<string, string>,
@@ -237,8 +248,8 @@ export const enchaTracker: StackDefinition = {
     // Compartilhado entre o app e o sidecar tracker-updater (Authorization: Bearer).
     { name: "updater_token", value: randomBytes(24).toString("hex") },
   ],
-  // Portão só por versão (ver encha-tracker-segredos.ts, Decisão 3 do
-  // contrato do ciclo painel-secret) — NÃO declara dockerSecretsGate. O
+  // Portão só por versão (o porquê está em encha-tracker-segredos.ts) —
+  // NÃO declara dockerSecretsGate. O
   // EnchaT precisa do gate por label porque publicou versões que sugeriam
   // suporte sem tê-lo; o Tracker nunca fez isso.
   dockerSecrets: segredosDockerDoTracker,

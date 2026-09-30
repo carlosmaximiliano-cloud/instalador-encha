@@ -45,4 +45,29 @@ describe("criarResolvedorDoSistema", () => {
     expect(opts.timeout).toBeGreaterThan(0);
     expect(opts.tries).toBe(1);
   });
+
+  it("A3 cancelar chama cancel() do Resolver criado (painel-higiene)", () => {
+    const estado = { instancias: 0, cancelamentos: 0 };
+    class ComCancel {
+      constructor() {
+        estado.instancias += 1;
+      }
+      async resolve4() {
+        return [];
+      }
+      async resolve6() {
+        return [];
+      }
+      cancel() {
+        estado.cancelamentos += 1;
+      }
+    }
+    const resolver = criarResolvedorDoSistema(ComCancel);
+    expect(estado.cancelamentos).toBe(0);
+
+    resolver.cancelar();
+
+    expect(estado.instancias).toBe(1);
+    expect(estado.cancelamentos).toBe(1);
+  });
 });

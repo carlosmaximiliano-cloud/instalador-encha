@@ -21,7 +21,7 @@ import { semverMaiorOuIgual } from "../semver";
 // LerSenhaBootstrap. Exigir label hoje fecharia o portão para sempre na
 // 1.2.1 (a imagem do Tracker não declara nenhum LABEL — ver
 // deploy/Dockerfile do Tracker) e obrigaria mudar o Tracker e publicar
-// outra release, fora do escopo deste ciclo. Além disso a falha, se o
+// outra release, fora do escopo do ciclo painel-secret. Além disso a falha, se o
 // portão abrisse errado, é recuperável: uma imagem sem `_FILE` sobe
 // normalmente, só sem bootstrap do admin (a env de senha simplesmente some
 // do YAML) — o sintoma numa instalação nova é "não consigo entrar", e se
@@ -38,8 +38,8 @@ export function trackerUsaSegredos(imageTag: string | null | undefined): boolean
   return semverMaiorOuIgual(imageTag, TRACKER_VERSAO_MINIMA_SEGREDOS);
 }
 
-// Nome-base do único segredo deste ciclo: a senha do admin do painel do
-// Tracker. "senha_admin" (não "admin_senha") é o nome do campo do
+// Nome-base do único Docker secret do Tracker hoje: a senha do admin do
+// painel do Tracker. "senha_admin" (não "admin_senha") é o nome do campo do
 // formulário — encha-tracker.test.ts já trava que o segredo GERADO
 // "admin_senha" (que saiu no Ciclo 25) nunca volte.
 export const BASE_SEGREDO_SENHA_ADMIN = "encha_tracker_senha_admin";
