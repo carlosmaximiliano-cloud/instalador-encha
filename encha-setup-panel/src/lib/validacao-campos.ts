@@ -9,7 +9,7 @@
 // por regras-campos.test.ts (equivalência sobre o registro inteiro).
 import type { Locale } from "./locale-shared";
 
-export type RegraCampo = "senha_forte" | "senha_forte_yaml";
+export type RegraCampo = "senha_forte" | "senha_forte_yaml" | "senha_forte_texto";
 
 export type CodigoFalha =
   | "obrigatorio"
@@ -18,12 +18,19 @@ export type CodigoFalha =
   | "minuscula"
   | "numero"
   | "simbolo"
-  | "caractere_proibido";
+  | "caractere_proibido"
+  | "caractere_proibido_texto";
 
 // Aspas duplas, crase, barra invertida e quebra de linha — a mesma recusa de
 // SENHA_CARACTERES_PROIBIDOS (stacks/encha-tracker.ts), onde está o porquê de
 // ela valer nos dois formatos da senha (env em texto e Docker secret).
 export const CARACTERES_PROIBIDOS_YAML: RegExp = /["`\\\r\n]/;
+
+// Senha digitada que vai em texto num escalar simples do YAML (`- CHAVE=valor`):
+// `$` o deploy interpola (só `$$` vira `$`); " #" vira comentário e ": " vira
+// mapa, e tab e quebra de linha fazem o mesmo que o espaço; aspas simples
+// fecham o '...' do kong.yml da Supabase. Ciclo painel-kong.
+export const CARACTERES_PROIBIDOS_TEXTO: RegExp = /[$'\s]/;
 
 export const MENSAGENS_VALIDACAO: Record<Locale, Record<CodigoFalha, string>> = {
   pt: {
@@ -34,6 +41,7 @@ export const MENSAGENS_VALIDACAO: Record<Locale, Record<CodigoFalha, string>> = 
     numero: "Inclua um número",
     simbolo: "Inclua um símbolo",
     caractere_proibido: "A senha não pode conter aspas duplas, crase, barra invertida (\\) nem quebra de linha.",
+    caractere_proibido_texto: "A senha não pode conter $, aspas simples ('), espaços nem quebras de linha.",
   },
   en: {
     obrigatorio: "Required field",
@@ -43,6 +51,7 @@ export const MENSAGENS_VALIDACAO: Record<Locale, Record<CodigoFalha, string>> = 
     numero: "Include a number",
     simbolo: "Include a symbol",
     caractere_proibido: "The password cannot contain double quotes, backticks, backslashes (\\) or line breaks.",
+    caractere_proibido_texto: "The password cannot contain $, single quotes ('), spaces or line breaks.",
   },
   es: {
     obrigatorio: "Campo obligatorio",
@@ -53,6 +62,7 @@ export const MENSAGENS_VALIDACAO: Record<Locale, Record<CodigoFalha, string>> = 
     simbolo: "Incluya un símbolo",
     caractere_proibido:
       "La contraseña no puede contener comillas dobles, acentos graves, barras invertidas (\\) ni saltos de línea.",
+    caractere_proibido_texto: "La contraseña no puede contener $, comillas simples ('), espacios ni saltos de línea.",
   },
 };
 
@@ -67,6 +77,7 @@ export function falhasDaRegra(regra: RegraCampo, valor: string): CodigoFalha[] {
   if (!/[0-9]/.test(valor)) falhas.push("numero");
   if (!/[^A-Za-z0-9]/.test(valor)) falhas.push("simbolo");
   if (regra === "senha_forte_yaml" && CARACTERES_PROIBIDOS_YAML.test(valor)) falhas.push("caractere_proibido");
+  if (regra === "senha_forte_texto" && CARACTERES_PROIBIDOS_TEXTO.test(valor)) falhas.push("caractere_proibido_texto");
   return falhas;
 }
 

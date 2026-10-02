@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, username, strongPassword } from "./types";
+import { type StackDefinition, fqdn, username, senhaForteTexto } from "./types";
 
 const schema = z.object({
   url_clickhouse: fqdn,
   user_clickhouse: username,
-  pass_clickhouse: strongPassword,
+  pass_clickhouse: senhaForteTexto,
 });
 
 export const clickhouse: StackDefinition = {
@@ -36,7 +36,7 @@ export const clickhouse: StackDefinition = {
       label: "Senha do usuário",
       kind: "password",
       sensitive: true,
-      regra: "senha_forte",
+      regra: "senha_forte_texto",
     },
   ],
   schema,

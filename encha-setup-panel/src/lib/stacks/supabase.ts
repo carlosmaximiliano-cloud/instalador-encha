@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, username, strongPassword } from "./types";
+import { type StackDefinition, fqdn, username, senhaForteTexto } from "./types";
 import { randomBytes, createHmac } from "node:crypto";
 
 const schema = z.object({
   url_supabase: fqdn,
   user_supabase: username,
-  pass_supabase: strongPassword,
+  pass_supabase: senhaForteTexto,
   url_s3: fqdn,
   s3_access_key: z.string().min(3),
   s3_secret_key: z.string().min(3),
@@ -72,9 +72,9 @@ export const supabase: StackDefinition = {
       label: "Senha do Dashboard",
       kind: "password",
       sensitive: true,
-      helpText: "Mínimo 12 caracteres, com maiúscula, minúscula, número e símbolo (use - _ . ou +; evite $, aspas simples e espaços).",
+      helpText: "Mínimo 12 caracteres, com maiúscula, minúscula, número e símbolo (use - _ . ou +; $, aspas simples e espaços não são aceitos).",
       group: "Acesso",
-      regra: "senha_forte",
+      regra: "senha_forte_texto",
     },
     {
       name: "url_s3",
@@ -159,7 +159,7 @@ services:
 
   kong:
     image: kong:2.8.1
-    entrypoint: bash -c 'eval "echo \\"\\$$(cat ~/temp.yml)\\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    entrypoint: bash -c 'eval "echo \\"$$(cat ~/temp.yml)\\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     volumes:
       - /root/supabase/docker/volumes/api/kong.yml:/home/kong/temp.yml:ro
     networks:
@@ -455,7 +455,7 @@ services:
     command:
       - /bin/sh
       - -c
-      - /app/bin/migrate && /app/bin/supavisor eval "\\$$(cat /etc/pooler/pooler.exs)" && /app/bin/server
+      - /app/bin/migrate && /app/bin/supavisor eval "$$(cat /etc/pooler/pooler.exs)" && /app/bin/server
     volumes:
       - /root/supabase/docker/volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro
     networks:
@@ -509,7 +509,7 @@ networks:
       fields: {
         url_supabase: { label: "Supabase Domain", placeholder: "supabase.yourcompany.com", group: "Access" },
         user_supabase: { label: "Dashboard Username", placeholder: "admin", group: "Access" },
-        pass_supabase: { label: "Dashboard Password", helpText: "Minimum 12 characters, with uppercase, lowercase, number and symbol (use - _ . or +; avoid $, single quotes and spaces).", group: "Access" },
+        pass_supabase: { label: "Dashboard Password", helpText: "Minimum 12 characters, with uppercase, lowercase, number and symbol (use - _ . or +; $, single quotes and spaces are not accepted).", group: "Access" },
         url_s3: { label: "S3 URL (MinIO)", placeholder: "s3.yourcompany.com", group: "MinIO/S3" },
         s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
         s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },
@@ -524,7 +524,7 @@ networks:
       fields: {
         url_supabase: { label: "Dominio de Supabase", placeholder: "supabase.suempresa.com", group: "Acceso" },
         user_supabase: { label: "Usuario del Dashboard", placeholder: "admin", group: "Acceso" },
-        pass_supabase: { label: "Contraseña del Dashboard", helpText: "Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo (use - _ . o +; evite $, comillas simples y espacios).", group: "Acceso" },
+        pass_supabase: { label: "Contraseña del Dashboard", helpText: "Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo (use - _ . o +; no se aceptan $, comillas simples ni espacios).", group: "Acceso" },
         url_s3: { label: "URL del S3 (MinIO)", placeholder: "s3.suempresa.com", group: "MinIO/S3" },
         s3_access_key: { label: "S3 Access Key", group: "MinIO/S3" },
         s3_secret_key: { label: "S3 Secret Key", group: "MinIO/S3" },

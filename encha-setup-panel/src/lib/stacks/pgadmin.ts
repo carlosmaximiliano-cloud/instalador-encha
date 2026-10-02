@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, email, strongPassword } from "./types";
+import { type StackDefinition, fqdn, email, senhaForteTexto } from "./types";
 
 const schema = z.object({
   url_pgadmin: fqdn,
   email_pgadmin: email,
-  senha_pgadmin: strongPassword,
+  senha_pgadmin: senhaForteTexto,
 });
 
 export const pgadmin: StackDefinition = {
@@ -20,7 +20,7 @@ export const pgadmin: StackDefinition = {
   fields: [
     { name: "url_pgadmin", label: "Domínio", kind: "domain", placeholder: "pgadmin.suaempresa.com", group: "Domínios" },
     { name: "email_pgadmin", label: "E-mail de login", kind: "email", group: "Credenciais" },
-    { name: "senha_pgadmin", label: "Senha", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte" },
+    { name: "senha_pgadmin", label: "Senha", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte_texto" },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {

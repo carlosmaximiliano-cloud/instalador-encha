@@ -434,6 +434,13 @@ export const strongPassword = z.string().superRefine((s, ctx) => {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message });
 });
 
+// Senha digitada que vai em texto no YAML do painel (minio, mongodb, pgadmin,
+// directus, clickhouse, supabase): a forte de sempre, sem $, aspas simples e espaço.
+export const senhaForteTexto = z.string().superRefine((s, ctx) => {
+  for (const message of mensagens(falhasDaRegra("senha_forte_texto", s), "pt"))
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+});
+
 export const username = z.string().min(3).max(40).regex(/^[a-zA-Z0-9_-]+$/);
 
 export const email = z.string().email();

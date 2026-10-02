@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, username, strongPassword } from "./types";
+import { type StackDefinition, fqdn, username, senhaForteTexto } from "./types";
 
 const schema = z.object({
   url_mongo_express: fqdn,
   usuario_mongo: username,
-  senha_mongo: strongPassword,
+  senha_mongo: senhaForteTexto,
 });
 
 export const mongodb: StackDefinition = {
@@ -21,7 +21,7 @@ export const mongodb: StackDefinition = {
   fields: [
     { name: "url_mongo_express", label: "Domínio do Mongo Express (UI)", kind: "domain", placeholder: "mongo.suaempresa.com", group: "Domínios" },
     { name: "usuario_mongo", label: "Usuário admin", kind: "username", group: "Credenciais" },
-    { name: "senha_mongo", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte" },
+    { name: "senha_mongo", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte_texto" },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  CARACTERES_PROIBIDOS_TEXTO,
   CARACTERES_PROIBIDOS_YAML,
   MENSAGENS_VALIDACAO,
   errosDeCampoDoServidor,
@@ -88,7 +89,7 @@ describe("validacao-campos — mensagens", () => {
 
   it("en e es existem para todo código e diferem do pt", () => {
     const codigos = Object.keys(MENSAGENS_VALIDACAO.pt) as CodigoFalha[];
-    expect(codigos).toHaveLength(7);
+    expect(codigos).toHaveLength(8);
     for (const locale of ["en", "es"] as const) {
       expect(Object.keys(MENSAGENS_VALIDACAO[locale]).sort()).toEqual([...codigos].sort());
       for (const c of codigos) {
@@ -99,6 +100,47 @@ describe("validacao-campos — mensagens", () => {
     }
     expect(mensagens(["min_12", "numero"], "en")).toEqual(["At least 12 characters", "Include a number"]);
     expect(mensagens(["min_12", "numero"], "es")).toEqual(["Al menos 12 caracteres", "Incluya un número"]);
+  });
+});
+
+describe("validacao-campos — senha em texto no YAML (painel-kong)", () => {
+  it("VT1 senha_forte_texto recusa $, aspas simples e todo espaço em branco, e só isso", () => {
+    expect(falhasDaRegra("senha_forte_texto", FORTE)).toEqual([]);
+
+    for (const c of ["$", "'", " ", "\t", "\r", "\n", "\u00a0", "\u2028"]) {
+      expect(falhasDaRegra("senha_forte_texto", `SenhaForte#1${c}23`)).toEqual(["caractere_proibido_texto"]);
+      expect(CARACTERES_PROIBIDOS_TEXTO.test(c)).toBe(true);
+    }
+
+    for (const c of ["-", "_", ".", "+", "!", "@", "#", "%", "&", "*", "(", ")", "{", "}", ":", '"', "`", "\\", "ç", "€", "😀"]) {
+      expect(falhasDaRegra("senha_forte_texto", `SenhaForte#1${c}23`)).toEqual([]);
+    }
+
+    expect(falhasDaRegra("senha_forte_texto", "$")).toEqual([
+      "min_12",
+      "maiuscula",
+      "minuscula",
+      "numero",
+      "caractere_proibido_texto",
+    ]);
+
+    for (const regra of ["senha_forte", "senha_forte_yaml"] as const) {
+      for (const c of ["$", "'", " "]) {
+        expect(falhasDaRegra(regra, `SenhaForte#1${c}23`)).toEqual([]);
+      }
+    }
+  });
+
+  it("VT2 a mensagem existe nos três idiomas e cita $, aspas simples e espaços", () => {
+    expect(MENSAGENS_VALIDACAO.pt.caractere_proibido_texto).toBe(
+      "A senha não pode conter $, aspas simples ('), espaços nem quebras de linha."
+    );
+    expect(MENSAGENS_VALIDACAO.en.caractere_proibido_texto).toBe(
+      "The password cannot contain $, single quotes ('), spaces or line breaks."
+    );
+    expect(MENSAGENS_VALIDACAO.es.caractere_proibido_texto).toBe(
+      "La contraseña no puede contener $, comillas simples ('), espacios ni saltos de línea."
+    );
   });
 });
 

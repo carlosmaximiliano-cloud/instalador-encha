@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, username, strongPassword } from "./types";
+import { type StackDefinition, fqdn, username, senhaForteTexto } from "./types";
 
 const schema = z.object({
   url_minio: fqdn,
   url_s3: fqdn,
   user_minio: username,
-  senha_minio: strongPassword,
+  senha_minio: senhaForteTexto,
 });
 
 export const minio: StackDefinition = {
@@ -22,7 +22,7 @@ export const minio: StackDefinition = {
     { name: "url_minio", label: "Domínio do Console", kind: "domain", placeholder: "minio.suaempresa.com", group: "Domínios" },
     { name: "url_s3", label: "Domínio do endpoint S3", kind: "domain", placeholder: "s3.suaempresa.com", group: "Domínios" },
     { name: "user_minio", label: "Usuário admin", kind: "username", placeholder: "admin", group: "Credenciais" },
-    { name: "senha_minio", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte" },
+    { name: "senha_minio", label: "Senha admin", kind: "password", sensitive: true, group: "Credenciais", regra: "senha_forte_texto" },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {

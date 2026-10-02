@@ -27,13 +27,13 @@ async function campos(id: string) {
 }
 
 describe("GET /api/stacks/[id]/schema — regra dos campos (Painel P1)", () => {
-  it("entrega regra dos campos de senha (encha-tracker: senha_forte_yaml; minio: senha_forte)", async () => {
+  it("entrega regra dos campos de senha (encha-tracker: senha_forte_yaml; minio: senha_forte_texto)", async () => {
     const tracker = await campos("encha-tracker");
     expect(tracker.get("senha_admin")?.regra).toBe("senha_forte_yaml");
     // Campo sem regra não ganha regra.
     expect(tracker.get("dominio_tracker")?.regra).toBeUndefined();
 
     const minio = await campos("minio");
-    expect(minio.get("senha_minio")?.regra).toBe("senha_forte");
+    expect(minio.get("senha_minio")?.regra).toBe("senha_forte_texto");
   });
 });

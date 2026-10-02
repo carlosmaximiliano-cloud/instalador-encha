@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { type StackDefinition, fqdn, email, strongPassword } from "./types";
+import { type StackDefinition, fqdn, email, senhaForteTexto } from "./types";
 import { randomBytes } from "node:crypto";
 
 const schema = z.object({
   url_directus: fqdn,
   email_admin: email,
-  senha_admin: strongPassword,
+  senha_admin: senhaForteTexto,
 });
 
 export const directus: StackDefinition = {
@@ -22,7 +22,7 @@ export const directus: StackDefinition = {
   fields: [
     { name: "url_directus", label: "Domínio", kind: "domain", placeholder: "directus.suaempresa.com", group: "Domínios" },
     { name: "email_admin", label: "E-mail admin", kind: "email", group: "Admin" },
-    { name: "senha_admin", label: "Senha admin", kind: "password", sensitive: true, group: "Admin", regra: "senha_forte" },
+    { name: "senha_admin", label: "Senha admin", kind: "password", sensitive: true, group: "Admin", regra: "senha_forte_texto" },
   ],
   schema,
   generateSecrets: () => [
