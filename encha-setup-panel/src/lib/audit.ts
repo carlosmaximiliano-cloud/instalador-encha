@@ -21,8 +21,12 @@ export type AuditAction =
   | "banner.click"
   | "panel.update"
   | "panel.update.fail"
+  // Atualizar clicado antes de a release terminar de publicar (imagem/tag
+  // ainda não existem) — recusado sem efeito colateral, ver release-pronta.ts.
+  | "panel.update.wait"
   | "host.scripts.update"
   | "host.scripts.update.fail"
+  | "host.scripts.update.wait"
   | "registry.auth"
   | "registry.auth.fail"
   | "release.resolve"

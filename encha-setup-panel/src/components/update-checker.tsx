@@ -146,6 +146,14 @@ export function UpdateChecker() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        // A versão ainda está sendo publicada (imagem/tag não existem): aborta
+        // o fluxo INTEIRO. Seguir para o passo do painel trocaria o
+        // PANEL_IMAGE_TAG para uma imagem que ainda não existe.
+        if (data.error === "versao_em_publicacao") {
+          setError(data.message ?? data.error);
+          setPhase("confirm");
+          return;
+        }
         // Não bloqueia mais aqui: a imagem do painel segue sozinha, e os
         // scripts ficam para trás até a atualização seguinte tentar de novo.
         setScriptsFailed(true);

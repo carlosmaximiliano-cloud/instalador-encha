@@ -6,6 +6,7 @@ import { fetchLatestVersion } from "@/lib/monitor";
 import { triggerSelfUpdate } from "@/lib/updater";
 import { APP_VERSION, compareSemver } from "@/lib/version";
 import { logAudit } from "@/lib/audit";
+import { releasePronta, msgVersaoEmPublicacao } from "@/lib/release-pronta";
 import { resolveLocale } from "@/lib/locale";
 import { apiError, unauthenticatedResponse } from "@/lib/api-error";
 import type { Locale } from "@/lib/locale-shared";
@@ -62,6 +63,24 @@ export async function POST(req: NextRequest) {
   }
   if (compareSemver(latest, APP_VERSION) <= 0) {
     return apiError(ERROS, "ja_na_versao_mais_recente", locale, 409);
+  }
+
+  // O Monitor pode anunciar a versão uns ~2 min antes de a imagem e a tag
+  // existirem (release.yml ainda rodando). Só um 404 definitivo bloqueia;
+  // qualquer dúvida segue em frente (ver release-pronta.ts).
+  if ((await releasePronta(latest)) === "em_publicacao") {
+    logAudit({
+      user: session.user,
+      ip,
+      action: "panel.update.wait",
+      target: latest,
+      result: "error",
+      meta: { from: APP_VERSION, to: latest, reason: "versao_em_publicacao" },
+    });
+    return NextResponse.json(
+      { error: "versao_em_publicacao", message: msgVersaoEmPublicacao(latest, locale) },
+      { status: 409 }
+    );
   }
 
   const result = await triggerSelfUpdate(token, latest);

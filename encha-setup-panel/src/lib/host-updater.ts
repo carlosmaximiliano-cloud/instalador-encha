@@ -6,6 +6,7 @@ import {
   PortainerError,
 } from "./portainer";
 import { APP_VERSION } from "./version";
+import { PANEL_IMAGE_REPO, SETUPTESTE_REPO } from "./release-repos";
 
 // Atualiza os scripts do host (/root/main.sh, /root/SetupEnchaAI,
 // /root/encha-setup-panel/) via um container avulso criado pela API do
@@ -18,9 +19,7 @@ import { APP_VERSION } from "./version";
 
 const CONTAINER_NAME = "encha-host-updater";
 const CONTAINER_LABEL = "com.encha.role=host-script-updater";
-const PANEL_IMAGE_REPO = "ghcr.io/enchaaluno/setup-panel";
 const FALLBACK_IMAGE = "alpine/git:2.45.2";
-const SETUPTESTE_REPO = "enchaaluno/setupteste";
 
 const VERSION_RE = /^\d+\.\d+\.\d+$/;
 
@@ -38,7 +37,16 @@ fetch() { wget -qO- "https://codeload.github.com/${SETUPTESTE_REPO}/tar.gz/$1"; 
 # ENCHA_VERSION logo abaixo coincidiria por acidente (main também tem uma
 # versão válida), e o container instalaria em /root, como root, um commit
 # diferente do que a versão-alvo pretendia, reportando sucesso.
-if ! fetch "$ENCHA_SRC_REF" > /tmp/src.tgz; then
+# Até 4 tentativas (20s entre elas): a tag pode estar a segundos de existir
+# quando o cliente clica Atualizar no meio do release.yml. Só o 404 de uma tag
+# que de fato não existe esgota as tentativas e falha, como antes.
+ok=0
+for i in 1 2 3 4; do
+  if fetch "$ENCHA_SRC_REF" > /tmp/src.tgz; then ok=1; break; fi
+  echo "tentativa $i/4 falhou para $ENCHA_SRC_REF" >&2
+  if [ "$i" -lt 4 ]; then sleep 20; fi
+done
+if [ "$ok" != 1 ]; then
   echo "ERRO: falha ao baixar $ENCHA_SRC_REF de ${SETUPTESTE_REPO} — a tag existe?" >&2
   exit 1
 fi
@@ -93,7 +101,7 @@ export async function updateHostScripts(
     const { exitCode, logs, timedOut } = await runOneShotJob(token, endpointId, {
       name: CONTAINER_NAME,
       label: CONTAINER_LABEL,
-      timeoutMs: 120_000,
+      timeoutMs: 180_000,
       spec: {
         Image: image,
         Entrypoint: ["/bin/sh", "-c"],
@@ -115,7 +123,7 @@ export async function updateHostScripts(
     });
 
     if (timedOut) {
-      return { ok: false, error: "Timeout ao atualizar os scripts do host (2min)", logs };
+      return { ok: false, error: "Timeout ao atualizar os scripts do host (3min)", logs };
     }
     if (exitCode !== 0) {
       return { ok: false, error: `Script de atualização falhou (exit ${exitCode})`, logs };
