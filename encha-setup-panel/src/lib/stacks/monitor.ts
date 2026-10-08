@@ -10,9 +10,11 @@ const schema = z.object({
 
 export const monitor: StackDefinition = {
   id: "monitor",
-  repoUrl: "https://github.com/louislam/uptime-kuma",
-  name: "Monitor",
-  description: "Painel agregado de saúde do servidor (CPU, RAM, disco).",
+  repoUrl: "https://github.com/grafana/grafana",
+  logoUrl: "https://raw.githubusercontent.com/grafana/grafana/main/public/img/grafana_icon.svg",
+  name: "Grafana + Prometheus",
+  description:
+    "Monitoramento do servidor e dos containers: Grafana (dashboards) + Prometheus (métricas), com Node Exporter e cAdvisor coletando CPU, RAM, disco e rede.",
   category: "monitoring",
   icon: "shield",
   dependsOn: ["traefik-portainer"],
@@ -114,7 +116,8 @@ networks:
   },
   i18n: {
     en: {
-      description: "Aggregated server health dashboard (CPU, RAM, disk).",
+      description:
+        "Server and container monitoring: Grafana (dashboards) + Prometheus (metrics), with Node Exporter and cAdvisor collecting CPU, RAM, disk and network.",
       fields: {
         url_grafana: { label: "Grafana domain", placeholder: "grafana.encha.ai", group: "Domains" },
         url_prometheus: { label: "Prometheus domain", placeholder: "prometheus.encha.ai", group: "Domains" },
@@ -124,7 +127,8 @@ networks:
       notes: ["Grafana: user admin, password admin (change on first access)"],
     },
     es: {
-      description: "Panel agregado de salud del servidor (CPU, RAM, disco).",
+      description:
+        "Monitoreo del servidor y de los contenedores: Grafana (dashboards) + Prometheus (métricas), con Node Exporter y cAdvisor recolectando CPU, RAM, disco y red.",
       fields: {
         url_grafana: { label: "Dominio de Grafana", placeholder: "grafana.encha.ai", group: "Dominios" },
         url_prometheus: { label: "Dominio de Prometheus", placeholder: "prometheus.encha.ai", group: "Dominios" },
