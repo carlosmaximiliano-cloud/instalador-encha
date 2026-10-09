@@ -403,6 +403,11 @@ ${env("DATABASE_URL", "database_url", "app", urlBancoApp(secrets.postgres_passwo
       WHATSAPP_APP_SECRET: ""
       WHATSAPP_VERIFY_TOKEN: ""
       WHATSAPP_API_VERSION: "v21.0"
+      # Reset de senha do Super Admin (suporte): preencher as DUAS, salvar a stack e,
+      # depois de entrar, esvaziar a senha. O app só reaplica quando o valor da
+      # senha muda (internal/auth/bootstrap.go); vazias = não faz nada.
+      ENCHAT_ADMIN_EMAIL: ""
+      ENCHAT_ADMIN_SENHA: ""
       INSTAGRAM_APP_ID: ""
       INSTAGRAM_APP_SECRET: ""
       INSTAGRAM_REDIRECT_URI: "https://${domain}/api/instagram/oauth/callback"

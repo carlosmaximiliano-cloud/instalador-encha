@@ -80,6 +80,21 @@ describe("enchat — token de primeiro acesso (ENCHAT_SETUP_TOKEN)", () => {
   });
 });
 
+describe("enchat — reset de senha do Super Admin (P2)", () => {
+  it("o enchat_app declara ENCHAT_ADMIN_EMAIL e ENCHAT_ADMIN_SENHA vazias (o suporte só preenche)", () => {
+    const bloco = blocoDoServico(enchat.generateYaml(valuesValidos, secrets, ctxBase), "enchat_app");
+    expect(bloco).toContain('ENCHAT_ADMIN_EMAIL: ""');
+    expect(bloco).toContain('ENCHAT_ADMIN_SENHA: ""');
+  });
+
+  it("não vão para outros serviços", () => {
+    const yaml = enchat.generateYaml(valuesValidos, secrets, ctxBase);
+    for (const s of ["enchat_updater", "enchat_pinfy", "enchat_postgres"]) {
+      expect(blocoDoServico(yaml, s)).not.toContain("ENCHAT_ADMIN_");
+    }
+  });
+});
+
 describe("enchat — estado persistente do sidecar enchat_updater", () => {
   it("o enchat_updater monta /var/enchat/updater em /data e aponta STATE_FILE para lá", () => {
     const bloco = blocoDoServico(enchat.generateYaml(valuesValidos, secrets, ctxBase), "enchat_updater");
