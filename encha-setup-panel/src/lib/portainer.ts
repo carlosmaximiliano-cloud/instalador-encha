@@ -353,6 +353,10 @@ export type DockerServiceFull = {
     };
     [k: string]: unknown;
   };
+  // Estado do último update do serviço (ausente se nunca houve). Um update
+  // start-first em curso mostra "updating"; "rollback_started" etc. também
+  // não são estados assentados.
+  UpdateStatus?: { State?: string };
   // Spec anterior ao último update — o Swarm volta para ele num rollback
   // automático (failure_action=rollback). Só o que os helpers de segredo
   // leem está tipado.
@@ -1184,6 +1188,8 @@ export type SwarmTask = {
   ServiceID: string;
   NodeID?: string;
   DesiredState?: string;
+  // Imagem do template da task (a que ela realmente roda).
+  Spec?: { ContainerSpec?: { Image?: string } };
   Status?: {
     State?: string;
     Err?: string;

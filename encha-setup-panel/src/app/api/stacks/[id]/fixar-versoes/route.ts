@@ -58,11 +58,6 @@ const ERROS = {
     en: "An image changed during the operation (update in progress?). Nothing was changed; try again in a few minutes.",
     es: "Una imagen cambió durante la operación (¿actualización en curso?). No se cambió nada; reintente en unos minutos.",
   },
-  registro_recusou: {
-    pt: "Não foi possível renovar o acesso às imagens (registro). Nada foi alterado.",
-    en: "Could not refresh access to the images (registry). Nothing was changed.",
-    es: "No se pudo renovar el acceso a las imágenes (registro). No se cambió nada.",
-  },
   em_andamento: {
     pt: "Já há uma fixação em andamento.",
     en: "A pinning operation is already in progress.",
@@ -79,7 +74,6 @@ const STATUS: Record<CodigoErroFixacao, number> = {
   stack_externa: 422,
   compose_inesperado: 422,
   mudou_durante: 409,
-  registro_recusou: 502,
   em_andamento: 409,
 };
 

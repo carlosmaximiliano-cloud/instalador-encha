@@ -16,19 +16,15 @@
 
 import {
   discoverContext,
-  getServiceByName,
+  getServiceExact,
   getStackFile,
+  listServiceTasks,
   listStacks,
-  listSwarmStackStatuses,
   PortainerError,
   updateSwarmStack,
+  type DockerServiceFull,
   type Stack,
 } from "./portainer";
-import { lerChaveDoEnv } from "./stack-chave";
-import { resolveRegistryAndPullImages } from "./registry-pull";
-import { getOrCreateMachineId } from "./pairing-store";
-import { ENCHAT_APP_HOSTNAME } from "./enchat-fingerprint";
-import { getStack } from "./stacks/registry";
 import { logAudit } from "./audit";
 import { semverMaiorOuIgual } from "./semver";
 
@@ -48,7 +44,6 @@ export type CodigoErroFixacao =
   | "stack_externa"
   | "compose_inesperado"
   | "mudou_durante"
-  | "registro_recusou"
   | "em_andamento";
 
 export class FixarVersoesError extends Error {
@@ -63,7 +58,9 @@ export class FixarVersoesError extends Error {
 
 // ── Validação das imagens em execução ────────────────────────────────────
 // Gramática fechada: só os repos que o EnchaT publica, por dono GHCR.
-const IMG = /^ghcr\.io\/(carlosmaximiliano-cloud|enchainterno)\/(enchat|enchat-free|pinfy|enchat-updater):(\d+\.\d+\.\d+|beta-[0-9a-f]{12})$/;
+// O digest (`@sha256:<64 hex>`) é opcional e, quando existe, é copiado como está:
+// a referência EXATA do spec em execução é o que torna o redeploy um no-op.
+const IMG = /^ghcr\.io\/(carlosmaximiliano-cloud|enchainterno)\/(enchat|enchat-free|pinfy|enchat-updater):(\d+\.\d+\.\d+|beta-[0-9a-f]{12})(@sha256:[0-9a-f]{64})?$/;
 
 type ImagemLida = { dono: string; repo: string; tag: string; ref: string };
 
@@ -228,27 +225,53 @@ export type Previa = {
   versaoSidecar: string;
 };
 
+type Alvos = "app" | "pinfy" | "updater";
+type Foto = Record<Alvos, { indice: number; imagem: string }>;
+
 type Leitura = {
-  token: string;
   endpointId: number;
   stack: Stack;
   composeAtual: string;
   alvo: AlvoImagens;
   patch: ResultadoPatch;
+  foto: Foto;
 };
+
+const ESTADOS_ASSENTADOS = new Set(["completed", "rollback_completed"]);
+
+// Lê app/Pinfy/sidecar e só devolve se estiverem ASSENTADOS: sem update em
+// curso (`UpdateStatus` ausente ou terminal) e a task desejada rodando
+// exatamente a imagem do spec. `running >= desired` NÃO basta: num update
+// start-first há duas tasks rodando no meio da troca.
+async function lerServicosAssentados(token: string, endpointId: number): Promise<Foto> {
+  const foto = {} as Foto;
+  const servicos: [Alvos, string][] = [
+    ["app", SVC_APP],
+    ["pinfy", SVC_PINFY],
+    ["updater", SVC_UPDATER],
+  ];
+  for (const [chave, nome] of servicos) {
+    const svc: DockerServiceFull | null = await getServiceExact(token, endpointId, nome);
+    if (!svc) throw new FixarVersoesError("stack_nao_instalada");
+    const estado = svc.UpdateStatus?.State;
+    if (estado && !ESTADOS_ASSENTADOS.has(estado)) throw new FixarVersoesError("nao_convergida", `${nome}: ${estado}`);
+    const imagem = svc.Spec.TaskTemplate?.ContainerSpec?.Image ?? "";
+    const desejadas = (await listServiceTasks(token, endpointId, svc.ID)).filter((t) => t.DesiredState === "running");
+    const ok =
+      desejadas.length > 0 &&
+      desejadas.every((t) => t.Status?.State === "running" && t.Spec?.ContainerSpec?.Image === imagem);
+    if (!ok) throw new FixarVersoesError("nao_convergida", nome);
+    foto[chave] = { indice: svc.Version.Index, imagem };
+  }
+  return foto;
+}
 
 async function ler(token: string): Promise<Leitura> {
   const { endpointId } = await discoverContext(token);
-  const statuses = await listSwarmStackStatuses(token, endpointId);
-  const st = statuses.find((s) => s.name === STACK_ENCHAT);
-  if (!st) throw new FixarVersoesError("stack_nao_instalada");
-  if (!st.ready || st.desired === 0) throw new FixarVersoesError("nao_convergida");
-
-  const alvo = analisarImagens({
-    app: st.images[SVC_APP],
-    pinfy: st.images[SVC_PINFY],
-    updater: st.images[SVC_UPDATER],
-  });
+  const foto = await lerServicosAssentados(token, endpointId);
+  // A referência EXATA (com digest) do spec em execução: com ela no compose o
+  // redeploy não troca imagem nenhuma.
+  const alvo = analisarImagens({ app: foto.app.imagem, pinfy: foto.pinfy.imagem, updater: foto.updater.imagem });
 
   const stacks = await listStacks(token);
   const stack = stacks.find((s) => s.Name === STACK_ENCHAT);
@@ -260,11 +283,10 @@ async function ler(token: string): Promise<Leitura> {
     if (e instanceof PortainerError && e.status === 404) throw new FixarVersoesError("stack_externa");
     throw e;
   }
-  return { token, endpointId, stack, composeAtual, alvo, patch: aplicarPatchCompose(composeAtual, alvo) };
+  return { endpointId, stack, composeAtual, alvo, patch: aplicarPatchCompose(composeAtual, alvo), foto };
 }
 
-export async function preverFixacao(token: string): Promise<Previa> {
-  const { alvo, patch } = await ler(token);
+function paraPrevia(alvo: AlvoImagens, patch: ResultadoPatch): Previa {
   return {
     edicao: alvo.edicao,
     versao: alvo.tag,
@@ -277,72 +299,36 @@ export async function preverFixacao(token: string): Promise<Previa> {
   };
 }
 
+export async function preverFixacao(token: string): Promise<Previa> {
+  const { alvo, patch } = await ler(token);
+  return paraPrevia(alvo, patch);
+}
+
 const emAndamento = new Set<string>();
 
-export type ResultadoFixacao = Previa & { aplicada: boolean; avisoCredencial?: boolean };
+export type ResultadoFixacao = Previa & { aplicada: boolean };
 
 export async function aplicarFixacao(input: { token: string; user: string; ip: string }): Promise<ResultadoFixacao> {
   const { token, user, ip } = input;
   if (emAndamento.has(STACK_ENCHAT)) throw new FixarVersoesError("em_andamento");
   emAndamento.add(STACK_ENCHAT);
   try {
-    const leitura = await ler(token);
-    const { endpointId, stack, alvo, patch } = leitura;
-    const previa: Previa = {
-      edicao: alvo.edicao,
-      versao: alvo.tag,
-      imagens: { app: alvo.app, pinfy: alvo.pinfy, updater: alvo.updater },
-      mudancas: patch.mudancas,
-      varsAdmin: patch.varsAdmin,
-      nadaAFazer: patch.nadaAFazer,
-      protegida: sidecarTemVigilia(alvo.tagUpdater),
-      versaoSidecar: alvo.tagUpdater,
-    };
+    const { endpointId, stack, alvo, patch, foto } = await ler(token);
+    const previa = paraPrevia(alvo, patch);
     if (patch.nadaAFazer) return { ...previa, aplicada: false };
 
-    // Credencial do registro: o PUT refaz o deploy e o Portainer anexa a
-    // credencial registrada. Depois de um upgrade de edição as imagens são de
-    // outra conta GHCR; renova a credencial pelo mesmo caminho do update de
-    // release (chave lida do Env do app + fingerprint da instalação). Se a
-    // chave não estiver legível (modo segredos Docker: LICENSE_KEY_FILE), não
-    // dá para renovar — segue sem e avisa.
-    let avisoCredencial = false;
-    const def = getStack(STACK_ENCHAT);
-    const svcApp = await getServiceByName(token, endpointId, SVC_APP);
-    const chave = svcApp ? lerChaveDoEnv(svcApp, "LICENSE_KEY") : undefined;
-    if (def?.registryAuth && chave) {
-      try {
-        const { fingerprint } = getOrCreateMachineId(STACK_ENCHAT, ENCHAT_APP_HOSTNAME);
-        await resolveRegistryAndPullImages({
-          token,
-          endpointId,
-          user,
-          ip,
-          registryAuth: def.registryAuth,
-          chave,
-          fingerprint,
-          images: [alvo.app, alvo.pinfy, alvo.updater],
-        });
-      } catch (e) {
-        throw new FixarVersoesError("registro_recusou", e instanceof Error ? e.message : undefined);
+    // Reconfere logo antes do PUT: se qualquer serviço mudou (imagem ou
+    // Version.Index — atualização de um clique, autoatualização do sidecar,
+    // rollback), aborta sem tocar em nada.
+    const depois = await lerServicosAssentados(token, endpointId);
+    for (const k of ["app", "pinfy", "updater"] as const) {
+      if (depois[k].imagem !== foto[k].imagem || depois[k].indice !== foto[k].indice) {
+        throw new FixarVersoesError("mudou_durante");
       }
-    } else {
-      avisoCredencial = true;
     }
 
-    // Reconfere logo antes do PUT: se alguma imagem mudou (atualização de um
-    // clique em andamento, auto-atualização do sidecar), aborta sem tocar.
-    const st = (await listSwarmStackStatuses(token, endpointId)).find((s) => s.name === STACK_ENCHAT);
-    if (
-      !st ||
-      st.images[SVC_APP] !== alvo.app ||
-      st.images[SVC_PINFY] !== alvo.pinfy ||
-      st.images[SVC_UPDATER] !== alvo.updater
-    ) {
-      throw new FixarVersoesError("mudou_durante");
-    }
-
-    // O PUT substitui o Env inteiro: reenvia o que a stack já tem.
+    // O PUT substitui o Env inteiro: reenvia o que a stack já tem. Sem pull e
+    // sem credencial: o compose fixa o digest que já roda, então nada é puxado.
     await updateSwarmStack(token, stack.Id, endpointId, {
       stackFileContent: patch.compose,
       env: stack.Env ?? [],
@@ -362,10 +348,9 @@ export async function aplicarFixacao(input: { token: string; user: string; ip: s
         mudancas: patch.mudancas.map((m) => `${m.servico}: ${m.de} → ${m.para}`),
         varsAdmin: patch.varsAdmin,
         protegida: previa.protegida,
-        avisoCredencial,
       },
     });
-    return { ...previa, aplicada: true, ...(avisoCredencial ? { avisoCredencial } : {}) };
+    return { ...previa, aplicada: true };
   } catch (e) {
     logAudit({
       user,

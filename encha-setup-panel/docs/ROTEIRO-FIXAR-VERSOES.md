@@ -1,7 +1,8 @@
 # Roteiro de homologação: "Fixar versões da stack" (enchat)
 
 Ação nova do painel (Catálogo → card EnchaT → **Fixar versões da stack**). Reescreve, no compose
-guardado no Portainer, só as 3 linhas `image:` (app, Pinfy, sidecar) para o que está rodando, e
+guardado no Portainer, só as 3 linhas `image:` (app, Pinfy, sidecar) para a referência EXATA do spec em
+execução (`repo:tag@sha256:…`, o que torna o redeploy um no-op: nada é puxado e nenhuma credencial é usada), e
 acrescenta `ENCHAT_ADMIN_EMAIL`/`ENCHAT_ADMIN_SENHA` vazias se faltarem. Não regenera o YAML.
 
 Rodar numa VPS de homologação (a `encha-test`, com autorização do Carlos: está em uso), com o painel
@@ -28,9 +29,10 @@ Confirmar. Esperado: "Pronto". Depois:
 - **Reinício:** anotar se app/Pinfy/sidecar reiniciaram (`docker service ps`). O PUT usa `PullImage:false`;
   se o Swarm recriar as tasks por diferença de digest, o app usa `start-first`. Registrar o que ocorreu.
 - Healthz ok: `curl -sS https://DOMINIO/api/healthz`.
-- Se aparecer "could not be accessed on a registry to record its digest": é a credencial
-  cruzada de edição (ver docs/PRODUTO-P2 do ENCHAT, risco 1). Anotar a saída e reverter o YAML pelo
-  backup do passo 0 se algum serviço ficou preso.
+- Com o digest no compose, "Update the stack" com Re-pull ligado só pode gerar um AVISO de registro
+  (credencial); nenhuma task deve reiniciar. Se algum serviço reiniciar, anotar a saída e reverter o YAML
+  pelo backup do passo 0.
+- Esta ação exige os serviços ASSENTADOS (sem update em curso, task rodando a imagem do spec).
 
 ## 3. Idempotência
 Abrir o diálogo de novo: deve dizer "já fixada, nada a fazer" e o botão Fixar não aparece (só Fechar).

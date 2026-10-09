@@ -26,14 +26,12 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
   const [erro, setErro] = useState("");
   const [aplicando, setAplicando] = useState(false);
   const [resultado, setResultado] = useState<"" | "ok" | "nada">("");
-  const [avisoCred, setAvisoCred] = useState(false);
 
   useEffect(() => {
     if (!aberto) return;
     setPrevia(null);
     setErro("");
     setResultado("");
-    setAvisoCred(false);
     let cancelado = false;
     fetch("/api/csrf")
       .then((r) => (r.ok ? r.json() : null))
@@ -68,7 +66,6 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
         setErro(j?.message ?? t.genericError);
         return;
       }
-      setAvisoCred(Boolean(j?.resultado?.avisoCredencial));
       setResultado(j?.resultado?.aplicada ? "ok" : "nada");
     } catch {
       setErro(t.networkError);
@@ -136,7 +133,6 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
           {resultado && (
             <div className="space-y-2 text-sm">
               <div className="rounded-md bg-success-soft px-3 py-2">{resultado === "ok" ? t.done : t.doneNothing}</div>
-              {avisoCred && <div className="rounded-md bg-warning-soft text-warning-foreground px-3 py-2 text-xs">{t.noCredentialWarn}</div>}
             </div>
           )}
 

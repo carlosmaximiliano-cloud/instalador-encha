@@ -76,6 +76,27 @@ describe("analisarImagens", () => {
     expect(sidecarTemVigilia(r.tagUpdater)).toBe(true);
   });
 
+  it("aceita o digest exato do spec e o preserva", () => {
+    const d = "@sha256:" + "c".repeat(64);
+    const r = analisarImagens({
+      app: `ghcr.io/carlosmaximiliano-cloud/enchat:0.4.7${d}`,
+      pinfy: `ghcr.io/carlosmaximiliano-cloud/pinfy:0.4.7${d}`,
+      updater: "ghcr.io/carlosmaximiliano-cloud/enchat-updater:0.4.7",
+    });
+    expect(r.app).toBe(`ghcr.io/carlosmaximiliano-cloud/enchat:0.4.7${d}`);
+    expect(r.tag).toBe("0.4.7");
+  });
+
+  it("recusa digest malformado", () => {
+    expect(() =>
+      analisarImagens({
+        app: "ghcr.io/carlosmaximiliano-cloud/enchat:0.4.7@sha256:abc",
+        pinfy: "ghcr.io/carlosmaximiliano-cloud/pinfy:0.4.7",
+        updater: "ghcr.io/carlosmaximiliano-cloud/enchat-updater:0.4.7",
+      })
+    ).toThrowError(expect.objectContaining({ codigo: "imagens_invalidas" }));
+  });
+
   it("recusa app e Pinfy em versões diferentes", () => {
     expect(() =>
       analisarImagens({
@@ -92,7 +113,6 @@ describe("analisarImagens", () => {
     ["dono trocado no app (free repo no dono full)", { app: "ghcr.io/carlosmaximiliano-cloud/enchat-free:0.4.7" }],
     ["pinfy de outro dono", { pinfy: "ghcr.io/enchainterno/pinfy:0.4.7" }],
     ["updater ausente", { updater: undefined }],
-    ["com digest", { app: "ghcr.io/carlosmaximiliano-cloud/enchat:0.4.7@sha256:abc" }],
   ])("recusa: %s", (_n, over) => {
     const base = {
       app: "ghcr.io/carlosmaximiliano-cloud/enchat:0.4.7",

@@ -13,7 +13,6 @@ export type FixarVersoesText = {
   protectedOk: string;
   notProtected: (v: string) => string;
   mayRestart: string;
-  noCredentialWarn: string;
   cancel: string;
   confirm: string;
   applying: string;
@@ -42,7 +41,6 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     notProtected: (v) =>
       `Atenção: o atualizador instalado (${v}) é anterior à 0.4.7 e ainda não repõe a versão sozinho. Fixar agora evita a regressão de hoje, mas depois da próxima atualização pelo botão do EnchaT será preciso rodar esta ação de novo.`,
     mayRestart: "Os serviços podem reiniciar brevemente durante a aplicação.",
-    noCredentialWarn: "Não foi possível renovar o acesso às imagens automaticamente (a licença não está legível); seguiremos com o acesso já registrado.",
     cancel: "Cancelar",
     confirm: "Fixar agora",
     applying: "Aplicando…",
@@ -67,7 +65,6 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     notProtected: (v) =>
       `Heads up: the installed updater (${v}) predates 0.4.7 and does not restore the version by itself yet. Pinning now prevents today's rollback, but after the next update from the EnchaT button you will need to run this action again.`,
     mayRestart: "Services may restart briefly while this is applied.",
-    noCredentialWarn: "Could not refresh image access automatically (the license is not readable); we will continue with the access already registered.",
     cancel: "Cancel",
     confirm: "Pin now",
     applying: "Applying…",
@@ -92,7 +89,6 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     notProtected: (v) =>
       `Atención: el actualizador instalado (${v}) es anterior a 0.4.7 y aún no repone la versión por sí solo. Fijar ahora evita la regresión de hoy, pero tras la próxima actualización desde el botón de EnchaT habrá que ejecutar esta acción de nuevo.`,
     mayRestart: "Los servicios pueden reiniciarse brevemente durante la aplicación.",
-    noCredentialWarn: "No se pudo renovar el acceso a las imágenes automáticamente (la licencia no es legible); seguiremos con el acceso ya registrado.",
     cancel: "Cancelar",
     confirm: "Fijar ahora",
     applying: "Aplicando…",
