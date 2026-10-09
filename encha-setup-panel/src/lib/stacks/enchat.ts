@@ -321,7 +321,7 @@ export const enchat: StackDefinition = {
   ],
   schema,
   generateSecrets: () => [
-    { name: "enchat_master_key", value: randomBytes(32).toString("base64"), reveal: true },
+    { name: "enchat_master_key", label: "Chave mestra do EnchaT (enchat_master_key)", value: randomBytes(32).toString("base64"), reveal: true },
     { name: "postgres_password", value: randomBytes(24).toString("hex") },
     { name: "pinfy_master_key", value: randomBytes(24).toString("hex") },
     { name: "pinfy_webhook_token", value: randomBytes(24).toString("hex") },
@@ -337,7 +337,7 @@ export const enchat: StackDefinition = {
     // Cifra (AES-256-GCM) a sessão do WhatsApp guardada pelo Pinfy no
     // Postgres (S12 C3). GUARDE como a enchat_master_key: perdê-la faz toda
     // instância pedir QR code de novo (leads e conversas não se perdem).
-    { name: "pinfy_session_key", value: randomBytes(32).toString("hex"), reveal: true },
+    { name: "pinfy_session_key", label: "Chave da sessão do WhatsApp (pinfy_session_key)", value: randomBytes(32).toString("hex"), reveal: true },
     // Compartilhado entre enchat_app e enchat_updater (Authorization: Bearer) —
     // ver cmd/enchat-updater/README.md no repo do EnchaT.
     { name: "updater_token", value: randomBytes(24).toString("hex") },
@@ -610,6 +610,10 @@ ${segTopo}`;
             "Only fill this in if you already have an issued key — skip it if you're using the pairing above. It isn't saved to disk.",
         },
       },
+      secretLabels: {
+        enchat_master_key: "EnchaT master key (enchat_master_key)",
+        pinfy_session_key: "WhatsApp session key (pinfy_session_key)",
+      },
     },
     es: {
       description: "CRM conversacional (WhatsApp) — edición EnchaT Free, con Pinfy integrado.",
@@ -626,6 +630,10 @@ ${segTopo}`;
           helpText:
             "Complete esto solo si ya tiene una clave emitida — omítalo si está usando el emparejamiento de arriba. No se guarda en disco.",
         },
+      },
+      secretLabels: {
+        enchat_master_key: "Clave maestra de EnchaT (enchat_master_key)",
+        pinfy_session_key: "Clave de la sesión de WhatsApp (pinfy_session_key)",
       },
     },
   },
