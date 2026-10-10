@@ -43,6 +43,7 @@ export type CodigoErroFixacao =
   | "compose_inesperado"
   | "mudou_durante"
   | "estado_diverge"
+  | "edicao_regredida"
   | "gravacao_falhou"
   | "em_andamento";
 

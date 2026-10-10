@@ -239,6 +239,33 @@ describe("modo manual", () => {
   });
 });
 
+describe("edição regredida e diagnóstico", () => {
+  it("manual: sidecar lembra edição CRM/Tráfego e o app voltou a Grátis -> edicao_regredida (não manda clicar Atualizar)", async () => {
+    // rodando Grátis 0.4.7; o sidecar aplicou a edição completa
+    const D2 = (c: string) => `@sha256:${c.repeat(64)}`;
+    svcs.enchat_enchat_app.image = "ghcr.io/enchainterno/enchat-free:0.4.7" + D2("1");
+    svcs.enchat_enchat_pinfy.image = "ghcr.io/enchainterno/pinfy:0.4.7" + D2("2");
+    svcs.enchat_enchat_updater.image = "ghcr.io/enchainterno/enchat-updater:0.4.7" + D2("3");
+    m.estado.mockResolvedValue({ estado: { em_andamento: false, versao_atual: "0.4.7", app_imagem_aplicada: "ghcr.io/carlosmaximiliano-cloud/enchat" } });
+    const { sincronizarStackEnchat } = await nucleo();
+    await expect(sincronizarStackEnchat(entrada("manual"))).rejects.toMatchObject({ codigo: "edicao_regredida" });
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+
+  it("diagnóstico: prévia + estado do sidecar, sem gravar nada", async () => {
+    const { diagnosticarSincronizacao } = await nucleo();
+    const ok = await diagnosticarSincronizacao("t");
+    expect(ok.sidecar).toEqual({ ok: true, motivo: undefined, tipo: undefined });
+    expect(ok.previa.mudancas).toHaveLength(3);
+    m.estado.mockResolvedValue({ estado: { em_andamento: false, versao_atual: "0.4.9" } });
+    const ruim = await diagnosticarSincronizacao("t");
+    expect(ruim.sidecar).toMatchObject({ ok: false, tipo: "versao" });
+    m.estado.mockResolvedValue({ estado: null, motivo: "ilegivel" });
+    expect((await diagnosticarSincronizacao("t")).sidecar).toBeNull();
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+});
+
 describe("concorrência", () => {
   it("duas chamadas simultâneas no mesmo processo: a 2ª recebe em_andamento", async () => {
     let solta!: () => void;

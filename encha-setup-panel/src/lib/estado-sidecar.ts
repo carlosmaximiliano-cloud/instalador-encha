@@ -78,7 +78,7 @@ export function parseEstado(logs: string): LeituraEstado {
 const QUINZE_MIN = 15 * 60_000;
 const repoDe = (ref: string): string => ref.replace(/@.*$/, "").replace(/:[^:/]+$/, "");
 
-export type Portao = { abre: boolean; motivo?: string };
+export type Portao = { abre: boolean; motivo?: string; tipo?: "edicao" | "versao" | "ocupado" };
 
 /**
  * O estado.json concorda com o que roda e o sidecar terminou? Fechado (abre
@@ -94,20 +94,20 @@ export type Portao = { abre: boolean; motivo?: string };
  * comparar com a tag — pula só essa comparação.
  */
 export function portaoEstado(estado: EstadoSidecar, alvo: AlvoImagens, agora = Date.now()): Portao {
-  if (estado.em_andamento) return { abre: false, motivo: "sidecar aplicando uma operação" };
+  if (estado.em_andamento) return { abre: false, motivo: "sidecar aplicando uma operação", tipo: "ocupado" };
   const beta = alvo.tag.startsWith("beta-");
   if (!beta && estado.versao_atual !== undefined && estado.versao_atual !== alvo.tag) {
-    return { abre: false, motivo: `o sidecar aplicou ${estado.versao_atual} e o app roda ${alvo.tag}` };
+    return { abre: false, motivo: `o sidecar aplicou ${estado.versao_atual} e o app roda ${alvo.tag}`, tipo: "versao" };
   }
-  if (!beta && estado.versao_atual === undefined) return { abre: false, motivo: "estado sem versao_atual" };
+  if (!beta && estado.versao_atual === undefined) return { abre: false, motivo: "estado sem versao_atual", tipo: "versao" };
   if (estado.app_imagem_aplicada && repoDe(estado.app_imagem_aplicada) !== repoDe(alvo.app)) {
-    return { abre: false, motivo: "edição aplicada pelo sidecar difere da que roda" };
+    return { abre: false, motivo: "edição aplicada pelo sidecar difere da que roda", tipo: "edicao" };
   }
   if (estado.auto_atualizacao?.startsWith("solicitada")) {
     const tagSidecar = alvo.tagUpdater;
     const mesmaVersao = estado.versao_atual !== undefined && semverMaiorOuIgual(tagSidecar, estado.versao_atual);
     const ha = estado.concluido_em ? agora - Date.parse(estado.concluido_em) : 0;
-    if (!mesmaVersao && !(ha > QUINZE_MIN)) return { abre: false, motivo: "autoatualização do sidecar ainda não assentou" };
+    if (!mesmaVersao && !(ha > QUINZE_MIN)) return { abre: false, motivo: "autoatualização do sidecar ainda não assentou", tipo: "ocupado" };
   }
   return { abre: true };
 }

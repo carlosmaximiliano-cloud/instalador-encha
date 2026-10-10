@@ -4,8 +4,8 @@ import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { resolveLocale } from "@/lib/locale";
 import { apiError, unauthenticatedResponse } from "@/lib/api-error";
-import { FixarVersoesError, preverFixacao, STACK_ENCHAT, type CodigoErroFixacao } from "@/lib/fixar-versoes";
-import { sincronizarStackEnchat } from "@/lib/sincronizar-stack";
+import { FixarVersoesError, STACK_ENCHAT, type CodigoErroFixacao } from "@/lib/fixar-versoes";
+import { diagnosticarSincronizacao, sincronizarStackEnchat } from "@/lib/sincronizar-stack";
 import { lerEstadoSync } from "@/lib/stack-sync-store";
 import type { Locale } from "@/lib/locale-shared";
 
@@ -70,6 +70,11 @@ const ERROS = {
     en: "The EnchaT updater applied a different version than the one running (for example, after \"Update the stack\" in Portainer). Update from the button inside EnchaT first and try again. Nothing was changed.",
     es: "El actualizador de EnchaT aplicó una versión distinta a la que está corriendo (por ejemplo, tras \"Update the stack\" en Portainer). Actualice desde el botón dentro de EnchaT primero y reintente. No se cambió nada.",
   },
+  edicao_regredida: {
+    pt: "Esta instalação voltou à edição Grátis, mas o EnchaT tinha sido atualizado para outra edição. NÃO use o botão Atualizar do EnchaT agora (ele aplicaria a edição Grátis). Fale com o suporte. Nada foi alterado.",
+    en: "This install went back to the Free edition, but EnchaT had been updated to another edition. Do NOT use EnchaT's Update button now (it would apply the Free edition). Contact support. Nothing was changed.",
+    es: "Esta instalación volvió a la edición Gratis, pero EnchaT se había actualizado a otra edición. NO use el botón Actualizar de EnchaT ahora (aplicaría la edición Gratis). Contacte a soporte. No se cambió nada.",
+  },
   gravacao_falhou: {
     pt: "Não foi possível gravar o arquivo da stack com segurança. Nada foi alterado.",
     en: "Could not safely write the stack file. Nothing was changed.",
@@ -88,6 +93,7 @@ const STATUS: Record<CodigoErroFixacao, number> = {
   mudou_durante: 409,
   em_andamento: 409,
   estado_diverge: 409,
+  edicao_regredida: 409,
   gravacao_falhou: 502,
 };
 
@@ -105,11 +111,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   if (id !== STACK_ENCHAT) return apiError(ERROS, "stack_desconhecida", locale, 404);
   try {
-    const previa = await preverFixacao(auth.token);
+    const { previa, sidecar } = await diagnosticarSincronizacao(auth.token);
     const sync = lerEstadoSync(STACK_ENCHAT);
     return NextResponse.json({
       ok: true,
       previa,
+      sidecar,
       sync: { ultimoResultado: sync.lastResult, detalhe: sync.lastDetail, em: sync.lastAt, autoDesligada: sync.autoDisabledReason },
     });
   } catch (e) {

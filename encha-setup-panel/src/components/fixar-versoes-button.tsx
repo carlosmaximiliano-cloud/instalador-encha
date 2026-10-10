@@ -15,6 +15,7 @@ type Previa = {
   protegida: boolean;
   versaoSidecar: string;
 };
+type SidecarInfo = { ok: boolean; motivo?: string; tipo?: "edicao" | "versao" | "ocupado" } | null;
 type SyncInfo = { ultimoResultado: string | null; detalhe: string | null; em: number | null; autoDesligada: string | null };
 
 // Ação explícita, só na stack enchat: grava no compose guardado no Portainer
@@ -25,6 +26,7 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
   const [csrf, setCsrf] = useState("");
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [sync, setSync] = useState<SyncInfo | null>(null);
+  const [sidecar, setSidecar] = useState<SidecarInfo>(null);
   const [erro, setErro] = useState("");
   const [aplicando, setAplicando] = useState(false);
   const [resultado, setResultado] = useState<"" | "ok" | "nada">("");
@@ -47,6 +49,7 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
         else {
           setPrevia(j.previa);
           setSync(j.sync ?? null);
+          setSidecar(j.sidecar ?? null);
         }
       })
       .catch(() => !cancelado && setErro(t.networkError));
@@ -123,6 +126,11 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
                   <div className="text-xs opacity-80">{t.mayRestart}</div>
                 </>
               )}
+              {sidecar && !sidecar.ok ? (
+                <div className="rounded-md bg-destructive-soft text-destructive px-3 py-2 text-xs">
+                  {sidecar.tipo === "edicao" ? t.sidecarEdicao : sidecar.tipo === "ocupado" ? t.sidecarOcupado : t.sidecarVersao}
+                </div>
+              ) : null}
               {sync?.autoDesligada ? (
                 <div className="text-xs opacity-80">{t.syncAutoOff(sync.autoDesligada)}</div>
               ) : sync?.ultimoResultado && sync.em ? (
@@ -158,7 +166,7 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
                 <Button variant="secondary" disabled={aplicando} onClick={() => setAberto(false)}>
                   {t.cancel}
                 </Button>
-                <Button variant="primary" disabled={!previa || !csrf || aplicando} onClick={aplicar}>
+                <Button variant="primary" disabled={!previa || !csrf || aplicando || Boolean(sidecar && !sidecar.ok)} onClick={aplicar}>
                   {aplicando ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />

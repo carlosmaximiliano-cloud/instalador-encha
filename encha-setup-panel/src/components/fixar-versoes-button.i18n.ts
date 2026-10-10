@@ -15,6 +15,9 @@ export type FixarVersoesText = {
   mayRestart: string;
   syncLast: (resultado: string, quando: string) => string;
   syncAutoOff: (motivo: string) => string;
+  sidecarEdicao: string;
+  sidecarVersao: string;
+  sidecarOcupado: string;
   cancel: string;
   confirm: string;
   applying: string;
@@ -45,6 +48,9 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     mayRestart: "Nenhum serviço é reiniciado: só o arquivo da stack no Portainer é atualizado.",
     syncLast: (r, q) => `Última sincronização automática: ${r} (${q})`,
     syncAutoOff: (m) => `A sincronização automática está desligada nesta instalação (${m}).`,
+    sidecarEdicao: "Esta instalação voltou à edição Grátis, mas o EnchaT tinha sido atualizado para outra edição. NÃO use o botão Atualizar do EnchaT agora (ele aplicaria a edição Grátis). Fale com o suporte.",
+    sidecarVersao: "O atualizador aplicou uma versão diferente da que está rodando (por exemplo, depois de um \"Update the stack\" no Portainer). Atualize pelo botão dentro do EnchaT primeiro; só então sincronize.",
+    sidecarOcupado: "O atualizador do EnchaT está ocupado. Tente de novo em alguns minutos.",
     cancel: "Cancelar",
     confirm: "Sincronizar agora",
     applying: "Aplicando…",
@@ -71,6 +77,9 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     mayRestart: "No service is restarted: only the stack file in Portainer is updated.",
     syncLast: (r, q) => `Last automatic sync: ${r} (${q})`,
     syncAutoOff: (m) => `Automatic sync is turned off on this install (${m}).`,
+    sidecarEdicao: "This install went back to the Free edition, but EnchaT had been updated to another edition. Do NOT use EnchaT's Update button now (it would apply the Free edition). Contact support.",
+    sidecarVersao: "The updater applied a different version than the one running (for example, after \"Update the stack\" in Portainer). Update from the button inside EnchaT first, then sync.",
+    sidecarOcupado: "The EnchaT updater is busy. Try again in a few minutes.",
     cancel: "Cancel",
     confirm: "Sync now",
     applying: "Applying…",
@@ -97,6 +106,9 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     mayRestart: "No se reinicia ningún servicio: solo se actualiza el archivo de la stack en Portainer.",
     syncLast: (r, q) => `Última sincronización automática: ${r} (${q})`,
     syncAutoOff: (m) => `La sincronización automática está desactivada en esta instalación (${m}).`,
+    sidecarEdicao: "Esta instalación volvió a la edición Gratis, pero EnchaT se había actualizado a otra edición. NO use el botón Actualizar de EnchaT ahora (aplicaría la edición Gratis). Contacte a soporte.",
+    sidecarVersao: "El actualizador aplicó una versión distinta a la que está corriendo (por ejemplo, tras \"Update the stack\" en Portainer). Actualice desde el botón dentro de EnchaT primero y luego sincronice.",
+    sidecarOcupado: "El actualizador de EnchaT está ocupado. Reintente en unos minutos.",
     cancel: "Cancelar",
     confirm: "Sincronizar ahora",
     applying: "Aplicando…",

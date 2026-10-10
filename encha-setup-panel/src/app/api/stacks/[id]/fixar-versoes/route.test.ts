@@ -38,12 +38,12 @@ async function mocks(over: { origem?: boolean; csrf?: boolean; auth?: boolean } 
   }));
   vi.doMock("@/lib/locale", () => ({ resolveLocale: vi.fn(async () => "pt") }));
   const aplicar = vi.fn(async () => ({ aplicada: true }));
-  const prever = vi.fn(async () => ({ nadaAFazer: false }));
+  const prever = vi.fn(async () => ({ previa: { nadaAFazer: false }, sidecar: null }));
   vi.doMock("@/lib/fixar-versoes", async () => {
     const real = await vi.importActual<typeof import("@/lib/fixar-versoes")>("@/lib/fixar-versoes");
-    return { ...real, preverFixacao: prever };
+    return { ...real };
   });
-  vi.doMock("@/lib/sincronizar-stack", () => ({ sincronizarStackEnchat: aplicar }));
+  vi.doMock("@/lib/sincronizar-stack", () => ({ sincronizarStackEnchat: aplicar, diagnosticarSincronizacao: prever }));
   return { aplicar, prever };
 }
 

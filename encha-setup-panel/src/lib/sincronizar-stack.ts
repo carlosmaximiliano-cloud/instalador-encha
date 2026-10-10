@@ -80,7 +80,9 @@ export async function sincronizarStackEnchat(input: {
           registrarResultado(STACK_ENCHAT, "aguardando", portao.motivo ?? null);
           return { ...previa, aplicada: false, motivo: portao.motivo, estado };
         }
-        throw new FixarVersoesError("estado_diverge", portao.motivo);
+        // Edição regredida (CRM/Tráfego voltou a Grátis): o botão Atualizar de um
+        // sidecar antigo aplicaria a edição GRÁTIS, então a orientação é outra.
+        throw new FixarVersoesError(portao.tipo === "edicao" ? "edicao_regredida" : "estado_diverge", portao.motivo);
       }
     } else if (modo === "auto") {
       registrarResultado(STACK_ENCHAT, "aguardando", `estado do sidecar ${estado}`);
@@ -146,4 +148,20 @@ export async function sincronizarStackEnchat(input: {
     emAndamentoLocal = false;
     liberarLease(STACK_ENCHAT, DONO);
   }
+}
+
+export type Diagnostico = {
+  previa: Previa;
+  /** O que o sidecar lembra concorda com o que roda? (null = não deu para ler) */
+  sidecar: { ok: boolean; motivo?: string; tipo?: "edicao" | "versao" | "ocupado" } | null;
+};
+
+/** Prévia + diagnóstico do estado.json, para a tela mostrar o problema ANTES do clique. */
+export async function diagnosticarSincronizacao(token: string): Promise<Diagnostico> {
+  const { endpointId, alvo, patch } = await ler(token);
+  const previa = paraPrevia(alvo, patch);
+  const leitura = await lerEstadoDoSidecar(token, endpointId);
+  if (!leitura.estado) return { previa, sidecar: null };
+  const p = portaoEstado(leitura.estado, alvo);
+  return { previa, sidecar: { ok: p.abre, motivo: p.motivo, tipo: p.tipo } };
 }
