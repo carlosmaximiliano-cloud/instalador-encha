@@ -1,59 +1,40 @@
-# Roteiro de homologação: "Fixar versões da stack" (enchat)
+# Roteiro de homologação: sincronização do arquivo da stack (enchat)
 
-Ação nova do painel (Catálogo → card EnchaT → **Fixar versões da stack**). Reescreve, no compose
-guardado no Portainer, só as 3 linhas `image:` (app, Pinfy, sidecar) para a referência EXATA do spec em
-execução (`repo:tag@sha256:…`, o que torna o redeploy um no-op: nada é puxado e nenhuma credencial é usada), e
-acrescenta `ENCHAT_ADMIN_EMAIL`/`ENCHAT_ADMIN_SENHA` vazias se faltarem. Não regenera o YAML.
+O painel mantém o arquivo da stack `enchat` (no Portainer) igual ao que está rodando, para que "Update the
+stack" nunca volte versão nem edição. Grava só as 3 linhas `image:` (app, Pinfy, sidecar) com a referência
+EXATA do spec em execução (`repo:tag@sha256:…`), **direto no disco** do Portainer (job pontual, CAS por
+sha256, temp + `mv`, cópia `.enchat-pre-sync`), sem redeploy: nada reinicia.
 
-Rodar numa VPS de homologação (a `encha-test`, com autorização do Carlos: está em uso), com o painel
-da build deste branch, depois de publicado pela esteira do Monitor (ou imagem de teste).
-Tudo como root. `APP=enchat_enchat_app`.
+- **Automática** (agendador, 3 min depois do boot e a cada 2): atrás da chave remota do Console
+  (`GET /api/v1/setup/flags`; desligada por padrão). Só age se repo/tag difere do arquivo, com o sidecar
+  ocioso e concordando (estado.json). Kill switch local: `ENCHA_SYNC_STACK=off` na stack do painel.
+- **Manual** (botão no card do EnchaT): também acrescenta `ENCHAT_ADMIN_EMAIL`/`ENCHAT_ADMIN_SENHA` vazias.
 
-## 0. Antes (guardar para comparar)
+## Já provado na encha-test (2026-10-09/10, Portainer 2.45.1) — ver notas f0-resultados
+- O bug: "Update the stack" com Re-pull ligado devolve app, Pinfy e sidecar à versão do arquivo.
+- Re-pull desligado mantém a imagem (orientação imediata). Arquivo fixado por digest + Re-pull ligado: no-op.
+- Gravação em disco: `GET /file` enxerga na hora; as 4 tasks continuam as mesmas.
+- Código real do painel (`sincronizarStackEnchat`, modo auto) contra o Portainer real: gravou as 3 imagens,
+  2ª execução "nada a fazer", e "Update the stack" com Re-pull ligado manteve 0.4.7 sem recriar tasks.
+
+## Para repetir com o painel publicado (VPS de homologação, root)
 ```bash
-docker service ls | grep enchat
-for s in app pinfy updater postgres; do docker service inspect enchat_enchat_$s --format '{{.Spec.Name}} {{.Spec.TaskTemplate.ContainerSpec.Image}} {{.Version.Index}}'; done
-docker service ps $APP --format '{{.ID}} {{.CreatedAt}} {{.CurrentState}}' | head
-cat /var/enchat/updater/estado.json
+snap() { for s in app pinfy updater postgres; do n=enchat_enchat_$s;
+  echo "$n $(docker service inspect $n --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' | cut -c1-90)";
+  docker service ps $n -f desired-state=running --format '   task {{.ID}}'; done; }
 ```
-Portainer → Stacks → enchat → Editor: copiar o YAML atual (backup) e anotar as `image:`.
-
-## 1. Prévia
-Abrir o diálogo. Conferir: edição e versão certas; lista das 3 trocas (ou "nada a fazer"); aviso
-verde/amarelo conforme o sidecar (>= 0.4.7 ou não). Cancelar: nada muda (confirmar `Version.Index`).
-
-## 2. Aplicar
-Confirmar. Esperado: "Pronto". Depois:
-- Portainer → Editor: só as `image:` mudaram (e as 2 vars ADMIN foram adicionadas); variáveis que
-  você editou continuam; `docker secret ls` igual.
-- **Reinício:** anotar se app/Pinfy/sidecar reiniciaram (`docker service ps`). O PUT usa `PullImage:false`;
-  se o Swarm recriar as tasks por diferença de digest, o app usa `start-first`. Registrar o que ocorreu.
-- Healthz ok: `curl -sS https://DOMINIO/api/healthz`.
-- Com o digest no compose, "Update the stack" com Re-pull ligado só pode gerar um AVISO de registro
-  (credencial); nenhuma task deve reiniciar. Se algum serviço reiniciar, anotar a saída e reverter o YAML
-  pelo backup do passo 0.
-- Esta ação exige os serviços ASSENTADOS (sem update em curso, task rodando a imagem do spec).
-
-## 3. Idempotência
-Abrir o diálogo de novo: deve dizer "já fixada, nada a fazer" e o botão Fixar não aparece (só Fechar).
-
-## 4. O que a ação existe para resolver
-Portainer → Update the stack (com Re-pull image). Esperado: versão **e edição** continuam (sem
-regressão a Grátis); `docker service ps` sem tasks novas para uma versão antiga.
-
-## 5. Vigília depois da próxima atualização (precisa de versão nova do ENCHAT; se houver)
-Atualizar pelo botão do EnchaT (Configurações → Atualizações). Em seguida Update the stack:
-o app volta à versão fixada no YAML e, em 1 a 3 min, o sidecar (>= 0.4.7) repõe a versão aplicada
-(`docker service logs enchat_enchat_updater --tail 50`: "reaplicando a imagem que o sidecar tinha aplicado").
-
-## 6. Reset de senha (ENCHAT_ADMIN_*)
-Portainer → editar a stack: preencher e-mail e senha do Super Admin → Update the stack → entrar com a
-senha nova → esvaziar a senha → Update the stack de novo.
-
-## 7. Sidecar < 0.4.7 (só se houver uma VPS assim)
-A prévia mostra o aviso amarelo; aplicar mesmo assim fixa as imagens. Depois atualizar pelo botão (o
-sidecar se autoatualiza) e rodar a ação de novo: a prévia deve mostrar só a troca da linha do sidecar.
-
-## 8. Recusas (opcional, bom ter visto uma vez)
-- Durante uma atualização de um clique (serviços subindo): "ainda não está estável", nada muda.
-- Com o YAML editado à mão para `environment:` em formato lista: "não sabe tratar", nada muda.
+1. **Antes:** `snap`; copiar `/var/lib/docker/volumes/portainer_data/_data/compose/<id>/docker-compose.yml`.
+2. **Chave desligada (padrão):** esperar 6 min; o arquivo NÃO muda; o botão manual funciona.
+3. **Chave `canario`** com o fingerprint da VPS (`SETUP_SINCRONIZAR_STACK_CANARIO`) no Console: depois de
+   até 10 min (cache da flag) + 2 min (tick), o arquivo passa a ter as imagens com digest; `snap` igual (mesmas tasks).
+4. **Idempotência:** nada de novo no arquivo; auditoria `stack.sincronizar` (Logs do painel) só 1 vez.
+5. **O que a correção existe para resolver:** atualizar pelo botão do EnchaT; esperar a sincronização;
+   Portainer → Update the stack com Re-pull LIGADO. Versão e edição continuam; `snap` sem tasks novas.
+6. **Portão:** durante uma atualização do EnchaT (sidecar ocupado) o auto não grava ("aguardando"). Com
+   `estado.json` apontando versão diferente da que roda (ex.: depois de um Update the stack antigo), a tela
+   mostra o aviso e o botão fica desabilitado.
+7. **Edição regredida** (CRM/Tráfego voltou a Grátis): tela avisa para falar com o suporte, sem clicar Atualizar.
+8. **Reset de senha:** botão manual → arquivo ganha `ENCHAT_ADMIN_*` vazias; no Portainer preencher, Update
+   the stack (Re-pull desligado ou ligado), entrar, esvaziar.
+9. **Backoff:** forçar falha (ex.: `chattr +i` no arquivo): 3 falhas desligam o auto nesta instalação
+   (`stack_sync.auto_disabled_reason`); o botão manual continua.
