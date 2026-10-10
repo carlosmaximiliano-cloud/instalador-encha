@@ -21,5 +21,13 @@ export async function register() {
     } catch (e) {
       console.error("[guard] instrumentation: falha ao inicializar a garantia periódica do encha-guard:", e);
     }
+    // Sincronização automática do arquivo da stack enchat (chave remota no
+    // Console). try/catch próprio: uma falha aqui nunca derruba o guard.
+    try {
+      const { inicializarSincronizacaoStack } = await import("@/lib/sync-runtime");
+      inicializarSincronizacaoStack();
+    } catch (e) {
+      console.error("[sync-stack] instrumentation: falha ao inicializar a sincronização automática:", e);
+    }
   }
 }

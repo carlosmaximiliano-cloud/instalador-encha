@@ -97,6 +97,9 @@ export type Stack = {
   Status: number;
   CreationDate: number;
   Env?: StackEnvVar[];
+  // Onde o Portainer guarda o arquivo da stack (dentro do contêiner dele).
+  ProjectPath?: string;
+  EntryPoint?: string;
 };
 
 export async function authenticate(username: string, password: string): Promise<string> {
@@ -353,6 +356,10 @@ export type DockerServiceFull = {
     };
     [k: string]: unknown;
   };
+  // Estado do último update do serviço (ausente se nunca houve). Um update
+  // start-first em curso mostra "updating"; "rollback_started" etc. também
+  // não são estados assentados.
+  UpdateStatus?: { State?: string };
   // Spec anterior ao último update — o Swarm volta para ele num rollback
   // automático (failure_action=rollback). Só o que os helpers de segredo
   // leem está tipado.
@@ -555,6 +562,20 @@ export async function ensureSwarmVolume(
   } catch (e) {
     // 409 = volume já existe, ok
     if (!(e instanceof PortainerError) || e.status !== 409) throw e;
+  }
+}
+
+// Ponto de montagem (no host) de um volume nomeado — `docker volume inspect`.
+export async function getVolumeMountpoint(token: string, endpointId: number, name: string): Promise<string | null> {
+  try {
+    const v = await call<{ Mountpoint?: string }>(
+      `/api/endpoints/${endpointId}/docker/volumes/${encodeURIComponent(name)}`,
+      { token }
+    );
+    return v.Mountpoint ?? null;
+  } catch (e) {
+    if (e instanceof PortainerError && e.status === 404) return null;
+    throw e;
   }
 }
 
@@ -1184,6 +1205,8 @@ export type SwarmTask = {
   ServiceID: string;
   NodeID?: string;
   DesiredState?: string;
+  // Imagem do template da task (a que ela realmente roda).
+  Spec?: { ContainerSpec?: { Image?: string } };
   Status?: {
     State?: string;
     Err?: string;

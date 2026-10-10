@@ -13,6 +13,7 @@ import {
 import { useDict } from "@/lib/i18n/use-dict";
 import { useLocale } from "./locale-provider";
 import { stackCardText } from "./stack-card.i18n";
+import { FixarVersoesButton } from "./fixar-versoes-button";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   shield: Shield,
@@ -201,6 +202,7 @@ export function StackCard({
             )}
           </Button>
         )}
+        {stack.id === "enchat" && stack.installed && stack.ready && <FixarVersoesButton stackId={stack.id} />}
         {updateError && (
           <div className="rounded-md bg-destructive-soft text-destructive px-3 py-2 text-xs w-full text-center">
             {updateError}

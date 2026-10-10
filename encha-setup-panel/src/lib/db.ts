@@ -12,6 +12,9 @@ export function getDb(): Database.Database {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
+  // Dois processos do painel coexistem durante a autoatualização dele
+  // (start-first); sem espera, o segundo recebe SQLITE_BUSY na hora.
+  db.pragma("busy_timeout = 3000");
   db.pragma("foreign_keys = ON");
   initSchema(db);
   return db;
@@ -132,6 +135,22 @@ function initSchema(d: Database.Database) {
       scope TEXT NOT NULL,
       acesso_token_encrypted TEXT NOT NULL,
       created_at INTEGER NOT NULL
+    );
+
+    -- Sincronização do arquivo da stack com o que está rodando (ver
+    -- sincronizar-stack.ts): lease entre processos, tentativas/backoff,
+    -- último resultado e o "high-water mark" das últimas referências fixadas.
+    CREATE TABLE IF NOT EXISTS stack_sync (
+      stack_id TEXT PRIMARY KEY,
+      lease_owner TEXT,
+      lease_until INTEGER NOT NULL DEFAULT 0,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at INTEGER NOT NULL DEFAULT 0,
+      auto_disabled_reason TEXT,
+      last_result TEXT,
+      last_detail TEXT,
+      last_at INTEGER,
+      high_water TEXT
     );
   `);
 }
