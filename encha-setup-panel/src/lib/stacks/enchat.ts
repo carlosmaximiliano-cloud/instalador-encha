@@ -34,7 +34,7 @@ function pinfyRepoFrom(imageRepo: string): string {
 // SEPARADO do da edição MAX — de propósito, é o que permite a credencial de
 // pull entregue por registryAuth.exchangeUrl alcançar só as imagens do
 // Grátis, nunca a MAX.
-const CONSOLE_BASE_URL = "https://console.enchat.pro";
+export const CONSOLE_BASE_URL = "https://console.enchat.pro";
 
 // COMPATIBILIDADE (temporário). O Pinfy virou nativo do EnchaT e a imagem
 // nova IGNORA esta URL — mas enquanto a tag publicada como `:stable` for a

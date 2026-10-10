@@ -21,11 +21,9 @@ import {
   listServiceTasks,
   listStacks,
   PortainerError,
-  updateSwarmStack,
   type DockerServiceFull,
   type Stack,
 } from "./portainer";
-import { logAudit } from "./audit";
 import { semverMaiorOuIgual } from "./semver";
 
 export const STACK_ENCHAT = "enchat";
@@ -44,6 +42,8 @@ export type CodigoErroFixacao =
   | "stack_externa"
   | "compose_inesperado"
   | "mudou_durante"
+  | "estado_diverge"
+  | "gravacao_falhou"
   | "em_andamento";
 
 export class FixarVersoesError extends Error {
@@ -152,8 +152,10 @@ function limitesDoServico(linhas: string[], nome: string): { ini: number; fim: n
 
 export function aplicarPatchCompose(
   composeAtual: string,
-  alvo: Pick<AlvoImagens, "app" | "pinfy" | "updater">
+  alvo: Pick<AlvoImagens, "app" | "pinfy" | "updater">,
+  opts: { inserirAdmin?: boolean } = {}
 ): ResultadoPatch {
+  const inserirAdmin = opts.inserirAdmin ?? true;
   if (composeAtual.includes("\r")) throw new FixarVersoesError("compose_inesperado", "CRLF");
   const linhas = composeAtual.split("\n");
   const mudancas: Mudanca[] = [];
@@ -178,7 +180,7 @@ export function aplicarPatchCompose(
 
   // ENCHAT_ADMIN_*: só se faltarem, logo abaixo de `environment:` do app.
   const varsAdmin: string[] = [];
-  {
+  if (inserirAdmin) {
     const { ini, fim } = limitesDoServico(linhas, "enchat_app");
     const envIdx = linhas.findIndex((l, i) => i > ini && i < fim && /^ {4}environment:\s*$/.test(l));
     if (envIdx === -1) throw new FixarVersoesError("compose_inesperado", "enchat_app: environment");
@@ -225,10 +227,10 @@ export type Previa = {
   versaoSidecar: string;
 };
 
-type Alvos = "app" | "pinfy" | "updater";
-type Foto = Record<Alvos, { indice: number; imagem: string }>;
+export type Alvos = "app" | "pinfy" | "updater";
+export type Foto = Record<Alvos, { indice: number; imagem: string }>;
 
-type Leitura = {
+export type Leitura = {
   endpointId: number;
   stack: Stack;
   composeAtual: string;
@@ -243,7 +245,7 @@ const ESTADOS_ASSENTADOS = new Set(["completed", "rollback_completed"]);
 // curso (`UpdateStatus` ausente ou terminal) e a task desejada rodando
 // exatamente a imagem do spec. `running >= desired` NÃO basta: num update
 // start-first há duas tasks rodando no meio da troca.
-async function lerServicosAssentados(token: string, endpointId: number): Promise<Foto> {
+export async function lerServicosAssentados(token: string, endpointId: number): Promise<Foto> {
   const foto = {} as Foto;
   const servicos: [Alvos, string][] = [
     ["app", SVC_APP],
@@ -266,7 +268,7 @@ async function lerServicosAssentados(token: string, endpointId: number): Promise
   return foto;
 }
 
-async function ler(token: string): Promise<Leitura> {
+export async function ler(token: string, opts: { inserirAdmin?: boolean } = {}): Promise<Leitura> {
   const { endpointId } = await discoverContext(token);
   const foto = await lerServicosAssentados(token, endpointId);
   // A referência EXATA (com digest) do spec em execução: com ela no compose o
@@ -283,10 +285,10 @@ async function ler(token: string): Promise<Leitura> {
     if (e instanceof PortainerError && e.status === 404) throw new FixarVersoesError("stack_externa");
     throw e;
   }
-  return { endpointId, stack, composeAtual, alvo, patch: aplicarPatchCompose(composeAtual, alvo), foto };
+  return { endpointId, stack, composeAtual, alvo, patch: aplicarPatchCompose(composeAtual, alvo, opts), foto };
 }
 
-function paraPrevia(alvo: AlvoImagens, patch: ResultadoPatch): Previa {
+export function paraPrevia(alvo: AlvoImagens, patch: ResultadoPatch): Previa {
   return {
     edicao: alvo.edicao,
     versao: alvo.tag,
@@ -302,66 +304,4 @@ function paraPrevia(alvo: AlvoImagens, patch: ResultadoPatch): Previa {
 export async function preverFixacao(token: string): Promise<Previa> {
   const { alvo, patch } = await ler(token);
   return paraPrevia(alvo, patch);
-}
-
-const emAndamento = new Set<string>();
-
-export type ResultadoFixacao = Previa & { aplicada: boolean };
-
-export async function aplicarFixacao(input: { token: string; user: string; ip: string }): Promise<ResultadoFixacao> {
-  const { token, user, ip } = input;
-  if (emAndamento.has(STACK_ENCHAT)) throw new FixarVersoesError("em_andamento");
-  emAndamento.add(STACK_ENCHAT);
-  try {
-    const { endpointId, stack, alvo, patch, foto } = await ler(token);
-    const previa = paraPrevia(alvo, patch);
-    if (patch.nadaAFazer) return { ...previa, aplicada: false };
-
-    // Reconfere logo antes do PUT: se qualquer serviço mudou (imagem ou
-    // Version.Index — atualização de um clique, autoatualização do sidecar,
-    // rollback), aborta sem tocar em nada.
-    const depois = await lerServicosAssentados(token, endpointId);
-    for (const k of ["app", "pinfy", "updater"] as const) {
-      if (depois[k].imagem !== foto[k].imagem || depois[k].indice !== foto[k].indice) {
-        throw new FixarVersoesError("mudou_durante");
-      }
-    }
-
-    // O PUT substitui o Env inteiro: reenvia o que a stack já tem. Sem pull e
-    // sem credencial: o compose fixa o digest que já roda, então nada é puxado.
-    await updateSwarmStack(token, stack.Id, endpointId, {
-      stackFileContent: patch.compose,
-      env: stack.Env ?? [],
-      prune: false,
-      pullImage: false,
-    });
-
-    logAudit({
-      user,
-      ip,
-      action: "stack.fixar",
-      target: STACK_ENCHAT,
-      result: "ok",
-      meta: {
-        versao: alvo.tag,
-        edicao: alvo.edicao,
-        mudancas: patch.mudancas.map((m) => `${m.servico}: ${m.de} → ${m.para}`),
-        varsAdmin: patch.varsAdmin,
-        protegida: previa.protegida,
-      },
-    });
-    return { ...previa, aplicada: true };
-  } catch (e) {
-    logAudit({
-      user,
-      ip,
-      action: "stack.fixar.fail",
-      target: STACK_ENCHAT,
-      result: "error",
-      meta: { error: e instanceof FixarVersoesError ? e.codigo : e instanceof Error ? e.message : "erro" },
-    });
-    throw e;
-  } finally {
-    emAndamento.delete(STACK_ENCHAT);
-  }
 }

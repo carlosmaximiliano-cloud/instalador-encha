@@ -97,6 +97,9 @@ export type Stack = {
   Status: number;
   CreationDate: number;
   Env?: StackEnvVar[];
+  // Onde o Portainer guarda o arquivo da stack (dentro do contêiner dele).
+  ProjectPath?: string;
+  EntryPoint?: string;
 };
 
 export async function authenticate(username: string, password: string): Promise<string> {
@@ -559,6 +562,20 @@ export async function ensureSwarmVolume(
   } catch (e) {
     // 409 = volume já existe, ok
     if (!(e instanceof PortainerError) || e.status !== 409) throw e;
+  }
+}
+
+// Ponto de montagem (no host) de um volume nomeado — `docker volume inspect`.
+export async function getVolumeMountpoint(token: string, endpointId: number, name: string): Promise<string | null> {
+  try {
+    const v = await call<{ Mountpoint?: string }>(
+      `/api/endpoints/${endpointId}/docker/volumes/${encodeURIComponent(name)}`,
+      { token }
+    );
+    return v.Mountpoint ?? null;
+  } catch (e) {
+    if (e instanceof PortainerError && e.status === 404) return null;
+    throw e;
   }
 }
 

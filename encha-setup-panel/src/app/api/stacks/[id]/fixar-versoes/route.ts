@@ -4,7 +4,9 @@ import { verifyCsrf, verifyOrigin, getClientIp } from "@/lib/csrf";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { resolveLocale } from "@/lib/locale";
 import { apiError, unauthenticatedResponse } from "@/lib/api-error";
-import { aplicarFixacao, FixarVersoesError, preverFixacao, STACK_ENCHAT, type CodigoErroFixacao } from "@/lib/fixar-versoes";
+import { FixarVersoesError, preverFixacao, STACK_ENCHAT, type CodigoErroFixacao } from "@/lib/fixar-versoes";
+import { sincronizarStackEnchat } from "@/lib/sincronizar-stack";
+import { lerEstadoSync } from "@/lib/stack-sync-store";
 import type { Locale } from "@/lib/locale-shared";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -59,9 +61,19 @@ const ERROS = {
     es: "Una imagen cambió durante la operación (¿actualización en curso?). No se cambió nada; reintente en unos minutos.",
   },
   em_andamento: {
-    pt: "Já há uma fixação em andamento.",
-    en: "A pinning operation is already in progress.",
-    es: "Ya hay una fijación en curso.",
+    pt: "Já há uma sincronização em andamento.",
+    en: "A synchronization is already in progress.",
+    es: "Ya hay una sincronización en curso.",
+  },
+  estado_diverge: {
+    pt: "O atualizador do EnchaT aplicou uma versão diferente da que está rodando (por exemplo, depois de um \"Update the stack\" no Portainer). Atualize pelo botão dentro do EnchaT primeiro e tente de novo. Nada foi alterado.",
+    en: "The EnchaT updater applied a different version than the one running (for example, after \"Update the stack\" in Portainer). Update from the button inside EnchaT first and try again. Nothing was changed.",
+    es: "El actualizador de EnchaT aplicó una versión distinta a la que está corriendo (por ejemplo, tras \"Update the stack\" en Portainer). Actualice desde el botón dentro de EnchaT primero y reintente. No se cambió nada.",
+  },
+  gravacao_falhou: {
+    pt: "Não foi possível gravar o arquivo da stack com segurança. Nada foi alterado.",
+    en: "Could not safely write the stack file. Nothing was changed.",
+    es: "No se pudo escribir el archivo de la stack con seguridad. No se cambió nada.",
   },
   muitas_tentativas: { pt: "Muitas tentativas", en: "Too many attempts", es: "Demasiados intentos" },
 } satisfies Record<string, Record<Locale, string>>;
@@ -75,6 +87,8 @@ const STATUS: Record<CodigoErroFixacao, number> = {
   compose_inesperado: 422,
   mudou_durante: 409,
   em_andamento: 409,
+  estado_diverge: 409,
+  gravacao_falhou: 502,
 };
 
 function respostaErro(e: unknown, locale: Locale): NextResponse {
@@ -91,7 +105,13 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   if (id !== STACK_ENCHAT) return apiError(ERROS, "stack_desconhecida", locale, 404);
   try {
-    return NextResponse.json({ ok: true, previa: await preverFixacao(auth.token) });
+    const previa = await preverFixacao(auth.token);
+    const sync = lerEstadoSync(STACK_ENCHAT);
+    return NextResponse.json({
+      ok: true,
+      previa,
+      sync: { ultimoResultado: sync.lastResult, detalhe: sync.lastDetail, em: sync.lastAt, autoDesligada: sync.autoDisabledReason },
+    });
   } catch (e) {
     return respostaErro(e, locale);
   }
@@ -115,7 +135,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (corpo?.confirmar !== true) return apiError(ERROS, "confirmacao_ausente", locale, 400);
 
   try {
-    const resultado = await aplicarFixacao({ token: auth.token, user: auth.session.user, ip });
+    const resultado = await sincronizarStackEnchat({ token: auth.token, modo: "manual", user: auth.session.user, ip });
     return NextResponse.json({ ok: true, resultado });
   } catch (e) {
     return respostaErro(e, locale);

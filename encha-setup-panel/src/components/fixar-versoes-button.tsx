@@ -15,6 +15,7 @@ type Previa = {
   protegida: boolean;
   versaoSidecar: string;
 };
+type SyncInfo = { ultimoResultado: string | null; detalhe: string | null; em: number | null; autoDesligada: string | null };
 
 // Ação explícita, só na stack enchat: grava no compose guardado no Portainer
 // as imagens que estão rodando. Mostra a prévia e só aplica com confirmação.
@@ -23,6 +24,7 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
   const [aberto, setAberto] = useState(false);
   const [csrf, setCsrf] = useState("");
   const [previa, setPrevia] = useState<Previa | null>(null);
+  const [sync, setSync] = useState<SyncInfo | null>(null);
   const [erro, setErro] = useState("");
   const [aplicando, setAplicando] = useState(false);
   const [resultado, setResultado] = useState<"" | "ok" | "nada">("");
@@ -42,7 +44,10 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
         const j = await r.json().catch(() => null);
         if (cancelado) return;
         if (!r.ok) setErro(j?.message ?? t.genericError);
-        else setPrevia(j.previa);
+        else {
+          setPrevia(j.previa);
+          setSync(j.sync ?? null);
+        }
       })
       .catch(() => !cancelado && setErro(t.networkError));
     return () => {
@@ -118,6 +123,11 @@ export function FixarVersoesButton({ stackId }: { stackId: string }) {
                   <div className="text-xs opacity-80">{t.mayRestart}</div>
                 </>
               )}
+              {sync?.autoDesligada ? (
+                <div className="text-xs opacity-80">{t.syncAutoOff(sync.autoDesligada)}</div>
+              ) : sync?.ultimoResultado && sync.em ? (
+                <div className="text-xs opacity-80">{t.syncLast(sync.ultimoResultado, new Date(sync.em).toLocaleString())}</div>
+              ) : null}
               <div
                 className={
                   previa.protegida

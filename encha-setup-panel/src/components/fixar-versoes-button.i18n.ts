@@ -13,6 +13,8 @@ export type FixarVersoesText = {
   protectedOk: string;
   notProtected: (v: string) => string;
   mayRestart: string;
+  syncLast: (resultado: string, quando: string) => string;
+  syncAutoOff: (motivo: string) => string;
   cancel: string;
   confirm: string;
   applying: string;
@@ -27,8 +29,8 @@ const FULL_PT = "CRM/Tráfego";
 
 export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
   pt: {
-    btn: "Fixar versões da stack",
-    title: "Fixar a stack nas versões em execução",
+    btn: "Sincronizar versões da stack",
+    title: "Sincronizar a stack com as versões em execução",
     intro:
       "Grava no arquivo da stack (Portainer) as versões do EnchaT, do Pinfy e do atualizador que estão rodando agora. Assim, salvar a stack no Portainer (\"Update the stack\") não volta mais a versão nem a edição. Segredos e variáveis que você editou não são alterados.",
     loading: "Lendo a stack…",
@@ -40,9 +42,11 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     protectedOk: "O atualizador instalado já tem a proteção automática (0.4.7 ou superior).",
     notProtected: (v) =>
       `Atenção: o atualizador instalado (${v}) é anterior à 0.4.7 e ainda não repõe a versão sozinho. Fixar agora evita a regressão de hoje, mas depois da próxima atualização pelo botão do EnchaT será preciso rodar esta ação de novo.`,
-    mayRestart: "Os serviços podem reiniciar brevemente durante a aplicação.",
+    mayRestart: "Nenhum serviço é reiniciado: só o arquivo da stack no Portainer é atualizado.",
+    syncLast: (r, q) => `Última sincronização automática: ${r} (${q})`,
+    syncAutoOff: (m) => `A sincronização automática está desligada nesta instalação (${m}).`,
     cancel: "Cancelar",
-    confirm: "Fixar agora",
+    confirm: "Sincronizar agora",
     applying: "Aplicando…",
     done: "Pronto: a stack agora está fixada nas versões em execução.",
     doneNothing: "Nada foi alterado: já estava fixada.",
@@ -51,8 +55,8 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     genericError: "Não foi possível concluir. Nada foi alterado.",
   },
   en: {
-    btn: "Pin stack versions",
-    title: "Pin the stack to the running versions",
+    btn: "Sync stack versions",
+    title: "Sync the stack with the running versions",
     intro:
       "Writes the EnchaT, Pinfy and updater versions that are running right now into the stack file (Portainer). Afterwards, saving the stack in Portainer (\"Update the stack\") no longer rolls back the version or edition. Secrets and variables you edited are not changed.",
     loading: "Reading the stack…",
@@ -64,9 +68,11 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     protectedOk: "The installed updater already has the automatic protection (0.4.7 or later).",
     notProtected: (v) =>
       `Heads up: the installed updater (${v}) predates 0.4.7 and does not restore the version by itself yet. Pinning now prevents today's rollback, but after the next update from the EnchaT button you will need to run this action again.`,
-    mayRestart: "Services may restart briefly while this is applied.",
+    mayRestart: "No service is restarted: only the stack file in Portainer is updated.",
+    syncLast: (r, q) => `Last automatic sync: ${r} (${q})`,
+    syncAutoOff: (m) => `Automatic sync is turned off on this install (${m}).`,
     cancel: "Cancel",
-    confirm: "Pin now",
+    confirm: "Sync now",
     applying: "Applying…",
     done: "Done: the stack is now pinned to the running versions.",
     doneNothing: "Nothing changed: it was already pinned.",
@@ -75,8 +81,8 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     genericError: "Could not complete. Nothing was changed.",
   },
   es: {
-    btn: "Fijar versiones de la stack",
-    title: "Fijar la stack en las versiones en ejecución",
+    btn: "Sincronizar versiones de la stack",
+    title: "Sincronizar la stack con las versiones en ejecución",
     intro:
       "Escribe en el archivo de la stack (Portainer) las versiones de EnchaT, Pinfy y del actualizador que están corriendo ahora. Así, guardar la stack en Portainer (\"Update the stack\") ya no revierte la versión ni la edición. Los secretos y las variables que editó no se modifican.",
     loading: "Leyendo la stack…",
@@ -88,9 +94,11 @@ export const fixarVersoesText: Record<Locale, FixarVersoesText> = {
     protectedOk: "El actualizador instalado ya tiene la protección automática (0.4.7 o superior).",
     notProtected: (v) =>
       `Atención: el actualizador instalado (${v}) es anterior a 0.4.7 y aún no repone la versión por sí solo. Fijar ahora evita la regresión de hoy, pero tras la próxima actualización desde el botón de EnchaT habrá que ejecutar esta acción de nuevo.`,
-    mayRestart: "Los servicios pueden reiniciarse brevemente durante la aplicación.",
+    mayRestart: "No se reinicia ningún servicio: solo se actualiza el archivo de la stack en Portainer.",
+    syncLast: (r, q) => `Última sincronización automática: ${r} (${q})`,
+    syncAutoOff: (m) => `La sincronización automática está desactivada en esta instalación (${m}).`,
     cancel: "Cancelar",
-    confirm: "Fijar ahora",
+    confirm: "Sincronizar ahora",
     applying: "Aplicando…",
     done: "Listo: la stack ahora está fijada en las versiones en ejecución.",
     doneNothing: "No se cambió nada: ya estaba fijada.",

@@ -16,7 +16,7 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.DB_PATH;
   delete process.env.MASTER_KEY_PATH;
-  for (const m of ["@/lib/auth/require-token", "@/lib/csrf", "@/lib/fixar-versoes", "@/lib/locale"]) vi.doUnmock(m);
+  for (const m of ["@/lib/auth/require-token", "@/lib/csrf", "@/lib/fixar-versoes", "@/lib/sincronizar-stack", "@/lib/locale"]) vi.doUnmock(m);
 });
 
 function req(body?: unknown): NextRequest {
@@ -41,8 +41,9 @@ async function mocks(over: { origem?: boolean; csrf?: boolean; auth?: boolean } 
   const prever = vi.fn(async () => ({ nadaAFazer: false }));
   vi.doMock("@/lib/fixar-versoes", async () => {
     const real = await vi.importActual<typeof import("@/lib/fixar-versoes")>("@/lib/fixar-versoes");
-    return { ...real, aplicarFixacao: aplicar, preverFixacao: prever };
+    return { ...real, preverFixacao: prever };
   });
+  vi.doMock("@/lib/sincronizar-stack", () => ({ sincronizarStackEnchat: aplicar }));
   return { aplicar, prever };
 }
 
@@ -100,15 +101,12 @@ describe("POST /api/stacks/[id]/fixar-versoes", () => {
 
   it("erro de domínio vira o status e a mensagem traduzida", async () => {
     await mocks();
-    vi.doMock("@/lib/fixar-versoes", async () => {
-      const real = await vi.importActual<typeof import("@/lib/fixar-versoes")>("@/lib/fixar-versoes");
-      return {
-        ...real,
-        aplicarFixacao: vi.fn(async () => {
-          throw new real.FixarVersoesError("versoes_divergentes");
-        }),
-      };
-    });
+    const real = await vi.importActual<typeof import("@/lib/fixar-versoes")>("@/lib/fixar-versoes");
+    vi.doMock("@/lib/sincronizar-stack", () => ({
+      sincronizarStackEnchat: vi.fn(async () => {
+        throw new real.FixarVersoesError("versoes_divergentes");
+      }),
+    }));
     const { POST } = await import("./route");
     const res = await POST(req({ confirmar: true }), ctx());
     const j = await res.json();

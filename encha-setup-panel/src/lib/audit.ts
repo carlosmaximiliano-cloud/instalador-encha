@@ -19,6 +19,8 @@ export type AuditAction =
   | "stack.update.fail"
   | "stack.fixar"
   | "stack.fixar.fail"
+  | "stack.sincronizar"
+  | "stack.sincronizar.fail"
   | "terms.accept"
   | "banner.click"
   | "panel.update"
