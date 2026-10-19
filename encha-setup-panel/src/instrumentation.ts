@@ -29,5 +29,14 @@ export async function register() {
     } catch (e) {
       console.error("[sync-stack] instrumentation: falha ao inicializar a sincronização automática:", e);
     }
+    // Reconciliador da restart_policy das stacks instaladas (DESLIGADO por padrão:
+    // só age com a chave remota `reconciliar_restart` do Console). try/catch
+    // próprio, import dinâmico pelo mesmo motivo do guard.
+    try {
+      const { inicializarReconciliadorRestart } = await import("@/lib/restart-policy-runtime");
+      inicializarReconciliadorRestart();
+    } catch (e) {
+      console.error("[restart-policy] instrumentation: falha ao inicializar o reconciliador da restart_policy:", e);
+    }
   }
 }

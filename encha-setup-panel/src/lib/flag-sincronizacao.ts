@@ -7,14 +7,19 @@ import { CONSOLE_BASE_URL } from "./stacks/enchat";
 //
 // Resposta esperada de GET {CONSOLE}/api/v1/setup/flags?fp=<fingerprint>:
 //   { "sincronizar_stack_enchat": "desligado" | "canario" | "ligado",
+//     "reconciliar_restart": "desligado" | "ligado",   // aditiva: reconciliador da restart_policy
 //     "canario"?: string[] }   // fingerprints liberados quando "canario"
+// Cada chave é independente e a regra é a mesma para todas: só um valor
+// explícito liga; chave ausente (Console antigo) = desligado.
 
 export type EstadoFlag = "desligado" | "canario" | "ligado";
 
-export function decidirFlag(corpo: unknown, fingerprint: string | null): boolean {
+export type ChaveFlag = "sincronizar_stack_enchat" | "reconciliar_restart";
+
+export function decidirFlag(corpo: unknown, fingerprint: string | null, chave: ChaveFlag = "sincronizar_stack_enchat"): boolean {
   if (!corpo || typeof corpo !== "object") return false;
   const o = corpo as Record<string, unknown>;
-  const v = o.sincronizar_stack_enchat;
+  const v = o[chave];
   if (v === "ligado") return true;
   if (v === "canario") {
     if (!fingerprint || !Array.isArray(o.canario)) return false;
@@ -23,37 +28,56 @@ export function decidirFlag(corpo: unknown, fingerprint: string | null): boolean
   return false;
 }
 
-function fingerprintLocal(): string | null {
+function fingerprintLocal(stackIds: readonly string[]): string | null {
   try {
-    const r = getDb().prepare("SELECT fingerprint FROM stack_machine_ids WHERE stack_id = 'enchat'").get() as
-      | { fingerprint: string }
-      | undefined;
-    return r?.fingerprint ?? null;
+    for (const id of stackIds) {
+      const r = getDb().prepare("SELECT fingerprint FROM stack_machine_ids WHERE stack_id = ?").get(id) as
+        | { fingerprint: string }
+        | undefined;
+      if (r?.fingerprint) return r.fingerprint;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-let cache: { em: number; valor: boolean } | null = null;
+const cache = new Map<ChaveFlag, { em: number; valor: boolean }>();
 const CACHE_MS = 10 * 60_000;
 
 export function limparCacheFlag(): void {
-  cache = null;
+  cache.clear();
+}
+
+async function consultarFlag(chave: ChaveFlag, stackIds: readonly string[], agora: number, fetchImpl: typeof fetch): Promise<boolean> {
+  const c = cache.get(chave);
+  if (c && agora - c.em < CACHE_MS) return c.valor;
+  let valor = false;
+  try {
+    const fp = fingerprintLocal(stackIds);
+    const url = `${CONSOLE_BASE_URL}/api/v1/setup/flags${fp ? `?fp=${encodeURIComponent(fp)}` : ""}`;
+    const res = await fetchImpl(url, { signal: AbortSignal.timeout(4000), headers: { accept: "application/json" }, cache: "no-store" });
+    if (res.ok) valor = decidirFlag(await res.json(), fp, chave);
+  } catch {
+    valor = false;
+  }
+  cache.set(chave, { em: agora, valor });
+  return valor;
 }
 
 export async function sincronizacaoAutomaticaLigada(agora = Date.now(), fetchImpl: typeof fetch = fetch): Promise<boolean> {
   // Kill switch local (variável de ambiente da stack do painel).
   if (process.env.ENCHA_SYNC_STACK?.trim().toLowerCase() === "off") return false;
-  if (cache && agora - cache.em < CACHE_MS) return cache.valor;
-  let valor = false;
-  try {
-    const fp = fingerprintLocal();
-    const url = `${CONSOLE_BASE_URL}/api/v1/setup/flags${fp ? `?fp=${encodeURIComponent(fp)}` : ""}`;
-    const res = await fetchImpl(url, { signal: AbortSignal.timeout(4000), headers: { accept: "application/json" }, cache: "no-store" });
-    if (res.ok) valor = decidirFlag(await res.json(), fp);
-  } catch {
-    valor = false;
-  }
-  cache = { em: agora, valor };
-  return valor;
+  return consultarFlag("sincronizar_stack_enchat", ["enchat"], agora, fetchImpl);
+}
+
+/**
+ * Reconciliador da restart_policy (restart-policy-runtime.ts). DESLIGADO por
+ * padrão: só liga com `reconciliar_restart` explícito do Console. A variável
+ * local ENCHA_RECONCILIAR_RESTART=off vence o Console. O fingerprint é o do
+ * enchat ou, numa instalação só com o Tracker, o dele.
+ */
+export async function reconciliacaoRestartLigada(agora = Date.now(), fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  if (process.env.ENCHA_RECONCILIAR_RESTART?.trim().toLowerCase() === "off") return false;
+  return consultarFlag("reconciliar_restart", ["enchat", "encha-tracker"], agora, fetchImpl);
 }

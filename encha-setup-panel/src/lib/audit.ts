@@ -21,6 +21,10 @@ export type AuditAction =
   | "stack.fixar.fail"
   | "stack.sincronizar"
   | "stack.sincronizar.fail"
+  // Reconciliador da restart_policy (restart-policy-runtime.ts): serviço, de→para,
+  // etapa (arquivo/servico/pulo) e motivo. Nunca segredo.
+  | "stack.restart_policy"
+  | "stack.restart_policy.fail"
   | "terms.accept"
   | "banner.click"
   | "panel.update"

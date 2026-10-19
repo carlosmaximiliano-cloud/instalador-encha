@@ -8,6 +8,14 @@ import {
   updateSwarmStack,
   PortainerError,
 } from "./portainer";
+import {
+  aplicarPatchRestartCompose,
+  politicaConforme,
+  politicaDesejada,
+  politicaDoServico,
+  STACK_RESTART_PAINEL,
+} from "./restart-policy";
+import { reconciliacaoRestartLigada } from "./flag-sincronizacao";
 
 // Nome do service Swarm do próprio painel (stack `encha-panel`, service `panel`).
 const PANEL_STACK = "encha-panel";
@@ -15,6 +23,30 @@ const PANEL_SERVICE = "encha-panel_panel";
 const IMAGE_REPO = "ghcr.io/enchaaluno/setup-panel";
 
 export type UpdateResult = { ok: true } | { ok: false; error: string };
+
+// restart_policy do PRÓPRIO painel (incidente de 16/10/2026: on-failure + max_attempts
+// deixavam o serviço morto depois de um reboot). O painel nunca se reinicia sozinho
+// por causa disso — derrubaria uma instalação de cliente em andamento —, então a
+// correção entra aqui, na autoatualização, que já troca o serviço de qualquer jeito.
+// Fail-safe: qualquer dúvida deixa o compose/spec como está; nunca bloqueia o update.
+// Mesma chave do reconciliador: só com `reconciliar_restart` explícito do Console
+// (ausente, Console fora ou erro = desligado) e sem ENCHA_RECONCILIAR_RESTART=off.
+async function restartLigado(): Promise<boolean> {
+  try {
+    return await reconciliacaoRestartLigada();
+  } catch {
+    return false;
+  }
+}
+
+function comRestartPolicyDoPainel(compose: string, ligado: boolean): string {
+  if (!ligado) return compose;
+  try {
+    return aplicarPatchRestartCompose(compose, STACK_RESTART_PAINEL).compose;
+  } catch {
+    return compose;
+  }
+}
 
 // Dispara o redeploy do painel para a versão alvo, via Portainer.
 //
@@ -33,9 +65,10 @@ export async function triggerSelfUpdate(
     const { endpointId } = await discoverContext(token);
     const stacks = await listStacks(token);
     const stack = stacks.find((s) => s.Name === PANEL_STACK);
+    const restart = await restartLigado();
 
     if (stack) {
-      const updatedViaStack = await tryUpdateViaStack(token, stack.Id, endpointId, targetVersion);
+      const updatedViaStack = await tryUpdateViaStack(token, stack.Id, endpointId, targetVersion, restart);
       if (updatedViaStack) return { ok: true };
       // Sem arquivo armazenado (stack externa/legada) — cai no fallback abaixo.
     }
@@ -44,7 +77,9 @@ export async function triggerSelfUpdate(
     if (!service) {
       return { ok: false, error: `Service ${PANEL_SERVICE} não encontrado no Swarm` };
     }
-    await updateServiceImage(token, endpointId, service, `${IMAGE_REPO}:${targetVersion}`);
+    const atual = politicaDoServico(service);
+    const politica = restart && !politicaConforme(atual) ? politicaDesejada(atual) : undefined;
+    await updateServiceImage(token, endpointId, service, `${IMAGE_REPO}:${targetVersion}`, politica);
     return { ok: true };
   } catch (e) {
     const msg =
@@ -61,7 +96,8 @@ async function tryUpdateViaStack(
   token: string,
   stackId: number,
   endpointId: number,
-  targetVersion: string
+  targetVersion: string,
+  restart: boolean
 ): Promise<boolean> {
   let fileContent: string;
   try {
@@ -80,7 +116,7 @@ async function tryUpdateViaStack(
     : [...env, { name: "PANEL_IMAGE_TAG", value: targetVersion }];
 
   await updateSwarmStack(token, stackId, endpointId, {
-    stackFileContent: fileContent,
+    stackFileContent: comRestartPolicyDoPainel(fileContent, restart),
     env: patchedEnv,
     prune: false,
     pullImage: true,

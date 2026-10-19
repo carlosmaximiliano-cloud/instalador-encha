@@ -526,20 +526,49 @@ export async function updateService(
 }
 
 // Atualiza a imagem de um service preservando o restante do Spec (rolling update no Swarm).
+// `politicaRestart` (opcional): aproveita o MESMO update para também trocar a
+// RestartPolicy (usado só pelo fallback de autoatualização do painel — ver updater.ts).
 export async function updateServiceImage(
   token: string,
   endpointId: number,
   service: DockerServiceFull,
-  newImage: string
+  newImage: string,
+  politicaRestart?: ServiceRestartPolicy
 ): Promise<void> {
   const spec = {
     ...service.Spec,
     TaskTemplate: {
       ...service.Spec.TaskTemplate,
+      ...(politicaRestart ? { RestartPolicy: politicaRestart } : {}),
       ContainerSpec: {
         ...service.Spec.TaskTemplate?.ContainerSpec,
         Image: newImage,
       },
+    },
+  };
+  await call(
+    `/api/endpoints/${endpointId}/docker/services/${service.ID}/update?version=${service.Version.Index}`,
+    { method: "POST", token, body: spec }
+  );
+}
+
+// Troca SÓ a RestartPolicy de um service, preservando o resto do Spec (mesmo
+// molde de updateServiceImage: spread do Spec completo, `version` = o
+// Version.Index lido do serviço antes da chamada, SEM ForceUpdate — o
+// ForceUpdate do template segue como está). Atenção: a RestartPolicy faz parte
+// do TaskTemplate, então o Swarm substitui as tasks (um banco reinicia). Quem
+// chama (restart-policy-runtime.ts) só faz isso na janela de manutenção.
+export async function updateServiceRestartPolicy(
+  token: string,
+  endpointId: number,
+  service: DockerServiceFull,
+  politica: ServiceRestartPolicy
+): Promise<void> {
+  const spec = {
+    ...service.Spec,
+    TaskTemplate: {
+      ...service.Spec.TaskTemplate,
+      RestartPolicy: politica,
     },
   };
   await call(
@@ -1205,8 +1234,8 @@ export type SwarmTask = {
   ServiceID: string;
   NodeID?: string;
   DesiredState?: string;
-  // Imagem do template da task (a que ela realmente roda).
-  Spec?: { ContainerSpec?: { Image?: string } };
+  // Imagem e política de restart do template da task (as que ela realmente roda).
+  Spec?: { ContainerSpec?: { Image?: string }; RestartPolicy?: ServiceRestartPolicy };
   Status?: {
     State?: string;
     Err?: string;

@@ -10,6 +10,7 @@ beforeEach(() => {
   process.env.DB_PATH = path.join(tmp, "panel.db");
   process.env.MASTER_KEY_PATH = path.join(tmp, "master.key");
   delete process.env.ENCHA_SYNC_STACK;
+  delete process.env.ENCHA_RECONCILIAR_RESTART;
 });
 afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -63,5 +64,51 @@ describe("sincronizacaoAutomaticaLigada", () => {
     expect(f).toHaveBeenCalledOnce();
     await sincronizacaoAutomaticaLigada(11 * 60_000, f as unknown as typeof fetch);
     expect(f).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("decidirFlag — chave reconciliar_restart (independente da outra)", () => {
+  it.each([
+    ["ligado", { reconciliar_restart: "ligado" }, null, true],
+    ["desligado", { reconciliar_restart: "desligado" }, "fp1", false],
+    ["ausente (Console antigo) = desligado, mesmo com a outra ligada", { sincronizar_stack_enchat: "ligado" }, "fp1", false],
+    ["canário na lista", { reconciliar_restart: "canario", canario: ["fp1"] }, "fp1", true],
+    ["valor desconhecido", { reconciliar_restart: "sim" }, "fp1", false],
+  ])("%s", async (_n, corpo, fp, esperado) => {
+    const { decidirFlag } = await import("./flag-sincronizacao");
+    expect(decidirFlag(corpo, fp, "reconciliar_restart")).toBe(esperado);
+  });
+
+  it("a chave nova não liga a antiga", async () => {
+    const { decidirFlag } = await import("./flag-sincronizacao");
+    expect(decidirFlag({ reconciliar_restart: "ligado" }, "fp1")).toBe(false);
+  });
+});
+
+describe("reconciliacaoRestartLigada", () => {
+  it("liga só com reconciliar_restart explícito", async () => {
+    const { reconciliacaoRestartLigada } = await import("./flag-sincronizacao");
+    expect(await reconciliacaoRestartLigada(1, resp({ reconciliar_restart: "ligado" }))).toBe(true);
+  });
+  it("desligada por padrão: chave ausente, erro HTTP ou rede caída", async () => {
+    const { reconciliacaoRestartLigada, limparCacheFlag } = await import("./flag-sincronizacao");
+    expect(await reconciliacaoRestartLigada(1, resp({ sincronizar_stack_enchat: "ligado" }))).toBe(false);
+    limparCacheFlag();
+    expect(await reconciliacaoRestartLigada(1, resp({ reconciliar_restart: "ligado" }, false))).toBe(false);
+    limparCacheFlag();
+    expect(await reconciliacaoRestartLigada(1, (async () => { throw new Error("rede"); }) as unknown as typeof fetch)).toBe(false);
+  });
+  it("kill switch local vence o Console e nem o consulta", async () => {
+    process.env.ENCHA_RECONCILIAR_RESTART = "off";
+    const { reconciliacaoRestartLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp({ reconciliar_restart: "ligado" }));
+    expect(await reconciliacaoRestartLigada(1, f as unknown as typeof fetch)).toBe(false);
+    expect(f).not.toHaveBeenCalled();
+  });
+  it("cada chave tem o seu cache: ligar uma não herda a resposta da outra", async () => {
+    const { reconciliacaoRestartLigada, sincronizacaoAutomaticaLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp({ sincronizar_stack_enchat: "ligado", reconciliar_restart: "desligado" }));
+    expect(await sincronizacaoAutomaticaLigada(0, f as unknown as typeof fetch)).toBe(true);
+    expect(await reconciliacaoRestartLigada(1, f as unknown as typeof fetch)).toBe(false);
   });
 });

@@ -17,6 +17,7 @@ afterEach(() => {
   if (NEXT_RUNTIME_ORIGINAL === undefined) delete process.env.NEXT_RUNTIME;
   else process.env.NEXT_RUNTIME = NEXT_RUNTIME_ORIGINAL;
   vi.doUnmock("@/lib/guard-runtime");
+  vi.doUnmock("@/lib/restart-policy-runtime");
 });
 
 describe("register (instrumentation.ts)", () => {
@@ -66,5 +67,34 @@ describe("register (instrumentation.ts)", () => {
 
     await expect(register()).resolves.toBeUndefined();
     expect(erroMock).toHaveBeenCalled();
+  });
+
+  it("nodejs -> também inicializa o reconciliador da restart_policy, e o erro dele nunca escapa", async () => {
+    process.env.NEXT_RUNTIME = "nodejs";
+    const erroMock = vi.spyOn(console, "error").mockImplementation(() => {});
+    const guardMock = vi.fn();
+    vi.doMock("@/lib/guard-runtime", () => ({ inicializarGarantiaGuardaSwarm: guardMock }));
+    vi.doMock("@/lib/restart-policy-runtime", () => ({
+      inicializarReconciliadorRestart: () => {
+        throw new Error("falha ao agendar");
+      },
+    }));
+
+    const { register } = await import("./instrumentation");
+
+    await expect(register()).resolves.toBeUndefined();
+    expect(guardMock).toHaveBeenCalledTimes(1); // uma falha aqui não derruba o guard
+    expect(erroMock.mock.calls.some((c) => String(c[0]).includes("[restart-policy]"))).toBe(true);
+  });
+
+  it("edge -> não importa o reconciliador", async () => {
+    process.env.NEXT_RUNTIME = "edge";
+    const inicializarMock = vi.fn();
+    vi.doMock("@/lib/restart-policy-runtime", () => ({ inicializarReconciliadorRestart: inicializarMock }));
+
+    const { register } = await import("./instrumentation");
+    await register();
+
+    expect(inicializarMock).not.toHaveBeenCalled();
   });
 });

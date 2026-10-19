@@ -24,6 +24,7 @@ import {
   type DockerServiceFull,
   type Stack,
 } from "./portainer";
+import { limitesDoServicoOuNull } from "./compose-servico";
 import { semverMaiorOuIgual } from "./semver";
 
 export const STACK_ENCHAT = "enchat";
@@ -61,7 +62,7 @@ export class FixarVersoesError extends Error {
 // Gramática fechada: só os repos que o EnchaT publica, por dono GHCR.
 // O digest (`@sha256:<64 hex>`) é opcional e, quando existe, é copiado como está:
 // a referência EXATA do spec em execução é o que torna o redeploy um no-op.
-const IMG = /^ghcr\.io\/(carlosmaximiliano-cloud|enchainterno)\/(enchat|enchat-free|pinfy|enchat-updater):(\d+\.\d+\.\d+|beta-[0-9a-f]{12})(@sha256:[0-9a-f]{64})?$/;
+export const IMG = /^ghcr\.io\/(carlosmaximiliano-cloud|enchainterno)\/(enchat|enchat-free|pinfy|enchat-updater):(\d+\.\d+\.\d+|beta-[0-9a-f]{12})(@sha256:[0-9a-f]{64})?$/;
 
 type ImagemLida = { dono: string; repo: string; tag: string; ref: string };
 
@@ -132,23 +133,12 @@ export type ResultadoPatch = {
   nadaAFazer: boolean;
 };
 
-const RE_SERVICO = /^ {2}([A-Za-z0-9_-]+):\s*$/;
 const RE_IMAGE = /^ {4}image:\s*["']?([^"'\s#]+)["']?\s*(#.*)?$/;
 
 function limitesDoServico(linhas: string[], nome: string): { ini: number; fim: number } {
-  const ini = linhas.findIndex((l) => {
-    const m = RE_SERVICO.exec(l);
-    return m !== null && m[1] === nome;
-  });
-  if (ini === -1) throw new FixarVersoesError("compose_inesperado", `serviço ${nome} ausente`);
-  let fim = linhas.length;
-  for (let i = ini + 1; i < linhas.length; i++) {
-    if (RE_SERVICO.test(linhas[i]) || /^\S/.test(linhas[i])) {
-      fim = i;
-      break;
-    }
-  }
-  return { ini, fim };
+  const l = limitesDoServicoOuNull(linhas, nome);
+  if (!l) throw new FixarVersoesError("compose_inesperado", `serviço ${nome} ausente`);
+  return l;
 }
 
 export function aplicarPatchCompose(
