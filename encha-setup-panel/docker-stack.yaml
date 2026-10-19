@@ -116,8 +116,7 @@ services:
       rollback_config:
         order: start-first
       restart_policy:
-        condition: on-failure
-        max_attempts: 5
+        condition: any
       resources:
         limits:
           cpus: "1"

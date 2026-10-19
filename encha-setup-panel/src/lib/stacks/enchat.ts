@@ -449,7 +449,7 @@ ${segApp}    deploy:
       # e derrubava a instalação de vez, sem auto-recuperação — achado em
       # teste de instalação ponta-a-ponta (2026-08-07).
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 5s
       placement:
         constraints:
@@ -510,7 +510,7 @@ ${env("UPDATER_TOKEN", "updater_token", "updater", secrets.updater_token)}
 ${segUpdater}    deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -536,7 +536,7 @@ ${env("SESSION_KEY", "pinfy_session_key", "pinfy", secrets.pinfy_session_key)}
 ${segPinfy}    deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -554,7 +554,7 @@ ${env("POSTGRES_PASSWORD", "postgres_password", "postgres", secrets.postgres_pas
 ${segPostgres}    deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager

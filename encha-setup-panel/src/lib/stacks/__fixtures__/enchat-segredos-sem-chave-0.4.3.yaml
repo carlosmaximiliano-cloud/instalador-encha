@@ -96,7 +96,7 @@ services:
       # e derrubava a instalação de vez, sem auto-recuperação — achado em
       # teste de instalação ponta-a-ponta (2026-08-07).
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 5s
       placement:
         constraints:
@@ -163,7 +163,7 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -210,7 +210,7 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -234,7 +234,7 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager

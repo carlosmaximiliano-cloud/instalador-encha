@@ -17298,9 +17298,8 @@ ${ENCHAT_YAML_SEG_APP}    deploy:
       update_config:
         order: start-first
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 5s
-        max_attempts: 5
       placement:
         constraints:
           - node.role == manager
@@ -17348,7 +17347,7 @@ ${ENCHAT_YAML_ENV_PINFY_SESSION}
 ${ENCHAT_YAML_SEG_PINFY}    deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -17366,7 +17365,7 @@ ${ENCHAT_YAML_ENV_POSTGRES_PASSWORD}
 ${ENCHAT_YAML_SEG_POSTGRES}    deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -28609,8 +28608,7 @@ services:
       rollback_config:
         order: start-first
       restart_policy:
-        condition: on-failure
-        max_attempts: 5
+        condition: any
       resources:
         limits:
           cpus: "1"

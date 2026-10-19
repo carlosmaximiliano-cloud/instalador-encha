@@ -306,7 +306,7 @@ ${segApp}    deploy:
       # pra subir o Postgres não pode esgotar tentativas e derrubar a
       # instalação de vez.
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 5s
       placement:
         constraints:
@@ -350,7 +350,7 @@ ${segApp}    deploy:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
@@ -368,7 +368,7 @@ ${segApp}    deploy:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       placement:
         constraints:
           - node.role == manager
