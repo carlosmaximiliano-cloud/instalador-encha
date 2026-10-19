@@ -413,3 +413,126 @@ describe("janela 02h–05h e portões", () => {
     expect(m.updateServiceRestartPolicy).not.toHaveBeenCalled();
   });
 });
+
+describe("lease renovado durante o passo ao vivo", () => {
+  const MIN = 60_000;
+  // Os ganchos só REGISTRAM o retorno de tentarLease; as asserções rodam depois do tick
+  // (um expect dentro do gancho viraria etapa "falhou" pelo catch externo).
+  const OUTRO_DONO_EM = NA_JANELA + 11 * MIN; // acima do prazo de um lease tomado em NA_JANELA
+  let retornos: boolean[];
+  let relogioMs: number;
+  const relogio = () => relogioMs;
+  const tomarComoSincronizador = async (t: number) => {
+    const { tentarLease } = await store();
+    retornos.push(tentarLease("enchat", "sincronizador", 10 * MIN, t));
+  };
+  const opLease = (extra: Record<string, unknown> = {}) => ({ ...op(), relogio, ...extra });
+  const tickEnchat = async (o: ReturnType<typeof opLease>) => {
+    const { reconciliarStack } = await runtime();
+    const { STACK_RESTART_ENCHAT } = await defs();
+    return reconciliarStack(STACK_RESTART_ENCHAT, o);
+  };
+  const perdeDepoisDoBanco = () => {
+    const base = m.updateServiceRestartPolicy.getMockImplementation()!;
+    m.updateServiceRestartPolicy.mockImplementation(async (...a: unknown[]) => {
+      await (base as (...x: unknown[]) => Promise<void>)(...a);
+      if ((a[2] as { ID: string }).ID === "enchat_enchat_postgres") await tomarComoSincronizador(OUTRO_DONO_EM);
+    });
+  };
+
+  beforeEach(() => {
+    retornos = [];
+    relogioMs = NA_JANELA;
+  });
+
+  it("lease perdido entre o banco e o app: nenhum dependente é tocado", async () => {
+    instalaEnchat();
+    perdeDepoisDoBanco();
+    const r = await tickEnchat(opLease());
+    expect(retornos).toEqual([true]);
+    expect(r).toMatchObject({ etapa: "lease_perdido", detalhe: "servico" });
+    expect(escritas()).toEqual(["arquivo:42", "svc:enchat_enchat_postgres"]);
+  });
+
+  it("lease perdido durante a espera de convergência: aborta como lease_perdido", async () => {
+    instalaEnchat();
+    cluster.enchat_enchat_postgres.naoConverge = true;
+    const r = await tickEnchat(
+      opLease({
+        esperar: async () => {
+          if (retornos.length === 0) await tomarComoSincronizador(OUTRO_DONO_EM);
+        },
+      })
+    );
+    expect(retornos).toEqual([true]);
+    expect(r).toMatchObject({ etapa: "lease_perdido", detalhe: "convergencia" });
+    expect(escritas()).toEqual(["arquivo:42", "svc:enchat_enchat_postgres"]);
+  });
+
+  it("lease perdido antes de gravar o arquivo: nada é escrito", async () => {
+    instalaEnchat();
+    m.estado.mockImplementation(async () => {
+      await tomarComoSincronizador(OUTRO_DONO_EM); // durante a leitura do sidecar
+      return { estado: { em_andamento: false } };
+    });
+    const r = await tickEnchat(opLease());
+    expect(retornos).toEqual([true]);
+    expect(r).toMatchObject({ etapa: "lease_perdido", detalhe: "arquivo" });
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(escritas()).toEqual([]);
+  });
+
+  it("lease perdido registra stack.restart_policy.fail com etapa lease_perdido", async () => {
+    instalaEnchat();
+    perdeDepoisDoBanco();
+    await tickEnchat(opLease());
+    const fail = m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.restart_policy.fail");
+    expect(fail).toHaveLength(1);
+    expect(fail[0]).toMatchObject({ result: "error", meta: { stack: "enchat", etapa: "lease_perdido", motivo: "servico" } });
+  });
+
+  it("lease perdido não conta falha: aguardando, sem backoff e sem desligar", async () => {
+    instalaEnchat();
+    perdeDepoisDoBanco();
+    await tickEnchat(opLease());
+    const { lerEstadoSync, podeTentarAuto } = await store();
+    const e = lerEstadoSync("restart:enchat");
+    expect(e).toMatchObject({ lastResult: "aguardando", lastDetail: "lease_perdido:servico", attempts: 0, nextAttemptAt: 0, autoDisabledReason: null });
+    expect(podeTentarAuto("restart:enchat", NA_JANELA).pode).toBe(true);
+    // O tick seguinte (outro agora, sem backoff) volta a tentar e conclui o que faltava.
+    const depois = NA_JANELA + 30 * MIN;
+    relogioMs = depois;
+    const r = await tickEnchat(opLease({ agora: depois }));
+    expect(r.etapa).toBe("aplicado");
+    expect(escritas()).toEqual([
+      "arquivo:42",
+      "svc:enchat_enchat_postgres",
+      "svc:enchat_enchat_app",
+      "svc:enchat_enchat_pinfy",
+      "svc:enchat_enchat_updater",
+    ]);
+  });
+
+  it("lease perdido: o finally não solta o lease do novo dono (o sincronizador segue dono)", async () => {
+    instalaEnchat();
+    perdeDepoisDoBanco();
+    await tickEnchat(opLease());
+    const { tentarLease } = await store();
+    // Um terceiro, ainda dentro do prazo do sincronizador (tomado em +11 min por 10 min), não consegue.
+    expect(tentarLease("enchat", "terceiro", 10 * MIN, NA_JANELA + 12 * MIN)).toBe(false);
+  });
+
+  it("o prazo do lease acompanha o relógio: outro dono não assume em 4 passos de 4 min", async () => {
+    instalaEnchat();
+    const base = m.updateServiceRestartPolicy.getMockImplementation()!;
+    m.updateServiceRestartPolicy.mockImplementation(async (...a: unknown[]) => {
+      await (base as (...x: unknown[]) => Promise<void>)(...a);
+      relogioMs += 4 * MIN; // 16 min no total: passa dos 10 min do TTL
+      await tomarComoSincronizador(relogioMs);
+    });
+    const r = await tickEnchat(opLease());
+    expect(retornos.some((x) => x)).toBe(false);
+    expect(retornos).toHaveLength(4);
+    expect(r.etapa).toBe("aplicado");
+  });
+});

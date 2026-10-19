@@ -46,6 +46,13 @@ import {
 //      3 min), depois os dependentes. Não convergiu = para e registra.
 // Arquivo ANTES do serviço: se o serviço falhar, "Update the stack" já traz a
 // política certa; o contrário deixaria o arquivo mandando de volta on-failure.
+//
+// Lease: tomado uma vez no início (agora do tick) e RENOVADO, com o relógio de
+// verdade, antes de gravar o arquivo, antes de cada serviço ao vivo e a cada
+// checagem de convergência que deu negativa. O passo ao vivo pode passar dos
+// 10 min do TTL; renovando, o prazo nunca vence com o processo vivo e vence em
+// até 10 min se ele morrer. Se a renovação falha (outro dono assumiu), o tick
+// aborta sem tocar nada depois, como "aguardando" (não conta falha nem backoff).
 
 const PRIMEIRA_TENTATIVA_MS = 3 * 60_000;
 const INTERVALO_MS = 30 * 60_000;
@@ -70,6 +77,7 @@ export type EtapaTick =
   | "fora_da_janela"
   | "aplicado"
   | "nao_convergiu"
+  | "lease_perdido"
   | "falhou";
 
 export type ResultadoTick = { stack: string; etapa: EtapaTick; detalhe?: string };
@@ -81,7 +89,16 @@ export type OpcoesReconciliar = {
   /** Para os testes: não esperar de verdade. */
   esperar?: (ms: number) => Promise<void>;
   convergenciaMs?: number;
+  /** Relógio da renovação do lease (padrão Date.now); o `agora` do tick segue governando janela e backoff. */
+  relogio?: () => number;
 };
+
+/** Interno: a renovação do lease falhou (outro dono assumiu). Sobe até o catch externo. */
+class LeasePerdido extends Error {
+  constructor(public ponto: "arquivo" | "servico" | "convergencia") {
+    super(`lease_perdido:${ponto}`);
+  }
+}
 
 const dormir = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
@@ -169,11 +186,18 @@ async function convergiu(token: string, endpointId: number, nome: string): Promi
   );
 }
 
-async function aguardarConvergencia(token: string, endpointId: number, nome: string, op: OpcoesReconciliar): Promise<boolean> {
+async function aguardarConvergencia(
+  token: string,
+  endpointId: number,
+  nome: string,
+  op: OpcoesReconciliar,
+  renovar: () => void
+): Promise<boolean> {
   const esperar = op.esperar ?? dormir;
   const tentativas = Math.max(1, Math.ceil((op.convergenciaMs ?? CONVERGENCIA_MS) / PASSO_ESPERA_MS));
   for (let i = 0; i < tentativas; i++) {
     if (await convergiu(token, endpointId, nome)) return true;
+    renovar();
     await esperar(PASSO_ESPERA_MS);
   }
   return convergiu(token, endpointId, nome);
@@ -186,6 +210,11 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
   const agora = op.agora ?? Date.now();
   const chave = `restart:${def.stack}`;
   const res = (etapa: EtapaTick, detalhe?: string): ResultadoTick => ({ stack: def.stack, etapa, detalhe });
+
+  const relogio = op.relogio ?? Date.now;
+  const renovarLease = (ponto: LeasePerdido["ponto"]): void => {
+    if (!tentarLease(def.leaseKey, DONO, LEASE_MS, relogio())) throw new LeasePerdido(ponto);
+  };
 
   if (!podeTentarAuto(chave, agora).pode) return res("backoff");
 
@@ -233,6 +262,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
 
       // 3) ARQUIVO primeiro.
       if (l.arquivo && precisaArquivo) {
+        renovarLease("arquivo");
         try {
           await gravarComposeEmDisco(token, endpointId, l.arquivo.stack, l.arquivo.composeAtual, l.arquivo.patch.compose, () =>
             getStackFile(token, l.arquivo!.stack.Id)
@@ -258,12 +288,13 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
         return res("fora_da_janela");
       }
       for (const p of ajustes) {
+        renovarLease("servico");
         // Banco primeiro (a ordem vem de def.servicos); relê o serviço para pegar o Version.Index atual.
         const svc = await getServiceExact(token, endpointId, p.servico.swarm);
         if (!svc || politicaConforme(politicaDoServico(svc))) continue;
         await updateServiceRestartPolicy(token, endpointId, svc, p.para);
         auditar(def, p.servico.swarm, "ok", { etapa: "servico", papel: p.servico.papel, de: descreverPolitica(p.de), para: descreverPolitica(p.para) });
-        if (!(await aguardarConvergencia(token, endpointId, p.servico.swarm, op))) {
+        if (!(await aguardarConvergencia(token, endpointId, p.servico.swarm, op, () => renovarLease("convergencia")))) {
           auditar(def, p.servico.swarm, "error", { etapa: "servico", motivo: "nao_convergiu" }, true);
           registrarResultado(chave, "falhou", `nao_convergiu:${p.servico.swarm}`, { agora });
           return res("nao_convergiu", p.servico.swarm);
@@ -276,6 +307,12 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
       liberarLease(def.leaseKey, DONO);
     }
   } catch (e) {
+    if (e instanceof LeasePerdido) {
+      // Perder o lease por causa de outro dono não é falha do reconciliador: aguardando, sem backoff.
+      auditar(def, def.stack, "error", { etapa: "lease_perdido", motivo: e.ponto }, true);
+      registrarResultado(chave, "aguardando", e.message, { agora });
+      return res("lease_perdido", e.ponto);
+    }
     const codigo = e instanceof RestartPolicyError || e instanceof StackDiscoError ? e.codigo : e instanceof Error ? e.message : "erro";
     registrarResultado(chave, "falhou", codigo, { agora });
     auditar(def, def.stack, "error", { etapa: "stack", motivo: codigo }, true);
