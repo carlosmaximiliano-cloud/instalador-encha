@@ -15,6 +15,7 @@ import { reconciliacaoRestartLigada } from "./flag-sincronizacao";
 import { logAudit } from "./audit";
 import { gravarComposeEmDisco, StackDiscoError } from "./stack-disco";
 import { lerEstadoDoSidecar } from "./estado-sidecar";
+import { lerEstadoDoUpdaterTracker } from "./estado-updater-tracker";
 import { STACK_ENCHAT } from "./fixar-versoes";
 import { lerEstadoSync, liberarLease, podeTentarAuto, registrarResultado, tentarLease, tentarLeaseDetalhado } from "./stack-sync-store";
 import {
@@ -26,6 +27,7 @@ import {
   politicaConforme,
   politicaDoServico,
   RestartPolicyError,
+  STACK_RESTART_TRACKER,
   STACKS_RECONCILIADAS,
   type Passo,
   type ResultadoPatchRestart,
@@ -316,8 +318,16 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
         registrarResultado(chave, "aguardando", "fora_da_janela", { agora });
         return res("fora_da_janela");
       }
-      if (def.leaseKey === STACK_ENCHAT) {
-        const est = await comTimeout(lerEstadoDoSidecar(token, endpointId, agora), jobMs, "estado_sidecar");
+      // Portão de "sidecar ocupado" por stack: enchat pelo estado do enchat-updater, encha_tracker pelo do
+      // tracker-updater (só em_andamento bloqueia; ilegível ou ausente segue, igual ao enchat). encha-panel não lê estado.
+      const leitorDeEstado =
+        def.leaseKey === STACK_ENCHAT
+          ? () => comTimeout(lerEstadoDoSidecar(token, endpointId, agora), jobMs, "estado_sidecar")
+          : def.leaseKey === STACK_RESTART_TRACKER.leaseKey
+            ? () => comTimeout(lerEstadoDoUpdaterTracker(token, endpointId, agora), jobMs, "estado_updater_tracker")
+            : null;
+      if (leitorDeEstado) {
+        const est = await leitorDeEstado();
         if (est.estado?.em_andamento) {
           registrarResultado(chave, "aguardando", "sidecar_ocupado", { agora });
           return res("sidecar_ocupado");

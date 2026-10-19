@@ -37,6 +37,7 @@ const m = vi.hoisted(() => ({
   withServiceToken: vi.fn(),
   gravar: vi.fn(),
   estado: vi.fn(),
+  estadoTracker: vi.fn(),
   flag: vi.fn(),
   audit: vi.fn(),
 }));
@@ -65,6 +66,7 @@ vi.mock("./estado-sidecar", async () => {
   const real = await vi.importActual<typeof import("./estado-sidecar")>("./estado-sidecar");
   return { ...real, lerEstadoDoSidecar: m.estado };
 });
+vi.mock("./estado-updater-tracker", () => ({ lerEstadoDoUpdaterTracker: m.estadoTracker }));
 vi.mock("./audit", () => ({ logAudit: m.audit }));
 
 const secretsEnchat = {
@@ -123,6 +125,7 @@ beforeEach(() => {
   m.withServiceToken.mockImplementation(async (fn: (t: string) => Promise<unknown>) => fn("tok"));
   m.flag.mockResolvedValue(true);
   m.estado.mockResolvedValue({ estado: { em_andamento: false } });
+  m.estadoTracker.mockResolvedValue({ estado: {} }); // legível, em_andamento ausente
   m.getServiceExact.mockImplementation(async (_t: string, _e: number, nome: string) => {
     const s = cluster[nome];
     if (!s) return null;
@@ -193,7 +196,8 @@ describe("ordem: arquivo antes do serviço, banco antes dos dependentes", () => 
     const r = await reconciliarStack(STACK_RESTART_TRACKER, op());
     expect(r.etapa).toBe("aplicado");
     expect(escritas()).toEqual(["arquivo:43", "svc:encha_tracker_postgres", "svc:encha_tracker_app", "svc:encha_tracker_updater"]);
-    expect(m.estado).not.toHaveBeenCalled(); // o estado do sidecar é só do enchat
+    expect(m.estado).not.toHaveBeenCalled(); // o estado do sidecar enchat nunca é usado para o tracker
+    expect(m.estadoTracker).toHaveBeenCalled(); // o do tracker-updater é
   });
 
   it("cada mudança vira um registro de auditoria com de→para e etapa", async () => {
@@ -639,5 +643,47 @@ describe("timeout das chamadas ao Portainer", () => {
     travaPostgresNoUpdate(() => new Promise<void>((_ok, ko) => setTimeout(() => ko(new Error("tarde")), 120)));
     expect((await tick()).etapa).toBe("portainer_travado");
     await new Promise((r) => setTimeout(r, 300)); // espera a rejeição tardia acontecer
+  });
+});
+
+describe("portão do tracker-updater (encha_tracker)", () => {
+  const tickTracker = async () => {
+    const { reconciliarStack } = await runtime();
+    const { STACK_RESTART_TRACKER } = await defs();
+    return reconciliarStack(STACK_RESTART_TRACKER, op());
+  };
+
+  it("tracker: updater ocupado (estado.json em_andamento) espera sem escrever", async () => {
+    instalaTracker();
+    m.estadoTracker.mockResolvedValue({ estado: { em_andamento: true } });
+    const r = await tickTracker();
+    expect(r.etapa).toBe("sidecar_ocupado");
+    expect(escritas()).toEqual([]);
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(m.estado).not.toHaveBeenCalled();
+    const { lerEstadoSync } = await store();
+    expect(lerEstadoSync("restart:encha_tracker")).toMatchObject({ lastResult: "aguardando", lastDetail: "sidecar_ocupado", attempts: 0 });
+  });
+
+  it("tracker: estado legível com em_andamento falso segue", async () => {
+    instalaTracker();
+    m.estadoTracker.mockResolvedValue({ estado: { em_andamento: false } });
+    expect((await tickTracker()).etapa).toBe("aplicado");
+    expect(escritas()).toEqual(["arquivo:43", "svc:encha_tracker_postgres", "svc:encha_tracker_app", "svc:encha_tracker_updater"]);
+  });
+
+  it("tracker: estado ilegível ou ausente segue (fail-open, como o enchat)", async () => {
+    instalaTracker();
+    m.estadoTracker.mockResolvedValue({ estado: null, motivo: "ilegivel" });
+    expect((await tickTracker()).etapa).toBe("aplicado");
+  });
+
+  it("enchat não lê o estado do tracker-updater", async () => {
+    instalaEnchat();
+    const { reconciliarStack } = await runtime();
+    const { STACK_RESTART_ENCHAT } = await defs();
+    expect((await reconciliarStack(STACK_RESTART_ENCHAT, op())).etapa).toBe("aplicado");
+    expect(m.estadoTracker).not.toHaveBeenCalled();
+    expect(m.estado).toHaveBeenCalled();
   });
 });
