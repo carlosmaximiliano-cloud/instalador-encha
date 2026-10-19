@@ -65,6 +65,11 @@ const ERROS = {
     en: "A synchronization is already in progress.",
     es: "Ya hay una sincronización en curso.",
   },
+  lease_perdido: {
+    pt: "Outra sincronização assumiu a stack durante a operação. Nada foi alterado; tente de novo em alguns minutos.",
+    en: "Another synchronization took over the stack during the operation. Nothing was changed; try again in a few minutes.",
+    es: "Otra sincronización tomó la stack durante la operación. No se cambió nada; reintente en unos minutos.",
+  },
   estado_diverge: {
     pt: "O atualizador do EnchaT aplicou uma versão diferente da que está rodando (por exemplo, depois de um \"Update the stack\" no Portainer). Atualize pelo botão dentro do EnchaT primeiro e tente de novo. Nada foi alterado.",
     en: "The EnchaT updater applied a different version than the one running (for example, after \"Update the stack\" in Portainer). Update from the button inside EnchaT first and try again. Nothing was changed.",
@@ -95,6 +100,7 @@ const STATUS: Record<CodigoErroFixacao, number> = {
   estado_diverge: 409,
   edicao_regredida: 409,
   gravacao_falhou: 502,
+  lease_perdido: 409,
 };
 
 function respostaErro(e: unknown, locale: Locale): NextResponse {

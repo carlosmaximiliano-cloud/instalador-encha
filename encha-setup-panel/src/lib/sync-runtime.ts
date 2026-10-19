@@ -22,8 +22,8 @@ export async function tentarSincronizarStack(): Promise<void> {
       await sincronizarStackEnchat({ token, modo: "auto", user: "system", ip: "local" });
     });
   } catch (e) {
-    // Esperados: em_andamento (outro processo), nao_convergida, mudou_durante — silêncio.
-    if (e instanceof FixarVersoesError && ["em_andamento", "nao_convergida", "mudou_durante", "stack_nao_instalada"].includes(e.codigo)) return;
+    // Esperados: em_andamento (outro processo), nao_convergida, mudou_durante, lease_perdido — silêncio.
+    if (e instanceof FixarVersoesError && ["em_andamento", "nao_convergida", "mudou_durante", "lease_perdido", "stack_nao_instalada"].includes(e.codigo)) return;
     console.error("[sync-stack] tentativa falhou (a próxima janela tenta de novo):", e instanceof Error ? e.message : e);
   }
 }

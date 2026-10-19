@@ -63,28 +63,37 @@ export function lerEstadoSync(stackId: string): EstadoSync {
   };
 }
 
+export type ResultadoLease = "tomado" | "outro_dono" | "ocupado";
+
 /**
- * Lease com expiração entre processos. `BEGIN IMMEDIATE` serializa a decisão;
- * SQLITE_BUSY (outro processo segurando a escrita além do busy_timeout) conta
- * como "não peguei". Devolve true se este `dono` agora detém o lease.
+ * Lease com expiração entre processos. `BEGIN IMMEDIATE` serializa a decisão.
+ * Devolve "tomado" se este `dono` agora detém o lease, "outro_dono" se outro
+ * dono ainda vale, e "ocupado" se o banco estava travado (SQLITE_BUSY além do
+ * busy_timeout): nesse caso nada foi decidido, e quem renova não pode tratar
+ * isso como lease perdido.
  */
-export function tentarLease(stackId: string, dono: string, ttlMs: number, agora = Date.now()): boolean {
-  garantirLinha(stackId);
+export function tentarLeaseDetalhado(stackId: string, dono: string, ttlMs: number, agora = Date.now()): ResultadoLease {
   const db = getDb();
   try {
-    return db.transaction(() => {
+    garantirLinha(stackId); // também escreve: BUSY aqui é "ocupado", não erro
+    return db.transaction((): ResultadoLease => {
       const r = db.prepare("SELECT lease_owner, lease_until FROM stack_sync WHERE stack_id = ?").get(stackId) as {
         lease_owner: string | null;
         lease_until: number;
       };
-      if (r.lease_owner && r.lease_owner !== dono && r.lease_until > agora) return false;
+      if (r.lease_owner && r.lease_owner !== dono && r.lease_until > agora) return "outro_dono";
       db.prepare("UPDATE stack_sync SET lease_owner = ?, lease_until = ? WHERE stack_id = ?").run(dono, agora + ttlMs, stackId);
-      return true;
+      return "tomado";
     }).immediate();
   } catch (e) {
-    if (e instanceof Error && /SQLITE_BUSY|database is locked/i.test(e.message)) return false;
+    if (e instanceof Error && /SQLITE_BUSY|database is locked/i.test(e.message)) return "ocupado";
     throw e;
   }
+}
+
+/** Invólucro booleano: SQLITE_BUSY conta como "não peguei" (tomada inicial = "em andamento"). */
+export function tentarLease(stackId: string, dono: string, ttlMs: number, agora = Date.now()): boolean {
+  return tentarLeaseDetalhado(stackId, dono, ttlMs, agora) === "tomado";
 }
 
 export function liberarLease(stackId: string, dono: string): void {

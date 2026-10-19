@@ -46,7 +46,8 @@ export type CodigoErroFixacao =
   | "estado_diverge"
   | "edicao_regredida"
   | "gravacao_falhou"
-  | "em_andamento";
+  | "em_andamento"
+  | "lease_perdido";
 
 export class FixarVersoesError extends Error {
   constructor(

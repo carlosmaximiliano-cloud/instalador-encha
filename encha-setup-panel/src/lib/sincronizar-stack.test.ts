@@ -19,6 +19,7 @@ const m = vi.hoisted(() => ({
   getStackFile: vi.fn(),
   gravar: vi.fn(),
   estado: vi.fn(),
+  audit: vi.fn(),
 }));
 
 vi.mock("./portainer", () => ({
@@ -41,7 +42,7 @@ vi.mock("./estado-sidecar", async () => {
   const real = await vi.importActual<typeof import("./estado-sidecar")>("./estado-sidecar");
   return { ...real, lerEstadoDoSidecar: m.estado };
 });
-vi.mock("./audit", () => ({ logAudit: vi.fn() }));
+vi.mock("./audit", () => ({ logAudit: m.audit }));
 
 const composeVelho = enchat
   .generateYaml(
@@ -86,7 +87,7 @@ beforeEach(() => {
   tmp = mkdtempSync(path.join(tmpdir(), "encha-sync-core-"));
   process.env.DB_PATH = path.join(tmp, "panel.db");
   process.env.MASTER_KEY_PATH = path.join(tmp, "master.key");
-  Object.values(m).forEach((f) => f.mockReset());
+  Object.values(m).forEach((f) => typeof f === "function" && (f as ReturnType<typeof vi.fn>).mockReset());
   svcs = {
     enchat_enchat_app: { image: APP },
     enchat_enchat_pinfy: { image: PINFY },
@@ -101,6 +102,7 @@ beforeEach(() => {
   m.estado.mockResolvedValue(estadoOk);
 });
 afterEach(() => {
+  vi.doUnmock("./stack-sync-store");
   rmSync(tmp, { recursive: true, force: true });
   delete process.env.DB_PATH;
   delete process.env.MASTER_KEY_PATH;
@@ -285,6 +287,110 @@ describe("concorrência", () => {
     await expect(sincronizarStackEnchat(entrada("auto"))).rejects.toMatchObject({ codigo: "em_andamento" });
     expect(m.getServiceExact).not.toHaveBeenCalled();
     expect(m.gravar).not.toHaveBeenCalled();
+  });
+});
+
+describe("lease renovado pelo sincronizador", () => {
+  const MIN = 60_000;
+  const T0 = Date.UTC(2026, 9, 17, 6, 0);
+  let relogioMs: number;
+  const entradaRelogio = (modo: "auto" | "manual" = "auto") => ({ ...entrada(modo), relogio: () => relogioMs });
+  // Os ganchos só mexem no relógio e no lease; as asserções ficam fora deles.
+  const outroDonoAssume = async () => {
+    relogioMs = T0 + 11 * MIN;
+    const s = await store();
+    s.tentarLease("enchat", "outro-dono", 10 * MIN, relogioMs);
+  };
+  beforeEach(() => {
+    relogioMs = T0;
+  });
+  // Simula SQLITE_BUSY na renovação (a tomada inicial, booleana, segue real): `sequencia` diz o que cada
+  // chamada do detalhado devolve a partir do momento em que `armar()` roda; depois disso, o primitivo real.
+  const comBusy = (sequencia: Array<"ocupado" | "real">) => {
+    let armado = false;
+    vi.doMock("./stack-sync-store", async () => {
+      const real = await vi.importActual<typeof import("./stack-sync-store")>("./stack-sync-store");
+      return {
+        ...real,
+        tentarLeaseDetalhado: (...a: Parameters<typeof real.tentarLeaseDetalhado>) => {
+          const prox = armado ? sequencia.shift() : "real";
+          return prox === "ocupado" ? "ocupado" : real.tentarLeaseDetalhado(...a);
+        },
+      };
+    });
+    return () => {
+      armado = true;
+    };
+  };
+
+  it("sincronizador: lease perdido antes de gravar, nada é escrito", async () => {
+    m.estado.mockImplementation(async () => {
+      await outroDonoAssume(); // durante a leitura do sidecar
+      return estadoOk;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    await expect(sincronizarStackEnchat(entradaRelogio("manual"))).rejects.toMatchObject({ codigo: "lease_perdido", detalhe: "outro_dono" });
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+
+  it("sincronizador: lease perdido antes de ler o sidecar não cria job", async () => {
+    m.getStackFile.mockImplementation(async () => {
+      await outroDonoAssume(); // durante a leitura inicial
+      return composeVelho;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    await expect(sincronizarStackEnchat(entradaRelogio("manual"))).rejects.toMatchObject({ codigo: "lease_perdido" });
+    expect(m.estado).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+
+  it("sincronizador: lease perdido é aguardando, sem backoff nem desligar", async () => {
+    m.estado.mockImplementation(async () => {
+      await outroDonoAssume();
+      return estadoOk;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    await expect(sincronizarStackEnchat(entradaRelogio("auto"))).rejects.toMatchObject({ codigo: "lease_perdido" });
+    const e = (await store()).lerEstadoSync("enchat");
+    expect(e).toMatchObject({ lastResult: "aguardando", lastDetail: "lease_perdido", attempts: 0, nextAttemptAt: 0, autoDisabledReason: null });
+    const fail = m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.sincronizar.fail");
+    expect(fail).toHaveLength(1);
+    expect(fail[0].meta).toMatchObject({ modo: "auto", error: "lease_perdido", detalhe: "outro_dono" });
+  });
+
+  it("sincronizador: banco ocupado persistente vira lease_perdido com detalhe ocupado", async () => {
+    const armar = comBusy(["ocupado", "ocupado"]);
+    m.getStackFile.mockImplementation(async () => {
+      armar();
+      return composeVelho;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    await expect(sincronizarStackEnchat(entradaRelogio("manual"))).rejects.toMatchObject({ codigo: "lease_perdido", detalhe: "ocupado" });
+    expect(m.estado).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+
+  it("sincronizador: banco ocupado uma vez é tentado de novo e grava", async () => {
+    const armar = comBusy(["ocupado"]);
+    m.getStackFile.mockImplementation(async () => {
+      armar();
+      return composeVelho;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    const r = await sincronizarStackEnchat(entradaRelogio("manual"));
+    expect(r.aplicada).toBe(true);
+    expect(m.gravar).toHaveBeenCalledOnce();
+  });
+
+  it("sincronizador: tomada e renovação usam o relógio injetado (grava com mais de 10 min de relógio)", async () => {
+    m.estado.mockImplementation(async () => {
+      relogioMs = T0 + 11 * MIN; // passou do TTL com o processo vivo; ninguém assumiu
+      return estadoOk;
+    });
+    const { sincronizarStackEnchat } = await nucleo();
+    const r = await sincronizarStackEnchat(entradaRelogio("auto"));
+    expect(r.aplicada).toBe(true);
+    expect(m.gravar).toHaveBeenCalledOnce();
   });
 });
 

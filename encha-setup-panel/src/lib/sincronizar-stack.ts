@@ -12,7 +12,7 @@ import {
 } from "./fixar-versoes";
 import { gravarComposeEmDisco, StackDiscoError } from "./stack-disco";
 import { lerEstadoDoSidecar, portaoEstado } from "./estado-sidecar";
-import { desligarAuto, liberarLease, registrarResultado, tentarLease } from "./stack-sync-store";
+import { desligarAuto, liberarLease, registrarResultado, tentarLease, tentarLeaseDetalhado } from "./stack-sync-store";
 
 // Mantém o arquivo da stack `enchat` (Portainer) IGUAL ao que está rodando, para
 // que "Update the stack" nunca volte versão nem edição. Escreve só as 3 linhas
@@ -39,6 +39,7 @@ export type ResultadoSincronizacao = Previa & {
 
 const DONO = `${process.pid}-${randomBytes(4).toString("hex")}`;
 const LEASE_MS = 10 * 60_000;
+const ESPERA_BUSY_MS = 250;
 
 // Dentro do MESMO processo o lease do SQLite deixa o mesmo dono renovar, então a
 // exclusão entre agendador e botão manual é feita aqui; o lease cobre o outro
@@ -57,9 +58,22 @@ export async function sincronizarStackEnchat(input: {
   modo: ModoSync;
   user: string;
   ip: string;
+  /** Relógio do lease (padrão Date.now): tomada e renovações falam do mesmo tempo. */
+  relogio?: () => number;
 }): Promise<ResultadoSincronizacao> {
   const { token, modo, user, ip } = input;
-  if (emAndamentoLocal || !tentarLease(STACK_ENCHAT, DONO, LEASE_MS)) throw new FixarVersoesError("em_andamento");
+  const relogio = input.relogio ?? Date.now;
+  // Renova o lease antes de cada passo que cria job ou escreve. Outro dono = perdeu;
+  // banco ocupado depois de uma nova tentativa também aborta (o detalhe distingue).
+  const renovarLease = async (): Promise<void> => {
+    let r = tentarLeaseDetalhado(STACK_ENCHAT, DONO, LEASE_MS, relogio());
+    if (r === "ocupado") {
+      await new Promise<void>((ok) => setTimeout(ok, ESPERA_BUSY_MS));
+      r = tentarLeaseDetalhado(STACK_ENCHAT, DONO, LEASE_MS, relogio());
+    }
+    if (r !== "tomado") throw new FixarVersoesError("lease_perdido", r);
+  };
+  if (emAndamentoLocal || !tentarLease(STACK_ENCHAT, DONO, LEASE_MS, relogio())) throw new FixarVersoesError("em_andamento");
   emAndamentoLocal = true;
   try {
     const { endpointId, stack, composeAtual, alvo, patch, foto } = await ler(token, { inserirAdmin: modo === "manual" });
@@ -70,7 +84,8 @@ export async function sincronizarStackEnchat(input: {
       return { ...previa, aplicada: false, estado: "ok" };
     }
 
-    // Portão do estado.json do sidecar.
+    // Portão do estado.json do sidecar (a leitura cria um job no Portainer).
+    await renovarLease();
     const leitura = await lerEstadoDoSidecar(token, endpointId);
     const estado: ResultadoSincronizacao["estado"] = leitura.estado ? "ok" : (leitura.motivo ?? "ilegivel");
     if (leitura.estado) {
@@ -98,6 +113,7 @@ export async function sincronizarStackEnchat(input: {
       }
     }
 
+    await renovarLease(); // a gravação é a única escrita na stack
     try {
       await gravarComposeEmDisco(token, endpointId, stack, composeAtual, patch.compose, () => getStackFile(token, stack.Id));
     } catch (e) {
@@ -129,7 +145,7 @@ export async function sincronizarStackEnchat(input: {
     const codigo = e instanceof FixarVersoesError ? e.codigo : e instanceof Error ? e.message : "erro";
     // "em andamento" é só concorrência; os demais bloqueios de segurança do modo
     // auto já viram "aguardando" acima. Falha real conta para o backoff.
-    const transitorio = e instanceof FixarVersoesError && (e.codigo === "nao_convergida" || e.codigo === "mudou_durante");
+    const transitorio = e instanceof FixarVersoesError && (e.codigo === "nao_convergida" || e.codigo === "mudou_durante" || e.codigo === "lease_perdido");
     // Só o agendador conta para o backoff/desligamento: um clique manual que
     // deu errado não pode desligar a sincronização automática.
     if (modo === "auto") {
@@ -142,7 +158,15 @@ export async function sincronizarStackEnchat(input: {
         registrarResultado(STACK_ENCHAT, transitorio ? "aguardando" : "falhou", codigo);
       }
     }
-    logAudit({ user, ip, action: "stack.sincronizar.fail", target: STACK_ENCHAT, result: "error", meta: { modo, error: codigo } });
+    const detalhe = e instanceof FixarVersoesError ? e.detalhe : undefined;
+    logAudit({
+      user,
+      ip,
+      action: "stack.sincronizar.fail",
+      target: STACK_ENCHAT,
+      result: "error",
+      meta: { modo, error: codigo, ...(detalhe ? { detalhe } : {}) },
+    });
     throw e;
   } finally {
     emAndamentoLocal = false;

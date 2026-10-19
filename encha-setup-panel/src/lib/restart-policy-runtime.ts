@@ -16,7 +16,7 @@ import { logAudit } from "./audit";
 import { gravarComposeEmDisco, StackDiscoError } from "./stack-disco";
 import { lerEstadoDoSidecar } from "./estado-sidecar";
 import { STACK_ENCHAT } from "./fixar-versoes";
-import { lerEstadoSync, liberarLease, podeTentarAuto, registrarResultado, tentarLease } from "./stack-sync-store";
+import { lerEstadoSync, liberarLease, podeTentarAuto, registrarResultado, tentarLease, tentarLeaseDetalhado } from "./stack-sync-store";
 import {
   aplicarPatchRestartCompose,
   dentroDaJanela,
@@ -59,6 +59,7 @@ const INTERVALO_MS = 30 * 60_000;
 const LEASE_MS = 10 * 60_000;
 export const CONVERGENCIA_MS = 3 * 60_000;
 const PASSO_ESPERA_MS = 5_000;
+const ESPERA_BUSY_MS = 250;
 
 const DONO = `restart-${process.pid}-${randomBytes(4).toString("hex")}`;
 
@@ -78,6 +79,7 @@ export type EtapaTick =
   | "aplicado"
   | "nao_convergiu"
   | "lease_perdido"
+  | "lease_indisponivel"
   | "falhou";
 
 export type ResultadoTick = { stack: string; etapa: EtapaTick; detalhe?: string };
@@ -97,6 +99,13 @@ export type OpcoesReconciliar = {
 class LeasePerdido extends Error {
   constructor(public ponto: "arquivo" | "servico" | "convergencia") {
     super(`lease_perdido:${ponto}`);
+  }
+}
+
+/** Interno: a renovação não pôde ser decidida (banco ocupado mesmo depois de uma nova tentativa). */
+class LeaseIndisponivel extends Error {
+  constructor(public ponto: LeasePerdido["ponto"]) {
+    super(`lease_indisponivel:${ponto}`);
   }
 }
 
@@ -191,13 +200,13 @@ async function aguardarConvergencia(
   endpointId: number,
   nome: string,
   op: OpcoesReconciliar,
-  renovar: () => void
+  renovar: () => Promise<void>
 ): Promise<boolean> {
   const esperar = op.esperar ?? dormir;
   const tentativas = Math.max(1, Math.ceil((op.convergenciaMs ?? CONVERGENCIA_MS) / PASSO_ESPERA_MS));
   for (let i = 0; i < tentativas; i++) {
     if (await convergiu(token, endpointId, nome)) return true;
-    renovar();
+    await renovar();
     await esperar(PASSO_ESPERA_MS);
   }
   return convergiu(token, endpointId, nome);
@@ -212,8 +221,16 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
   const res = (etapa: EtapaTick, detalhe?: string): ResultadoTick => ({ stack: def.stack, etapa, detalhe });
 
   const relogio = op.relogio ?? Date.now;
-  const renovarLease = (ponto: LeasePerdido["ponto"]): void => {
-    if (!tentarLease(def.leaseKey, DONO, LEASE_MS, relogio())) throw new LeasePerdido(ponto);
+  // Banco ocupado (SQLITE_BUSY) não é lease perdido: uma nova tentativa depois de uma espera curta;
+  // persistindo, aborta como lease_indisponivel. Só "outro dono tem" é lease_perdido.
+  const renovarLease = async (ponto: LeasePerdido["ponto"]): Promise<void> => {
+    let r = tentarLeaseDetalhado(def.leaseKey, DONO, LEASE_MS, relogio());
+    if (r === "ocupado") {
+      await (op.esperar ?? dormir)(ESPERA_BUSY_MS);
+      r = tentarLeaseDetalhado(def.leaseKey, DONO, LEASE_MS, relogio());
+    }
+    if (r === "outro_dono") throw new LeasePerdido(ponto);
+    if (r === "ocupado") throw new LeaseIndisponivel(ponto);
   };
 
   if (!podeTentarAuto(chave, agora).pode) return res("backoff");
@@ -262,7 +279,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
 
       // 3) ARQUIVO primeiro.
       if (l.arquivo && precisaArquivo) {
-        renovarLease("arquivo");
+        await renovarLease("arquivo");
         try {
           await gravarComposeEmDisco(token, endpointId, l.arquivo.stack, l.arquivo.composeAtual, l.arquivo.patch.compose, () =>
             getStackFile(token, l.arquivo!.stack.Id)
@@ -288,7 +305,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
         return res("fora_da_janela");
       }
       for (const p of ajustes) {
-        renovarLease("servico");
+        await renovarLease("servico");
         // Banco primeiro (a ordem vem de def.servicos); relê o serviço para pegar o Version.Index atual.
         const svc = await getServiceExact(token, endpointId, p.servico.swarm);
         if (!svc || politicaConforme(politicaDoServico(svc))) continue;
@@ -307,6 +324,12 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
       liberarLease(def.leaseKey, DONO);
     }
   } catch (e) {
+    if (e instanceof LeaseIndisponivel) {
+      // Banco local travado: nada foi decidido sobre o lease. Também não é falha do reconciliador.
+      auditar(def, def.stack, "error", { etapa: "lease_indisponivel", motivo: e.ponto }, true);
+      registrarResultado(chave, "aguardando", e.message, { agora });
+      return res("lease_indisponivel", e.ponto);
+    }
     if (e instanceof LeasePerdido) {
       // Perder o lease por causa de outro dono não é falha do reconciliador: aguardando, sem backoff.
       auditar(def, def.stack, "error", { etapa: "lease_perdido", motivo: e.ponto }, true);

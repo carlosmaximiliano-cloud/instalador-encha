@@ -78,4 +78,31 @@ describe("stack-sync-store", () => {
     outro.close();
     expect(s.tentarLease("enchat", "proc-2", 60_000)).toBe(false);
   });
+
+  it("tentarLeaseDetalhado: tomado, outro_dono e renovação do mesmo dono", async () => {
+    const s = await import("./stack-sync-store");
+    expect(s.tentarLeaseDetalhado("enchat", "A", 1000, 100)).toBe("tomado");
+    expect(s.tentarLeaseDetalhado("enchat", "B", 1000, 500)).toBe("outro_dono");
+    expect(s.tentarLeaseDetalhado("enchat", "A", 1000, 600)).toBe("tomado");
+    expect(s.tentarLeaseDetalhado("enchat", "B", 1000, 1700)).toBe("tomado");
+  });
+
+  it("tentarLeaseDetalhado: banco ocupado não é outro dono", async () => {
+    const s = await import("./stack-sync-store");
+    const { getDb } = await import("./db");
+    expect(s.tentarLeaseDetalhado("enchat", "A", 1000, 100)).toBe("tomado");
+    getDb().pragma("busy_timeout = 0");
+    const Database = (await import("better-sqlite3")).default;
+    const outro = new Database(process.env.DB_PATH!);
+    outro.exec("BEGIN IMMEDIATE"); // segura a escrita
+    try {
+      expect(s.tentarLeaseDetalhado("enchat", "A", 1000, 200)).toBe("ocupado");
+      // o invólucro booleano segue tratando BUSY como "não peguei"
+      expect(s.tentarLease("enchat", "A", 1000, 200)).toBe(false);
+    } finally {
+      outro.exec("ROLLBACK");
+      outro.close();
+    }
+    expect(s.tentarLeaseDetalhado("enchat", "A", 1000, 300)).toBe("tomado");
+  });
 });

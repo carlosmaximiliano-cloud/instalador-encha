@@ -160,6 +160,7 @@ beforeEach(() => {
   });
 });
 afterEach(() => {
+  vi.doUnmock("./stack-sync-store");
   rmSync(tmp, { recursive: true, force: true });
   delete process.env.DB_PATH;
   delete process.env.MASTER_KEY_PATH;
@@ -534,5 +535,50 @@ describe("lease renovado durante o passo ao vivo", () => {
     expect(retornos.some((x) => x)).toBe(false);
     expect(retornos).toHaveLength(4);
     expect(r.etapa).toBe("aplicado");
+  });
+});
+
+describe("banco ocupado na renovação do lease", () => {
+  // A tomada inicial (booleana) segue real; só a renovação (tentarLeaseDetalhado) recebe a sequência.
+  const comBusy = (sequencia: Array<"ocupado" | "real">) => {
+    vi.doMock("./stack-sync-store", async () => {
+      const real = await vi.importActual<typeof import("./stack-sync-store")>("./stack-sync-store");
+      return {
+        ...real,
+        tentarLeaseDetalhado: (...a: Parameters<typeof real.tentarLeaseDetalhado>) =>
+          sequencia.shift() === "ocupado" ? "ocupado" : real.tentarLeaseDetalhado(...a),
+      };
+    });
+  };
+  const tick = async (o: Record<string, unknown>) => {
+    const { reconciliarStack } = await runtime();
+    const { STACK_RESTART_ENCHAT } = await defs();
+    return reconciliarStack(STACK_RESTART_ENCHAT, { ...op(), ...o });
+  };
+
+  it("renovação com banco ocupado persistente aborta como lease_indisponivel, não lease_perdido", async () => {
+    instalaEnchat();
+    comBusy(["ocupado", "ocupado"]);
+    const esperar = vi.fn(async () => {});
+    const r = await tick({ esperar });
+    expect(r).toMatchObject({ etapa: "lease_indisponivel", detalhe: "arquivo" });
+    expect(esperar).toHaveBeenCalledWith(250);
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(escritas()).toEqual([]);
+    const fail = m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.restart_policy.fail");
+    expect(fail).toHaveLength(1);
+    expect(fail[0].meta).toMatchObject({ stack: "enchat", etapa: "lease_indisponivel", motivo: "arquivo" });
+    const { lerEstadoSync } = await store();
+    expect(lerEstadoSync("restart:enchat")).toMatchObject({ lastResult: "aguardando", lastDetail: "lease_indisponivel:arquivo", attempts: 0, nextAttemptAt: 0, autoDisabledReason: null });
+  });
+
+  it("renovação com banco ocupado uma vez: tenta de novo e o tick segue", async () => {
+    instalaEnchat();
+    comBusy(["ocupado"]);
+    const esperar = vi.fn(async () => {});
+    const r = await tick({ esperar });
+    expect(r.etapa).toBe("aplicado");
+    expect(esperar).toHaveBeenCalledWith(250);
+    expect(escritas()).toEqual(["arquivo:42", "svc:enchat_enchat_postgres", "svc:enchat_enchat_app", "svc:enchat_enchat_pinfy", "svc:enchat_enchat_updater"]);
   });
 });
