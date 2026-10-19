@@ -53,6 +53,11 @@ import {
 // 10 min do TTL; renovando, o prazo nunca vence com o processo vivo e vence em
 // até 10 min se ele morrer. Se a renovação falha (outro dono assumiu), o tick
 // aborta sem tocar nada depois, como "aguardando" (não conta falha nem backoff).
+//
+// Timeout: cada chamada de API ao Portainer tem 60 s e o que roda um job (gravação
+// do arquivo, leitura do estado do sidecar) 4 min, ambos abaixo do TTL. Estourou =
+// aborto "portainer_travado" (aguardando, sem backoff) e o lease NÃO é solto: a
+// chamada abandonada ainda pode pousar, e outro dono só assume depois do TTL.
 
 const PRIMEIRA_TENTATIVA_MS = 3 * 60_000;
 const INTERVALO_MS = 30 * 60_000;
@@ -60,6 +65,9 @@ const LEASE_MS = 10 * 60_000;
 export const CONVERGENCIA_MS = 3 * 60_000;
 const PASSO_ESPERA_MS = 5_000;
 const ESPERA_BUSY_MS = 250;
+// Timeout por chamada de API e para o que roda um job (ambos abaixo do TTL do lease).
+const CHAMADA_MS = 60_000;
+const JOB_MS = 4 * 60_000;
 
 const DONO = `restart-${process.pid}-${randomBytes(4).toString("hex")}`;
 
@@ -80,6 +88,7 @@ export type EtapaTick =
   | "nao_convergiu"
   | "lease_perdido"
   | "lease_indisponivel"
+  | "portainer_travado"
   | "falhou";
 
 export type ResultadoTick = { stack: string; etapa: EtapaTick; detalhe?: string };
@@ -91,6 +100,8 @@ export type OpcoesReconciliar = {
   /** Para os testes: não esperar de verdade. */
   esperar?: (ms: number) => Promise<void>;
   convergenciaMs?: number;
+  /** Para os testes: limite de cada chamada ao Portainer (padrão 60 s; 4 min para o que roda um job). */
+  chamadaMs?: number;
   /** Relógio da renovação do lease (padrão Date.now); o `agora` do tick segue governando janela e backoff. */
   relogio?: () => number;
 };
@@ -109,6 +120,38 @@ class LeaseIndisponivel extends Error {
   }
 }
 
+/** Interno: uma chamada ao Portainer passou do limite. Sobe ao catch externo; o lease NÃO é solto (vence pelo TTL). */
+class PortainerTravado extends Error {
+  constructor(public rotulo: string) {
+    super(`portainer_travado:${rotulo}`);
+  }
+}
+
+/**
+ * Corrida entre a chamada e um relógio. Não cancela o socket: a chamada original pode concluir depois do
+ * aborto (por isso o lease fica retido e cada escrita é precedida de releitura/compare-and-swap). A promessa
+ * original tem tratador próprio: a rejeição tardia é descartada e o relógio é limpo quando ela vence.
+ */
+function comTimeout<T>(chamada: Promise<T>, ms: number, rotulo: string): Promise<T> {
+  return new Promise<T>((ok, ko) => {
+    let estourou = false;
+    const relogio = setTimeout(() => {
+      estourou = true;
+      ko(new PortainerTravado(rotulo));
+    }, ms);
+    chamada.then(
+      (v) => {
+        clearTimeout(relogio);
+        if (!estourou) ok(v);
+      },
+      (e) => {
+        clearTimeout(relogio);
+        if (!estourou) ko(e);
+      }
+    );
+  });
+}
+
 const dormir = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 // ── Leitura (sem escrever nada) ─────────────────────────────────────────
@@ -121,17 +164,17 @@ type Leitura = {
   arquivo: { stack: Awaited<ReturnType<typeof listStacks>>[number]; composeAtual: string; patch: ResultadoPatchRestart } | null;
 };
 
-async function ler(def: StackRestart, token: string, endpointId: number): Promise<Leitura> {
+async function ler(def: StackRestart, token: string, endpointId: number, ms: number): Promise<Leitura> {
   const vivos: Record<string, DockerServiceFull | null> = {};
-  for (const s of def.servicos) vivos[s.swarm] = await getServiceExact(token, endpointId, s.swarm);
+  for (const s of def.servicos) vivos[s.swarm] = await comTimeout(getServiceExact(token, endpointId, s.swarm), ms, `getServiceExact:${s.swarm}`);
   const instalada = Object.values(vivos).some((v) => v !== null);
   const passos = planejarStack(def, vivos);
   let arquivo: Leitura["arquivo"] = null;
   if (instalada) {
-    const stack = (await listStacks(token)).find((s) => s.Name === def.stack);
+    const stack = (await comTimeout(listStacks(token), ms, "listStacks")).find((s) => s.Name === def.stack);
     if (stack) {
       try {
-        const composeAtual = await getStackFile(token, stack.Id);
+        const composeAtual = await comTimeout(getStackFile(token, stack.Id), ms, "getStackFile");
         arquivo = { stack, composeAtual, patch: aplicarPatchRestartCompose(composeAtual, def) };
       } catch (e) {
         if (!(e instanceof PortainerError && e.status === 404)) throw e;
@@ -181,12 +224,12 @@ function registrarPulos(def: StackRestart, l: Leitura, chave: string): string | 
 // ── Espera de convergência de UM serviço ────────────────────────────────
 
 /** O Swarm já trocou as tasks pela política nova e elas estão rodando? */
-async function convergiu(token: string, endpointId: number, nome: string): Promise<boolean> {
-  const svc = await getServiceExact(token, endpointId, nome);
+async function convergiu(token: string, endpointId: number, nome: string, ms: number): Promise<boolean> {
+  const svc = await comTimeout(getServiceExact(token, endpointId, nome), ms, `getServiceExact:${nome}`);
   if (!svc || emUpdateEmCurso(svc)) return false;
   const rp = politicaDoServico(svc);
   if (!rp || !politicaConforme(rp)) return false;
-  const desejadas = (await listServiceTasks(token, endpointId, svc.ID)).filter((t) => t.DesiredState === "running");
+  const desejadas = (await comTimeout(listServiceTasks(token, endpointId, svc.ID), ms, `listServiceTasks:${nome}`)).filter((t) => t.DesiredState === "running");
   // A task NOVA carrega a política nova no próprio Spec; a antiga (ainda rodando
   // logo depois do update) não — é o que impede dar "convergiu" cedo demais.
   return (
@@ -203,13 +246,14 @@ async function aguardarConvergencia(
   renovar: () => Promise<void>
 ): Promise<boolean> {
   const esperar = op.esperar ?? dormir;
+  const ms = op.chamadaMs ?? CHAMADA_MS; // por chamada; o laço inteiro NUNCA é embrulhado (o limite dele é CONVERGENCIA_MS)
   const tentativas = Math.max(1, Math.ceil((op.convergenciaMs ?? CONVERGENCIA_MS) / PASSO_ESPERA_MS));
   for (let i = 0; i < tentativas; i++) {
-    if (await convergiu(token, endpointId, nome)) return true;
+    if (await convergiu(token, endpointId, nome, ms)) return true;
     await renovar();
     await esperar(PASSO_ESPERA_MS);
   }
-  return convergiu(token, endpointId, nome);
+  return convergiu(token, endpointId, nome, ms);
 }
 
 // ── Uma stack ───────────────────────────────────────────────────────────
@@ -221,6 +265,10 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
   const res = (etapa: EtapaTick, detalhe?: string): ResultadoTick => ({ stack: def.stack, etapa, detalhe });
 
   const relogio = op.relogio ?? Date.now;
+  const apiMs = op.chamadaMs ?? CHAMADA_MS;
+  const jobMs = op.chamadaMs ?? JOB_MS;
+  // Aborto por timeout: o lease fica com este dono até o TTL (a chamada abandonada ainda pode pousar).
+  let manterLease = false;
   // Banco ocupado (SQLITE_BUSY) não é lease perdido: uma nova tentativa depois de uma espera curta;
   // persistindo, aborta como lease_indisponivel. Só "outro dono tem" é lease_perdido.
   const renovarLease = async (ponto: LeasePerdido["ponto"]): Promise<void> => {
@@ -237,7 +285,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
 
   try {
     // 1) Leitura barata, sem lease: tudo conforme sai cedo.
-    const primeira = await ler(def, token, endpointId);
+    const primeira = await ler(def, token, endpointId, apiMs);
     if (!primeira.instalada) return res("stack_nao_instalada");
     if (nadaAFazer(primeira)) {
       registrarResultado(chave, "sincronizada", registrarPulos(def, primeira, chave), { agora });
@@ -248,7 +296,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
     if (emAndamentoLocal || !tentarLease(def.leaseKey, DONO, LEASE_MS, agora)) return res("ocupado");
     emAndamentoLocal = true;
     try {
-      const l = await ler(def, token, endpointId); // reconfere sob o lease
+      const l = await ler(def, token, endpointId, apiMs); // reconfere sob o lease
       if (!l.instalada) return res("stack_nao_instalada");
       if (nadaAFazer(l)) {
         registrarResultado(chave, "sincronizada", registrarPulos(def, l, chave), { agora });
@@ -269,7 +317,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
         return res("fora_da_janela");
       }
       if (def.leaseKey === STACK_ENCHAT) {
-        const est = await lerEstadoDoSidecar(token, endpointId, agora);
+        const est = await comTimeout(lerEstadoDoSidecar(token, endpointId, agora), jobMs, "estado_sidecar");
         if (est.estado?.em_andamento) {
           registrarResultado(chave, "aguardando", "sidecar_ocupado", { agora });
           return res("sidecar_ocupado");
@@ -281,8 +329,12 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
       if (l.arquivo && precisaArquivo) {
         await renovarLease("arquivo");
         try {
-          await gravarComposeEmDisco(token, endpointId, l.arquivo.stack, l.arquivo.composeAtual, l.arquivo.patch.compose, () =>
-            getStackFile(token, l.arquivo!.stack.Id)
+          await comTimeout(
+            gravarComposeEmDisco(token, endpointId, l.arquivo.stack, l.arquivo.composeAtual, l.arquivo.patch.compose, () =>
+              getStackFile(token, l.arquivo!.stack.Id)
+            ),
+            jobMs,
+            "gravarComposeEmDisco"
           );
         } catch (e) {
           if (e instanceof StackDiscoError && e.codigo === "divergiu") {
@@ -307,9 +359,9 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
       for (const p of ajustes) {
         await renovarLease("servico");
         // Banco primeiro (a ordem vem de def.servicos); relê o serviço para pegar o Version.Index atual.
-        const svc = await getServiceExact(token, endpointId, p.servico.swarm);
+        const svc = await comTimeout(getServiceExact(token, endpointId, p.servico.swarm), apiMs, `getServiceExact:${p.servico.swarm}`);
         if (!svc || politicaConforme(politicaDoServico(svc))) continue;
-        await updateServiceRestartPolicy(token, endpointId, svc, p.para);
+        await comTimeout(updateServiceRestartPolicy(token, endpointId, svc, p.para), apiMs, `updateServiceRestartPolicy:${p.servico.swarm}`);
         auditar(def, p.servico.swarm, "ok", { etapa: "servico", papel: p.servico.papel, de: descreverPolitica(p.de), para: descreverPolitica(p.para) });
         if (!(await aguardarConvergencia(token, endpointId, p.servico.swarm, op, () => renovarLease("convergencia")))) {
           auditar(def, p.servico.swarm, "error", { etapa: "servico", motivo: "nao_convergiu" }, true);
@@ -319,11 +371,20 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
       }
       registrarResultado(chave, "aplicada", null, { agora });
       return res("aplicado");
+    } catch (e) {
+      if (e instanceof PortainerTravado) manterLease = true;
+      throw e;
     } finally {
       emAndamentoLocal = false;
-      liberarLease(def.leaseKey, DONO);
+      if (!manterLease) liberarLease(def.leaseKey, DONO);
     }
   } catch (e) {
+    if (e instanceof PortainerTravado) {
+      // Sem backoff nem falha: o Portainer pode estar só lento; a próxima rodada relê tudo.
+      auditar(def, def.stack, "error", { etapa: "portainer_travado", motivo: e.rotulo }, true);
+      registrarResultado(chave, "aguardando", e.message, { agora });
+      return res("portainer_travado", e.rotulo);
+    }
     if (e instanceof LeaseIndisponivel) {
       // Banco local travado: nada foi decidido sobre o lease. Também não é falha do reconciliador.
       auditar(def, def.stack, "error", { etapa: "lease_indisponivel", motivo: e.ponto }, true);

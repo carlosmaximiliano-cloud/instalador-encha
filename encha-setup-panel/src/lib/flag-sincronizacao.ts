@@ -9,8 +9,10 @@ import { CONSOLE_BASE_URL } from "./stacks/enchat";
 //   { "sincronizar_stack_enchat": "desligado" | "canario" | "ligado",
 //     "reconciliar_restart": "desligado" | "ligado",   // aditiva: reconciliador da restart_policy
 //     "canario"?: string[] }   // fingerprints liberados quando "canario"
-// Cada chave é independente e a regra é a mesma para todas: só um valor
-// explícito liga; chave ausente (Console antigo) = desligado.
+// Cada chave é independente: só um valor explícito liga; chave ausente (Console
+// antigo) = desligado. `reconciliar_restart` aceita SÓ "ligado": o canário dela é
+// resolvido no Console (que devolve "ligado" ao fingerprint liberado), então
+// "canario" e a lista `canario` são ignorados nessa chave.
 
 export type EstadoFlag = "desligado" | "canario" | "ligado";
 
@@ -21,7 +23,7 @@ export function decidirFlag(corpo: unknown, fingerprint: string | null, chave: C
   const o = corpo as Record<string, unknown>;
   const v = o[chave];
   if (v === "ligado") return true;
-  if (v === "canario") {
+  if (v === "canario" && chave !== "reconciliar_restart") {
     if (!fingerprint || !Array.isArray(o.canario)) return false;
     return o.canario.some((x) => typeof x === "string" && x === fingerprint);
   }

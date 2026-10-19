@@ -582,3 +582,62 @@ describe("banco ocupado na renovação do lease", () => {
     expect(escritas()).toEqual(["arquivo:42", "svc:enchat_enchat_postgres", "svc:enchat_enchat_app", "svc:enchat_enchat_pinfy", "svc:enchat_enchat_updater"]);
   });
 });
+
+describe("timeout das chamadas ao Portainer", () => {
+  const MIN = 60_000;
+  const nunca = (): Promise<never> => new Promise(() => {});
+  const travaPostgresNoUpdate = (fim: () => Promise<void>) => {
+    const base = m.updateServiceRestartPolicy.getMockImplementation()!;
+    m.updateServiceRestartPolicy.mockImplementation(async (...a: unknown[]) => {
+      if ((a[2] as { ID: string }).ID === "enchat_enchat_postgres") {
+        ordem.push("svc:enchat_enchat_postgres");
+        return fim();
+      }
+      return (base as (...x: unknown[]) => Promise<void>)(...a);
+    });
+  };
+  const tick = async (o: Record<string, unknown> = {}) => {
+    const { reconciliarStack } = await runtime();
+    const { STACK_RESTART_ENCHAT } = await defs();
+    return reconciliarStack(STACK_RESTART_ENCHAT, { ...op(), relogio: () => NA_JANELA, chamadaMs: 40, ...o });
+  };
+
+  it("chamada travada ao Portainer: aborta como portainer_travado sem tocar o próximo serviço", async () => {
+    instalaEnchat();
+    travaPostgresNoUpdate(nunca);
+    const r = await tick();
+    expect(r).toMatchObject({ etapa: "portainer_travado", detalhe: "updateServiceRestartPolicy:enchat_enchat_postgres" });
+    expect(escritas()).toEqual(["arquivo:42", "svc:enchat_enchat_postgres"]);
+    const fail = m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.restart_policy.fail");
+    expect(fail).toHaveLength(1);
+    expect(fail[0].meta).toMatchObject({ stack: "enchat", etapa: "portainer_travado" });
+    const { lerEstadoSync, podeTentarAuto } = await store();
+    expect(lerEstadoSync("restart:enchat")).toMatchObject({ lastResult: "aguardando", attempts: 0, nextAttemptAt: 0, autoDisabledReason: null });
+    expect(podeTentarAuto("restart:enchat", NA_JANELA).pode).toBe(true);
+  });
+
+  it("leitura travada e gravação travada também abortam como portainer_travado", async () => {
+    instalaEnchat();
+    m.gravar.mockImplementation(() => nunca());
+    expect(await tick()).toMatchObject({ etapa: "portainer_travado", detalhe: "gravarComposeEmDisco" });
+    expect(m.updateServiceRestartPolicy).not.toHaveBeenCalled();
+    m.getServiceExact.mockImplementation(() => nunca());
+    expect(await tick({ agora: NA_JANELA + 30 * MIN })).toMatchObject({ etapa: "portainer_travado" });
+  });
+
+  it("chamada travada: o lease não é solto no aborto (escrita tardia não encontra outro dono)", async () => {
+    instalaEnchat();
+    travaPostgresNoUpdate(nunca);
+    expect((await tick()).etapa).toBe("portainer_travado");
+    const { tentarLease } = await store();
+    expect(tentarLease("enchat", "sincronizador", 10 * MIN, NA_JANELA + 1000)).toBe(false);
+    expect(tentarLease("enchat", "sincronizador", 10 * MIN, NA_JANELA + 11 * MIN)).toBe(true); // venceu pelo TTL
+  });
+
+  it("chamada travada que rejeita depois do aborto não vira Unhandled Rejection", async () => {
+    instalaEnchat();
+    travaPostgresNoUpdate(() => new Promise<void>((_ok, ko) => setTimeout(() => ko(new Error("tarde")), 120)));
+    expect((await tick()).etapa).toBe("portainer_travado");
+    await new Promise((r) => setTimeout(r, 300)); // espera a rejeição tardia acontecer
+  });
+});

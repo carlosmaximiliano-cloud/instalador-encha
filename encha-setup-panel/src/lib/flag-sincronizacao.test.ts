@@ -72,7 +72,7 @@ describe("decidirFlag — chave reconciliar_restart (independente da outra)", ()
     ["ligado", { reconciliar_restart: "ligado" }, null, true],
     ["desligado", { reconciliar_restart: "desligado" }, "fp1", false],
     ["ausente (Console antigo) = desligado, mesmo com a outra ligada", { sincronizar_stack_enchat: "ligado" }, "fp1", false],
-    ["canário na lista", { reconciliar_restart: "canario", canario: ["fp1"] }, "fp1", true],
+    ["reconciliar_restart: canario nunca liga (o Console já resolve o canário)", { reconciliar_restart: "canario", canario: ["fp1"] }, "fp1", false],
     ["valor desconhecido", { reconciliar_restart: "sim" }, "fp1", false],
   ])("%s", async (_n, corpo, fp, esperado) => {
     const { decidirFlag } = await import("./flag-sincronizacao");
