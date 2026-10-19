@@ -49,8 +49,8 @@ import {
 // Arquivo ANTES do serviço: se o serviço falhar, "Update the stack" já traz a
 // política certa; o contrário deixaria o arquivo mandando de volta on-failure.
 //
-// Lease: tomado uma vez no início (agora do tick) e RENOVADO, com o relógio de
-// verdade, antes de gravar o arquivo, antes de cada serviço ao vivo e a cada
+// Lease: tomado uma vez no início (com o relógio de verdade) e RENOVADO, com o relógio de
+// verdade, antes de ler o estado do sidecar, antes de gravar o arquivo, antes de cada serviço ao vivo e a cada
 // checagem de convergência que deu negativa. O passo ao vivo pode passar dos
 // 10 min do TTL; renovando, o prazo nunca vence com o processo vivo e vence em
 // até 10 min se ele morrer. Se a renovação falha (outro dono assumiu), o tick
@@ -110,7 +110,7 @@ export type OpcoesReconciliar = {
 
 /** Interno: a renovação do lease falhou (outro dono assumiu). Sobe até o catch externo. */
 class LeasePerdido extends Error {
-  constructor(public ponto: "arquivo" | "servico" | "convergencia") {
+  constructor(public ponto: "estado" | "arquivo" | "servico" | "convergencia") {
     super(`lease_perdido:${ponto}`);
   }
 }
@@ -295,7 +295,7 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
     }
 
     // 2) Há o que fazer: lease (compartilhado com sincronizarStackEnchat no enchat).
-    if (emAndamentoLocal || !tentarLease(def.leaseKey, DONO, LEASE_MS, agora)) return res("ocupado");
+    if (emAndamentoLocal || !tentarLease(def.leaseKey, DONO, LEASE_MS, relogio())) return res("ocupado");
     emAndamentoLocal = true;
     try {
       const l = await ler(def, token, endpointId, apiMs); // reconfere sob o lease
@@ -327,6 +327,9 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
             ? () => comTimeout(lerEstadoDoUpdaterTracker(token, endpointId, agora), jobMs, "estado_updater_tracker")
             : null;
       if (leitorDeEstado) {
+        // A reconferência sob o lease pode levar até 6 min e a leitura do estado até 4: renova ANTES do portão
+        // para que a margem do TTL no pior caso não seja zero.
+        await renovarLease("estado");
         const est = await leitorDeEstado();
         if (est.estado?.em_andamento) {
           registrarResultado(chave, "aguardando", "sidecar_ocupado", { agora });

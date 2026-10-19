@@ -395,7 +395,8 @@ describe("janela 02h–05h e portões", () => {
     expect(tentarLease("enchat", "sincronizador", 600_000, NA_JANELA)).toBe(true);
     const { reconciliarStack } = await runtime();
     const { STACK_RESTART_ENCHAT } = await defs();
-    expect((await reconciliarStack(STACK_RESTART_ENCHAT, op())).etapa).toBe("ocupado");
+    // A tomada usa o relógio injetado: sem ele valeria Date.now() real e o lease de NA_JANELA já teria vencido.
+    expect((await reconciliarStack(STACK_RESTART_ENCHAT, { ...op(), relogio: () => NA_JANELA })).etapa).toBe("ocupado");
     expect(escritas()).toEqual([]);
   });
 
@@ -562,7 +563,7 @@ describe("banco ocupado na renovação do lease", () => {
 
   it("renovação com banco ocupado persistente aborta como lease_indisponivel, não lease_perdido", async () => {
     instalaEnchat();
-    comBusy(["ocupado", "ocupado"]);
+    comBusy(["real", "ocupado", "ocupado"]); // a primeira renovação (portão do estado) passa; a do arquivo trava
     const esperar = vi.fn(async () => {});
     const r = await tick({ esperar });
     expect(r).toMatchObject({ etapa: "lease_indisponivel", detalhe: "arquivo" });
@@ -685,5 +686,160 @@ describe("portão do tracker-updater (encha_tracker)", () => {
     expect((await reconciliarStack(STACK_RESTART_ENCHAT, op())).etapa).toBe("aplicado");
     expect(m.estadoTracker).not.toHaveBeenCalled();
     expect(m.estado).toHaveBeenCalled();
+  });
+});
+
+describe("lease renovado antes do portão de estado do sidecar", () => {
+  const MIN = 60_000;
+  // As asserções rodam depois do tick (um expect dentro do gancho viraria etapa "falhou" pelo catch externo).
+  let retornos: boolean[];
+  let relogioMs: number;
+  let tempos: number[]; // instante (relógio simulado) de cada renovação via tentarLeaseDetalhado
+  const relogio = () => relogioMs;
+  const tomarComoSincronizador = async (chave: string, t: number) => {
+    const { tentarLease } = await store();
+    retornos.push(tentarLease(chave, "sincronizador", 10 * MIN, t));
+  };
+  const espiaRenovacoes = (sequencia: Array<"ocupado" | "real"> = []) => {
+    vi.doMock("./stack-sync-store", async () => {
+      const real = await vi.importActual<typeof import("./stack-sync-store")>("./stack-sync-store");
+      return {
+        ...real,
+        tentarLeaseDetalhado: (...a: Parameters<typeof real.tentarLeaseDetalhado>) => {
+          tempos.push(a[3] ?? Date.now());
+          return sequencia.shift() === "ocupado" ? "ocupado" : real.tentarLeaseDetalhado(...a);
+        },
+      };
+    });
+  };
+  /** A segunda chamada de getStackFile é a da reconferência sob o lease (a primeira é a leitura barata). */
+  const durantePrimeiraReconferencia = (fn: () => Promise<void>) => {
+    const base = m.getStackFile.getMockImplementation()!;
+    let n = 0;
+    m.getStackFile.mockImplementation(async (...a: unknown[]) => {
+      const r = await (base as (...x: unknown[]) => Promise<string>)(...a);
+      if (++n === 2) await fn();
+      return r;
+    });
+  };
+  const tick = async (def: "enchat" | "tracker", o: Record<string, unknown> = {}) => {
+    const { reconciliarStack } = await runtime();
+    const d = await defs();
+    return reconciliarStack(def === "enchat" ? d.STACK_RESTART_ENCHAT : d.STACK_RESTART_TRACKER, { ...op(), relogio, ...o });
+  };
+  const fails = () => m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.restart_policy.fail");
+
+  beforeEach(() => {
+    retornos = [];
+    tempos = [];
+    relogioMs = NA_JANELA;
+  });
+
+  it("enchat: lease perdido antes do portão do sidecar aborta sem ler o estado nem escrever", async () => {
+    instalaEnchat();
+    durantePrimeiraReconferencia(() => tomarComoSincronizador("enchat", NA_JANELA + 11 * MIN));
+    const r = await tick("enchat");
+    expect(retornos).toEqual([true]);
+    expect(r).toMatchObject({ etapa: "lease_perdido", detalhe: "estado" });
+    expect(m.estado).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(escritas()).toEqual([]);
+    expect(fails()).toHaveLength(1);
+    expect(fails()[0]).toMatchObject({ result: "error", meta: { stack: "enchat", etapa: "lease_perdido", motivo: "estado" } });
+  });
+
+  it("tracker: lease perdido antes do portão do updater aborta sem ler o estado nem escrever", async () => {
+    instalaTracker();
+    durantePrimeiraReconferencia(() => tomarComoSincronizador("restart:encha_tracker", NA_JANELA + 11 * MIN));
+    const r = await tick("tracker");
+    expect(retornos).toEqual([true]);
+    expect(r).toMatchObject({ etapa: "lease_perdido", detalhe: "estado" });
+    expect(m.estadoTracker).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(escritas()).toEqual([]);
+    expect(fails()).toHaveLength(1);
+    expect(fails()[0]).toMatchObject({ result: "error", meta: { stack: "encha_tracker", etapa: "lease_perdido", motivo: "estado" } });
+  });
+
+  it("portão do estado: banco ocupado na renovação aborta como lease_indisponivel sem ler o estado", async () => {
+    for (const def of ["enchat", "tracker"] as const) {
+      vi.doUnmock("./stack-sync-store");
+      vi.resetModules();
+      m.audit.mockReset();
+      m.estado.mockClear();
+      m.estadoTracker.mockClear();
+      if (def === "enchat") instalaEnchat();
+      else instalaTracker();
+      espiaRenovacoes(["ocupado", "ocupado"]);
+      const esperar = vi.fn(async () => {});
+      const r = await tick(def, { esperar });
+      expect(r).toMatchObject({ etapa: "lease_indisponivel", detalhe: "estado" });
+      expect(esperar).toHaveBeenCalledWith(250);
+      expect(m.estado).not.toHaveBeenCalled();
+      expect(m.estadoTracker).not.toHaveBeenCalled();
+      expect(m.gravar).not.toHaveBeenCalled();
+      expect(escritas()).toEqual([]);
+      expect(fails()).toHaveLength(1);
+      expect(fails()[0].meta).toMatchObject({ etapa: "lease_indisponivel", motivo: "estado" });
+      const { lerEstadoSync, podeTentarAuto } = await store();
+      const chave = def === "enchat" ? "restart:enchat" : "restart:encha_tracker";
+      expect(lerEstadoSync(chave)).toMatchObject({ lastResult: "aguardando", lastDetail: "lease_indisponivel:estado", attempts: 0, nextAttemptAt: 0, autoDisabledReason: null });
+      expect(podeTentarAuto(chave, NA_JANELA).pode).toBe(true);
+    }
+  });
+
+  it("tomada inicial do lease usa o relógio injetado, não o agora do tick", async () => {
+    instalaEnchat();
+    relogioMs = NA_JANELA + 30 * MIN; // o relógio de verdade já andou 30 min desde o agora do tick
+    durantePrimeiraReconferencia(() => tomarComoSincronizador("enchat", relogioMs + MIN));
+    const r = await tick("enchat");
+    // Tomado em relogio(): vale até relogio()+10 min, então a tentativa 1 min depois falha.
+    // Tomado em agora: já nasceu vencido (agora+10 min < relogio()) e a tentativa passaria.
+    expect(retornos).toEqual([false]);
+    expect(r.etapa).toBe("aplicado");
+  });
+
+  it("pior caso: o maior intervalo entre renovações fica abaixo de 6 min do TTL de 10 min", async () => {
+    instalaEnchat();
+    espiaRenovacoes();
+    // Relógio simulado: cada chamada da reconferência (as 6 do segundo ler) leva 60 s, o sidecar 4 min, a gravação
+    // 4 min e cada chamada do passo ao vivo 60 s. A cada passo o sincronizador sonda a chave.
+    const passo = async (ms: number) => {
+      relogioMs += ms;
+      await tomarComoSincronizador("enchat", relogioMs);
+    };
+    let leituras = 0;
+    const embrulha = (f: typeof m.getServiceExact, ms: number, soDepoisDe: number) => {
+      const base = f.getMockImplementation()!;
+      f.mockImplementation(async (...a: unknown[]) => {
+        const r = await (base as (...x: unknown[]) => Promise<unknown>)(...a);
+        if (soDepoisDe < 0 || ++leituras > soDepoisDe) await passo(ms);
+        return r;
+      });
+    };
+    // As 6 primeiras leituras (4 serviços + listStacks + getStackFile) são a leitura barata, antes do lease: não avançam.
+    embrulha(m.getServiceExact, MIN, 6);
+    embrulha(m.listStacks, MIN, 6);
+    embrulha(m.getStackFile, MIN, 6);
+    embrulha(m.listServiceTasks, MIN, -1);
+    embrulha(m.updateServiceRestartPolicy, MIN, -1);
+    m.estado.mockImplementation(async () => {
+      await passo(4 * MIN);
+      return { estado: { em_andamento: false } };
+    });
+    m.gravar.mockImplementation(async (_t: string, _e: number, stack: { Id: number }, atual: string, novo: string) => {
+      ordem.push(`arquivo:${stack.Id}`);
+      await passo(4 * MIN);
+      arquivos.enchat = novo;
+      void atual;
+    });
+    const r = await tick("enchat", { esperar: async () => passo(5_000) });
+    const instantes = [NA_JANELA, ...tempos]; // a tomada inicial + cada renovação
+    const maior = Math.max(...instantes.slice(1).map((t, i) => t - instantes[i]));
+    expect(maior).toBeLessThanOrEqual(6 * MIN);
+    expect(maior).toBeGreaterThan(0);
+    expect(retornos.length).toBeGreaterThan(10); // a sondagem rodou a cada passo
+    expect(retornos.some((x) => x)).toBe(false); // e o lease nunca venceu entre uma chamada e outra
+    expect(r.etapa).toBe("aplicado");
   });
 });
