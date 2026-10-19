@@ -843,3 +843,138 @@ describe("lease renovado antes do portão de estado do sidecar", () => {
     expect(r.etapa).toBe("aplicado");
   });
 });
+
+describe("timeout em discoverContext e na obtenção do token", () => {
+  const MIN = 60_000;
+  const nunca = (): Promise<never> => new Promise(() => {});
+  const CHAVES = ["restart:enchat", "restart:encha_tracker"];
+  const tentar = async (agora = NA_JANELA, o: Record<string, unknown> = {}) => {
+    const { tentarReconciliarRestart } = await runtime();
+    return tentarReconciliarRestart(agora, { chamadaMs: 40, esperar: async () => {}, convergenciaMs: 20_000, ...o });
+  };
+  const fails = () => m.audit.mock.calls.map((c) => c[0]).filter((a) => a.action === "stack.restart_policy.fail");
+  const nadaTocado = () => {
+    expect(m.getServiceExact).not.toHaveBeenCalled();
+    expect(m.listStacks).not.toHaveBeenCalled();
+    expect(m.getStackFile).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect(m.updateServiceRestartPolicy).not.toHaveBeenCalled();
+    expect(m.estado).not.toHaveBeenCalled();
+    expect(escritas()).toEqual([]);
+  };
+  const semBackoff = async (rotulo: string, agora = NA_JANELA) => {
+    const { lerEstadoSync, podeTentarAuto } = await store();
+    for (const chave of CHAVES) {
+      expect(lerEstadoSync(chave)).toMatchObject({
+        lastResult: "aguardando", lastDetail: `portainer_travado:${rotulo}`, attempts: 0, nextAttemptAt: 0, autoDisabledReason: null,
+      });
+      expect(podeTentarAuto(chave, agora).pode).toBe(true);
+    }
+  };
+  const auditou = (rotulo: string, vezes = 1) => {
+    const f = fails();
+    expect(f).toHaveLength(2 * vezes);
+    for (const a of f) expect(a).toMatchObject({ result: "error", meta: { etapa: "portainer_travado", motivo: rotulo } });
+    expect(new Set(f.map((a) => a.meta.stack))).toEqual(new Set(["enchat", "encha_tracker"]));
+  };
+
+  it("discoverContext travado: portainer_travado sem backoff e sem lease", async () => {
+    instalaEnchat();
+    instalaTracker();
+    m.discoverContext.mockImplementation(() => nunca());
+    const r = await tentar();
+    expect(r).toEqual([
+      { stack: "enchat", etapa: "portainer_travado", detalhe: "discoverContext" },
+      { stack: "encha_tracker", etapa: "portainer_travado", detalhe: "discoverContext" },
+    ]);
+    nadaTocado();
+    // Nenhum lease foi tomado: o sincronizador toma as duas chaves logo em seguida.
+    const { tentarLease } = await store();
+    expect(tentarLease("enchat", "sincronizador", 10 * MIN, NA_JANELA)).toBe(true);
+    expect(tentarLease("restart:encha_tracker", "sincronizador", 10 * MIN, NA_JANELA)).toBe(true);
+    await semBackoff("discoverContext");
+    auditou("discoverContext");
+  });
+
+  it("token travado: portainer_travado sem backoff e sem tocar stack", async () => {
+    instalaEnchat();
+    instalaTracker();
+    m.withServiceToken.mockImplementation(() => nunca());
+    const r = await tentar();
+    expect(r).toEqual([
+      { stack: "enchat", etapa: "portainer_travado", detalhe: "withServiceToken" },
+      { stack: "encha_tracker", etapa: "portainer_travado", detalhe: "withServiceToken" },
+    ]);
+    expect(m.discoverContext).not.toHaveBeenCalled();
+    nadaTocado();
+    await semBackoff("withServiceToken");
+    auditou("withServiceToken");
+  });
+
+  it("token tardio depois do aborto não inicia rodada", async () => {
+    instalaEnchat();
+    instalaTracker();
+    m.withServiceToken.mockImplementation(
+      (fn: (t: string) => Promise<unknown>) => new Promise((ok) => setTimeout(() => ok(fn("tok")), 150))
+    );
+    const r = await tentar();
+    expect(r.map((x) => x.etapa)).toEqual(["portainer_travado", "portainer_travado"]);
+    await new Promise((res) => setTimeout(res, 300)); // o token chega depois do aborto
+    expect(m.discoverContext).not.toHaveBeenCalled();
+    nadaTocado();
+  });
+
+  it("token que rejeita depois do aborto é descartado sem erro não tratado", async () => {
+    m.withServiceToken.mockImplementation(() => new Promise((_ok, ko) => setTimeout(() => ko(new Error("tarde")), 120)));
+    const r = await tentar();
+    expect(r.map((x) => x.etapa)).toEqual(["portainer_travado", "portainer_travado"]);
+    await new Promise((res) => setTimeout(res, 300));
+  });
+
+  it("rodada longa depois do token chegar não é cortada pelo timeout do token", async () => {
+    instalaEnchat();
+    instalaTracker();
+    // Cada chamada fica abaixo do limite (80 ms), mas a rodada inteira passa dele várias vezes.
+    const base = m.getServiceExact.getMockImplementation()!;
+    m.getServiceExact.mockImplementation(async (...a: unknown[]) => {
+      await new Promise((res) => setTimeout(res, 25));
+      return (base as (...x: unknown[]) => Promise<unknown>)(...a);
+    });
+    const r = await tentar(NA_JANELA, { chamadaMs: 80 });
+    expect(r.map((x) => x.etapa)).toEqual(["aplicado", "aplicado"]);
+  });
+
+  it("contexto travado três vezes: nenhum backoff nem desligamento", async () => {
+    instalaEnchat();
+    instalaTracker();
+    m.discoverContext.mockImplementation(() => nunca());
+    for (let i = 0; i < 3; i++) {
+      const r = await tentar(NA_JANELA + i * 30 * MIN);
+      expect(r.map((x) => x.etapa)).toEqual(["portainer_travado", "portainer_travado"]);
+    }
+    await semBackoff("discoverContext", NA_JANELA + 60 * MIN);
+    auditou("discoverContext", 3);
+    nadaTocado();
+  });
+
+  it("contexto travado não apaga o estado de uma stack em backoff", async () => {
+    instalaEnchat();
+    instalaTracker();
+    const { registrarResultado, lerEstadoSync, podeTentarAuto } = await store();
+    registrarResultado("restart:enchat", "falhou", "compose_inesperado", { agora: NA_JANELA });
+    const antes = lerEstadoSync("restart:enchat");
+    expect(antes).toMatchObject({ lastResult: "falhou", attempts: 1 });
+    expect(podeTentarAuto("restart:enchat", NA_JANELA + MIN).pode).toBe(false);
+    m.discoverContext.mockImplementation(() => nunca());
+    const r = await tentar(NA_JANELA + MIN);
+    expect(r).toEqual([
+      { stack: "enchat", etapa: "backoff" },
+      { stack: "encha_tracker", etapa: "portainer_travado", detalhe: "discoverContext" },
+    ]);
+    expect(lerEstadoSync("restart:enchat")).toEqual(antes); // last_result, last_detail, last_at, attempts, next_attempt_at intactos
+    expect(lerEstadoSync("restart:encha_tracker")).toMatchObject({ lastResult: "aguardando", lastDetail: "portainer_travado:discoverContext", attempts: 0 });
+    const f = fails();
+    expect(f).toHaveLength(1); // nada auditado para a stack em backoff
+    expect(f[0].meta).toMatchObject({ stack: "encha_tracker", etapa: "portainer_travado", motivo: "discoverContext" });
+  });
+});

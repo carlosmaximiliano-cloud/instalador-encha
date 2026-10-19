@@ -56,7 +56,8 @@ import {
 // até 10 min se ele morrer. Se a renovação falha (outro dono assumiu), o tick
 // aborta sem tocar nada depois, como "aguardando" (não conta falha nem backoff).
 //
-// Timeout: cada chamada de API ao Portainer tem 60 s e o que roda um job (gravação
+// Timeout: a obtenção do token e o discoverContext também têm o limite de uma chamada (60 s); estouro = nada foi
+// tomado nem lido, resultado "aguardando" por stack e auditoria portainer_travado, sem backoff. Cada chamada de API ao Portainer tem 60 s e o que roda um job (gravação
 // do arquivo, leitura do estado do sidecar) 4 min, ambos abaixo do TTL. Estourou =
 // aborto "portainer_travado" (aguardando, sem backoff) e o lease NÃO é solto: a
 // chamada abandonada ainda pode pousar, e outro dono só assume depois do TTL.
@@ -419,18 +420,66 @@ export async function reconciliarStack(def: StackRestart, op: OpcoesReconciliar)
 
 // ── Tick e agendamento ──────────────────────────────────────────────────
 
+/**
+ * Obtém o token com limite de tempo SÓ até o callback começar: withServiceToken executa a rodada inteira dentro do
+ * callback, então embrulhá-lo inteiro cortaria toda rodada real aos 60 s. O timer é desarmado quando o callback
+ * começa; o token que chega depois do aborto não inicia rodada (rodada abandonada não toca stack algum). A promessa
+ * de withServiceToken tem tratador próprio: a rejeição tardia é descartada.
+ */
+function comTokenTemporizado(ms: number, rodada: (token: string) => Promise<void>): Promise<void> {
+  return new Promise<void>((ok, ko) => {
+    let abandonada = false;
+    const timer = setTimeout(() => {
+      abandonada = true;
+      ko(new PortainerTravado("withServiceToken"));
+    }, ms);
+    withServiceToken(async (token) => {
+      if (abandonada) return;
+      clearTimeout(timer);
+      await rodada(token);
+    }).then(
+      () => {
+        clearTimeout(timer);
+        if (!abandonada) ok();
+      },
+      (e) => {
+        clearTimeout(timer);
+        if (!abandonada) ko(e);
+      }
+    );
+  });
+}
+
+/**
+ * Token ou contexto travou: nenhum lease foi tomado e nada foi lido. Sem backoff nem falha (o Portainer pode estar só
+ * lento): `aguardando` + auditoria `.fail` por stack. Stack em backoff ou desligada fica como está (não se grava
+ * nada por cima do `falhou` dela).
+ */
+function abortarRodada(rotulo: string, agora: number): ResultadoTick[] {
+  return STACKS_RECONCILIADAS.map((def): ResultadoTick => {
+    const chave = `restart:${def.stack}`;
+    if (!podeTentarAuto(chave, agora).pode) return { stack: def.stack, etapa: "backoff" };
+    auditar(def, def.stack, "error", { etapa: "portainer_travado", motivo: rotulo }, true);
+    registrarResultado(chave, "aguardando", `portainer_travado:${rotulo}`, { agora });
+    return { stack: def.stack, etapa: "portainer_travado", detalhe: rotulo };
+  });
+}
+
 export async function tentarReconciliarRestart(agora = Date.now(), op: Partial<OpcoesReconciliar> = {}): Promise<ResultadoTick[]> {
   const out: ResultadoTick[] = [];
   try {
     if (!(await reconciliacaoRestartLigada(agora))) return out;
-    await withServiceToken(async (token) => {
-      const { endpointId } = await discoverContext(token); // falha cedo se o Portainer estiver fora
+    const ms = op.chamadaMs ?? CHAMADA_MS;
+    await comTokenTemporizado(ms, async (token) => {
+      // falha cedo se o Portainer estiver fora
+      const { endpointId } = await comTimeout(discoverContext(token), ms, "discoverContext");
       for (const def of STACKS_RECONCILIADAS) {
         out.push(await reconciliarStack(def, { ...op, token, endpointId, agora }));
       }
     });
   } catch (e) {
-    console.error("[restart-policy] tentativa falhou (a próxima rodada tenta de novo):", e instanceof Error ? e.message : e);
+    if (e instanceof PortainerTravado) out.push(...abortarRodada(e.rotulo, agora));
+    else console.error("[restart-policy] tentativa falhou (a próxima rodada tenta de novo):", e instanceof Error ? e.message : e);
   }
   return out;
 }
