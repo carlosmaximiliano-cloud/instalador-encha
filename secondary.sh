@@ -4123,8 +4123,6 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - ${nome_rede_interna}
-    ports:
-      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${senha_mysql}
       - TZ=America/Sao_Paulo
@@ -8604,8 +8602,6 @@ services:
       - mongodb_data:/data/db
     networks:
       - ${nome_rede_interna}
-    ports:
-      - "27017:27017" # Expondo a porta para acesso externo, se necessário
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${user_mongo}
       - MONGO_INITDB_ROOT_PASSWORD=${pass_mongo}
@@ -9306,18 +9302,9 @@ ferramenta_qdrant(){
 
   while true; do
     read -r ip _ <<<$(hostname -I)
-    MSG_PT[ferramenta_qdrant_passo1]="\e[97mPasso$amarelo 1/2\e[0m"
-    MSG_EN[ferramenta_qdrant_passo1]="\e[97mStep$amarelo 1/2\e[0m"
-    MSG_ES[ferramenta_qdrant_passo1]="\e[97mPaso$amarelo 1/2\e[0m"
-    echo -e "$(t ferramenta_qdrant_passo1)"
-    MSG_PT[ferramenta_qdrant_pede_ip]="\e[33mDigite o ip da vps (seu ip: %s) ou dominio para Qdrant (ex: qdrant.encha.ai): \e[0m"
-    MSG_EN[ferramenta_qdrant_pede_ip]="\e[33mEnter the VPS ip (your ip: %s) or domain for Qdrant (e.g. qdrant.encha.ai): \e[0m"
-    MSG_ES[ferramenta_qdrant_pede_ip]="\e[33mIngrese el ip de la vps (su ip: %s) o dominio para Qdrant (ej: qdrant.encha.ai): \e[0m"
-    echo -en "$(t ferramenta_qdrant_pede_ip "$ip")" && read -r ip_vps
-    echo ""
-    MSG_PT[ferramenta_qdrant_passo2]="\e[97mPasso$amarelo 2/2\e[0m"
-    MSG_EN[ferramenta_qdrant_passo2]="\e[97mStep$amarelo 2/2\e[0m"
-    MSG_ES[ferramenta_qdrant_passo2]="\e[97mPaso$amarelo 2/2\e[0m"
+    MSG_PT[ferramenta_qdrant_passo2]="\e[97mPasso$amarelo 1/1\e[0m"
+    MSG_EN[ferramenta_qdrant_passo2]="\e[97mStep$amarelo 1/1\e[0m"
+    MSG_ES[ferramenta_qdrant_passo2]="\e[97mPaso$amarelo 1/1\e[0m"
     echo -e "$(t ferramenta_qdrant_passo2)"
     MSG_PT[ferramenta_qdrant_pede_nodes]="\e[33mDigite quantos Nodes você deseja (recomendado: 5): \e[0m"
     MSG_EN[ferramenta_qdrant_pede_nodes]="\e[33mEnter how many Nodes you want (recommended: 5): \e[0m"
@@ -9327,11 +9314,6 @@ ferramenta_qdrant(){
     clear
     msg_qdrant
 
-    MSG_PT[ferramenta_qdrant_resumo_ip]="\e[33mIp da VPS ou Dominio:\e[97m %s\e[0m"
-    MSG_EN[ferramenta_qdrant_resumo_ip]="\e[33mVPS IP or Domain:\e[97m %s\e[0m"
-    MSG_ES[ferramenta_qdrant_resumo_ip]="\e[33mIp de la VPS o Dominio:\e[97m %s\e[0m"
-    echo -e "$(t ferramenta_qdrant_resumo_ip "$ip_vps")"
-    echo ""
     MSG_PT[ferramenta_qdrant_resumo_nodes]="\e[33mQuantidade de Nodes:\e[97m %s\e[0m"
     MSG_EN[ferramenta_qdrant_resumo_nodes]="\e[33mNumber of Nodes:\e[97m %s\e[0m"
     MSG_ES[ferramenta_qdrant_resumo_nodes]="\e[33mCantidad de Nodes:\e[97m %s\e[0m"
@@ -9373,10 +9355,6 @@ EOL
 
     networks:
       - $nome_rede_interna
-
-    ports:
-      - "$((6333 + i * 10)):6333"
-      - "$((6334 + i * 10)):6334"
 
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
@@ -9429,7 +9407,10 @@ EOL
   cat > dados_qdrant <<EOL
 [ QDRANT ]
 
-Dominio: https://$ip_vps:6333/dashboard{ip}:6333/dashboard
+Endpoint interno (rede $nome_rede_interna): http://qdrant_node_0:6333 (REST) e qdrant_node_0:6334 (gRPC)
+Nenhuma porta publicada na VPS (sem API key): acesso so pela rede interna.
+Painel web, na VPS: docker run --rm -p 127.0.0.1:6333:6333 --network $nome_rede_interna alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333
+No seu computador: ssh -L 6333:127.0.0.1:6333 usuario@$ip e abra http://localhost:6333/dashboard
 EOL
 
   cd
@@ -9439,14 +9420,18 @@ EOL
   MSG_EN[ferramenta_qdrant_sucesso]="✅ Qdrant installed successfully!"
   MSG_ES[ferramenta_qdrant_sucesso]="✅ ¡Qdrant instalado con éxito!"
   echo "$(t ferramenta_qdrant_sucesso)"
-  MSG_PT[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
-  MSG_EN[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
-  MSG_ES[ferramenta_qdrant_dashboard]="\e[33mDashboard:\e[97m http://%s:6333/dashboard\e[0m"
-  echo -e "$(t ferramenta_qdrant_dashboard "$ip_vps")"
-  MSG_PT[ferramenta_qdrant_porta]="Porta REST API: 6333"
-  MSG_EN[ferramenta_qdrant_porta]="REST API Port: 6333"
-  MSG_ES[ferramenta_qdrant_porta]="Puerto REST API: 6333"
-  echo "$(t ferramenta_qdrant_porta)"
+  MSG_PT[ferramenta_qdrant_endpoint]="\e[33mEndpoint interno (rede %s):\e[97m http://qdrant_node_0:6333 (REST) / qdrant_node_0:6334 (gRPC)\e[0m"
+  MSG_EN[ferramenta_qdrant_endpoint]="\e[33mInternal endpoint (network %s):\e[97m http://qdrant_node_0:6333 (REST) / qdrant_node_0:6334 (gRPC)\e[0m"
+  MSG_ES[ferramenta_qdrant_endpoint]="\e[33mEndpoint interno (red %s):\e[97m http://qdrant_node_0:6333 (REST) / qdrant_node_0:6334 (gRPC)\e[0m"
+  echo -e "$(t ferramenta_qdrant_endpoint "$nome_rede_interna")"
+  MSG_PT[ferramenta_qdrant_sem_porta]="Nenhuma porta é publicada na VPS: o Qdrant só responde na rede interna."
+  MSG_EN[ferramenta_qdrant_sem_porta]="No port is published on the VPS: Qdrant only answers on the internal network."
+  MSG_ES[ferramenta_qdrant_sem_porta]="Ningún puerto se publica en la VPS: Qdrant solo responde en la red interna."
+  echo "$(t ferramenta_qdrant_sem_porta)"
+  MSG_PT[ferramenta_qdrant_tunel]="Painel web, na VPS: docker run --rm -p 127.0.0.1:6333:6333 --network %s alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333\nNo seu computador: ssh -L 6333:127.0.0.1:6333 usuario@%s e abra http://localhost:6333/dashboard"
+  MSG_EN[ferramenta_qdrant_tunel]="Web panel, on the VPS: docker run --rm -p 127.0.0.1:6333:6333 --network %s alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333\nOn your computer: ssh -L 6333:127.0.0.1:6333 user@%s and open http://localhost:6333/dashboard"
+  MSG_ES[ferramenta_qdrant_tunel]="Panel web, en la VPS: docker run --rm -p 127.0.0.1:6333:6333 --network %s alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333\nEn su computadora: ssh -L 6333:127.0.0.1:6333 usuario@%s y abra http://localhost:6333/dashboard"
+  echo -e "$(t ferramenta_qdrant_tunel "$nome_rede_interna" "$ip")"
   msg_retorno_menu
 
 }
@@ -10662,10 +10647,10 @@ ferramenta_anythingllm() {
     MSG_EN[ferramenta_anythingllm_passo2]="\n📍 \e[97mStep ${amarelo}2/3\e[0m"
     MSG_ES[ferramenta_anythingllm_passo2]="\n📍 \e[97mPaso ${amarelo}2/3\e[0m"
     echo -e "$(t ferramenta_anythingllm_passo2)"
-    MSG_PT[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mDigite o endpoint do Qdrant (ex: http://%s:6333): \e[0m"
-    MSG_EN[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEnter the Qdrant endpoint (e.g.: http://%s:6333): \e[0m"
-    MSG_ES[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEscriba el endpoint de Qdrant (ej: http://%s:6333): \e[0m"
-    echo -en "$(t ferramenta_anythingllm_qdrant_endpoint "$ip")" && read -r qdrant_anythingllm
+    MSG_PT[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mDigite o endpoint do Qdrant (ex: http://qdrant_node_0:6333): \e[0m"
+    MSG_EN[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEnter the Qdrant endpoint (e.g.: http://qdrant_node_0:6333): \e[0m"
+    MSG_ES[ferramenta_anythingllm_qdrant_endpoint]="🔗 \e[33mEscriba el endpoint de Qdrant (ej: http://qdrant_node_0:6333): \e[0m"
+    echo -en "$(t ferramenta_anythingllm_qdrant_endpoint)" && read -r qdrant_anythingllm
     echo ""
     MSG_PT[ferramenta_anythingllm_passo3]="\n📍 \e[97mPasso ${amarelo}3/3\e[0m"
     MSG_EN[ferramenta_anythingllm_passo3]="\n📍 \e[97mStep ${amarelo}3/3\e[0m"
