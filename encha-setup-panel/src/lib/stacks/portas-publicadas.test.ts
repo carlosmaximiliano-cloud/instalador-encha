@@ -15,7 +15,6 @@ const ALLOWLIST: Record<string, string[]> = {
 // Templates ainda não consertados, com o micro-ciclo que os conserta.
 // Vazio ao fim do ciclo.
 const PENDENTES: Record<string, string> = {
-  mysql: "F1.2",
   qdrant: "F1.3",
 };
 

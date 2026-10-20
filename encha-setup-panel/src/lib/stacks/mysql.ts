@@ -32,8 +32,6 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - ${net}
-    ports:
-      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${senha}
       - TZ=America/Sao_Paulo
@@ -54,12 +52,32 @@ networks:
     name: ${net}
 `;
   },
+  postInstall: {
+    notes: [
+      "Host interno (dentro do Swarm): mysql:3306",
+      "Usuário: root",
+      "Senha gerada automaticamente — veja no Audit log",
+      "Porta 3306 não exposta externamente por segurança",
+    ],
+  },
   i18n: {
     en: {
       description: "Classic relational database for web applications and CMS.",
+      notes: [
+        "Internal host (inside the Swarm): mysql:3306",
+        "User: root",
+        "Password generated automatically — see the Audit log",
+        "Port 3306 is not exposed externally for security",
+      ],
     },
     es: {
       description: "Base de datos relacional clásica para aplicaciones web y CMS.",
+      notes: [
+        "Host interno (dentro del Swarm): mysql:3306",
+        "Usuario: root",
+        "Contraseña generada automáticamente — vea el registro de auditoría",
+        "El puerto 3306 no está expuesto externamente por seguridad",
+      ],
     },
   },
 };

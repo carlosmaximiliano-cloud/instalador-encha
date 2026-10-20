@@ -19,7 +19,7 @@ export const phpmyadmin: StackDefinition = {
   installVia: "panel",
   fields: [
     { name: "url_phpmyadmin", label: "Domínio do phpMyAdmin", kind: "domain", placeholder: "phpmyadmin.suaempresa.com" },
-    { name: "host_phpmyadmin", label: "Host MySQL", kind: "text", placeholder: "mysql ou 1.1.1.1:3306", helpText: "Use 'mysql' se o MySQL estiver na mesma rede Swarm." },
+    { name: "host_phpmyadmin", label: "Host MySQL", kind: "text", placeholder: "mysql", helpText: "Use 'mysql' se o MySQL estiver na mesma rede Swarm." },
   ],
   schema,
   generateYaml(values, _secrets, ctx) {
@@ -72,7 +72,7 @@ networks:
         url_phpmyadmin: { label: "phpMyAdmin Domain", placeholder: "phpmyadmin.yourcompany.com" },
         host_phpmyadmin: {
           label: "MySQL Host",
-          placeholder: "mysql or 1.1.1.1:3306",
+          placeholder: "mysql",
           helpText: "Use 'mysql' if MySQL is on the same Swarm network.",
         },
       },
@@ -84,7 +84,7 @@ networks:
         url_phpmyadmin: { label: "Dominio de phpMyAdmin", placeholder: "phpmyadmin.suempresa.com" },
         host_phpmyadmin: {
           label: "Host de MySQL",
-          placeholder: "mysql o 1.1.1.1:3306",
+          placeholder: "mysql",
           helpText: "Use 'mysql' si MySQL está en la misma red de Swarm.",
         },
       },
