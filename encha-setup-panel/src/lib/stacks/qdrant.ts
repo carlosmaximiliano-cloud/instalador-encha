@@ -2,7 +2,6 @@ import { z } from "zod";
 import { type StackDefinition } from "./types";
 
 const schema = z.object({
-  ip_vps: z.string().min(3).max(253),
   nodes_qdrant: z.coerce.number().int().min(1).max(20),
 });
 
@@ -18,13 +17,6 @@ export const qdrant: StackDefinition = {
   optionNumber: 21,
   installVia: "panel",
   fields: [
-    {
-      name: "ip_vps",
-      label: "IP da VPS ou domínio do Qdrant",
-      kind: "domain",
-      placeholder: "qdrant.encha.ai",
-      helpText: "Pode ser um domínio ou o IP da VPS. Usado apenas para exibir a URL do dashboard.",
-    },
     {
       name: "nodes_qdrant",
       label: "Quantidade de nodes",
@@ -46,8 +38,6 @@ services:
     for (let i = 0; i < nodes; i++) {
       const nodeName = `qdrant_node_${i}`;
       const volumeName = `qdrant_data_${i}`;
-      const restPort = 6333 + i * 10;
-      const grpcPort = 6334 + i * 10;
       const command =
         i === 0
           ? `    command: ./qdrant --uri 'http://qdrant_node_0:6335'`
@@ -60,9 +50,6 @@ services:
       - ${volumeName}:/qdrant
     networks:
       - ${net}
-    ports:
-      - "${restPort}:6333"
-      - "${grpcPort}:6334"
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
       - QDRANT__CLUSTER__ENABLED=true
@@ -94,41 +81,45 @@ networks:
     return services;
   },
   postInstall: {
-    accessUrl: (v) => `http://${(v as { ip_vps: string }).ip_vps}:6333/dashboard`,
-    notes: ["Dashboard disponível em http://<ip-vps>:6333/dashboard", "REST API na porta 6333, gRPC na 6334"],
+    notes: [
+      "Endpoint interno (dentro do Swarm): http://qdrant_node_0:6333 (REST) e qdrant_node_0:6334 (gRPC)",
+      "Nenhuma porta é publicada na VPS e não há API key: o Qdrant só responde na rede interna, por segurança",
+      "Painel web: na VPS, rode docker run --rm -p 127.0.0.1:6333:6333 --network <rede-interna> alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333",
+      "No seu computador, abra o túnel ssh -L 6333:127.0.0.1:6333 usuario@<ip-vps> e acesse http://localhost:6333/dashboard",
+    ],
   },
   i18n: {
     en: {
       description: "Vector database for semantic search and RAG.",
       fields: {
-        ip_vps: {
-          label: "VPS IP or Qdrant domain",
-          placeholder: "qdrant.encha.ai",
-          helpText: "Can be a domain or the VPS IP. Used only to display the dashboard URL.",
-        },
         nodes_qdrant: {
           label: "Number of nodes",
           placeholder: "5",
           helpText: "Number of nodes in the Qdrant cluster (recommended: 5).",
         },
       },
-      notes: ["Dashboard available at http://<vps-ip>:6333/dashboard", "REST API on port 6333, gRPC on 6334"],
+      notes: [
+        "Internal endpoint (inside the Swarm): http://qdrant_node_0:6333 (REST) and qdrant_node_0:6334 (gRPC)",
+        "No port is published on the VPS and there is no API key: Qdrant only answers on the internal network, for security",
+        "Web panel: on the VPS, run docker run --rm -p 127.0.0.1:6333:6333 --network <internal-network> alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333",
+        "On your computer, open the tunnel ssh -L 6333:127.0.0.1:6333 user@<vps-ip> and go to http://localhost:6333/dashboard",
+      ],
     },
     es: {
       description: "Base de datos vectorial para búsqueda semántica y RAG.",
       fields: {
-        ip_vps: {
-          label: "IP de la VPS o dominio de Qdrant",
-          placeholder: "qdrant.encha.ai",
-          helpText: "Puede ser un dominio o la IP de la VPS. Se usa solo para mostrar la URL del dashboard.",
-        },
         nodes_qdrant: {
           label: "Cantidad de nodos",
           placeholder: "5",
           helpText: "Número de nodos del clúster Qdrant (recomendado: 5).",
         },
       },
-      notes: ["Dashboard disponible en http://<ip-vps>:6333/dashboard", "REST API en el puerto 6333, gRPC en el 6334"],
+      notes: [
+        "Endpoint interno (dentro del Swarm): http://qdrant_node_0:6333 (REST) y qdrant_node_0:6334 (gRPC)",
+        "Ningún puerto se publica en la VPS y no hay API key: Qdrant solo responde en la red interna, por seguridad",
+        "Panel web: en la VPS, ejecute docker run --rm -p 127.0.0.1:6333:6333 --network <red-interna> alpine/socat tcp-listen:6333,fork,reuseaddr tcp-connect:qdrant_node_0:6333",
+        "En su computadora, abra el túnel ssh -L 6333:127.0.0.1:6333 usuario@<ip-vps> y entre a http://localhost:6333/dashboard",
+      ],
     },
   },
 };

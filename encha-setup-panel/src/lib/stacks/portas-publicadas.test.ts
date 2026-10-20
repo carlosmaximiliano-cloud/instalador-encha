@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_STACKS } from "./registry";
+import { anythingllm } from "./anythingllm";
 import type { StackDefinition, SwarmContext } from "./types";
 
 // Ciclo painel-portas-banco: o Docker fura o UFW, então porta publicada num
@@ -14,9 +15,7 @@ const ALLOWLIST: Record<string, string[]> = {
 
 // Templates ainda não consertados, com o micro-ciclo que os conserta.
 // Vazio ao fim do ciclo.
-const PENDENTES: Record<string, string> = {
-  qdrant: "F1.3",
-};
+const PENDENTES: Record<string, string> = {};
 
 // Serviços do nível `services:` (2 espaços) com o bloco de texto de cada um
 // (mesma forma de restart-policy-templates.test.ts, que não exporta com segurança).
@@ -173,5 +172,17 @@ describe("portas publicadas pelos templates (Ciclo painel-portas-banco)", () => 
       const achadas = new Set(servicosDoYaml(renderiza(stack!)).flatMap((s) => portasPublicadas(s.bloco)));
       expect([...achadas].sort(), id).toEqual([...ALLOWLIST[id]].sort());
     }
+  });
+});
+
+describe("AnythingLLM x Qdrant: o endpoint de exemplo é o que o Qdrant gera", () => {
+  it("o placeholder do AnythingLLM (pt, en, es) é igual ao endpoint do primeiro nó do qdrant.ts", () => {
+    const qdrant = ALL_STACKS.find((s) => s.id === "qdrant")!;
+    const nome = servicosDoYaml(renderiza(qdrant, { nodes_qdrant: 1 }))[0].nome;
+    const esperado = `http://${nome}:6333`;
+    const campo = anythingllm.fields.find((f) => f.name === "qdrant_anythingllm")!;
+    expect(campo.placeholder, "placeholder do AnythingLLM (pt)").toBe(esperado);
+    expect(anythingllm.i18n?.en?.fields?.qdrant_anythingllm?.placeholder, "placeholder do AnythingLLM (en)").toBe(esperado);
+    expect(anythingllm.i18n?.es?.fields?.qdrant_anythingllm?.placeholder, "placeholder do AnythingLLM (es)").toBe(esperado);
   });
 });

@@ -20,7 +20,7 @@ export const anythingllm: StackDefinition = {
   installVia: "panel",
   fields: [
     { name: "url_anythingllm", label: "Domínio do AnythingLLM", kind: "domain", placeholder: "anything.suaempresa.com" },
-    { name: "qdrant_anythingllm", label: "Endpoint do Qdrant", kind: "text", placeholder: "http://qdrant:6333" },
+    { name: "qdrant_anythingllm", label: "Endpoint do Qdrant", kind: "text", placeholder: "http://qdrant_node_0:6333" },
     { name: "api_qdrant_anythingllm", label: "API Key do Qdrant (opcional)", kind: "password", sensitive: true, optional: true },
   ],
   schema,
@@ -72,7 +72,7 @@ networks:
       description: "All-in-one LLM client with RAG over your documents.",
       fields: {
         url_anythingllm: { label: "AnythingLLM domain", placeholder: "anything.yourcompany.com" },
-        qdrant_anythingllm: { label: "Qdrant endpoint", placeholder: "http://qdrant:6333" },
+        qdrant_anythingllm: { label: "Qdrant endpoint", placeholder: "http://qdrant_node_0:6333" },
         api_qdrant_anythingllm: { label: "Qdrant API Key (optional)" },
       },
       notes: ["User and password created on first access"],
@@ -81,7 +81,7 @@ networks:
       description: "Cliente LLM todo en uno con RAG sobre sus documentos.",
       fields: {
         url_anythingllm: { label: "Dominio de AnythingLLM", placeholder: "anything.suempresa.com" },
-        qdrant_anythingllm: { label: "Endpoint de Qdrant", placeholder: "http://qdrant:6333" },
+        qdrant_anythingllm: { label: "Endpoint de Qdrant", placeholder: "http://qdrant_node_0:6333" },
         api_qdrant_anythingllm: { label: "API Key de Qdrant (opcional)" },
       },
       notes: ["Usuario y contraseña creados en el primer acceso"],
