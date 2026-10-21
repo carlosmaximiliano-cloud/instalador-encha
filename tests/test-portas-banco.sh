@@ -29,6 +29,15 @@ violacoes() {
       chave = pub "/" (proto == "" ? "tcp" : proto)
       if (!(chave in ok)) print "porta publicada " pub " (" chave ") fora da allowlist (linha " lin ")"
     }
+    # um item da forma curta ("A:B", "A:B/udp", "ip:A:B", "A"), com ou sem aspas
+    function item(v, lin,   proto, np, p, pub) {
+      gsub(/["\047]/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      proto = "tcp"
+      if (v ~ /\//) { proto = v; sub(/^.*\//, "", proto); sub(/\/.*$/, "", v) }
+      np = split(v, p, ":")
+      pub = (np == 1) ? p[1] : p[np - 1]
+      confere(pub, proto, lin)
+    }
     function flush() { if (pend != "") confere(pend, pproto, plin); pend = ""; pproto = "tcp" }
     {
       linha = $0
@@ -45,16 +54,20 @@ violacoes() {
           next
         } else if (t ~ /^-/) {
           flush()
-          v = t; sub(/^-[[:space:]]+/, "", v); sub(/[[:space:]]+#.*$/, "", v); gsub(/["\047]/, "", v)
-          proto = "tcp"
-          if (v ~ /\//) { proto = v; sub(/^.*\//, "", proto); sub(/\/.*$/, "", v) }
-          np = split(v, p, ":")
-          pub = (np == 1) ? p[1] : p[np - 1]
-          confere(pub, proto, NR)
+          v = t; sub(/^-[[:space:]]+/, "", v); sub(/[[:space:]]+#.*$/, "", v)
+          item(v, NR)
           next
         } else { flush(); em = 0 }
       }
       if (t ~ /^ports:[[:space:]]*$/) { em = 1; recuo = ind; pend = ""; pproto = "tcp" }
+      else if (t ~ /^ports:[[:space:]]*\[/) {
+        # lista em fluxo: ports: ["A:B", "C:D/udp"]
+        v = t; sub(/^ports:[[:space:]]*\[/, "", v)
+        if (v !~ /\]/) { print "lista em fluxo de ports: em varias linhas nao e suportada (linha " NR ")"; next }
+        sub(/\].*$/, "", v)
+        n = split(v, itens, ",")
+        for (k = 1; k <= n; k++) item(itens[k], NR)
+      }
     }
     END { flush() }
   ' "$1"
@@ -70,17 +83,37 @@ n="$(grep -cE '^[[:space:]]+ports:[[:space:]]*$' secondary.sh)"
 [ "$n" -ge 4 ] && ok "secondary.sh tem $n blocos ports: ativos (traefik, azuracast, rustdesk...)" \
   || falha "esperava ao menos 4 blocos ports: ativos em secondary.sh, achei $n (a varredura sumiu?)"
 
-# ── 2. o detector tem que pegar ─────────────────────────────────────────
+# ── 2. o detector tem que pegar (um autoteste por formato legal de ports:) ──
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+FORMATOS_VISTOS=""
+# formato NOME ARQUIVO PORTA...: o arquivo tem que acusar cada PORTA listada
+formato() {
+  nome="$1"; arq="$2"; shift 2
+  FORMATOS_VISTOS="$FORMATOS_VISTOS $nome "
+  r="$(violacoes "$arq")"
+  for p in "$@"; do
+    echo "$r" | grep -qE "porta publicada .*$p" && ok "formato $nome: o detector acusa a porta $p" \
+      || falha "formato $nome: o detector NÃO acusa a porta $p"
+  done
+}
 printf '  svc:\n    ports:\n      - "3306:3306"\n      - "$((6333 + i * 10)):6333"\n      - "27017:27017" # nota\n' > "$TMP/ruim.yaml"
 printf '  svc:\n    ports:\n      - 21115:21115\n      - 21116:21116/udp\n      - target: 80\n        published: 80\n        mode: host\n      #- 9999:9999\n    environment:\n      - A=1\n' > "$TMP/bom.yaml"
-r="$(violacoes "$TMP/ruim.yaml")"
-for p in 3306 6333 27017; do
-  echo "$r" | grep -q "$p" && ok "o detector acusa a porta $p" || falha "o detector NÃO acusa a porta $p"
+formato curta "$TMP/ruim.yaml" 3306 6333 27017
+printf '  svc:\n    ports: ["3306:3306", '"'"'27017:27017/tcp'"'"']\n    environment:\n      - A=1\n' > "$TMP/fluxo.yaml"
+formato fluxo "$TMP/fluxo.yaml" 3306 27017
+printf '  svc:\n    ports:\n    - "3306:3306"\n    environment:\n    - A=1\n' > "$TMP/recuo.yaml"
+formato mesmo-recuo "$TMP/recuo.yaml" 3306
+printf '  svc:\n    ports:\n      - target: 3306\n        published: 3306\n        protocol: tcp\n' > "$TMP/longa.yaml"
+formato longa "$TMP/longa.yaml" 3306
+for nome in curta fluxo mesmo-recuo longa; do
+  case "$FORMATOS_VISTOS" in *" $nome "*) ;; *) falha "autoteste do formato $nome ausente" ;; esac
 done
 [ -z "$(violacoes "$TMP/bom.yaml")" ] && ok "o detector aceita a allowlist (e ignora comentário)" \
   || falha "o detector acusou porta permitida: $(violacoes "$TMP/bom.yaml")"
+printf '  svc:\n    ports: ["21115:21115", "21116:21116/udp"]\n' > "$TMP/fluxo-bom.yaml"
+[ -z "$(violacoes "$TMP/fluxo-bom.yaml")" ] && ok "o detector aceita a allowlist em lista em fluxo" \
+  || falha "o detector acusou porta permitida em fluxo: $(violacoes "$TMP/fluxo-bom.yaml")"
 
 if [ "$falhas" -gt 0 ]; then
   echo "❌ FALHOU: $falhas verificação(ões) com problema"
