@@ -62,6 +62,23 @@
 # e os sets são omitidos do ruleset, como pares4/pares6 já fazem quando não
 # têm elemento nenhum.
 #
+# ENCHA_GUARD_PORTAS_BANCO (ciclo painel-guard-portas-banco): INTERRUPTOR,
+# não lista. O valor exato `1` liga a cadeia `encaminhamento` (hook forward);
+# ausente ou vazio = cadeia ausente, sem log; qualquer outro valor = cadeia
+# ausente e uma linha de log. Nenhum byte da variável chega ao `nft`. As
+# portas protegidas são TEXTO FIXO deste script (3306, 6333-6524, 27017),
+# nunca configuração: ninguém escolhe porta em tempo de execução. A cadeia
+# descarta só a entrada NOVA, com DNAT, TCP, cuja porta ORIGINAL (`ct
+# original proto-dst`, a publicada, antes da tradução) está no conjunto e que
+# não vem de interface local/do Docker nem de um par. É o que fecha a porta
+# publicada pelo Docker (que fura o UFW e a cadeia `entrada`). Limite
+# conhecido: conexão atendida pelo docker-proxy (INPUT, sem DNAT — caso
+# típico de IPv6 em porta `-p`/`mode: host`) NÃO passa pelo forward e esta
+# cadeia não a cobre. ENCHA_GUARD_PORTAS_BANCO_LOCAL=off (sem diferenciar
+# maiúsculas) é o escape do cliente: vence a variável, omite a cadeia e loga.
+# A tabela tem dois degraus a mais na falha fechada (ver aplicar_se_necessario):
+# um kernel sem `ct original` custa só a cadeia, nunca os pares nem o SSH.
+#
 # IMPORTANTE — nunca apagar a tabela ao encerrar: as regras vivem no kernel
 # do HOST (rede `host`, contêiner sem net namespace próprio), não no
 # contêiner. Um restart/replace do contêiner (deploy, update, OOM, reboot)
@@ -307,15 +324,50 @@ coletar_portas_ssh() {
   PORTAS_SSH_VALIDAS="${PORTAS_SSH_VALIDAS# }"
 }
 
+# --- trava de portas de banco (ciclo painel-guard-portas-banco) -----------
+
+# Portas publicadas que a cadeia encaminhamento fecha: texto fixo, fora de
+# qualquer variável de ambiente.
+PORTAS_BANCO_ELEMENTOS='3306, 6333-6524, 27017'
+
+# 1 = a cadeia entra nos degraus com cadeia da escada. Decidido UMA vez, no
+# processo principal (nunca dentro de $(...), que perderia a variável).
+CADEIA_PORTAS_BANCO=0
+
+decidir_cadeia_portas_banco() {
+  CADEIA_PORTAS_BANCO=0
+  case "${ENCHA_GUARD_PORTAS_BANCO:-}" in
+    '') return 0 ;;
+    1) : ;;
+    *)
+      # O valor NUNCA é impresso nem interpolado: só o interruptor `1` liga.
+      log "ENCHA_GUARD_PORTAS_BANCO com valor inválido (só o valor exato 1 liga a trava de portas de banco) — cadeia omitida."
+      return 0
+      ;;
+  esac
+  local_off="$(printf '%s' "${ENCHA_GUARD_PORTAS_BANCO_LOCAL:-}" | tr '[:upper:]' '[:lower:]')"
+  if [ "$local_off" = "off" ]; then
+    log "ENCHA_GUARD_PORTAS_BANCO_LOCAL=off — trava de portas de banco desligada neste nó (cadeia omitida)."
+    return 0
+  fi
+  CADEIA_PORTAS_BANCO=1
+}
+
 # --- geração do ruleset -----------------------------------------------------
 
 # Imprime no stdout o `nft -f -` completo. Só inclui um bloco "set" (e a
 # regra "accept" correspondente) quando existe ao menos 1 endereço válido
 # daquela família — um `set` com "elements = {}" vazio é erro de sintaxe do
 # nft, então a ausência total de pares nunca deve gerar um set vazio.
+#
+# "$1" = sem_cadeia omite a cadeia de portas de banco mesmo ligada.
 gerar_ruleset() {
   coletar_enderecos
-  montar_ruleset "$IPV4_VALIDOS" "$IPV6_VALIDOS"
+  if [ "${1:-}" != "sem_cadeia" ] && [ "$CADEIA_PORTAS_BANCO" -eq 1 ]; then
+    montar_ruleset "$IPV4_VALIDOS" "$IPV6_VALIDOS" "" com_cadeia
+  else
+    montar_ruleset "$IPV4_VALIDOS" "$IPV6_VALIDOS"
+  fi
 }
 
 # Mesmo ruleset, com as listas de pares passadas explicitamente ("$1" IPv4,
@@ -323,7 +375,8 @@ gerar_ruleset() {
 # sem os pares — a primeira falha fechada (aplicar_se_necessario). "$3" =
 # "sem_ssh" omite também o limite de SSH: é a versão MÍNIMA (só lo + drops do
 # Swarm e do LLMNR), a última falha fechada — texto fixo, que nenhuma env var
-# altera.
+# altera. "$4" = com_cadeia acrescenta o conjunto portas_banco e a cadeia
+# encaminhamento (só quem passa esse argumento; a mínima nunca passa).
 montar_ruleset() {
   IPV4_VALIDOS="$1"
   IPV6_VALIDOS="$2"
@@ -360,6 +413,10 @@ montar_ruleset() {
     echo '  set ssh_limite6 { type ipv6_addr; size 65535; flags dynamic,timeout; timeout 2m; }'
   fi
 
+  if [ "${4:-}" = "com_cadeia" ]; then
+    echo "  set portas_banco { type inet_service; flags interval; elements = { $PORTAS_BANCO_ELEMENTOS }; }"
+  fi
+
   echo '  chain entrada {'
   echo '    type filter hook input priority -5; policy accept;'
   echo '    iif "lo" accept'
@@ -393,6 +450,26 @@ montar_ruleset() {
   echo '    tcp dport 5355 counter drop'
   echo '    udp dport 5355 counter drop'
   echo '  }'
+  if [ "${4:-}" = "com_cadeia" ]; then
+    # Cadeia nova, aditiva e independente de `entrada` e da DOCKER-USER (as
+    # duas bases do hook forward avaliam as duas). Só entrada nova, só com
+    # DNAT, só TCP, só porta ORIGINAL do conjunto, só de fora do Docker.
+    echo '  chain encaminhamento {'
+    echo '    type filter hook forward priority -5; policy accept;'
+    if [ -n "$IPV4_VALIDOS" ]; then
+      echo '    ip saddr @pares4 accept'
+    fi
+    if [ -n "$IPV6_VALIDOS" ]; then
+      echo '    ip6 saddr @pares6 accept'
+    fi
+    echo '    iifname "lo" accept'
+    echo '    iifname "docker0" accept'
+    echo '    iifname "docker_gwbridge" accept'
+    echo '    iifname "br-*" accept'
+    echo '    iifname "veth*" accept'
+    echo '    ct state new ct status dnat ct original protocol tcp ct original proto-dst @portas_banco counter drop'
+    echo '  }'
+  fi
   echo '}'
 }
 
@@ -480,15 +557,18 @@ aplicar_ruleset() {
 }
 
 # 1 = a versão completa foi recusada pelo nft e a tabela aplicada é uma das
-# versões de falha fechada — sem os pares, ou a mínima (ver
-# aplicar_se_necessario).
+# versões de falha fechada — sem a cadeia, sem os pares, ou a mínima (ver
+# aplicar_se_necessario). Enquanto for 1, o degrau 1 é reconferido com
+# `nft -c` a cada ciclo.
 MODO_SEM_PARES=0
 
 # Compara a tabela aplicada agora com a que este processo deixou na última
 # aplicação e só chama `nft -f -` quando ela sumiu ou mudou (ou quando este
 # processo ainda não aplicou nada). "$1" = ruleset completo, "$2" = o mesmo
-# sem os pares, "$3" = o mínimo (sem pares e sem o limite de SSH); os três
-# calculados uma vez no início do loop — as env vars
+# sem os pares, "$3" = o mínimo (sem pares e sem o limite de SSH); os cinco
+# (completo, completo sem a cadeia, sem pares com a cadeia, sem pares, mínimo
+# — a escada de cinco degraus; sem a cadeia ligada, 1=2 e 3=4, e os degraus
+# repetidos não se repetem) calculados uma vez no início do loop — as env vars
 # não mudam durante a vida do contêiner (mudar env de um serviço Swarm recria
 # a tarefa). Nunca deixa o script morrer por causa do nft — falha vira log e
 # o loop segue (o contêiner não pode crash-loop por causa disso).
@@ -506,8 +586,10 @@ MODO_SEM_PARES=0
 # aplica quando passar.
 aplicar_se_necessario() {
   ruleset_completo="$1"
-  ruleset_sem_pares="$2"
-  ruleset_minimo="$3"
+  ruleset_completo_sem_cadeia="$2"
+  ruleset_sem_pares_cadeia="$3"
+  ruleset_sem_pares="$4"
+  ruleset_minimo="$5"
 
   if ! command -v nft >/dev/null 2>&1; then
     log "comando 'nft' não encontrado no PATH — nada a fazer neste ciclo."
@@ -526,6 +608,7 @@ aplicar_se_necessario() {
     fi
   fi
 
+  # Degrau 1: completa (com a cadeia de portas de banco, se ligada).
   if aplicar_ruleset "$ruleset_completo"; then
     MODO_SEM_PARES=0
     log "ruleset aplicado (tabela ausente, alterada ou primeira aplicação deste processo)."
@@ -533,8 +616,22 @@ aplicar_se_necessario() {
   fi
   log "falha ao aplicar o ruleset via 'nft -f -': $ERRO_NFT"
 
-  if [ "$ruleset_sem_pares" != "$ruleset_completo" ]; then
-    if aplicar_ruleset "$ruleset_sem_pares"; then
+  # Degrau 2: completa SEM a cadeia (só existe com a cadeia ligada). Um kernel
+  # sem `ct original`/`ct status` recusa a transação inteira; o defeito da
+  # cadeia custa só a cadeia — pares, limite de SSH e LLMNR ficam.
+  if [ "$ruleset_completo_sem_cadeia" != "$ruleset_completo" ]; then
+    if aplicar_ruleset "$ruleset_completo_sem_cadeia"; then
+      MODO_SEM_PARES=1
+      log "ATENÇÃO: o nft recusou a cadeia de portas de banco (ENCHA_GUARD_PORTAS_BANCO; kernel sem suporte a 'ct original'/'ct status'?) — aplicada a versão completa SEM a cadeia, mantidos pares, limite de SSH e LLMNR (falha fechada). O guarda confere de novo a cada ciclo."
+      return 0
+    fi
+    log "falha ao aplicar até a versão completa sem a cadeia via 'nft -f -': $ERRO_NFT"
+  fi
+
+  # Degrau 3: sem os pares, com a cadeia (só difere do 1 com a cadeia ligada).
+  if [ "$ruleset_sem_pares_cadeia" != "$ruleset_completo" ] \
+      && [ "$ruleset_sem_pares_cadeia" != "$ruleset_completo_sem_cadeia" ]; then
+    if aplicar_ruleset "$ruleset_sem_pares_cadeia"; then
       MODO_SEM_PARES=1
       log "ATENÇÃO: o nft recusou a allowlist (ENCHA_GUARD_PEERS/ENCHA_GUARD_PERMITIR) — regras de drop aplicadas SEM os pares (falha fechada). Corrija a lista; o guarda confere de novo a cada ciclo."
       return 0
@@ -542,12 +639,31 @@ aplicar_se_necessario() {
     log "falha ao aplicar até a versão sem os pares via 'nft -f -': $ERRO_NFT"
   fi
 
-  if [ "$ruleset_minimo" = "$ruleset_sem_pares" ]; then
+  # Degrau 4: sem os pares e sem a cadeia (a versão "sem pares" de sempre).
+  if [ "$ruleset_sem_pares" != "$ruleset_sem_pares_cadeia" ] \
+      && [ "$ruleset_sem_pares" != "$ruleset_completo_sem_cadeia" ] \
+      && [ "$ruleset_sem_pares" != "$ruleset_completo" ]; then
+    if aplicar_ruleset "$ruleset_sem_pares"; then
+      MODO_SEM_PARES=1
+      log "ATENÇÃO: o nft recusou a allowlist (ENCHA_GUARD_PEERS/ENCHA_GUARD_PERMITIR) e a cadeia de portas de banco — regras de drop aplicadas SEM os pares e SEM a cadeia (falha fechada). O guarda confere de novo a cada ciclo."
+      return 0
+    fi
+    log "falha ao aplicar até a versão sem os pares e sem a cadeia via 'nft -f -': $ERRO_NFT"
+  fi
+
+  # Degrau 5: a mínima — texto fixo, sem cadeia, que nenhuma env var altera.
+  if [ "$ruleset_minimo" = "$ruleset_sem_pares" ] \
+      || [ "$ruleset_minimo" = "$ruleset_sem_pares_cadeia" ] \
+      || [ "$ruleset_minimo" = "$ruleset_completo_sem_cadeia" ] \
+      || [ "$ruleset_minimo" = "$ruleset_completo" ]; then
     return 0
   fi
   if aplicar_ruleset "$ruleset_minimo"; then
     MODO_SEM_PARES=1
     log "ATENÇÃO: o nft recusou o limite de conexões SSH (ENCHA_GUARD_SSH_PORTAS, ou o kernel sem suporte a set dinâmico com limite) — aplicados SÓ os drops do Swarm e do LLMNR (5355), sem pares e sem limite de SSH (falha fechada). O guarda confere de novo a cada ciclo."
+    if [ "$ruleset_completo_sem_cadeia" != "$ruleset_completo" ]; then
+      log "ATENÇÃO: a cadeia de portas de banco também ficou de fora (a versão mínima nunca a leva)."
+    fi
   else
     log "falha ao aplicar até a versão mínima (só os drops) via 'nft -f -': $ERRO_NFT"
   fi
@@ -571,16 +687,28 @@ loop_principal() {
   ruleset_completo_do_processo=""
   ruleset_sem_pares_do_processo=""
   ruleset_minimo_do_processo=""
+  ruleset_completo_sem_cadeia_do_processo=""
+  ruleset_sem_pares_cadeia_do_processo=""
   if ! desativado_ativo; then
+    decidir_cadeia_portas_banco
     ruleset_completo_do_processo="$(gerar_ruleset)"
     ruleset_sem_pares_do_processo="$(montar_ruleset "" "")"
     ruleset_minimo_do_processo="$(montar_ruleset "" "" sem_ssh)"
+    if [ "$CADEIA_PORTAS_BANCO" -eq 1 ]; then
+      # Os avisos de descarte já saíram na chamada acima: não repete.
+      ruleset_completo_sem_cadeia_do_processo="$(gerar_ruleset sem_cadeia 2>/dev/null)"
+      ruleset_sem_pares_cadeia_do_processo="$(montar_ruleset "" "" "" com_cadeia 2>/dev/null)"
+    else
+      ruleset_completo_sem_cadeia_do_processo="$ruleset_completo_do_processo"
+      ruleset_sem_pares_cadeia_do_processo="$ruleset_sem_pares_do_processo"
+    fi
   fi
   while :; do
     if desativado_ativo; then
       aplicar_desativado
     else
-      aplicar_se_necessario "$ruleset_completo_do_processo" "$ruleset_sem_pares_do_processo" "$ruleset_minimo_do_processo"
+      aplicar_se_necessario "$ruleset_completo_do_processo" "$ruleset_completo_sem_cadeia_do_processo" \
+        "$ruleset_sem_pares_cadeia_do_processo" "$ruleset_sem_pares_do_processo" "$ruleset_minimo_do_processo"
     fi
     dormir_intervalo
   done
@@ -588,6 +716,7 @@ loop_principal() {
 
 main() {
   if [ "${1:-}" = "--render" ]; then
+    decidir_cadeia_portas_banco
     gerar_ruleset
     return 0
   fi

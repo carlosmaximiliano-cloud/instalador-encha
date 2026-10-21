@@ -1133,6 +1133,241 @@ else
   echo "ℹ️  'nft' real indisponível — pulando a validação de sintaxe real da versão mínima com LLMNR (a seção 10 acima já cobre a geração)."
 fi
 
+# --- 11. Trava de portas de banco (ciclo painel-guard-portas-banco) ---------
+#
+# Cadeia `encaminhamento` (hook forward) ligada por ENCHA_GUARD_PORTAS_BANCO=1
+# (interruptor de valor exato) e escada de falha fechada de cinco degraus.
+# Cada falha nomeia o código: "guard-portas-banco: <código>". As portas são
+# texto fixo do script; nenhum byte da variável chega ao ruleset.
+
+# Render com: "$1" = valor de ENCHA_GUARD_PORTAS_BANCO ("-" = não definir),
+# "$2" = ..._LOCAL ("-" = não definir), "$3" = pares (PEERS). O log do script
+# (stderr) fica em $TMP_TESTE/pb-stderr.
+pb_render() {
+  (
+    unset ENCHA_GUARD_PEERS ENCHA_GUARD_PERMITIR ENCHA_GUARD_DESATIVADO \
+      ENCHA_GUARD_PORTAS_BANCO ENCHA_GUARD_PORTAS_BANCO_LOCAL
+    [ "${1:--}" = "-" ] || export ENCHA_GUARD_PORTAS_BANCO="$1"
+    [ "${2:--}" = "-" ] || export ENCHA_GUARD_PORTAS_BANCO_LOCAL="$2"
+    [ -z "${3:-}" ] || export ENCHA_GUARD_PEERS="$3"
+    renderizar 2>"$TMP_TESTE/pb-stderr"
+  )
+}
+
+# Bloco da cadeia encaminhamento (só as linhas de dentro).
+pb_bloco() {
+  printf '%s\n' "$1" | awk '/^  chain encaminhamento [{]$/ { c = 1; next } c && /^  [}]$/ { exit } c'
+}
+
+PB_PARES="10.0.0.5 2001:db8::1"
+saida_pb="$(pb_render 1 - "$PB_PARES")"
+bloco_pb="$(pb_bloco "$saida_pb")"
+PB_DROP='    ct state new ct status dnat ct original protocol tcp ct original proto-dst @portas_banco counter drop'
+
+# 11a. C1: a regra casa a porta PUBLICADA (ct original), nunca a já traduzida.
+if [ "$(printf '%s\n' "$bloco_pb" | grep -cF 'ct original proto-dst @portas_banco')" -eq 1 ] \
+    && ! printf '%s\n' "$saida_pb" | grep -qF 'dport @portas_banco'; then
+  ok "guard-portas-banco: a regra casa 'ct original proto-dst' (porta publicada)"
+else
+  falha "guard-portas-banco: regra-ct-original — a regra deve usar 'ct original proto-dst @portas_banco' (e nunca 'dport')"
+fi
+
+# 11b. C2: só entrada nova, só conexão com DNAT, só TCP.
+if [ "$(printf '%s\n' "$bloco_pb" | grep -cxF -- "$PB_DROP")" -eq 1 ]; then
+  ok "guard-portas-banco: drop exato (ct state new + ct status dnat + tcp + porta original)"
+else
+  falha "guard-portas-banco: regra-ct-state-new — o drop deve ser exatamente: $PB_DROP"
+fi
+
+# 11c. C3: interfaces do Docker/locais aceitas ANTES do drop; pares antes delas.
+pb_n_drop="$(printf '%s\n' "$bloco_pb" | grep -nxF -- "$PB_DROP" | head -1 | cut -d: -f1)"
+pb_docker_ok=1
+for pb_if in lo docker0 docker_gwbridge 'br-*' 'veth*'; do
+  pb_n_if="$(printf '%s\n' "$bloco_pb" | grep -nxF -- "    iifname \"$pb_if\" accept" | head -1 | cut -d: -f1)"
+  if [ -z "$pb_n_if" ] || [ -z "$pb_n_drop" ] || [ "$pb_n_if" -ge "$pb_n_drop" ]; then
+    pb_docker_ok=0
+  fi
+done
+pb_n_par="$(printf '%s\n' "$bloco_pb" | grep -nxF '    ip saddr @pares4 accept' | head -1 | cut -d: -f1)"
+pb_n_par6="$(printf '%s\n' "$bloco_pb" | grep -nxF '    ip6 saddr @pares6 accept' | head -1 | cut -d: -f1)"
+pb_n_lo="$(printf '%s\n' "$bloco_pb" | grep -nxF '    iifname "lo" accept' | head -1 | cut -d: -f1)"
+if [ "$pb_docker_ok" -eq 1 ] && [ -n "$pb_n_par" ] && [ -n "$pb_n_par6" ] && [ -n "$pb_n_lo" ] \
+    && [ "$pb_n_par" -lt "$pb_n_lo" ] && [ "$pb_n_par6" -lt "$pb_n_lo" ]; then
+  ok "guard-portas-banco: pares e interfaces do Docker aceitos antes do drop"
+else
+  falha "guard-portas-banco: regra-exclui-docker — lo, docker0, docker_gwbridge, br-*, veth* (e os pares) devem ser aceitos antes do drop"
+fi
+
+# 11d. C4: a cadeia é de FORWARD (a entrada segue input), conjunto fixo, um drop só.
+if [ "$(printf '%s\n' "$bloco_pb" | head -1)" = '    type filter hook forward priority -5; policy accept;' ] \
+    && [ "$(printf '%s\n' "$saida_pb" | grep -c 'hook input')" -eq 1 ] \
+    && [ "$(printf '%s\n' "$saida_pb" | grep -c 'hook forward')" -eq 1 ]; then
+  ok "guard-portas-banco: cadeia encaminhamento no hook forward (entrada segue no input)"
+else
+  falha "guard-portas-banco: cadeia-hook-forward — encaminhamento deve ser 'hook forward priority -5; policy accept' e entrada seguir em input"
+fi
+if [ "$(printf '%s\n' "$saida_pb" | grep -cxF '  set portas_banco { type inet_service; flags interval; elements = { 3306, 6333-6524, 27017 }; }')" -eq 1 ] \
+    && [ "$(printf '%s\n' "$bloco_pb" | grep -cw drop)" -eq 1 ]; then
+  ok "guard-portas-banco: conjunto fixo 3306, 6333-6524, 27017 e um único drop na cadeia"
+else
+  falha "guard-portas-banco: conjunto — portas fixas do script (3306, 6333-6524, 27017) e um único drop"
+fi
+
+# 11e. Sem a variável (ou LOCAL=off), a saída não ganha uma linha da cadeia.
+pb_sem_ok=1
+saida_pb_sem="$(pb_render - - "$PB_PARES")"
+printf '%s\n' "$saida_pb_sem" | grep -qE 'portas_banco|encaminhamento|hook forward' && pb_sem_ok=0
+[ -s "$TMP_TESTE/pb-stderr" ] && pb_sem_ok=0
+if [ "$pb_sem_ok" -eq 1 ]; then
+  ok "guard-portas-banco: sem a variável nada muda (sem cadeia, sem log)"
+else
+  falha "guard-portas-banco: sem-variavel — variável ausente não pode gerar cadeia nem log"
+fi
+
+# 11f. C5: só o valor EXATO 1 liga; nenhum outro valor chega ao ruleset.
+pb_valor_ok=1
+for pb_v in 0 off OFF true yes 3306 '1 ' ' 1' 11 '1;x' '1 } ; flush ruleset' '1-65535'; do
+  saida_v="$(pb_render "$pb_v" - "$PB_PARES")"
+  if printf '%s\n' "$saida_v" | grep -qE 'portas_banco|encaminhamento|hook forward|flush|1-65535'; then
+    pb_valor_ok=0
+    echo "   valor '$pb_v' ligou a cadeia ou vazou no ruleset"
+  fi
+  if ! grep -q 'valor inválido' "$TMP_TESTE/pb-stderr"; then
+    pb_valor_ok=0
+    echo "   valor '$pb_v' sem a linha de log"
+  fi
+  if [ "${#pb_v}" -gt 2 ] && grep -qF -- "$pb_v" "$TMP_TESTE/pb-stderr"; then
+    pb_valor_ok=0
+    echo "   valor '$pb_v' foi impresso no log"
+  fi
+done
+saida_v="$(pb_render '' - "$PB_PARES")"
+if printf '%s\n' "$saida_v" | grep -qE 'portas_banco|encaminhamento' || [ -s "$TMP_TESTE/pb-stderr" ]; then
+  pb_valor_ok=0
+  echo "   variável vazia ligou a cadeia ou logou"
+fi
+if [ "$pb_valor_ok" -eq 1 ]; then
+  ok "guard-portas-banco: só o valor exato 1 liga (0, off, true, 3306, '1 ', '1;x'... não)"
+else
+  falha "guard-portas-banco: valor-estrito — só ENCHA_GUARD_PORTAS_BANCO=1 liga a cadeia; outro valor é logado e nunca chega ao ruleset"
+fi
+
+# 11g. C7: ..._LOCAL=off vence a variável (sem diferenciar maiúsculas).
+pb_local_ok=1
+for pb_l in off OFF Off; do
+  saida_l="$(pb_render 1 "$pb_l" "$PB_PARES")"
+  if printf '%s\n' "$saida_l" | grep -qE 'portas_banco|encaminhamento' || ! grep -q 'LOCAL=off' "$TMP_TESTE/pb-stderr"; then
+    pb_local_ok=0
+  fi
+done
+saida_l="$(pb_render 1 talvez "$PB_PARES")"
+printf '%s\n' "$saida_l" | grep -qF 'chain encaminhamento' || pb_local_ok=0
+if [ "$pb_local_ok" -eq 1 ]; then
+  ok "guard-portas-banco: ..._LOCAL=off vence a variável (outro valor é ignorado)"
+else
+  falha "guard-portas-banco: local-off — ENCHA_GUARD_PORTAS_BANCO_LOCAL=off deve omitir a cadeia e logar"
+fi
+
+# 11h. Escada de cinco degraus, contra o nft falso. "$1" = diretório, "$2" =
+# conteúdo de "recusar" (um trecho por linha), "$3" = pares, "$4" = variável.
+pb_loop() {
+  local dir="$1" recusar="$2" pares="$3" var="$4" apagar_em="${5:-}"
+  mkdir -p "$dir"
+  [ -z "$recusar" ] || printf '%s' "$recusar" > "$dir/recusar"
+  (
+    unset ENCHA_GUARD_PEERS ENCHA_GUARD_PERMITIR ENCHA_GUARD_DESATIVADO \
+      ENCHA_GUARD_PORTAS_BANCO ENCHA_GUARD_PORTAS_BANCO_LOCAL
+    [ -z "$pares" ] || export ENCHA_GUARD_PEERS="$pares"
+    [ "$var" = "-" ] || export ENCHA_GUARD_PORTAS_BANCO="$var"
+    rodar_loop 1.6 "$dir" "$apagar_em" recusar
+  )
+}
+
+# 11h-1. Degrau 2: kernel recusa a cadeia -> completa SEM a cadeia, com pares
+# e limite de SSH; reconferida com `nft -c` a cada ciclo; não reaplica.
+dir_pb_a="$TMP_TESTE/pb-escada-a"
+pb_loop "$dir_pb_a" 'portas_banco' '10.0.0.5' 1
+if [ "$(conta_chamadas "$dir_pb_a" '-f -')" -eq 2 ] \
+    && grep -qF 'set pares4' "$dir_pb_a/ultimo_stdin" && grep -qF 'update @ssh_limite4' "$dir_pb_a/ultimo_stdin" \
+    && ! grep -qF 'portas_banco' "$dir_pb_a/ultimo_stdin" \
+    && grep -qF 'ATENÇÃO: o nft recusou a cadeia de portas de banco' "$dir_pb_a/stderr" \
+    && [ "$(conta_chamadas "$dir_pb_a" '-c -f -')" -ge 2 ]; then
+  ok "guard-portas-banco: cadeia recusada -> completa sem a cadeia (pares e SSH mantidos), log e reconferência"
+else
+  falha "guard-portas-banco: escada-sem-cadeia — cadeia recusada deve cair para a completa SEM a cadeia, mantendo pares e SSH ($(tr '\n' '|' < "$dir_pb_a/chamadas"))"
+fi
+
+# 11h-2. O kernel passa a aceitar: a cadeia volta sozinha.
+dir_pb_b="$TMP_TESTE/pb-escada-b"
+pb_loop "$dir_pb_b" 'portas_banco' '10.0.0.5' 1 0.7
+if [ "$(conta_chamadas "$dir_pb_b" '-f -')" -eq 3 ] && grep -qF 'chain encaminhamento' "$dir_pb_b/ultimo_stdin" \
+    && grep -qF 'set pares4' "$dir_pb_b/ultimo_stdin"; then
+  ok "guard-portas-banco: kernel passa a aceitar -> a cadeia volta (reconferência do degrau 1)"
+else
+  falha "guard-portas-banco: reconferencia — o degrau 1 deve ser reconferido e reaplicado ($(tr '\n' '|' < "$dir_pb_b/chamadas"))"
+fi
+
+# 11h-3. Pares recusados: sem pares COM a cadeia (degrau 3); pares e cadeia
+# recusados: sem pares e sem cadeia (degrau 4); mais o SSH: a mínima (5).
+dir_pb_c="$TMP_TESTE/pb-escada-c"
+pb_loop "$dir_pb_c" 'pares4' '10.0.0.5' 1
+dir_pb_d="$TMP_TESTE/pb-escada-d"
+pb_loop "$dir_pb_d" 'pares4
+portas_banco' '10.0.0.5' 1
+dir_pb_e="$TMP_TESTE/pb-escada-e"
+pb_loop "$dir_pb_e" 'pares4
+portas_banco
+ssh_limite' '10.0.0.5' 1
+if [ "$(conta_chamadas "$dir_pb_c" '-f -')" -eq 3 ] && grep -qF 'chain encaminhamento' "$dir_pb_c/ultimo_stdin" \
+    && ! grep -qF 'pares' "$dir_pb_c/ultimo_stdin" \
+    && [ "$(conta_chamadas "$dir_pb_d" '-f -')" -eq 4 ] && ! grep -qF 'portas_banco' "$dir_pb_d/ultimo_stdin" \
+    && ! grep -qF 'pares' "$dir_pb_d/ultimo_stdin" && grep -qF 'update @ssh_limite4' "$dir_pb_d/ultimo_stdin" \
+    && [ "$(conta_chamadas "$dir_pb_e" '-f -')" -eq 5 ] && ! grep -qF 'ssh_limite' "$dir_pb_e/ultimo_stdin" \
+    && grep -qF 'tcp dport 5355 counter drop' "$dir_pb_e/ultimo_stdin"; then
+  ok "guard-portas-banco: escada completa (cadeia, sem cadeia, sem pares+cadeia, sem pares, mínima)"
+else
+  falha "guard-portas-banco: escada — os cinco degraus devem se suceder na ordem do contrato ($(tr '\n' '|' < "$dir_pb_c/chamadas") / $(tr '\n' '|' < "$dir_pb_d/chamadas") / $(tr '\n' '|' < "$dir_pb_e/chamadas"))"
+fi
+
+# 11h-4. C7b: a MÍNIMA com a variável em 1 é byte a byte a mesma sem a variável.
+dir_pb_min_com="$TMP_TESTE/pb-minima-com"
+dir_pb_min_sem="$TMP_TESTE/pb-minima-sem"
+pb_loop "$dir_pb_min_com" 'ssh_limite' '' 1
+pb_loop "$dir_pb_min_sem" 'ssh_limite' '' -
+if [ -s "$dir_pb_min_com/ultimo_stdin" ] && cmp -s "$dir_pb_min_com/ultimo_stdin" "$dir_pb_min_sem/ultimo_stdin" \
+    && ! grep -qE 'portas_banco|encaminhamento' "$dir_pb_min_com/ultimo_stdin"; then
+  ok "guard-portas-banco: versão mínima idêntica com e sem a variável (nunca leva a cadeia)"
+else
+  falha "guard-portas-banco: minima-intacta — a mínima não pode ganhar a cadeia nem mudar com a variável em 1"
+fi
+
+# 11h-5. Sem a variável a sequência de chamadas ao nft é a de sempre: uma
+# aplicação, nenhuma conferência, nada da cadeia.
+dir_pb_zero="$TMP_TESTE/pb-sem-variavel"
+pb_loop "$dir_pb_zero" '' '10.0.0.5' -
+if [ "$(conta_chamadas "$dir_pb_zero" '-f -')" -eq 1 ] && [ "$(conta_chamadas "$dir_pb_zero" '-c -f -')" -eq 0 ] \
+    && ! grep -qE 'portas_banco|encaminhamento' "$dir_pb_zero/ultimo_stdin" \
+    && ! grep -qF 'banco' "$dir_pb_zero/stderr"; then
+  ok "guard-portas-banco: sem a variável, o loop aplica uma vez e não registra nada novo"
+else
+  falha "guard-portas-banco: sem-variavel-loop — sem a variável a sequência de chamadas é a de sempre"
+fi
+
+# 11i. Sintaxe REAL (nft -c), se disponível: a cadeia em `inet` com
+# `ct original proto-dst`. Mesmo guard da seção 7.
+if command -v nft >/dev/null 2>&1 && echo 'table inet encha_guard_sonda {}' | nft -c -f - >/dev/null 2>&1; then
+  validar_sintaxe "portas de banco: degrau 1 sem pares" "$(pb_render 1 - '')"
+  validar_sintaxe "portas de banco: degrau 1 com pares IPv4+IPv6" "$saida_pb"
+  # A sonda tem que ser capaz de recusar: uma palavra inventada não passa.
+  if printf '%s\n' "$saida_pb" | sed 's/ct original proto-dst/ct original proto-dstx/' | nft -c -f - >/dev/null 2>&1; then
+    falha "nft real ACEITOU 'ct original proto-dstx' — a validação de sintaxe não está checando nada"
+  else
+    ok "nft real: recusa uma palavra inventada na regra (a sonda checa de verdade)"
+  fi
+else
+  echo "ℹ️  'nft' real indisponível — pulando a sintaxe real da cadeia de portas de banco (11 acima cobre a geração e a escada)."
+fi
+
 echo ""
 [ "$falhas" -eq 0 ] || exit 1
 echo "✅ todos os testes de encha-guard.sh passaram"
