@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parse } from "yaml";
 import { ALL_STACKS } from "./registry";
 import { anythingllm } from "./anythingllm";
 import type { StackDefinition, SwarmContext } from "./types";
@@ -16,27 +17,6 @@ const ALLOWLIST: Record<string, string[]> = {
 // Templates ainda não consertados, com o micro-ciclo que os conserta.
 // Vazio ao fim do ciclo.
 const PENDENTES: Record<string, string> = {};
-
-// Serviços do nível `services:` (2 espaços) com o bloco de texto de cada um
-// (mesma forma de restart-policy-templates.test.ts, que não exporta com segurança).
-function servicosDoYaml(yaml: string): { nome: string; bloco: string }[] {
-  const linhas = yaml.split("\n");
-  const ini = linhas.findIndex((l) => l === "services:");
-  if (ini === -1) throw new Error("YAML sem bloco services:");
-  const out: { nome: string; bloco: string }[] = [];
-  let atual: { nome: string; linhas: string[] } | null = null;
-  for (let i = ini + 1; i < linhas.length; i++) {
-    const l = linhas[i];
-    if (/^\S/.test(l)) break;
-    const m = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(l);
-    if (m) {
-      if (atual) out.push({ nome: atual.nome, bloco: atual.linhas.join("\n") });
-      atual = { nome: m[1], linhas: [] };
-    } else if (atual) atual.linhas.push(l);
-  }
-  if (atual) out.push({ nome: atual.nome, bloco: atual.linhas.join("\n") });
-  return out;
-}
 
 const AMOSTRA_POR_TIPO: Record<string, string> = {
   domain: "exemplo.com.br",
@@ -87,52 +67,75 @@ function renderiza(stack: StackDefinition, over: Record<string, unknown> = {}): 
   return stack.generateYaml(valores, secrets, ctx(stack.id));
 }
 
-// Portas publicadas ("N/proto") de um bloco de serviço: forma curta
-// ("A:B", "A:B/udp", "ip:A:B") e forma longa (published/protocol).
-function portasPublicadas(bloco: string): string[] {
-  const linhas = bloco.split("\n").filter((l) => !/^\s*#/.test(l));
-  const out: string[] = [];
-  for (let i = 0; i < linhas.length; i++) {
-    const m = /^(\s*)ports:\s*$/.exec(linhas[i]);
-    if (!m) continue;
-    const recuo = m[1].length;
-    let longa: { pub?: string; proto: string } | null = null;
-    const fecha = () => {
-      if (longa?.pub) out.push(`${longa.pub}/${longa.proto}`);
-      longa = null;
-    };
-    for (let j = i + 1; j < linhas.length; j++) {
-      const l = linhas[j];
-      if (l.trim() === "") continue;
-      const ind = l.length - l.trimStart().length;
-      if (ind <= recuo && !l.trimStart().startsWith("- ")) break;
-      if (ind < recuo) break;
-      const item = l.trim();
-      const novo = /^-\s+(.*)$/.exec(item);
-      if (novo && ind === recuo + 2) {
-        fecha();
-        const corpo = novo[1].replace(/\s+#.*$/, "").replace(/^["']|["']$/g, "");
-        const kv = /^([A-Za-z]\w*):\s*(.*)$/.exec(corpo);
-        if (kv) {
-          longa = { proto: "tcp" };
-          if (kv[1] === "published") longa.pub = kv[2];
-          if (kv[1] === "protocol") longa.proto = kv[2];
-          continue;
-        }
-        const [semProto, proto = "tcp"] = corpo.split("/");
-        const partes = semProto.split(":");
-        const pub = partes.length === 1 ? partes[0] : partes[partes.length - 2];
-        out.push(`${pub}/${proto}`);
-      } else if (longa) {
-        const kv = /^([A-Za-z]\w*):\s*(.*)$/.exec(item.replace(/^-\s+/, ""));
-        if (kv?.[1] === "published") longa.pub = kv[2].replace(/["']/g, "");
-        if (kv?.[1] === "protocol") longa.proto = kv[2];
+// Portas publicadas ("N/proto") por serviço, lidas do YAML parseado: forma curta
+// ("A:B", "A:B/udp", "ip:A:B", número puro; lista em bloco, no mesmo recuo da
+// chave ou em fluxo) e forma longa (published/protocol).
+type Publicada = { servico: string; porta: string };
+
+function curta(item: string | number): string {
+  const [semProto, proto = "tcp"] = String(item).split("/");
+  const partes = semProto.split(":");
+  const pub = partes.length === 1 ? partes[0] : partes[partes.length - 2];
+  return `${pub}/${proto}`;
+}
+
+function portasDoYaml(yaml: string): Publicada[] {
+  const doc = parse(yaml) as { services?: Record<string, { ports?: unknown }> } | null;
+  if (!doc?.services) throw new Error("YAML sem bloco services:");
+  const out: Publicada[] = [];
+  for (const [servico, def] of Object.entries(doc.services)) {
+    const ports = def?.ports;
+    if (ports == null) continue;
+    if (!Array.isArray(ports)) throw new Error(`${servico}: ports não é uma lista`);
+    for (const item of ports) {
+      if (typeof item === "object" && item !== null) {
+        const l = item as { published?: string | number; protocol?: string };
+        if (l.published != null) out.push({ servico, porta: `${l.published}/${l.protocol ?? "tcp"}` });
+      } else {
+        out.push({ servico, porta: curta(item as string | number) });
       }
     }
-    fecha();
   }
   return out;
 }
+
+// Autotestes dos formatos legais de `ports:` (o detector tem que pegar todos).
+const FORMATOS: Record<string, { yaml: string; esperado: string[] }> = {
+  curta: {
+    yaml: 'services:\n  a:\n    ports:\n      - "3306:3306"\n      - 8080:80/udp\n      - "127.0.0.1:5432:5432"\n',
+    esperado: ["3306/tcp", "8080/udp", "5432/tcp"],
+  },
+  fluxo: {
+    yaml: 'services:\n  a:\n    ports: ["3306:3306", "27017:27017/tcp"]\n',
+    esperado: ["3306/tcp", "27017/tcp"],
+  },
+  "mesmo-recuo": {
+    yaml: 'services:\n  a:\n    ports:\n    - "3306:3306"\n    environment:\n    - A=1\n',
+    esperado: ["3306/tcp"],
+  },
+  longa: {
+    yaml: "services:\n  a:\n    ports:\n      - target: 3306\n        published: 3306\n        protocol: udp\n        mode: host\n      - published: '6333'\n        target: 6333\n",
+    esperado: ["3306/udp", "6333/tcp"],
+  },
+  "numero-puro": {
+    yaml: "services:\n  a:\n    ports:\n      - 3306\n",
+    esperado: ["3306/tcp"],
+  },
+};
+const FORMATOS_EXIGIDOS = ["curta", "fluxo", "mesmo-recuo", "longa", "numero-puro"];
+
+describe("detector de portas: formatos de ports: (Ciclo painel-portas-detector)", () => {
+  it("todos os autotestes de formato existem", () => {
+    for (const nome of FORMATOS_EXIGIDOS) {
+      expect(nome in FORMATOS, `autoteste do formato ${nome} ausente`).toBe(true);
+    }
+  });
+  for (const [nome, c] of Object.entries(FORMATOS)) {
+    it(`pega o formato ${nome}`, () => {
+      expect(portasDoYaml(c.yaml).map((p) => p.porta)).toEqual(c.esperado);
+    });
+  }
+});
 
 describe("portas publicadas pelos templates (Ciclo painel-portas-banco)", () => {
   const violacoes: string[] = [];
@@ -146,12 +149,10 @@ describe("portas publicadas pelos templates (Ciclo painel-portas-banco)", () => 
       continue;
     }
     renderizados++;
-    for (const { bloco } of servicosDoYaml(yaml)) {
-      for (const porta of portasPublicadas(bloco)) {
-        if (stack.id in PENDENTES) continue;
-        if (!(ALLOWLIST[stack.id] ?? []).includes(porta)) {
-          violacoes.push(`${stack.id}: porta publicada ${porta} fora da allowlist`);
-        }
+    for (const { porta } of portasDoYaml(yaml)) {
+      if (stack.id in PENDENTES) continue;
+      if (!(ALLOWLIST[stack.id] ?? []).includes(porta)) {
+        violacoes.push(`${stack.id}: porta publicada ${porta} fora da allowlist`);
       }
     }
   }
@@ -169,7 +170,7 @@ describe("portas publicadas pelos templates (Ciclo painel-portas-banco)", () => 
     for (const id of Object.keys(ALLOWLIST)) {
       const stack = ALL_STACKS.find((s) => s.id === id);
       expect(stack, id).toBeDefined();
-      const achadas = new Set(servicosDoYaml(renderiza(stack!)).flatMap((s) => portasPublicadas(s.bloco)));
+      const achadas = new Set(portasDoYaml(renderiza(stack!)).map((p) => p.porta));
       expect([...achadas].sort(), id).toEqual([...ALLOWLIST[id]].sort());
     }
   });
@@ -178,7 +179,7 @@ describe("portas publicadas pelos templates (Ciclo painel-portas-banco)", () => 
 describe("AnythingLLM x Qdrant: o endpoint de exemplo é o que o Qdrant gera", () => {
   it("o placeholder do AnythingLLM (pt, en, es) é igual ao endpoint do primeiro nó do qdrant.ts", () => {
     const qdrant = ALL_STACKS.find((s) => s.id === "qdrant")!;
-    const nome = servicosDoYaml(renderiza(qdrant, { nodes_qdrant: 1 }))[0].nome;
+    const nome = Object.keys((parse(renderiza(qdrant, { nodes_qdrant: 1 })) as { services: object }).services)[0];
     const esperado = `http://${nome}:6333`;
     const campo = anythingllm.fields.find((f) => f.name === "qdrant_anythingllm")!;
     expect(campo.placeholder, "placeholder do AnythingLLM (pt)").toBe(esperado);
