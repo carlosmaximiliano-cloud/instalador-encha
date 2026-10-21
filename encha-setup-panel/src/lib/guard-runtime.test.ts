@@ -59,6 +59,8 @@ type SetupOpts = {
   guardAtual?: DockerServiceFull | null;
   panelService?: DockerServiceFull | null;
   hostNetworkId?: string | null;
+  /** Estado da chave remota da trava de portas de banco (padrão: indisponível). "lanca" = a consulta lança. */
+  portasBanco?: "ligado" | "desligado" | "indisponivel" | "lanca";
   createServiceImpl?: (token: string, endpointId: number, spec: ServiceSpec) => Promise<{ ID: string }>;
   updateServiceImpl?: (
     token: string,
@@ -92,6 +94,13 @@ async function setupMocks(opts: SetupOpts = {}) {
   const withServiceTokenMock = vi.fn(async (fn: (t: string) => Promise<unknown>) => fn("tok"));
   const discoverContextMock = vi.fn(async () => ({ endpointId: 1, swarmId: "swarm-1" }));
 
+  // O Console nunca é consultado de verdade nestes testes.
+  const estadoPortasBancoMock = vi.fn(async () => {
+    if (opts.portasBanco === "lanca") throw new Error("consulta explodiu");
+    return opts.portasBanco ?? "indisponivel";
+  });
+  vi.doMock("./flag-sincronizacao", () => ({ estadoPortasBancoRemoto: estadoPortasBancoMock }));
+
   vi.doMock("./portainer", async (importOriginal) => {
     const actual = await importOriginal<typeof import("./portainer")>();
     return {
@@ -114,15 +123,20 @@ async function setupMocks(opts: SetupOpts = {}) {
     updateServiceMock,
     withServiceTokenMock,
     discoverContextMock,
+    estadoPortasBancoMock,
   };
 }
 
 beforeEach(() => {
   vi.resetModules();
+  // Padrão para todo teste (inclusive os que mockam o Portainer à mão): o
+  // Console nunca é consultado de verdade e a chave vem indisponível.
+  vi.doMock("./flag-sincronizacao", () => ({ estadoPortasBancoRemoto: vi.fn(async () => "indisponivel") }));
 });
 
 afterEach(() => {
   vi.doUnmock("./portainer");
+  vi.doUnmock("./flag-sincronizacao");
   vi.restoreAllMocks();
 });
 
@@ -565,5 +579,93 @@ describe("inicializarGarantiaGuardaSwarm (agendamento)", () => {
     // limpa de verdade (nunca deixa o timer real de 6h correndo pós-teste).
     clearTimeout(timeoutHandle);
     clearInterval(intervalHandle);
+  });
+});
+
+describe("garantirGuardaSwarm — trava de portas de banco (chave remota)", () => {
+  const envDoUpdate = (m: { updateServiceMock: { mock: { calls: unknown[][] } } }) =>
+    ((m.updateServiceMock.mock.calls[0][4] as ServiceSpec).TaskTemplate.ContainerSpec.Env ?? []) as string[];
+
+  it("ligado: o guarda vivo sem a variável é atualizado com ENCHA_GUARD_PORTAS_BANCO=1", async () => {
+    const m = await setupMocks({ guardAtual: fakeGuardServiceIdentico(), portasBanco: "ligado" });
+    const { garantirGuardaSwarm } = await import("./guard-runtime");
+    await garantirGuardaSwarm("tok", 1);
+    expect(m.updateServiceMock).toHaveBeenCalledTimes(1);
+    expect(envDoUpdate(m)).toContain("ENCHA_GUARD_PORTAS_BANCO=1");
+  });
+
+  it("ligado e já ligado no serviço vivo: nada a fazer (não recria a task)", async () => {
+    const m = await setupMocks({
+      guardAtual: fakeGuardServiceIdentico({ env: ["ENCHA_GUARD_PEERS=", "ENCHA_GUARD_PORTAS_BANCO=1"] }),
+      portasBanco: "ligado",
+    });
+    const { garantirGuardaSwarm } = await import("./guard-runtime");
+    await garantirGuardaSwarm("tok", 1);
+    expect(m.updateServiceMock).not.toHaveBeenCalled();
+    expect(m.createServiceMock).not.toHaveBeenCalled();
+  });
+
+  it("desligado explícito tira a variável do serviço vivo", async () => {
+    const m = await setupMocks({
+      guardAtual: fakeGuardServiceIdentico({ env: ["ENCHA_GUARD_PEERS=", "ENCHA_GUARD_PORTAS_BANCO=1"] }),
+      portasBanco: "desligado",
+    });
+    const { garantirGuardaSwarm } = await import("./guard-runtime");
+    await garantirGuardaSwarm("tok", 1);
+    expect(m.updateServiceMock).toHaveBeenCalledTimes(1);
+    expect(envDoUpdate(m).some((e) => e.startsWith("ENCHA_GUARD_PORTAS_BANCO"))).toBe(false);
+  });
+
+  it("indisponível e consulta que lança mantêm o estado do serviço (ligado fica ligado, ausente fica ausente)", async () => {
+    for (const portasBanco of ["indisponivel", "lanca"] as const) {
+      vi.resetModules();
+      const ligado = await setupMocks({
+        guardAtual: fakeGuardServiceIdentico({ env: ["ENCHA_GUARD_PEERS=", "ENCHA_GUARD_PORTAS_BANCO=1"] }),
+        portasBanco,
+      });
+      const rt = await import("./guard-runtime");
+      await rt.garantirGuardaSwarm("tok", 1);
+      expect(ligado.updateServiceMock).not.toHaveBeenCalled();
+
+      vi.resetModules();
+      const ausente = await setupMocks({ guardAtual: fakeGuardServiceIdentico(), portasBanco });
+      const rt2 = await import("./guard-runtime");
+      await rt2.garantirGuardaSwarm("tok", 1);
+      expect(ausente.updateServiceMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it("primeiro boot (sem serviço) com Console indisponível cria sem a variável; com ligado cria com ela", async () => {
+    const sem = await setupMocks({ guardAtual: null, portasBanco: "indisponivel" });
+    const rt = await import("./guard-runtime");
+    await rt.garantirGuardaSwarm("tok", 1);
+    expect((sem.createServiceMock.mock.calls[0][2] as ServiceSpec).TaskTemplate.ContainerSpec.Env).toEqual(["ENCHA_GUARD_PEERS="]);
+
+    vi.resetModules();
+    const com = await setupMocks({ guardAtual: null, portasBanco: "ligado" });
+    const rt2 = await import("./guard-runtime");
+    await rt2.garantirGuardaSwarm("tok", 1);
+    expect((com.createServiceMock.mock.calls[0][2] as ServiceSpec).TaskTemplate.ContainerSpec.Env).toContain("ENCHA_GUARD_PORTAS_BANCO=1");
+  });
+
+  it("a consulta só acontece depois das checagens de rótulo: gerenciado=false não consulta o Console", async () => {
+    const m = await setupMocks({
+      guardAtual: fakeGuardServiceIdentico({ labels: { "com.encha.guard.gerenciado": "false" } }),
+      portasBanco: "ligado",
+    });
+    const { garantirGuardaSwarm } = await import("./guard-runtime");
+    await garantirGuardaSwarm("tok", 1);
+    expect(m.estadoPortasBancoMock).not.toHaveBeenCalled();
+    expect(m.updateServiceMock).not.toHaveBeenCalled();
+  });
+
+  it("o escape local do cliente sobrevive à reconciliação (herdado nos updates)", async () => {
+    const m = await setupMocks({
+      guardAtual: fakeGuardServiceIdentico({ env: ["ENCHA_GUARD_PEERS=", "ENCHA_GUARD_PORTAS_BANCO_LOCAL=off"] }),
+      portasBanco: "ligado",
+    });
+    const { garantirGuardaSwarm } = await import("./guard-runtime");
+    await garantirGuardaSwarm("tok", 1);
+    expect(envDoUpdate(m)).toEqual(expect.arrayContaining(["ENCHA_GUARD_PORTAS_BANCO_LOCAL=off", "ENCHA_GUARD_PORTAS_BANCO=1"]));
   });
 });

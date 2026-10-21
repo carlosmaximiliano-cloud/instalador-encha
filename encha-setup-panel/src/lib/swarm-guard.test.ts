@@ -512,3 +512,54 @@ describe("especificacaoDesejada", () => {
     expect(spec.TaskTemplate.ContainerSpec.Image).toBe(baseArgsDesejada.imagemPainel);
   });
 });
+
+// Trava de portas de banco (ciclo painel-guard-portas-banco): o serviço vivo é
+// a verdade; o painel só liga (=1), tira ou mantém LITERALMENTE, e herda o
+// escape local do cliente nos três estados.
+describe("especificacaoDesejada — trava de portas de banco", () => {
+  const base = {
+    imagemPainel: "ghcr.io/enchaaluno/setup-panel:0.5.0@sha256:cafe1234",
+    versaoApp: "0.5.0",
+    peers: ["10.0.0.5"],
+  };
+  const vivo = (env: string[]): DockerServiceFull =>
+    ({ ID: "svc-1", Version: { Index: 1 }, Spec: { Name: "encha-guard", TaskTemplate: { ContainerSpec: { Image: "x", Env: env } } } }) as DockerServiceFull;
+  const envDe = (spec: ReturnType<typeof especificacaoDesejada>) => spec.TaskTemplate.ContainerSpec.Env ?? [];
+
+  it("ligado põe ENCHA_GUARD_PORTAS_BANCO=1, também sem serviço vivo (criação)", () => {
+    expect(envDe(especificacaoDesejada({ ...base, atual: null, portasBanco: "ligado" }))).toContain("ENCHA_GUARD_PORTAS_BANCO=1");
+    expect(envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PEERS="]), portasBanco: "ligado" }))).toContain(
+      "ENCHA_GUARD_PORTAS_BANCO=1"
+    );
+  });
+
+  it("desligado explícito tira ENCHA_GUARD_PORTAS_BANCO", () => {
+    const env = envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PEERS=", "ENCHA_GUARD_PORTAS_BANCO=1"]), portasBanco: "desligado" }));
+    expect(env.some((e) => e.startsWith("ENCHA_GUARD_PORTAS_BANCO="))).toBe(false);
+  });
+
+  it("manter copia o valor vivo LITERAL (mesmo um valor que o guarda ignora) e ausente continua ausente", () => {
+    const comValor = envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PORTAS_BANCO=talvez"]), portasBanco: "manter" }));
+    expect(comValor).toContain("ENCHA_GUARD_PORTAS_BANCO=talvez");
+    const semValor = envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PEERS="]), portasBanco: "manter" }));
+    expect(semValor.some((e) => e.startsWith("ENCHA_GUARD_PORTAS_BANCO"))).toBe(false);
+    // Argumento omitido = manter.
+    expect(envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PORTAS_BANCO=1"]) }))).toContain("ENCHA_GUARD_PORTAS_BANCO=1");
+  });
+
+  it.each(["ligado", "desligado", "manter"] as const)(
+    "herda ENCHA_GUARD_PORTAS_BANCO_LOCAL literal do serviço vivo no estado %s",
+    (estado) => {
+      const env = envDe(especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PORTAS_BANCO_LOCAL=Off"]), portasBanco: estado }));
+      expect(env).toContain("ENCHA_GUARD_PORTAS_BANCO_LOCAL=Off");
+    }
+  );
+
+  it("convergência: o spec ligado contra o vivo já ligado compara igual (não recria a task)", () => {
+    const desejado = especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PEERS=10.0.0.5", "ENCHA_GUARD_PORTAS_BANCO=1"]), portasBanco: "ligado" });
+    expect(compararEnv(["ENCHA_GUARD_PORTAS_BANCO=1", "ENCHA_GUARD_PEERS=10.0.0.5"], envDe(desejado))).toBe(true);
+    // E o desligado difere do vivo ligado: é isso que dispara o update.
+    const tirado = especificacaoDesejada({ ...base, atual: vivo(["ENCHA_GUARD_PORTAS_BANCO=1"]), portasBanco: "desligado" });
+    expect(compararEnv(["ENCHA_GUARD_PEERS=10.0.0.5", "ENCHA_GUARD_PORTAS_BANCO=1"], envDe(tirado))).toBe(false);
+  });
+});

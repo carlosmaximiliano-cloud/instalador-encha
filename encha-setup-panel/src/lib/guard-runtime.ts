@@ -1,4 +1,5 @@
 import { hasServiceCredentials } from "./auth/local-admin";
+import { estadoPortasBancoRemoto } from "./flag-sincronizacao";
 import {
   createService,
   discoverContext,
@@ -74,6 +75,22 @@ export async function garantirGuardaSwarm(token: string, endpointId: number): Pr
   }
 }
 
+// Trava de portas de banco: consulta a chave remota DEPOIS das checagens de
+// rótulo (só um guarda gerenciado chega aqui). Indisponível ou qualquer falha
+// da consulta vira `manter` — nunca lança, nunca liga, nunca reabre a porta.
+async function estadoDaTravaDePortasBanco(): Promise<"ligado" | "desligado" | "manter"> {
+  try {
+    const estado = await estadoPortasBancoRemoto();
+    if (estado === "ligado" || estado === "desligado") {
+      console.log(`[guard] trava de portas de banco: Console diz ${estado}.`);
+      return estado;
+    }
+    return "manter";
+  } catch {
+    return "manter";
+  }
+}
+
 export async function garantirGuardaSwarmOuLanca(token: string, endpointId: number): Promise<void> {
   const nodes = await listNodes(token, endpointId);
   const atual = await getServiceExact(token, endpointId, GUARD_SERVICE_NAME);
@@ -126,6 +143,7 @@ export async function garantirGuardaSwarmOuLanca(token: string, endpointId: numb
   }
 
   const peers = peersFromNodes(nodes);
+  const portasBanco = await estadoDaTravaDePortasBanco();
   const desejado = especificacaoDesejada({
     imagemPainel,
     // Só rótulo (com.encha.guard.versao) — nunca usado para montar a
@@ -133,6 +151,7 @@ export async function garantirGuardaSwarmOuLanca(token: string, endpointId: numb
     versaoApp: process.env.APP_VERSION ?? "0.0.0",
     peers,
     atual,
+    portasBanco,
   });
 
   const desativadoIgnorado = desativadoNaoReconhecido(atual);

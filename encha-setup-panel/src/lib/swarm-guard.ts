@@ -198,6 +198,8 @@ export function peersFromNodes(nodes: DockerNode[]): string[] {
 
 const CHAVE_PERMITIR = "ENCHA_GUARD_PERMITIR";
 const CHAVE_DESATIVADO = "ENCHA_GUARD_DESATIVADO";
+const CHAVE_PORTAS_BANCO = "ENCHA_GUARD_PORTAS_BANCO";
+const CHAVE_PORTAS_BANCO_LOCAL = "ENCHA_GUARD_PORTAS_BANCO_LOCAL";
 
 // Valor EFETIVO de `chave` num Env do Docker: com a chave repetida, vale a
 // ÚLTIMA ocorrência (o daemon monta o ambiente do container com
@@ -318,6 +320,14 @@ export type EspecificacaoDesejadaArgs = {
    * `montarSpecGuarda` sem `permitirExtra`/`desativado`.
    */
   atual: DockerServiceFull | null;
+  /**
+   * Trava de portas de banco (chave remota `bloquear_portas_banco`):
+   * `ligado` -> `ENCHA_GUARD_PORTAS_BANCO=1`; `desligado` -> a variável sai;
+   * `manter` (padrão: Console indisponível, primeiro boot) -> o valor do
+   * serviço vivo, literal (ausente continua ausente). Quem escolhe as portas
+   * é o script do guarda, nunca este valor.
+   */
+  portasBanco?: "ligado" | "desligado" | "manter";
 };
 
 /**
@@ -343,6 +353,9 @@ export function especificacaoDesejada(args: EspecificacaoDesejadaArgs): ServiceS
   const envAtual = args.atual?.Spec.TaskTemplate?.ContainerSpec?.Env;
   const permitirAtual = valorDeEnv(envAtual, CHAVE_PERMITIR);
   const desativadoAtual = valorDeEnv(envAtual, CHAVE_DESATIVADO);
+  const portasBancoAtual = valorDeEnv(envAtual, CHAVE_PORTAS_BANCO);
+  const portasBancoLocalAtual = valorDeEnv(envAtual, CHAVE_PORTAS_BANCO_LOCAL);
+  const estadoPortasBanco = args.portasBanco ?? "manter";
 
   const spec = montarSpecGuarda({
     imagemPainel: args.imagemPainel,
@@ -354,6 +367,13 @@ export function especificacaoDesejada(args: EspecificacaoDesejadaArgs): ServiceS
   const env = [...(spec.TaskTemplate.ContainerSpec.Env ?? [])];
   if (permitirAtual !== undefined) env.push(`${CHAVE_PERMITIR}=${permitirAtual}`);
   if (desativadoAtual !== undefined) env.push(`${CHAVE_DESATIVADO}=${desativadoAtual}`);
+  if (estadoPortasBanco === "ligado") env.push(`${CHAVE_PORTAS_BANCO}=1`);
+  else if (estadoPortasBanco === "manter" && portasBancoAtual !== undefined) {
+    env.push(`${CHAVE_PORTAS_BANCO}=${portasBancoAtual}`);
+  }
+  // Escape local do cliente (o guarda lê; o painel só preserva, como o PERMITIR):
+  // sem a herança a reconciliação de 6 h o apagaria em silêncio.
+  if (portasBancoLocalAtual !== undefined) env.push(`${CHAVE_PORTAS_BANCO_LOCAL}=${portasBancoLocalAtual}`);
   spec.TaskTemplate.ContainerSpec.Env = env;
 
   return spec;

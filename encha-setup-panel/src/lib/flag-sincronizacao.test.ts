@@ -112,3 +112,42 @@ describe("reconciliacaoRestartLigada", () => {
     expect(await reconciliacaoRestartLigada(1, f as unknown as typeof fetch)).toBe(false);
   });
 });
+
+describe("decidirPortasBanco / estadoPortasBancoRemoto (trava de portas de banco, três estados)", () => {
+  it("2xx com o valor exato: ligado liga, desligado desliga", async () => {
+    const { decidirPortasBanco } = await import("./flag-sincronizacao");
+    expect(decidirPortasBanco({ bloquear_portas_banco: "ligado" })).toBe("ligado");
+    expect(decidirPortasBanco({ bloquear_portas_banco: "desligado" })).toBe("desligado");
+  });
+
+  it("valor desconhecido não liga (nem desliga): canario, LIGADO, ' ligado', true, sim, 1, vazio", async () => {
+    const { decidirPortasBanco } = await import("./flag-sincronizacao");
+    for (const v of ["canario", "LIGADO", "Desligado", " ligado", "ligado ", true, false, "sim", 1, "", null]) {
+      expect(decidirPortasBanco({ bloquear_portas_banco: v })).toBe("indisponivel");
+    }
+    // Chave ausente (Console antigo) e corpo que não é objeto também.
+    expect(decidirPortasBanco({ sincronizar_stack_enchat: "ligado" })).toBe("indisponivel");
+    expect(decidirPortasBanco({})).toBe("indisponivel");
+    expect(decidirPortasBanco(null)).toBe("indisponivel");
+    expect(decidirPortasBanco("ligado")).toBe("indisponivel");
+  });
+
+  it("Console inalcançável mantém o estado: timeout, rede, não 2xx e JSON ruim são indisponível", async () => {
+    const { estadoPortasBancoRemoto } = await import("./flag-sincronizacao");
+    expect(await estadoPortasBancoRemoto((async () => { throw new Error("rede"); }) as unknown as typeof fetch)).toBe("indisponivel");
+    expect(await estadoPortasBancoRemoto((async () => { throw new DOMException("timeout", "TimeoutError"); }) as unknown as typeof fetch)).toBe("indisponivel");
+    expect(await estadoPortasBancoRemoto(resp({ bloquear_portas_banco: "ligado" }, false))).toBe("indisponivel");
+    const jsonRuim = (async () => ({ ok: true, json: async () => { throw new SyntaxError("json"); } }) as unknown as Response) as unknown as typeof fetch;
+    expect(await estadoPortasBancoRemoto(jsonRuim)).toBe("indisponivel");
+    expect(await estadoPortasBancoRemoto(resp({}))).toBe("indisponivel");
+  });
+
+  it("2xx válido decide; sem cache (cada chamada consulta o Console de novo)", async () => {
+    const { estadoPortasBancoRemoto } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp({ bloquear_portas_banco: "ligado" }));
+    expect(await estadoPortasBancoRemoto(f as unknown as typeof fetch)).toBe("ligado");
+    expect(await estadoPortasBancoRemoto(f as unknown as typeof fetch)).toBe("ligado");
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(await estadoPortasBancoRemoto(resp({ bloquear_portas_banco: "desligado" }))).toBe("desligado");
+  });
+});

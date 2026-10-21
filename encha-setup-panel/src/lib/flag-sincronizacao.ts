@@ -83,3 +83,40 @@ export async function reconciliacaoRestartLigada(agora = Date.now(), fetchImpl: 
   if (process.env.ENCHA_RECONCILIAR_RESTART?.trim().toLowerCase() === "off") return false;
   return consultarFlag("reconciliar_restart", ["enchat", "encha-tracker"], agora, fetchImpl);
 }
+
+// ── Trava de portas de banco (ciclo painel-guard-portas-banco) ──────────────
+//
+// Chave `bloquear_portas_banco` do mesmo GET. DIFERENTE das outras: é uma
+// trava de SEGURANÇA, então "erro = desligado" reabriria 3306/Qdrant/27017 a
+// cada soluço de rede, e "erro = ligado" é inaceitável. Três estados:
+//   ligado       resposta 2xx com o valor EXATO "ligado"
+//   desligado    resposta 2xx com o valor EXATO "desligado"
+//   indisponivel qualquer outra coisa (timeout, não 2xx, JSON ruim, chave
+//                ausente, valor desconhecido: "canario", "LIGADO", true...)
+// Só `ligado` liga e só `desligado` explícito desliga; `indisponivel` MANTÉM o
+// que o serviço `encha-guard` vivo já tem (ver swarm-guard.ts/guard-runtime.ts).
+// Sem cache (não herda o de 10 min das outras chaves) e sem trim/minúscula.
+
+export type EstadoPortasBanco = "ligado" | "desligado" | "indisponivel";
+
+/** Decisão pura sobre o corpo JSON de uma resposta 2xx. */
+export function decidirPortasBanco(corpo: unknown): EstadoPortasBanco {
+  if (!corpo || typeof corpo !== "object") return "indisponivel";
+  const v = (corpo as Record<string, unknown>).bloquear_portas_banco;
+  if (v === "ligado") return "ligado";
+  if (v === "desligado") return "desligado";
+  return "indisponivel";
+}
+
+/** Consulta o Console. Nunca lança: qualquer falha é `indisponivel`. */
+export async function estadoPortasBancoRemoto(fetchImpl: typeof fetch = fetch): Promise<EstadoPortasBanco> {
+  try {
+    const fp = fingerprintLocal(["enchat", "encha-tracker"]);
+    const url = `${CONSOLE_BASE_URL}/api/v1/setup/flags${fp ? `?fp=${encodeURIComponent(fp)}` : ""}`;
+    const res = await fetchImpl(url, { signal: AbortSignal.timeout(4000), headers: { accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) return "indisponivel";
+    return decidirPortasBanco(await res.json());
+  } catch {
+    return "indisponivel";
+  }
+}
