@@ -113,6 +113,64 @@ describe("reconciliacaoRestartLigada", () => {
   });
 });
 
+function semear(stackId: string, fingerprint: string) {
+  return import("./db").then(({ getDb }) => {
+    getDb()
+      .prepare("INSERT INTO stack_machine_ids (stack_id, machine_id, fingerprint, created_at) VALUES (?, ?, ?, ?)")
+      .run(stackId, `mid-${stackId}`, fingerprint, 1);
+  });
+}
+
+const corpoCanario = { sincronizar_stack_enchat: "canario", canario: ["fp-tracker"] };
+
+describe("sincronizacaoAutomaticaTrackerLigada (Ciclo 101 F5b)", () => {
+  it("instalação só com o Tracker consulta a chave com o fingerprint dele", async () => {
+    await semear("encha-tracker", "fp-tracker");
+    const { sincronizacaoAutomaticaTrackerLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp(corpoCanario));
+    expect(await sincronizacaoAutomaticaTrackerLigada(0, f as unknown as typeof fetch)).toBe(true);
+    expect(String(f.mock.calls[0][0])).toContain("fp=fp-tracker");
+  });
+  it("instalação com os dois produtos usa o fingerprint do enchat (mesma decisão)", async () => {
+    await semear("enchat", "fp-enchat");
+    await semear("encha-tracker", "fp-tracker");
+    const { sincronizacaoAutomaticaTrackerLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp(corpoCanario));
+    expect(await sincronizacaoAutomaticaTrackerLigada(0, f as unknown as typeof fetch)).toBe(false);
+    expect(String(f.mock.calls[0][0])).toContain("fp=fp-enchat");
+  });
+  it("ENCHA_SYNC_STACK=off desliga a sincronização do Tracker", async () => {
+    process.env.ENCHA_SYNC_STACK = "off";
+    await semear("encha-tracker", "fp-tracker");
+    const { sincronizacaoAutomaticaTrackerLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp({ sincronizar_stack_enchat: "ligado" }));
+    expect(await sincronizacaoAutomaticaTrackerLigada(0, f as unknown as typeof fetch)).toBe(false);
+    expect(f).not.toHaveBeenCalled();
+  });
+  it("cache da chave remota separado por fingerprint", async () => {
+    await semear("encha-tracker", "fp-tracker");
+    const { sincronizacaoAutomaticaLigada, sincronizacaoAutomaticaTrackerLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp(corpoCanario));
+    // enchat (sem fingerprint local do enchat): consulta sem fp, resultado falso
+    expect(await sincronizacaoAutomaticaLigada(0, f as unknown as typeof fetch)).toBe(false);
+    // o Tracker, dentro dos 10 min, NÃO herda o falso: consulta de novo, com o fingerprint dele
+    expect(await sincronizacaoAutomaticaTrackerLigada(1, f as unknown as typeof fetch)).toBe(true);
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(String(f.mock.calls[0][0])).not.toContain("fp=");
+    expect(String(f.mock.calls[1][0])).toContain("fp=fp-tracker");
+    // e cada um continua cacheado por 10 min
+    await sincronizacaoAutomaticaTrackerLigada(2, f as unknown as typeof fetch);
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+  it("o predicado do enchat segue sem o fingerprint do Tracker numa instalação só com o Tracker", async () => {
+    await semear("encha-tracker", "fp-tracker");
+    const { sincronizacaoAutomaticaLigada } = await import("./flag-sincronizacao");
+    const f = vi.fn(resp(corpoCanario));
+    expect(await sincronizacaoAutomaticaLigada(0, f as unknown as typeof fetch)).toBe(false);
+    expect(String(f.mock.calls[0][0])).not.toContain("fp=");
+  });
+});
+
 describe("decidirPortasBanco / estadoPortasBancoRemoto (trava de portas de banco, três estados)", () => {
   it("2xx com o valor exato: ligado liga, desligado desliga", async () => {
     const { decidirPortasBanco } = await import("./flag-sincronizacao");

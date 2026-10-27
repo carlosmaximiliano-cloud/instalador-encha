@@ -26,6 +26,8 @@ import { logAudit } from "./audit";
 import type { StackDefinition } from "./stacks/types";
 import { ehAtualizacaoPorVersao, RebaixamentoRecusadoError } from "./ordem-versao";
 import { sincronizarStackTracker } from "./sincronizar-stack";
+import { ESPERADOS, sincronizacaoTrackerLiberada } from "./sync-runtime";
+import { FixarVersoesError } from "./fixar-versoes";
 
 export type ApplyReleaseUpdateInput = {
   token: string;
@@ -156,11 +158,18 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
     // Ciclo 101 F5: o arquivo da stack no Portainer passa a apontar para a imagem
     // que acabou de subir (sem redeploy). Falha aqui NÃO desfaz nem esconde a
     // atualização já feita: fica registrada e o agendador repete.
+    // F5b: passa pelo mesmo portão do agendador (variável local, chave remota,
+    // backoff/automático desligado) e é silencioso nos códigos esperados; sem
+    // espera de convergência (o agendador fecha o que ficar convergindo).
     if (def.id === "encha-tracker" && atualizados.length > 0) {
       try {
-        await sincronizarStackTracker({ token, modo: "auto", user, ip });
+        if (await sincronizacaoTrackerLiberada()) {
+          await sincronizarStackTracker({ token, modo: "auto", user, ip });
+        }
       } catch (e) {
-        console.error("[stack-update] sincronização do arquivo da stack falhou (o agendador repete):", e instanceof Error ? e.message : e);
+        if (!(e instanceof FixarVersoesError && ESPERADOS.includes(e.codigo))) {
+          console.error("[stack-update] sincronização do arquivo da stack falhou (o agendador repete):", e instanceof Error ? e.message : e);
+        }
       }
     }
     return { atualizados };

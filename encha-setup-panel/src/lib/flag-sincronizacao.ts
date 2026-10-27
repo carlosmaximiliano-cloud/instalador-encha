@@ -44,7 +44,9 @@ function fingerprintLocal(stackIds: readonly string[]): string | null {
   }
 }
 
-const cache = new Map<ChaveFlag, { em: number; valor: boolean }>();
+// Cache por chave E fingerprint: a consulta sem fp (enchat ausente) não pode
+// envenenar a do Tracker, que o Console resolve pelo fingerprint (canário).
+const cache = new Map<string, { em: number; valor: boolean }>();
 const CACHE_MS = 10 * 60_000;
 
 export function limparCacheFlag(): void {
@@ -52,18 +54,19 @@ export function limparCacheFlag(): void {
 }
 
 async function consultarFlag(chave: ChaveFlag, stackIds: readonly string[], agora: number, fetchImpl: typeof fetch): Promise<boolean> {
-  const c = cache.get(chave);
+  const fp = fingerprintLocal(stackIds);
+  const id = JSON.stringify([chave, fp]);
+  const c = cache.get(id);
   if (c && agora - c.em < CACHE_MS) return c.valor;
   let valor = false;
   try {
-    const fp = fingerprintLocal(stackIds);
     const url = `${CONSOLE_BASE_URL}/api/v1/setup/flags${fp ? `?fp=${encodeURIComponent(fp)}` : ""}`;
     const res = await fetchImpl(url, { signal: AbortSignal.timeout(4000), headers: { accept: "application/json" }, cache: "no-store" });
     if (res.ok) valor = decidirFlag(await res.json(), fp, chave);
   } catch {
     valor = false;
   }
-  cache.set(chave, { em: agora, valor });
+  cache.set(id, { em: agora, valor });
   return valor;
 }
 
@@ -71,6 +74,17 @@ export async function sincronizacaoAutomaticaLigada(agora = Date.now(), fetchImp
   // Kill switch local (variável de ambiente da stack do painel).
   if (process.env.ENCHA_SYNC_STACK?.trim().toLowerCase() === "off") return false;
   return consultarFlag("sincronizar_stack_enchat", ["enchat"], agora, fetchImpl);
+}
+
+/**
+ * Sincronização automática da stack do TRACKER (Ciclo 101 F5b). Mesma variável
+ * local (ENCHA_SYNC_STACK=off) e mesma chave remota do enchat, mas a chave é
+ * consultada com o fingerprint de ["enchat", "encha-tracker"]: instalação com os
+ * dois produtos decide como o enchat; só com o Tracker, pelo fingerprint dele.
+ */
+export async function sincronizacaoAutomaticaTrackerLigada(agora = Date.now(), fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  if (process.env.ENCHA_SYNC_STACK?.trim().toLowerCase() === "off") return false;
+  return consultarFlag("sincronizar_stack_enchat", ["enchat", "encha-tracker"], agora, fetchImpl);
 }
 
 /**

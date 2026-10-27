@@ -65,6 +65,12 @@ type SetupOpts = {
   def?: StackDefinition;
   /** Falha da sincronização do arquivo da stack (Ciclo 101 F5). */
   sincronizarFalha?: boolean;
+  /** Erro lançado pela sincronização (ex.: FixarVersoesError esperado). */
+  sincronizarErro?: Error;
+  /** Chave remota/variável local do Tracker (Ciclo 101 F5b); padrão: ligada. */
+  flagLigada?: boolean;
+  /** podeTentarAuto(STACK_TRACKER).pode (Ciclo 101 F5b); padrão: pode. */
+  autoPode?: boolean;
 };
 
 async function setupMocks(opts: SetupOpts = {}) {
@@ -98,6 +104,7 @@ async function setupMocks(opts: SetupOpts = {}) {
   const logAuditMock = vi.fn();
   const sincronizarStackTrackerMock = vi.fn(async (_input: { token: string; modo: string; user: string; ip: string }) => {
     ordem.push("sync");
+    if (opts.sincronizarErro) throw opts.sincronizarErro;
     if (opts.sincronizarFalha) throw new Error("portainer fora");
     return { aplicada: true, mudancas: [], estado: "ausente" };
   });
@@ -118,7 +125,19 @@ async function setupMocks(opts: SetupOpts = {}) {
   vi.doMock("./registry-pull", () => ({ resolveRegistryAndPullImages: resolveRegistryAndPullImagesMock }));
   vi.doMock("./pairing-store", () => ({ getOrCreateMachineId: getOrCreateMachineIdMock }));
   vi.doMock("./audit", () => ({ logAudit: logAuditMock }));
-  vi.doMock("./sincronizar-stack", () => ({ sincronizarStackTracker: sincronizarStackTrackerMock }));
+  vi.doMock("./sincronizar-stack", () => ({
+    STACK_TRACKER: "encha-tracker",
+    sincronizarStackEnchat: vi.fn(),
+    sincronizarStackTracker: sincronizarStackTrackerMock,
+  }));
+  // O portão do automático (sync-runtime.ts) é o REAL; só a chave e o backoff são mockados.
+  const flagTrackerMock = vi.fn(async () => opts.flagLigada ?? true);
+  const podeTentarAutoMock = vi.fn((_stackId: string) => ({ pode: opts.autoPode ?? true }));
+  vi.doMock("./flag-sincronizacao", () => ({
+    sincronizacaoAutomaticaLigada: vi.fn(async () => true),
+    sincronizacaoAutomaticaTrackerLigada: flagTrackerMock,
+  }));
+  vi.doMock("./stack-sync-store", () => ({ podeTentarAuto: podeTentarAutoMock }));
 
   return {
     ordem,
@@ -132,6 +151,8 @@ async function setupMocks(opts: SetupOpts = {}) {
     fetchLatestReleaseCachedMock,
     logAuditMock,
     sincronizarStackTrackerMock,
+    flagTrackerMock,
+    podeTentarAutoMock,
   };
 }
 
@@ -151,6 +172,8 @@ afterEach(() => {
   vi.doUnmock("./pairing-store");
   vi.doUnmock("./audit");
   vi.doUnmock("./sincronizar-stack");
+  vi.doUnmock("./flag-sincronizacao");
+  vi.doUnmock("./stack-sync-store");
 });
 
 describe("applyReleaseUpdate", () => {
@@ -422,6 +445,46 @@ describe("applyReleaseUpdate: sincroniza o arquivo da stack do Tracker", () => {
     expect(result.atualizados).toHaveLength(2);
     expect(logAuditMock.mock.calls.map((c) => c[0].action)).toEqual(["stack.update"]); // sem stack.update.fail
     expect(erro).toHaveBeenCalled();
+    erro.mockRestore();
+  });
+
+  it("não sincroniza depois de atualizar com a sincronização automática desligada", async () => {
+    const { def, sincronizarStackTrackerMock, flagTrackerMock } = await setupMocks({ def: trackerDef(), flagLigada: false });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const result = await applyReleaseUpdate(entrada(def));
+
+    expect(flagTrackerMock).toHaveBeenCalled();
+    expect(sincronizarStackTrackerMock).not.toHaveBeenCalled();
+    expect(result.atualizados).toHaveLength(2); // a atualização segue valendo
+  });
+
+  it("não sincroniza depois de atualizar com o automático da stack desligado", async () => {
+    const { def, sincronizarStackTrackerMock, podeTentarAutoMock } = await setupMocks({ def: trackerDef(), autoPode: false });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const result = await applyReleaseUpdate(entrada(def));
+
+    expect(podeTentarAutoMock).toHaveBeenCalledWith("encha-tracker");
+    expect(sincronizarStackTrackerMock).not.toHaveBeenCalled();
+    expect(result.atualizados).toHaveLength(2);
+  });
+
+  it("código esperado (nao_convergida) não gera console.error e o retorno segue { atualizados }", async () => {
+    const { FixarVersoesError } = await import("./fixar-versoes");
+    const { def, sincronizarStackTrackerMock, logAuditMock } = await setupMocks({
+      def: trackerDef(),
+      sincronizarErro: new FixarVersoesError("nao_convergida", "encha_tracker_app: updating"),
+    });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+    const erro = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await applyReleaseUpdate(entrada(def));
+
+    expect(sincronizarStackTrackerMock).toHaveBeenCalledTimes(1);
+    expect(erro).not.toHaveBeenCalled();
+    expect(result.atualizados).toHaveLength(2);
+    expect(logAuditMock.mock.calls.map((c) => c[0].action)).toEqual(["stack.update"]);
     erro.mockRestore();
   });
 

@@ -1,6 +1,6 @@
 import { discoverContext, withServiceToken } from "./portainer";
 import { hasServiceCredentials } from "./auth/local-admin";
-import { sincronizacaoAutomaticaLigada } from "./flag-sincronizacao";
+import { sincronizacaoAutomaticaLigada, sincronizacaoAutomaticaTrackerLigada } from "./flag-sincronizacao";
 import { FixarVersoesError, STACK_ENCHAT } from "./fixar-versoes";
 import { STACK_TRACKER, sincronizarStackEnchat, sincronizarStackTracker } from "./sincronizar-stack";
 import { podeTentarAuto } from "./stack-sync-store";
@@ -13,7 +13,13 @@ import { podeTentarAuto } from "./stack-sync-store";
 const PRIMEIRA_TENTATIVA_MS = 3 * 60_000; // depois do boot: deixa o painel antigo (start-first) sair
 const INTERVALO_MS = 2 * 60_000;
 
-const ESPERADOS = ["em_andamento", "nao_convergida", "mudou_durante", "lease_perdido", "stack_nao_instalada"];
+export const ESPERADOS = ["em_andamento", "nao_convergida", "mudou_durante", "lease_perdido", "stack_nao_instalada"];
+
+/** Portão único do automático do Tracker: agendador e disparo pós-atualização. */
+export async function sincronizacaoTrackerLiberada(): Promise<boolean> {
+  if (!(await sincronizacaoAutomaticaTrackerLigada())) return false;
+  return podeTentarAuto(STACK_TRACKER).pode;
+}
 
 async function tentar(
   stackId: string,
@@ -21,8 +27,11 @@ async function tentar(
   rodar: (token: string) => Promise<unknown>
 ): Promise<void> {
   try {
-    if (!(await sincronizacaoAutomaticaLigada())) return;
-    if (!podeTentarAuto(stackId).pode) return;
+    const liberada =
+      stackId === STACK_TRACKER
+        ? await sincronizacaoTrackerLiberada()
+        : (await sincronizacaoAutomaticaLigada()) && podeTentarAuto(stackId).pode;
+    if (!liberada) return;
     await withServiceToken(async (token) => {
       await discoverContext(token); // falha cedo se o Portainer estiver fora
       await rodar(token);
