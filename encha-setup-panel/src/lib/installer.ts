@@ -8,7 +8,7 @@ import {
   listStacks,
   type Stack,
 } from "./portainer";
-import { criarSegredosVersionados, limparSegredosAntigos } from "./docker-secrets";
+import { criarSegredosVersionados, limparSegredosAntigos, limparSegredosObsoletos } from "./docker-secrets";
 import { RegistryAuthError } from "./registry-auth";
 import { resolveRegistryAndPullImages } from "./registry-pull";
 import { avisoSegredosNaoAtivados, imagensDeclaramRecurso } from "./imagens-recursos";
@@ -688,21 +688,36 @@ export async function installStack(input: InstallInput): Promise<InstallResult> 
 
     // Só DEPOIS do deploy aplicado e dos valores persistidos: remove as
     // versões antigas dos segredos (best-effort, nunca lança; nunca o que um
-    // serviço ainda referencia — ver limparSegredosAntigos).
-    if (dockerSecretSpecs.length > 0) {
-      const limpeza = await limparSegredosAntigos(
-        input.token,
-        endpointId,
-        stackName,
-        dockerSecretSpecs.map((s) => s.name)
-      );
+    // serviço ainda referencia — ver limparSegredosAntigos) e os segredos de
+    // bases que a stack deixou de usar (Ciclo 100: o Tracker não cria mais
+    // segredo, mas a frota guarda o da senha do admin). Por isso a limpeza
+    // roda também com a lista de segredos novos vazia.
+    const basesObsoletas = def.basesDeSegredoObsoletas ?? [];
+    if (dockerSecretSpecs.length > 0 || basesObsoletas.length > 0) {
+      const removidos: string[] = [];
+      let pulo: string | undefined;
+      if (dockerSecretSpecs.length > 0) {
+        const antigos = await limparSegredosAntigos(
+          input.token,
+          endpointId,
+          stackName,
+          dockerSecretSpecs.map((s) => s.name)
+        );
+        removidos.push(...antigos.removidos);
+        pulo ??= antigos.motivoPulo;
+      }
+      if (basesObsoletas.length > 0) {
+        const obsoletos = await limparSegredosObsoletos(input.token, endpointId, stackName, basesObsoletas);
+        removidos.push(...obsoletos.removidos);
+        pulo ??= obsoletos.motivoPulo;
+      }
       logAudit({
         user: input.user,
         ip: input.ip,
         action: "stack.secrets.cleanup",
         target: input.stackId,
         result: "ok",
-        meta: { removidos: limpeza.removidos.length, ...(limpeza.motivoPulo ? { pulo: limpeza.motivoPulo } : {}) },
+        meta: { removidos: removidos.length, ...(pulo ? { pulo } : {}) }, // só contagem, nunca nomes nem valores.
       });
     }
 

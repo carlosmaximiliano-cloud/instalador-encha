@@ -93,3 +93,57 @@ export async function limparSegredosAntigos(
   }
   return { removidos };
 }
+
+// Remove os segredos de bases que a stack DEIXOU de usar (StackDefinition.
+// basesDeSegredoObsoletas — Ciclo 100: a senha do admin do Tracker voltou a
+// ser env, e as instalações antigas deixaram `encha_tracker_senha_admin_<época>`
+// na VPS). Diferente de limparSegredosAntigos, não há nome a "manter": a base
+// inteira está obsoleta, então roda também quando a instalação nova não criou
+// segredo nenhum. As guardas são as mesmas: nunca lança; pula se a stack não
+// tem nenhum serviço ou se a leitura falha; e nunca remove um nome que algum
+// serviço da stack ainda referencia no Spec OU no PreviousSpec (o alvo do
+// rollback). Um segredo que a stack antiga rodando ainda referencia sai na
+// instalação seguinte, quando o PreviousSpec já não o cita.
+export async function limparSegredosObsoletos(
+  token: string,
+  endpointId: number,
+  stackName: string,
+  bases: string[]
+): Promise<LimpezaSegredos> {
+  if (bases.length === 0) return { removidos: [] };
+  let referenciados: Set<string>;
+  try {
+    const servicos = await listStackServices(token, endpointId, stackName);
+    if (servicos.length === 0) return { removidos: [], motivoPulo: "sem_servicos" };
+    referenciados = new Set<string>();
+    for (const svc of servicos) {
+      for (const n of secretsReferenciadosPorServico(svc)) referenciados.add(n);
+    }
+  } catch {
+    return { removidos: [], motivoPulo: "falha_ao_ler" };
+  }
+
+  const removidos: string[] = [];
+  for (const base of bases) {
+    let existentes;
+    try {
+      existentes = await listDockerSecrets(token, endpointId, [
+        `${LABEL_SEGREDO_STACK}=${stackName}`,
+        `${LABEL_SEGREDO_BASE}=${base}`,
+      ]);
+    } catch {
+      return { removidos, motivoPulo: "falha_ao_ler" };
+    }
+    for (const sec of existentes) {
+      const nome = sec.Spec?.Name;
+      if (!nome || referenciados.has(nome)) continue;
+      try {
+        await removeDockerSecret(token, endpointId, sec.ID);
+        removidos.push(nome);
+      } catch {
+        // Em uso, ou o daemon recusou: fica para a próxima rodada.
+      }
+    }
+  }
+  return { removidos };
+}

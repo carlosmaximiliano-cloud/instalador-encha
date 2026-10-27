@@ -4,12 +4,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { SwarmContext } from "./stacks/types";
 
-// Ciclo painel-secret — installStack e a stack encha-tracker REAIS contra um
-// Swarm falso, no molde de installer-banco-existente.test.ts (preparar do
-// Tracker) + installer-segredos.test.ts (Swarm falso com segredos). O Tracker
-// NÃO declara dockerSecretsGate (portão só por versão — ver
-// encha-tracker-segredos.ts), então nenhuma imagem é inspecionada e nenhum
-// "stack.secrets.gate" é auditado aqui.
+// Ciclo 100, F2.5 — installStack e a stack encha-tracker REAIS contra um Swarm
+// falso, no molde de installer-banco-existente.test.ts (preparar do Tracker) +
+// installer-segredos.test.ts (Swarm falso com segredos). Desde o Ciclo 100 o
+// Tracker não cria segredo do Docker (a senha do admin é a env
+// TRACKER_ADMIN_SENHA), mas as instalações antigas deixaram
+// `encha_tracker_senha_admin_<época>` na VPS: o installer varre esse segredo
+// DEPOIS do deploy (basesDeSegredoObsoletas), também com a lista de segredos
+// novos vazia, e nunca o que um serviço ainda referencia (Spec ou
+// PreviousSpec). Nenhuma imagem é inspecionada (sem dockerSecretsGate).
 
 vi.setConfig({ testTimeout: 30_000 });
 
@@ -45,6 +48,7 @@ function novoSwarm() {
     yamls: [] as string[],
     ordem: [] as string[],
     filtros: [] as (string[] | undefined)[],
+    tentativasDeRemocao: [] as string[],
     inspecoes: 0,
   };
 }
@@ -119,6 +123,7 @@ async function preparar(opts: { swarm: Swarm; tagRef: { atual: string } }) {
       removeDockerSecret: vi.fn(async (_t: string, _e: number, id: string) => {
         const s = [...swarm.segredos.values()].find((x) => x.ID === id);
         if (!s) return;
+        swarm.tentativasDeRemocao.push(s.nome);
         if ([...swarm.servicos.values()].some((sv) => sv.atuais.includes(s.nome))) {
           throw new actual.PortainerError(400, "secret is in use by service");
         }
@@ -175,11 +180,18 @@ async function preparar(opts: { swarm: Swarm; tagRef: { atual: string } }) {
 const N = (epoca: number) => `encha_tracker_senha_admin_${epoca}`;
 const S1 = "Senha-Forte-123!abc";
 const S2 = "Outra-Senha-456#xyz";
+const ROTULOS_TRACKER = {
+  "com.encha.segredo-stack": "encha_tracker",
+  "com.encha.segredo-base": "encha_tracker_senha_admin",
+};
 
-describe("installStack (Encha Tracker) — senha do admin como Docker secret (painel-secret)", () => {
-  it("IT1: 1.2.1: cria o segredo da senha ANTES do deploy, com os rótulos da stack; o YAML não tem a senha; nenhuma imagem é inspecionada", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-28T12:00:00Z"));
+// O segredo que uma instalação antiga (painel-secret) deixou na VPS.
+function semearSegredoAntigo(swarm: Swarm, epoca: number, valor = "senha-antiga") {
+  swarm.segredos.set(N(epoca), { ID: `id-${N(epoca)}`, nome: N(epoca), valor, labels: { ...ROTULOS_TRACKER } });
+}
+
+describe("installStack (Encha Tracker) — a senha do admin é env e o segredo antigo é varrido (Ciclo 100, F2.5)", () => {
+  it("IT1: 1.2.1: nenhum segredo criado, ordem só deploy, YAML com a env; a limpeza é auditada com 0 removidos", async () => {
     const swarm = novoSwarm();
     const tagRef = { atual: "1.2.1" };
     const { instalar, auditoria } = await preparar({ swarm, tagRef });
@@ -187,30 +199,22 @@ describe("installStack (Encha Tracker) — senha do admin como Docker secret (pa
     const r = await instalar(S1);
     expect(r.ok, r.error).toBe(true);
 
-    expect(swarm.ordem).toEqual([`criar:${N(1790596800)}`, "deploy"]);
-    const seg = swarm.segredos.get(N(1790596800))!;
-    expect(seg.valor).toBe(S1);
-    expect(seg.labels).toEqual({
-      "com.encha.segredo-stack": "encha_tracker",
-      "com.encha.segredo-base": "encha_tracker_senha_admin",
-    });
-    expect(swarm.yamls[0]).not.toContain(S1);
-    expect(swarm.yamls[0]).toContain('TRACKER_ADMIN_SENHA_FILE: "/run/secrets/encha_tracker_senha_admin"');
-    expect(swarm.servicos.get("encha_tracker_app")!.atuais).toEqual([N(1790596800)]);
-    expect(swarm.servicos.get("encha_tracker_updater")!.atuais).toEqual([]);
-    expect(swarm.servicos.get("encha_tracker_postgres")!.atuais).toEqual([]);
+    expect(swarm.ordem).toEqual(["deploy"]);
+    expect(swarm.segredos.size).toBe(0);
+    expect(swarm.yamls[0]).toContain(`      TRACKER_ADMIN_SENHA: "${S1}"\n`);
+    expect(swarm.yamls[0]).not.toContain("TRACKER_ADMIN_SENHA_FILE");
+    expect(swarm.yamls[0]).not.toMatch(/^\s*secrets:/m);
+    expect(swarm.servicos.get("encha_tracker_app")!.atuais).toEqual([]);
     expect(swarm.inspecoes).toBe(0);
 
     expect(await auditoria("stack.secrets.gate")).toHaveLength(0);
-    const criacao = await auditoria("stack.secrets.create");
-    expect(criacao).toHaveLength(1);
-    expect(criacao[0].meta).toEqual({ count: 1 });
+    expect(await auditoria("stack.secrets.create")).toHaveLength(0);
     const limpeza = await auditoria("stack.secrets.cleanup");
     expect(limpeza).toHaveLength(1);
     expect(limpeza[0].meta).toEqual({ removidos: 0 });
   });
 
-  it("IT2: 1.2.0 (abaixo do portão): nenhum segredo criado, listado ou removido; a senha vai em texto, como hoje", async () => {
+  it("IT2: 1.2.0 igual: a tag não decide o formato", async () => {
     const swarm = novoSwarm();
     const tagRef = { atual: "1.2.0" };
     const { instalar, auditoria } = await preparar({ swarm, tagRef });
@@ -219,52 +223,61 @@ describe("installStack (Encha Tracker) — senha do admin como Docker secret (pa
     expect(r.ok, r.error).toBe(true);
     expect(swarm.ordem).toEqual(["deploy"]);
     expect(swarm.segredos.size).toBe(0);
-    expect(swarm.filtros).toEqual([]);
     expect(swarm.yamls[0]).toContain(`TRACKER_ADMIN_SENHA: "${S1}"`);
     expect(swarm.yamls[0]).not.toContain("/run/secrets/");
     expect(await auditoria("stack.secrets.create")).toHaveLength(0);
-    expect(await auditoria("stack.secrets.cleanup")).toHaveLength(0);
+    const limpeza = await auditoria("stack.secrets.cleanup");
+    expect(limpeza).toHaveLength(1);
+    expect(limpeza[0].meta).toEqual({ removidos: 0 });
   });
 
-  it("IT3: reinstalação depois de remover a stack no Portainer: versão nova ANTES do deploy, a antiga removida DEPOIS; o segredo novo leva a senha nova", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-28T12:00:00Z"));
+  it("IT3: segredo órfão da frota (nenhum serviço o referencia): a lista vazia NÃO pula a limpeza; sai DEPOIS do deploy", async () => {
     const swarm = novoSwarm();
+    semearSegredoAntigo(swarm, 1758900000);
     const tagRef = { atual: "1.2.1" };
-    const { instalar } = await preparar({ swarm, tagRef });
-    expect((await instalar(S1)).ok).toBe(true);
+    const { instalar, auditoria } = await preparar({ swarm, tagRef });
 
-    swarm.servicos.clear();
-    swarm.ordem.length = 0;
-    vi.setSystemTime(new Date("2026-09-28T12:10:00Z"));
     const r = await instalar(S2);
     expect(r.ok, r.error).toBe(true);
 
-    expect(swarm.ordem).toEqual([`criar:${N(1790597400)}`, "deploy", `remover:${N(1790596800)}`]);
-    expect([...swarm.segredos.keys()]).toEqual([N(1790597400)]);
-    expect(swarm.segredos.get(N(1790597400))!.valor).toBe(S2);
+    expect(swarm.ordem).toEqual(["deploy", `remover:${N(1758900000)}`]);
+    expect(swarm.segredos.size).toBe(0);
+    expect(swarm.yamls[0]).toContain(`TRACKER_ADMIN_SENHA: "${S2}"`);
+    const limpeza = await auditoria("stack.secrets.cleanup");
+    expect(limpeza).toHaveLength(1);
+    expect(limpeza[0].meta).toEqual({ removidos: 1 });
+    expect(JSON.stringify(limpeza)).not.toContain(N(1758900000));
   });
 
-  it("IT4: reinstalação por cima da stack rodando: a versão referenciada pelo PreviousSpec fica e sai na instalação seguinte", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-28T12:00:00Z"));
+  it("IT4: segredo referenciado no Spec ou no PreviousSpec fica; sai quando ninguém o referencia", async () => {
     const swarm = novoSwarm();
+    const noSpec = N(1758900000);
+    const noPrevio = N(1758800000);
+    semearSegredoAntigo(swarm, 1758900000);
+    semearSegredoAntigo(swarm, 1758800000);
+    // Serviço que o YAML novo não redeclara: continua referenciando no Spec atual.
+    swarm.servicos.set("encha_tracker_extra", { nome: "encha_tracker_extra", atuais: [noSpec], anteriores: [] });
+    // O app antigo ainda aponta para o segredo: após o deploy ele vira PreviousSpec.
+    swarm.servicos.set("encha_tracker_app", { nome: "encha_tracker_app", atuais: [noPrevio], anteriores: [] });
     const tagRef = { atual: "1.2.1" };
     const { instalar } = await preparar({ swarm, tagRef });
-    expect((await instalar(S1)).ok).toBe(true);
 
-    vi.setSystemTime(new Date("2026-09-28T12:10:00Z"));
     expect((await instalar(S1)).ok).toBe(true);
-    expect([...swarm.segredos.keys()].sort()).toEqual([N(1790596800), N(1790597400)].sort());
+    expect([...swarm.segredos.keys()].sort()).toEqual([noPrevio, noSpec].sort());
+    expect(swarm.tentativasDeRemocao).toEqual([]);
 
-    vi.setSystemTime(new Date("2026-09-28T12:20:00Z"));
+    // O PreviousSpec do app já não cita o segredo; o serviço extra ainda cita o outro.
     expect((await instalar(S1)).ok).toBe(true);
-    expect([...swarm.segredos.keys()].sort()).toEqual([N(1790597400), N(1790598000)].sort());
+    expect([...swarm.segredos.keys()]).toEqual([noSpec]);
+    expect(swarm.ordem.filter((o) => o.startsWith("remover:"))).toEqual([`remover:${noPrevio}`]);
+    expect(swarm.tentativasDeRemocao).toEqual([noPrevio]);
+
+    swarm.servicos.delete("encha_tracker_extra");
+    expect((await instalar(S1)).ok).toBe(true);
+    expect(swarm.segredos.size).toBe(0);
   });
 
-  it("IT5: segredos de outra stack no mesmo Swarm nunca são tocados", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-28T12:00:00Z"));
+  it("IT5: segredos de outra stack no mesmo Swarm nunca são tocados; o filtro é só da stack e da base do Tracker", async () => {
     const swarm = novoSwarm();
     swarm.segredos.set("enchat_master_key_1758900000", {
       ID: "id-enchat-master",
@@ -272,48 +285,50 @@ describe("installStack (Encha Tracker) — senha do admin como Docker secret (pa
       valor: "valor-enchat-master",
       labels: { "com.encha.segredo-stack": "enchat", "com.encha.segredo-base": "enchat_master_key" },
     });
-    swarm.segredos.set("enchat_updater_token_1758800000", {
-      ID: "id-enchat-updater-token",
-      nome: "enchat_updater_token_1758800000",
-      valor: "valor-enchat-updater-token",
-      labels: { "com.encha.segredo-stack": "enchat", "com.encha.segredo-base": "enchat_updater_token" },
+    swarm.segredos.set("enchat_senha_admin_1758800000", {
+      ID: "id-enchat-senha",
+      nome: "enchat_senha_admin_1758800000",
+      valor: "valor-enchat-senha",
+      // Mesma base do Tracker, rótulo de OUTRA stack: o filtro da stack a poupa.
+      labels: { "com.encha.segredo-stack": "enchat", "com.encha.segredo-base": "encha_tracker_senha_admin" },
     });
     swarm.servicos.set("enchat_app", { nome: "enchat_app", atuais: ["enchat_master_key_1758900000"], anteriores: [] });
+    semearSegredoAntigo(swarm, 1758700000);
 
     const tagRef = { atual: "1.2.1" };
     const { instalar } = await preparar({ swarm, tagRef });
     expect((await instalar(S1)).ok).toBe(true);
 
-    // Roteiro do IT3: remove só os serviços encha_tracker_*, o enchat_app fica.
-    for (const nome of [...swarm.servicos.keys()]) {
-      if (nome !== "enchat_app") swarm.servicos.delete(nome);
-    }
-    swarm.ordem.length = 0;
-    vi.setSystemTime(new Date("2026-09-28T12:10:00Z"));
-    expect((await instalar(S2)).ok).toBe(true);
-
     expect(swarm.segredos.has("enchat_master_key_1758900000")).toBe(true);
-    expect(swarm.segredos.has("enchat_updater_token_1758800000")).toBe(true);
+    expect(swarm.segredos.has("enchat_senha_admin_1758800000")).toBe(true);
+    expect(swarm.segredos.has(N(1758700000))).toBe(false);
     expect(swarm.ordem.some((o) => o.startsWith("remover:enchat_"))).toBe(false);
     expect(swarm.filtros.length).toBeGreaterThan(0);
-    for (const f of swarm.filtros) expect(f).toEqual(["com.encha.segredo-stack=encha_tracker"]);
+    for (const f of swarm.filtros) {
+      expect(f).toEqual(["com.encha.segredo-stack=encha_tracker", "com.encha.segredo-base=encha_tracker_senha_admin"]);
+    }
   });
 
-  it("IT6: cruzando o portão para cima: instalado em 1.2.0 e reinstalado em 1.2.1 cria o segredo, e nada é removido", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-28T12:00:00Z"));
+  it("IT6: stack antiga (segredo e _FILE) reinstalada: o 1º deploy troca para env e o segredo fica; o 2º o remove", async () => {
     const swarm = novoSwarm();
-    const tagRef = { atual: "1.2.0" };
+    semearSegredoAntigo(swarm, 1758900000, S1);
+    swarm.servicos.set("encha_tracker_app", { nome: "encha_tracker_app", atuais: [N(1758900000)], anteriores: [] });
+    const tagRef = { atual: "1.2.1" };
     const { instalar } = await preparar({ swarm, tagRef });
-    expect((await instalar(S1)).ok).toBe(true);
-    swarm.ordem.length = 0;
 
-    tagRef.atual = "1.2.1";
-    vi.setSystemTime(new Date("2026-09-28T12:10:00Z"));
     const r = await instalar(S1);
     expect(r.ok, r.error).toBe(true);
-    expect(swarm.ordem).toEqual([`criar:${N(1790597400)}`, "deploy"]);
-    expect(swarm.yamls[1]).toContain("TRACKER_ADMIN_SENHA_FILE:");
-    expect(swarm.yamls[1]).not.toContain(S1);
+    expect(swarm.ordem).toEqual(["deploy"]);
+    expect(swarm.yamls[0]).toContain(`TRACKER_ADMIN_SENHA: "${S1}"`);
+    expect(swarm.yamls[0]).not.toContain("TRACKER_ADMIN_SENHA_FILE");
+    expect(swarm.servicos.get("encha_tracker_app")!.atuais).toEqual([]);
+    expect(swarm.servicos.get("encha_tracker_app")!.anteriores).toEqual([N(1758900000)]);
+    expect([...swarm.segredos.keys()]).toEqual([N(1758900000)]);
+    expect(swarm.tentativasDeRemocao).toEqual([]);
+
+    swarm.ordem.length = 0;
+    expect((await instalar(S1)).ok).toBe(true);
+    expect(swarm.ordem).toEqual(["deploy", `remover:${N(1758900000)}`]);
+    expect(swarm.segredos.size).toBe(0);
   });
 });
