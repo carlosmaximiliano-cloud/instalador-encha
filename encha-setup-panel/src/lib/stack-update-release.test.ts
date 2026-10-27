@@ -63,12 +63,14 @@ type SetupOpts = {
   appEnv?: string[];
   releaseTag?: string;
   def?: StackDefinition;
+  /** Falha da sincronização do arquivo da stack (Ciclo 101 F5). */
+  sincronizarFalha?: boolean;
 };
 
 async function setupMocks(opts: SetupOpts = {}) {
   const ordem: string[] = [];
   const def = opts.def ?? fakeDef();
-  const stackName = FAKE_STACK_ID.replace(/-/g, "_");
+  const stackName = def.id.replace(/-/g, "_");
 
   const state = {
     app: fakeService(`${stackName}_app`, opts.appImage ?? "ghcr.io/x/fake:1.0.0", opts.appEnv ?? ["FAKE_CHAVE=chave-do-env"]),
@@ -94,6 +96,11 @@ async function setupMocks(opts: SetupOpts = {}) {
     fakeRelease(opts.releaseTag ?? "1.1.0")
   );
   const logAuditMock = vi.fn();
+  const sincronizarStackTrackerMock = vi.fn(async (_input: { token: string; modo: string; user: string; ip: string }) => {
+    ordem.push("sync");
+    if (opts.sincronizarFalha) throw new Error("portainer fora");
+    return { aplicada: true, mudancas: [], estado: "ausente" };
+  });
 
   vi.doMock("./portainer", async (importOriginal) => {
     const actual = await importOriginal<typeof import("./portainer")>();
@@ -111,6 +118,7 @@ async function setupMocks(opts: SetupOpts = {}) {
   vi.doMock("./registry-pull", () => ({ resolveRegistryAndPullImages: resolveRegistryAndPullImagesMock }));
   vi.doMock("./pairing-store", () => ({ getOrCreateMachineId: getOrCreateMachineIdMock }));
   vi.doMock("./audit", () => ({ logAudit: logAuditMock }));
+  vi.doMock("./sincronizar-stack", () => ({ sincronizarStackTracker: sincronizarStackTrackerMock }));
 
   return {
     ordem,
@@ -123,6 +131,7 @@ async function setupMocks(opts: SetupOpts = {}) {
     getOrCreateMachineIdMock,
     fetchLatestReleaseCachedMock,
     logAuditMock,
+    sincronizarStackTrackerMock,
   };
 }
 
@@ -141,6 +150,7 @@ afterEach(() => {
   vi.doUnmock("./registry-pull");
   vi.doUnmock("./pairing-store");
   vi.doUnmock("./audit");
+  vi.doUnmock("./sincronizar-stack");
 });
 
 describe("applyReleaseUpdate", () => {
@@ -379,5 +389,52 @@ describe("applyReleaseUpdate — nunca rebaixa (painel-rebaixamento)", () => {
     expect(state.updater.Spec.TaskTemplate?.ContainerSpec?.Image).toBe("ghcr.io/x/fake-updater:1.2.0");
     expect(logAuditMock).toHaveBeenCalledTimes(1);
     expect(logAuditMock.mock.calls[0][0].action).toBe("stack.update");
+  });
+});
+
+// Ciclo 101 F5: depois de atualizar, o arquivo da stack do Tracker acompanha a imagem.
+describe("applyReleaseUpdate: sincroniza o arquivo da stack do Tracker", () => {
+  const trackerDef = () => fakeDef({ id: "encha-tracker" });
+  const entrada = (def: StackDefinition) => ({ token: "tok", stackId: def.id, def, user: "tester", ip: "127.0.0.1" });
+
+  it("sincroniza o arquivo da stack depois de atualizar", async () => {
+    // O estado do updater está ausente (instalação atualizada só pelo painel): a chamada acontece mesmo assim,
+    // porque o portão que decide se grava é da própria sincronização, não desta rotina.
+    const { def, ordem, sincronizarStackTrackerMock } = await setupMocks({ def: trackerDef() });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+
+    const result = await applyReleaseUpdate(entrada(def));
+
+    expect(result.atualizados).toHaveLength(2);
+    expect(sincronizarStackTrackerMock).toHaveBeenCalledTimes(1);
+    expect(sincronizarStackTrackerMock.mock.calls[0][0]).toMatchObject({ token: "tok", modo: "auto", user: "tester" });
+    expect(ordem).toEqual(["pull", "update", "update", "sync"]); // só DEPOIS de trocar as imagens
+  });
+
+  it("falha da sincronização não desfaz nem esconde a atualização", async () => {
+    const { def, sincronizarStackTrackerMock, logAuditMock } = await setupMocks({ def: trackerDef(), sincronizarFalha: true });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+    const erro = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await applyReleaseUpdate(entrada(def));
+
+    expect(sincronizarStackTrackerMock).toHaveBeenCalledTimes(1);
+    expect(result.atualizados).toHaveLength(2);
+    expect(logAuditMock.mock.calls.map((c) => c[0].action)).toEqual(["stack.update"]); // sem stack.update.fail
+    expect(erro).toHaveBeenCalled();
+    erro.mockRestore();
+  });
+
+  it("nada atualizado (idempotência) ou outra stack: não sincroniza", async () => {
+    const igual = await setupMocks({ def: trackerDef(), appImage: "ghcr.io/x/fake:1.1.0", updaterImage: "ghcr.io/x/fake-updater:1.1.0" });
+    const { applyReleaseUpdate } = await import("./stack-update-release");
+    expect((await applyReleaseUpdate(entrada(igual.def))).atualizados).toEqual([]);
+    expect(igual.sincronizarStackTrackerMock).not.toHaveBeenCalled();
+
+    vi.resetModules();
+    const outra = await setupMocks();
+    const { applyReleaseUpdate: aplicar2 } = await import("./stack-update-release");
+    expect((await aplicar2(entrada(outra.def))).atualizados).toHaveLength(2);
+    expect(outra.sincronizarStackTrackerMock).not.toHaveBeenCalled();
   });
 });

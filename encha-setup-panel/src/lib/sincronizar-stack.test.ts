@@ -3,6 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { enchat } from "./stacks/enchat";
+import { enchaTracker } from "./stacks/encha-tracker";
+import { MARCA_AUSENTE, MARCA_FIM, MARCA_INICIO } from "./estado-sidecar";
 
 // Núcleo da sincronização (modo auto/manual) com Portainer, gravador e leitura
 // do estado.json simulados; SQLite real num diretório temporário.
@@ -20,6 +22,10 @@ const m = vi.hoisted(() => ({
   gravar: vi.fn(),
   estado: vi.fn(),
   audit: vi.fn(),
+  getVolumeMountpoint: vi.fn(),
+  imageExistsLocally: vi.fn(),
+  pullImage: vi.fn(),
+  runOneShotJob: vi.fn(),
 }));
 
 vi.mock("./portainer", () => ({
@@ -28,6 +34,10 @@ vi.mock("./portainer", () => ({
   listServiceTasks: m.listServiceTasks,
   listStacks: m.listStacks,
   getStackFile: m.getStackFile,
+  getVolumeMountpoint: m.getVolumeMountpoint,
+  imageExistsLocally: m.imageExistsLocally,
+  pullImage: m.pullImage,
+  runOneShotJob: m.runOneShotJob,
   PortainerError: class PortainerError extends Error {
     constructor(public status: number, msg: string) {
       super(msg);
@@ -76,7 +86,7 @@ function instala() {
   });
   m.listServiceTasks.mockImplementation(async (_t: string, _e: number, id: string) => {
     const s = svcs[id];
-    return [{ ID: "t", ServiceID: id, DesiredState: "running", Status: { State: s.taskState ?? "running" }, Spec: { ContainerSpec: { Image: s.taskImage ?? s.image } } }];
+    return [{ ID: "t", ServiceID: id, DesiredState: "running", NodeID: "no1", Status: { State: s.taskState ?? "running" }, Spec: { ContainerSpec: { Image: s.taskImage ?? s.image } } }];
   });
 }
 
@@ -400,5 +410,202 @@ describe("diferemRepoTag", () => {
     expect(diferemRepoTag([{ servico: "enchat_app", de: "r/a:1", para: "r/a:1@sha256:x" }])).toBe(false);
     expect(diferemRepoTag([{ servico: "enchat_app", de: "r/a:1", para: "r/a:2@sha256:x" }])).toBe(true);
     expect(diferemRepoTag([{ servico: "enchat_app", de: "r/a:1", para: "r/b:1" }])).toBe(true);
+  });
+});
+
+// ── Stack do Encha Tracker (Ciclo 101 F5.2) ─────────────────────────────
+
+const REPO_APP = "ghcr.io/cheiodecoisa/encha-tracker";
+const REPO_UPD = "ghcr.io/cheiodecoisa/tracker-updater";
+const APP_NOVO = `${REPO_APP}:1.5.65`;
+const APP_NOVO_D = `${APP_NOVO}${D("a")}`;
+const UPD_NOVO = `${REPO_UPD}:1.5.65`;
+const UPD_NOVO_D = `${UPD_NOVO}${D("d")}`;
+
+const composeTrackerVelho = enchaTracker.generateYaml(
+  { dominio_tracker: "tracker.exemplo.com", email_ativacao: "c@exemplo.com", senha_admin: "SenhaForte#123" },
+  { tracker_master_key: "m", postgres_password: "p", updater_token: "u" },
+  {
+    networkName: "rede",
+    serverName: "x",
+    email: "e@x.com",
+    release: { version: "1.4.34", imageRepo: REPO_APP, imageTag: "1.4.34", obrigatoria: false },
+    machineId: "0123456789abcdef0123456789abcdef",
+    fingerprint: "f",
+    versaoSegredos: "1",
+  }
+);
+
+const logsEstado = (j: unknown) => `${MARCA_INICIO}\r\n${JSON.stringify(j)}\r\n${MARCA_FIM}\r\n`;
+const jobEstado = (j: unknown) => m.runOneShotJob.mockResolvedValue({ exitCode: 0, logs: logsEstado(j), timedOut: false });
+
+describe("stack do Tracker", () => {
+  beforeEach(() => {
+    svcs = {
+      encha_tracker_app: { image: APP_NOVO, upd: "completed" },
+      encha_tracker_updater: { image: UPD_NOVO_D, upd: "completed" },
+    };
+    instala();
+    m.listStacks.mockResolvedValue([
+      { Id: 77, Name: "encha_tracker", EndpointId: 7, Status: 1, CreationDate: 0, Env: [], ProjectPath: "/data/compose/77", EntryPoint: "docker-compose.yml" },
+    ]);
+    m.getStackFile.mockResolvedValue(composeTrackerVelho);
+    m.getVolumeMountpoint.mockResolvedValue("/var/lib/docker/volumes/encha_tracker_updater_data/_data");
+    m.imageExistsLocally.mockResolvedValue(true);
+    jobEstado({ em_andamento: false, versao_atual: "1.5.65", imagem_atual: APP_NOVO_D });
+  });
+
+  const gravado = (): string => m.gravar.mock.calls[0][4] as string;
+
+  it("grava a imagem do Tracker no arquivo da stack", async () => {
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(true);
+    expect(m.gravar).toHaveBeenCalledOnce();
+    const [, endpoint, stack, atual] = m.gravar.mock.calls[0];
+    expect(endpoint).toBe(7);
+    expect(stack.Id).toBe(77);
+    expect(atual).toBe(composeTrackerVelho);
+    expect(gravado()).toContain(`    image: ${REPO_APP}:1.5.65`);
+    expect(gravado()).toContain(`    image: ${UPD_NOVO_D}`);
+    expect(gravado()).not.toContain(":1.4.34");
+    // só as duas linhas image: do Tracker mudam; o resto (postgres incluso) fica byte a byte.
+    expect(gravado().replace(APP_NOVO_D, `${REPO_APP}:1.4.34`).replace(UPD_NOVO_D, `${REPO_UPD}:1.4.34`)).toBe(composeTrackerVelho);
+    expect((await store()).lerEstadoSync("encha_tracker").lastResult).toBe("aplicada");
+  });
+
+  it("grava o digest da imagem_atual", async () => {
+    const { sincronizarStackTracker } = await nucleo();
+    await sincronizarStackTracker(entrada("auto"));
+    expect(gravado()).toContain(`    image: ${APP_NOVO_D}`);
+  });
+
+  it("imagem_atual de outro repo:tag não vence o spec ao vivo", async () => {
+    jobEstado({ em_andamento: false, imagem_atual: `${REPO_APP}:1.4.99${D("a")}` });
+    const { sincronizarStackTracker } = await nucleo();
+    await sincronizarStackTracker(entrada("auto"));
+    expect(gravado()).toContain(`    image: ${APP_NOVO}\n`);
+    expect(gravado()).not.toContain("1.4.99");
+  });
+
+  it("spec que já tem digest ignora a imagem_atual", async () => {
+    svcs.encha_tracker_app.image = APP_NOVO + D("b");
+    jobEstado({ em_andamento: false, imagem_atual: APP_NOVO_D });
+    const { sincronizarStackTracker } = await nucleo();
+    await sincronizarStackTracker(entrada("auto"));
+    expect(gravado()).toContain(`    image: ${APP_NOVO}${D("b")}`);
+    expect(gravado()).not.toContain(D("a"));
+  });
+
+  it("não grava com o updater ocupado", async () => {
+    // O cache do leitor é aquecido com "livre"; a leitura nova traz "ocupado": o portão tem de forçar a leitura.
+    jobEstado({ em_andamento: false });
+    const leitor = await import("./estado-updater-tracker");
+    await leitor.lerEstadoDoUpdaterTracker("t", 7);
+    jobEstado({ em_andamento: true });
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(false);
+    expect(r.motivo).toContain("updater");
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect((await store()).lerEstadoSync("encha_tracker").lastResult).toBe("aguardando");
+  });
+
+  it("estado do updater ausente libera a sincronização", async () => {
+    m.runOneShotJob.mockResolvedValue({ exitCode: 0, logs: MARCA_AUSENTE, timedOut: false });
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(true);
+    expect(r.estado).toBe("ausente");
+    expect(gravado()).toContain(`    image: ${APP_NOVO}\n`); // sem imagem_atual: o spec ao vivo
+  });
+
+  it("estado do updater ilegível espera no automático", async () => {
+    m.runOneShotJob.mockResolvedValue({ exitCode: 1, logs: "", timedOut: false });
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(false);
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect((await store()).lerEstadoSync("encha_tracker").lastResult).toBe("aguardando");
+  });
+
+  it("erro antigo não trava a sincronização", async () => {
+    jobEstado({ em_andamento: false, erro: "falha de uma atualização anterior", operacao: "atualizar" });
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(true);
+    expect(m.gravar).toHaveBeenCalledOnce();
+  });
+
+  it("lease do Tracker independente do enchat", async () => {
+    const s = await store();
+    expect(s.tentarLease("enchat", "outro-processo", 60_000)).toBe(true); // o enchat está sincronizando
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(true);
+    // e o inverso: lease do Tracker em mãos de outro dono bloqueia só o Tracker.
+    s.liberarLease("enchat", "outro-processo");
+    expect(s.tentarLease("encha_tracker", "outro-processo", 60_000)).toBe(true);
+    await expect(sincronizarStackTracker(entrada("auto"))).rejects.toMatchObject({ codigo: "em_andamento" });
+  });
+
+  it("duas chamadas simultâneas: a segunda recusa (trava local própria) e a primeira conclui", async () => {
+    const { sincronizarStackTracker } = await nucleo();
+    const [a, b] = await Promise.allSettled([sincronizarStackTracker(entrada("auto")), sincronizarStackTracker(entrada("auto"))]);
+    expect(a.status).toBe("fulfilled");
+    expect(b.status).toBe("rejected");
+    expect(m.gravar).toHaveBeenCalledOnce();
+  });
+
+  it("serviço mudou entre a leitura e a gravação: aborta sem gravar (mudou_durante)", async () => {
+    let chamadas = 0;
+    m.getServiceExact.mockImplementation(async (_t: string, _e: number, nome: string) => {
+      const s = svcs[nome];
+      // leituras: app, updater (1ª passada), updater do leitor de estado (3ª), reconferência: app, updater
+      const mudou = ++chamadas > 3 && nome === "encha_tracker_updater";
+      return { ID: nome, Version: { Index: mudou ? 11 : 10 }, UpdateStatus: { State: "completed" }, Spec: { Name: nome, TaskTemplate: { ContainerSpec: { Image: s.image } } } };
+    });
+    const { sincronizarStackTracker } = await nucleo();
+    await expect(sincronizarStackTracker(entrada("auto"))).rejects.toMatchObject({ codigo: "mudou_durante" });
+    expect(m.gravar).not.toHaveBeenCalled();
+  });
+
+  it("arquivo só com diferença de digest no automático: não lê o estado nem grava", async () => {
+    const igual = composeTrackerVelho.replace(`${REPO_APP}:1.4.34`, APP_NOVO).replace(`${REPO_UPD}:1.4.34`, UPD_NOVO);
+    m.getStackFile.mockResolvedValue(igual);
+    const { sincronizarStackTracker } = await nucleo();
+    const r = await sincronizarStackTracker(entrada("auto"));
+    expect(r.aplicada).toBe(false);
+    expect(m.runOneShotJob).not.toHaveBeenCalled();
+    expect(m.gravar).not.toHaveBeenCalled();
+    expect((await store()).lerEstadoSync("encha_tracker").lastResult).toBe("sincronizada");
+  });
+
+  it("arquivo sem as duas linhas image: do Tracker: compose_inesperado; stack fora do Portainer: desliga o automático", async () => {
+    m.getStackFile.mockResolvedValue(composeTrackerVelho.replace(`${REPO_UPD}:1.4.34`, "exemplo/outra:1"));
+    const { sincronizarStackTracker } = await nucleo();
+    await expect(sincronizarStackTracker(entrada("auto"))).rejects.toMatchObject({ codigo: "compose_inesperado" });
+    m.listStacks.mockResolvedValue([]);
+    await expect(sincronizarStackTracker(entrada("auto"))).rejects.toMatchObject({ codigo: "stack_externa" });
+    expect((await store()).lerEstadoSync("encha_tracker").autoDisabledReason).toBe("stack_externa");
+  });
+});
+
+describe("ehImgTracker", () => {
+  it("aceita só as imagens do Tracker na conta do produto, com tag de versão e digest opcional", async () => {
+    const { ehImgTracker } = await nucleo();
+    expect(ehImgTracker(APP_NOVO)).toBe(true);
+    expect(ehImgTracker(UPD_NOVO_D)).toBe(true);
+    expect(ehImgTracker(`${REPO_APP}:beta-0123456789ab`)).toBe(true);
+    for (const ruim of [
+      "postgres:16-alpine",
+      "ghcr.io/outra-conta/encha-tracker:1.5.65",
+      `${REPO_APP}:latest`,
+      `${REPO_APP}:1.5.65@sha256:curto`,
+      "ghcr.io/cheiodecoisa/enchat:1.5.65",
+      "docker.io/cheiodecoisa/encha-tracker:1.5.65",
+    ]) {
+      expect(ehImgTracker(ruim)).toBe(false);
+    }
   });
 });

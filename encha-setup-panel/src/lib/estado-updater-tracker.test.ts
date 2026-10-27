@@ -81,4 +81,23 @@ describe("leitor do tracker-updater", () => {
     await lerEstadoDoUpdaterTracker("tok", 7, 2000);
     expect(m.runOneShotJob).toHaveBeenCalledOnce();
   });
+
+  it("devolve a imagem_atual (referência com digest) registrada pelo updater; texto só", async () => {
+    const ref = `ghcr.io/cheiodecoisa/encha-tracker:1.5.65@sha256:${"a".repeat(64)}`;
+    m.runOneShotJob.mockResolvedValue({ exitCode: 0, logs: logs({ em_andamento: false, imagem_atual: ref }), timedOut: false });
+    const { lerEstadoDoUpdaterTracker, limparCacheEstadoTracker } = await leitor();
+    expect((await lerEstadoDoUpdaterTracker("tok", 7)).estado?.imagem_atual).toBe(ref);
+    limparCacheEstadoTracker();
+    m.runOneShotJob.mockResolvedValue({ exitCode: 0, logs: logs({ em_andamento: false, imagem_atual: 42 }), timedOut: false });
+    expect((await lerEstadoDoUpdaterTracker("tok", 7)).estado?.imagem_atual).toBeUndefined();
+  });
+
+  it("leitura forçada ignora o cache de 5 min (o portão da sincronização precisa do estado de agora)", async () => {
+    const { lerEstadoDoUpdaterTracker } = await leitor();
+    await lerEstadoDoUpdaterTracker("tok", 7, 1000);
+    m.runOneShotJob.mockResolvedValue({ exitCode: 0, logs: logs({ em_andamento: false }), timedOut: false });
+    expect((await lerEstadoDoUpdaterTracker("tok", 7, 2000)).estado?.em_andamento).toBe(true); // cache
+    expect((await lerEstadoDoUpdaterTracker("tok", 7, 3000, true)).estado?.em_andamento).toBe(false);
+    expect(m.runOneShotJob).toHaveBeenCalledTimes(2);
+  });
 });

@@ -39,6 +39,8 @@ export type EstadoSidecar = {
   auto_atualizacao?: string;
   imagem_aplicada?: string;
   app_imagem_aplicada?: string;
+  /** tracker-updater: referência completa (com digest) que o serviço roda depois da troca. */
+  imagem_atual?: string;
   operacao?: string;
   erro?: string;
 };
@@ -66,6 +68,7 @@ export function parseEstado(logs: string): LeituraEstado {
         auto_atualizacao: str("auto_atualizacao"),
         imagem_aplicada: str("imagem_aplicada"),
         app_imagem_aplicada: str("app_imagem_aplicada"),
+        imagem_atual: str("imagem_atual"),
         operacao: str("operacao"),
         erro: str("erro"),
       },

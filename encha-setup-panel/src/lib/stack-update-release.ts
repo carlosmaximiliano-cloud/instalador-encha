@@ -25,6 +25,7 @@ import { swarmServiceName } from "./stacks/updates";
 import { logAudit } from "./audit";
 import type { StackDefinition } from "./stacks/types";
 import { ehAtualizacaoPorVersao, RebaixamentoRecusadoError } from "./ordem-versao";
+import { sincronizarStackTracker } from "./sincronizar-stack";
 
 export type ApplyReleaseUpdateInput = {
   token: string;
@@ -151,6 +152,17 @@ export async function applyReleaseUpdate(input: ApplyReleaseUpdateInput): Promis
     }
 
     logAudit({ user, ip, action: "stack.update", target: stackName, result: "ok", meta: { atualizados } });
+
+    // Ciclo 101 F5: o arquivo da stack no Portainer passa a apontar para a imagem
+    // que acabou de subir (sem redeploy). Falha aqui NÃO desfaz nem esconde a
+    // atualização já feita: fica registrada e o agendador repete.
+    if (def.id === "encha-tracker" && atualizados.length > 0) {
+      try {
+        await sincronizarStackTracker({ token, modo: "auto", user, ip });
+      } catch (e) {
+        console.error("[stack-update] sincronização do arquivo da stack falhou (o agendador repete):", e instanceof Error ? e.message : e);
+      }
+    }
     return { atualizados };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro desconhecido";
