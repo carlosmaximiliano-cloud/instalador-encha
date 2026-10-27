@@ -1,14 +1,7 @@
 import { z } from "zod";
 import { type DockerSecretSpec, type StackDefinition, type SwarmContext, fqdn, strongPassword } from "./types";
 import { randomBytes } from "node:crypto";
-import { BASE_SEGREDO_SENHA_ADMIN, DONO_SEGREDOS_TRACKER, trackerUsaSegredos } from "./encha-tracker-segredos";
-import {
-  blocoMontagensSegredos,
-  blocoSegredosTopo,
-  exigeVersaoSegredos,
-  linhaEnvArquivo,
-  nomeSegredoVersionado,
-} from "./segredos-yaml";
+import { BASE_SEGREDO_SENHA_ADMIN } from "./encha-tracker-segredos";
 
 // Console EnchaT — o mesmo Console emite licenças de EnchaT e Encha
 // Tracker, discriminadas por `produto` (ver Ciclo 18b, repo EnchaT
@@ -67,20 +60,15 @@ function updaterRepoFromTracker(imageRepo: string): string {
 // senha DIFERENTE da que o cliente digitou, sem nenhum aviso — a pior forma
 // de bug de senha, porque some silenciosamente.
 //
-// A regra vale nos DOIS formatos da senha: no antigo (imagem abaixo de
-// 1.2.1, senha em texto no env do YAML) e no Docker secret (1.2.1 ou mais,
-// ver encha-tracker-segredos.ts), porque o valor do segredo passa pela
-// MESMA `sanitiza()`. A barra invertida não altera o arquivo do segredo,
-// mas continua recusada para que a mesma senha valha em qualquer versão da
-// imagem.
+// A regra vale para qualquer senha: ela vai em texto, entre aspas duplas, na
+// env `TRACKER_ADMIN_SENHA` do YAML (e a barra invertida continua recusada
+// para que a mesma senha valha em qualquer forma de entrega).
 const SENHA_CARACTERES_PROIBIDOS = /["`\\\r\n]/;
 const senhaAdmin = strongPassword.refine((s) => !SENHA_CARACTERES_PROIBIDOS.test(s), {
   message: 'A senha não pode conter aspas duplas, crase, barra invertida (\\) nem quebra de linha.',
 });
 
-// Mesmo regex/efeito da arrow local que generateYaml já usava — no nível do
-// módulo porque segredosDockerDoTracker (abaixo) também precisa sanitizar o
-// valor do segredo do jeito que o formato antigo em texto já sanitiza.
+// Remove aspas duplas, crase e quebra de linha antes de pôr o valor no YAML.
 const sanitiza = (x: unknown): string => String(x ?? "").replace(/[`"\n\r]/g, "");
 
 const schema = z.object({
@@ -102,28 +90,19 @@ const schema = z.object({
   senha_admin: senhaAdmin,
 });
 
-// Os segredos que o installer cria no Swarm (vazio = formato antigo, senha
-// em texto no env). Só a senha do admin é Docker secret (ciclo
-// painel-secret, decisão do usuário): DATABASE_URL, TRACKER_MASTER_KEY,
+// Os segredos do Docker que o installer cria no Swarm: NENHUM (Ciclo 100, D1).
+// A senha do admin voltou a ser a env `TRACKER_ADMIN_SENHA` (ver
+// encha-tracker-segredos.ts) e DATABASE_URL, TRACKER_MASTER_KEY,
 // TRACKER_CHAVE/TRACKER_LICENSE_KEY, TRACKER_UPDATER_TOKEN e
-// POSTGRES_PASSWORD continuam em texto no env. Para levar mais um, a imagem
-// do Tracker precisa ler o `_FILE` dele primeiro, e esta lista, as trocas do
-// generateYaml e o TS6 de encha-tracker.test.ts (YAML byte a byte) mudam
-// juntos.
+// POSTGRES_PASSWORD também sempre foram texto no env. A função continua
+// declarada (dockerSecrets) devolvendo `[]` para o installer e os testes
+// afirmarem isso por tag, em vez de a ausência do campo ser acidente.
 export function segredosDockerDoTracker(
-  values: Record<string, unknown>,
+  _values: Record<string, unknown>,
   _secrets: Record<string, string>,
-  ctx: SwarmContext
+  _ctx: SwarmContext
 ): DockerSecretSpec[] {
-  if (!trackerUsaSegredos(ctx.release?.imageTag)) return [];
-  const versao = exigeVersaoSegredos(ctx);
-  return [
-    {
-      base: BASE_SEGREDO_SENHA_ADMIN,
-      name: nomeSegredoVersionado(BASE_SEGREDO_SENHA_ADMIN, versao),
-      value: sanitiza(values.senha_admin),
-    },
-  ];
+  return [];
 }
 
 export const enchaTracker: StackDefinition = {
@@ -248,11 +227,13 @@ export const enchaTracker: StackDefinition = {
     // Compartilhado entre o app e o sidecar tracker-updater (Authorization: Bearer).
     { name: "updater_token", value: randomBytes(24).toString("hex") },
   ],
-  // Portão só por versão (o porquê está em encha-tracker-segredos.ts) —
-  // NÃO declara dockerSecretsGate. O
-  // EnchaT precisa do gate por label porque publicou versões que sugeriam
-  // suporte sem tê-lo; o Tracker nunca fez isso.
+  // Sem segredos do Docker e sem dockerSecretsGate (o porquê está em
+  // encha-tracker-segredos.ts): a senha do admin vai em texto na env.
   dockerSecrets: segredosDockerDoTracker,
+  // O segredo que as instalações anteriores deste painel criaram para a senha
+  // do admin (base `encha_tracker_senha_admin`): não é mais usado e o
+  // installer o varre da VPS, mesmo com `dockerSecrets` vazio (F2.5).
+  basesDeSegredoObsoletas: [BASE_SEGREDO_SENHA_ADMIN],
   generateYaml(values, secrets, ctx) {
     const v = values as z.infer<typeof schema>;
     if (!ctx.release) throw new Error("ctx.release ausente em generateYaml — bug no installer.");
@@ -262,20 +243,6 @@ export const enchaTracker: StackDefinition = {
     const domain = san(v.dominio_tracker);
     const { imageRepo, imageTag } = ctx.release;
     const updaterRepo = updaterRepoFromTracker(imageRepo);
-    // Segredo do Docker: só a senha do admin (ver segredosDockerDoTracker
-    // acima). Abaixo da versão mínima, as três trocas abaixo desaparecem e
-    // o YAML volta a ser byte a byte o de sempre (senha em texto no env).
-    const usar = trackerUsaSegredos(imageTag);
-    const versaoSeg = usar ? exigeVersaoSegredos(ctx) : "";
-    const linhaSenha = usar
-      ? linhaEnvArquivo("TRACKER_ADMIN_SENHA", BASE_SEGREDO_SENHA_ADMIN)
-      : `      TRACKER_ADMIN_SENHA: "${san(v.senha_admin)}"`;
-    const segApp = usar
-      ? blocoMontagensSegredos([{ base: BASE_SEGREDO_SENHA_ADMIN, ...DONO_SEGREDOS_TRACKER.app }])
-      : "";
-    const segTopo = usar
-      ? blocoSegredosTopo([{ base: BASE_SEGREDO_SENHA_ADMIN, nome: nomeSegredoVersionado(BASE_SEGREDO_SENHA_ADMIN, versaoSeg) }])
-      : "";
     return `version: "3.7"
 services:
 
@@ -290,14 +257,14 @@ services:
       PORT: "8080"
       TRACKER_MASTER_KEY: "${secrets.tracker_master_key}"
       TRACKER_ADMIN_EMAIL: "${san(v.email_ativacao)}"
-${linhaSenha}
+      TRACKER_ADMIN_SENHA: "${san(v.senha_admin)}"
       TRACKER_CONSOLE_URL: "${CONSOLE_BASE_URL}"
       TRACKER_CHAVE: "${san(v.chave_licenca)}"
       TRACKER_CANAL: "${CANAL_TRACKER_PADRAO}"
       TRACKER_MACHINE_ID: "${san(ctx.machineId ?? "")}"
       TRACKER_UPDATER_URL: "http://encha_tracker_updater:9000"
       TRACKER_UPDATER_TOKEN: "${secrets.updater_token}"
-${segApp}    deploy:
+    deploy:
       replicas: 1
       update_config:
         order: start-first
@@ -385,7 +352,7 @@ networks:
   encha_tracker_net:
     driver: overlay
     attachable: true
-${segTopo}`;
+`;
   },
   postInstall: {
     accessUrl: (v) => `https://${(v as z.infer<typeof schema>).dominio_tracker}`,

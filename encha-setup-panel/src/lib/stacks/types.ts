@@ -357,6 +357,14 @@ export type StackDefinition = {
     ctx: SwarmContext
   ) => DockerSecretSpec[];
   /**
+   * Bases (sem a época) de segredos do Docker que a stack USOU e deixou de
+   * usar (Ciclo 100: a senha do admin do Tracker voltou a ser env). O
+   * installer, depois do deploy, remove os segredos da stack com estas bases
+   * que nenhum serviço referencia (Spec nem PreviousSpec) — também quando
+   * `dockerSecrets` devolve lista vazia. Ausente = nada a varrer.
+   */
+  basesDeSegredoObsoletas?: string[];
+  /**
    * Portão dos segredos do Docker por LABEL das imagens (S4c). Depois do
    * pré-pull das imagens de `registryAuth.images`, o installer lê o label
    * `label` de CADA uma; só se todas contêm o token `recurso` (e `versaoOk`

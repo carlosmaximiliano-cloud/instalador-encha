@@ -117,6 +117,12 @@ describe("segredos-yaml — SN1: prefixo de stack (registry inteiro)", () => {
     for (const def of ALL_STACKS.filter((d) => d.dockerSecrets)) {
       const { values, secrets, ctx } = ABERTOS[def.id];
       const specs = def.dockerSecrets!(values, secrets, ctx);
+      // Ciclo 100: o Tracker mantém o campo mas não cria mais segredo nenhum
+      // (a senha do admin voltou a ser env); só o EnchaT segue o prefixo.
+      if (def.id === "encha-tracker") {
+        expect(specs).toEqual([]);
+        continue;
+      }
       expect(specs.length).toBeGreaterThan(0);
       const prefixo = `${expectedStackNames(def)[0]}_`;
       prefixos.push(prefixo);
